@@ -1,4 +1,4 @@
-PRD: SaaS Laundry Management Platform (Flutter + Firebase)
+git branch -M mainPRD: SaaS Laundry Management Platform (Flutter + Firebase)
 Versi: 2.0 (Flutter & Firebase Edition)
 Tanggal: 30 Juni 2026
 Status: Final
