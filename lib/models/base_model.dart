@@ -8,4 +8,6 @@ abstract class BaseModel {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  Map<String, dynamic> toJson();
 }
