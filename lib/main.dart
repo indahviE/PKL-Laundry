@@ -1,21 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-// import 'core/config/firebase_config.dart'; // Sesuaikan dengan folder konfigurasi kamu
 
 void main() async {
   // Pastikan binding Flutter sudah siap
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inisialisasi Firebase Cloud
-  await Firebase.initializeApp(
-    // Jika kamu memakai manual config, masukkan opsi di bawah ini:
-    // options: const FirebaseOptions(
-    //   apiKey: FirebaseConfig.apiKey,
-    //   appId: FirebaseConfig.appId,
-    //   messagingSenderId: FirebaseConfig.messagingSenderId,
-    //   projectId: FirebaseConfig.projectId,
-    // ),
-  );
+  // Inisialisasi Firebase Cloud (Otomatis membaca google-services.json di Android)
+  await Firebase.initializeApp();
 
   runApp(const MyApp());
 }
@@ -27,9 +18,17 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Netwash SaaS Laundry',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true, // Opsional: Biar tampilan UI-nya modern ala Material 3
+      ),
       home: const Scaffold(
-        body: Center(child: Text('Backend & Firebase Terhubung 100%!')),
+        body: Center(
+          child: Text(
+            'Backend & Firebase Terhubung 100%!',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
       ),
     );
   }

@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "317410444119",
-    "project_id": "laundry-netwash",
-    "storage_bucket": "laundry-netwash.firebasestorage.app"
+    "project_number": "397480771765",
+    "project_id": "netwash-id",
+    "storage_bucket": "netwash-id.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:317410444119:android:be5d75521e7ca9a1c67412",
+        "mobilesdk_app_id": "1:397480771765:android:b7911aa7c1a79b184d3efc",
         "android_client_info": {
           "package_name": "com.netwash.pkl_laundry"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBfEsBxOnAIg8JfJ2X016iBEeEg0-NEHJw"
+          "current_key": "AIzaSyCJ_EX4SKODMS0L8MIiVr99BDliDdekamg"
         }
       ],
       "services": {
