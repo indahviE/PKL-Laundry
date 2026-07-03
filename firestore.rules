@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Fungsi bantu untuk mengecek apakah user sudah login melalui Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Fungsi bantu untuk memastikan user hanya bisa akses datanya sendiri (Path Isolation)
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // 1. Mengamankan seluruh sub-koleksi utama di bawah users/{userId}
+    match /users/{userId}/{document=**} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // 2. Aturan spesifik tambahan untuk koleksi 'orders' milik user tertentu (Validasi Data)
+    match /users/{userId}/orders/{orderId} {
+      // Validasi saat membuat order baru: Pastikan field penting tidak kosong
+      allow create: if isAuthenticated() && isOwner(userId) 
+        && request.resource.data.customer_id != null
+        && request.resource.data.service_type_id != null
+        && request.resource.data.total_amount != null;
+        
+      // Validasi saat update status order: Hanya boleh mengubah status dan riwayatnya saja
+      allow update: if isAuthenticated() && isOwner(userId)
+        && (request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'status_history', 'updated_at', 'payment_status']));
+    }
+    
+    // Deny all secara global untuk keamanan ekstra di root level
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
