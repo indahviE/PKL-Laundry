@@ -34,7 +34,7 @@ class UserRepository {
     try {
       await _usersCollection.doc(userId).update({
         ...data,
-        'updatedAt': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),  
       });
     } catch (e) {
       throw Exception('Gagal memperbarui profil pengguna: $e');

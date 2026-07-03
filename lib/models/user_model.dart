@@ -19,16 +19,16 @@ class UserModel extends BaseModel {
   factory UserModel.fromJson(Map<String, dynamic> json, String documentId) {
     return UserModel(
       id: documentId,
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt']) 
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
           : DateTime.now(),
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.parse(json['updatedAt']) 
+      updatedAt: json['updated_at'] != null 
+          ? DateTime.parse(json['updated_at']) 
           : DateTime.now(),
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       role: json['role'] ?? 'owner',
-      companyId: json['companyId'],
+      companyId: json['company_id'],
     );
   }
 
@@ -37,9 +37,9 @@ class UserModel extends BaseModel {
       'name': name,
       'email': email,
       'role': role,
-      'companyId': companyId,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'company_id': companyId,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }

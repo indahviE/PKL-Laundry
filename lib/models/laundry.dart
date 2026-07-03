@@ -1,5 +1,6 @@
-class Laundry {
-  final String id;
+import 'base_model.dart';
+
+class Laundry extends BaseModel {
   final String companyId;
   final String name;
   final String address;
@@ -7,7 +8,9 @@ class Laundry {
   final bool isActive;
 
   Laundry({
-    required this.id,
+    required super.id,
+    required super.createdAt,
+    required super.updatedAt,
     required this.companyId,
     required this.name,
     required this.address,
@@ -18,6 +21,8 @@ class Laundry {
   factory Laundry.fromJson(Map<String, dynamic> json, String documentId) {
     return Laundry(
       id: documentId,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : DateTime.now(),
       companyId: json['company_id'] ?? '',
       name: json['name'] ?? '',
       address: json['address'] ?? '',
@@ -33,6 +38,8 @@ class Laundry {
       'address': address,
       'phone': phone,
       'is_active': isActive,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }

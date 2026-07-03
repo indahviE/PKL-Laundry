@@ -1,19 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
-  return DashboardRepository(FirebaseFirestore.instance);
-});
-
 class DashboardRepository {
   final FirebaseFirestore _firestore;
+  final String userId;
 
-  DashboardRepository(this._firestore);
+  DashboardRepository({required this.userId}) : _firestore = FirebaseFirestore.instance;
 
   Stream<int> getOrderCountByStatus(String laundryId, String status) {
     return _firestore
+        .collection('users')
+        .doc(userId)
         .collection('orders')
-        .where('laundryId', isEqualTo: laundryId)
+        .where('laundry_id', isEqualTo: laundryId) // Perbaikan snake_case
         .where('status', isEqualTo: status)
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
@@ -21,9 +20,11 @@ class DashboardRepository {
 
   Stream<double> getTotalRevenue(String laundryId) {
     return _firestore
+        .collection('users')
+        .doc(userId)
         .collection('transactions')
-        .where('laundryId', isEqualTo: laundryId)
-        .where('status', isEqualTo: 'success')
+        .where('laundry_id', isEqualTo: laundryId) 
+        .where('status', isEqualTo: 'succeeded')
         .snapshots()
         .map((snapshot) {
           double total = 0;
@@ -35,3 +36,7 @@ class DashboardRepository {
         });
   }
 }
+
+final dashboardRepositoryProvider = Provider.family<DashboardRepository, String>((ref, userId) {
+  return DashboardRepository(userId: userId);
+});

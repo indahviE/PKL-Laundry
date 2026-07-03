@@ -1,16 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final subscriptionRepositoryProvider = Provider<SubscriptionRepository>((ref) {
-  return SubscriptionRepository(FirebaseFirestore.instance);
-});
-
 class SubscriptionRepository {
   final FirebaseFirestore _firestore;
+  final String userId;
 
-  SubscriptionRepository(this._firestore);
+  SubscriptionRepository({required this.userId}) : _firestore = FirebaseFirestore.instance;
 
-  CollectionReference get _subscriptionCollection => _firestore.collection('subscriptions');
+  CollectionReference get _subscriptionCollection => 
+      _firestore.collection('users').doc(userId).collection('subscriptions');
 
   Stream<DocumentSnapshot> getSubscriptionStream(String companyId) {
     return _subscriptionCollection.doc(companyId).snapshots();
@@ -23,13 +21,17 @@ class SubscriptionRepository {
   }) async {
     try {
       await _subscriptionCollection.doc(companyId).set({
-        'planName': planName,
+        'plan_name': planName,      
         'status': 'active',
-        'updatedAt': DateTime.now().toIso8601String(),
-        'expiryDate': expiryDate.toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(), 
+        'expiry_date': expiryDate.toIso8601String(),   
       }, SetOptions(merge: true));
     } catch (e) {
       throw Exception('Gagal memperbarui data langganan: $e');
     }
   }
 }
+
+final subscriptionRepositoryProvider = Provider.family<SubscriptionRepository, String>((ref, userId) {
+  return SubscriptionRepository(userId: userId);
+});

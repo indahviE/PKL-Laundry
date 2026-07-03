@@ -1,6 +1,6 @@
-// lib/models/company.dart
-class Company {
-  final String id;
+import 'base_model.dart';
+
+class Company extends BaseModel {
   final String name;
   final String description;
   final String email;
@@ -10,7 +10,9 @@ class Company {
   final bool isActive;
 
   Company({
-    required this.id,
+    required super.id,
+    required super.createdAt,
+    required super.updatedAt,
     required this.name,
     required this.description,
     required this.email,
@@ -23,6 +25,8 @@ class Company {
   factory Company.fromJson(Map<String, dynamic> json, String documentId) {
     return Company(
       id: documentId,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : DateTime.now(),
       name: json['name'] ?? '',
       description: json['description'] ?? '',
       email: json['email'] ?? '',
@@ -42,6 +46,8 @@ class Company {
       'address': address,
       'city': city,
       'is_active': isActive,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }

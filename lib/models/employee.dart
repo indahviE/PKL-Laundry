@@ -1,5 +1,6 @@
-class Employee {
-  final String id;
+import 'base_model.dart';
+
+class Employee extends BaseModel {
   final String companyId;
   final String laundryId; 
   final String fullName;
@@ -7,7 +8,9 @@ class Employee {
   final bool isActive;
 
   Employee({
-    required this.id,
+    required super.id,
+    required super.createdAt,
+    required super.updatedAt,
     required this.companyId,
     required this.laundryId,
     required this.fullName,
@@ -18,6 +21,8 @@ class Employee {
   factory Employee.fromJson(Map<String, dynamic> json, String documentId) {
     return Employee(
       id: documentId,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : DateTime.now(),
       companyId: json['company_id'] ?? '',
       laundryId: json['laundry_id'] ?? '',
       fullName: json['full_name'] ?? '',
@@ -33,6 +38,8 @@ class Employee {
       'full_name': fullName,
       'role': role,
       'is_active': isActive,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }

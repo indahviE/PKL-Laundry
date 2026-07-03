@@ -1,24 +1,41 @@
-// lib/repositories/transaction_repository.dart
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/transaction.dart';
 
 class TransactionRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+  final String userId; 
 
-  Future<void> addTransaction(LaundryTransaction transaction) async {
-    await _firestore.collection('transactions').add(transaction.toJson());
+  TransactionRepository({required this.userId}) : _firestore = FirebaseFirestore.instance;
+
+  CollectionReference get _transactionsRef =>
+      _firestore.collection('users').doc(userId).collection('transactions');
+
+  Future<void> addTransaction(Transaction transaction) async {
+    final docRef = _transactionsRef.doc();
+    final newTransaction = Transaction(
+      id: docRef.id,
+      createdAt: transaction.createdAt,
+      updatedAt: transaction.updatedAt,
+      companyId: transaction.companyId,
+      orderId: transaction.orderId,
+      amount: transaction.amount,
+      transactionType: transaction.transactionType,
+      paymentMethod: transaction.paymentMethod,
+      status: transaction.status,
+    );
+    await docRef.set(newTransaction.toJson());
   }
 
-  Stream<List<LaundryTransaction>> streamTransactions() {
-    return _firestore.collection('transactions').snapshots().map((snapshot) {
+  Stream<List<Transaction>> streamTransactions() {
+    return _transactionsRef.snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
-        return LaundryTransaction.fromJson(doc.data(), doc.id);
+        return Transaction.fromJson(doc.data() as Map<String, dynamic>, doc.id);
       }).toList();
     });
   }
 }
 
-final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
-  return TransactionRepository();
+final transactionRepositoryProvider = Provider.family<TransactionRepository, String>((ref, userId) {
+  return TransactionRepository(userId: userId);
 });
