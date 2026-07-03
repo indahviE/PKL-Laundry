@@ -28,12 +28,38 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  firebase_core: ^4.11.0
-  firebase_auth: ^6.5.4
-  cloud_firestore: ^6.6.0
-  flutter_riverpod: ^2.5.1
   flutter:
     sdk: flutter
+
+  # Firebase
+  firebase_core: ^2.20.0
+  firebase_auth: ^4.10.0
+  cloud_firestore: ^4.13.0
+  firebase_storage: ^11.2.0
+  firebase_messaging: ^14.6.0
+
+  # State Management
+  riverpod: ^2.4.0
+  flutter_riverpod: ^2.4.0
+  hooks_riverpod: ^2.4.0
+
+  # UI & Navigation
+  go_router: ^12.0.0
+  flutter_hooks: ^0.20.0
+
+  # UI Components
+  cupertino_icons: ^1.0.6
+  intl: ^0.19.0
+  google_fonts: ^6.0.0
+  cached_network_image: ^3.3.0
+
+  # Utilities
+  freezed_annotation: ^2.4.0
+  json_annotation: ^4.8.0
+  crypto: ^3.0.0
+
+  # Validation
+  email_validator: ^2.1.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -42,6 +68,11 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.0
+  freezed: ^2.4.0
+  json_serializable: ^6.7.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
