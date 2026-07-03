@@ -1,42 +1,49 @@
-    import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
+import '../models/order.dart';
 
-    class OrderRepository {
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-    final String userId; // Diambil dari Firebase Auth user yang sedang login
+class OrderRepository {
+  final FirebaseFirestore _firestore;
+  final String userId; 
+  OrderRepository({required this.userId}) : _firestore = FirebaseFirestore.instance;
 
-    OrderRepository({required this.userId});
+  CollectionReference get _ordersRef =>
+      _firestore.collection('users').doc(userId).collection('orders');
 
-    // Jalur pintas ke sub-koleksi order milik user tertentu sesuai aturan firestore.rules
-    CollectionReference get _ordersRef =>
-        _firestore.collection('users').doc(userId).collection('orders');
+  Future<Order> createOrder(Order order) async {
+    final docRef = _ordersRef.doc();
+    final newOrder = order.copyWith(id: docRef.id);
+    await docRef.set(newOrder.toJson());
+    return newOrder;
+  }
 
-    // LOGIKA BACKEND: Bikin Nomor Nota Otomatis di Sisi Client (Substitusi Cloud Functions)
-    String _generateOrderNumber(String laundryCode, int sequenceCount) {
-        final dateStr = DateTime.now().toIso8601String().substring(0, 10).replaceAll('-', '');
-        final paddedSequence = (sequenceCount + 1).toString().padLeft(4, '0');
-        return '$laundryCode-$dateStr-$paddedSequence'; // Hasil: JKT-20260703-0001
-    }
+  Future<Order?> getOrder(String orderId) async {
+    final doc = await _ordersRef.doc(orderId).get();
+    if (!doc.exists || doc.data() == null) return null;
+    return Order.fromJson(doc.data() as Map<String, dynamic>, doc.id);
+  }
 
-    // FUNGSI UNTUK MENYIMPAN ORDER BARU
-    Future<void> createOrder(Map<String, dynamic> orderData, String laundryCode) async {
-        // 1. Hitung jumlah orderan hari ini untuk menentukan nomor urut nota
-        final today = DateTime.now();
-        final todayStart = DateTime(today.year, today.month, today.day).toIso8601String();
-        
-        final queryToday = await _ordersRef
-            .where('createdAt', isGreaterThanOrEqualTo: todayStart)
-            .get();
-        
-        // 2. Generate nomor nota otomatis
-        final orderNumber = _generateOrderNumber(laundryCode, queryToday.docs.length);
+  Stream<List<Order>> getAllOrders() {
+    return _ordersRef
+        .orderBy('created_at', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Order.fromJson(doc.data() as Map<String, dynamic>, doc.id))
+            .toList());
+  }
 
-        // 3. Masukkan nomor nota dan hitungan harga otomatis ke dalam data pesanan
-        orderData['orderNumber'] = orderNumber;
-        orderData['totalHarga'] = orderData['beratKg'] * 8000; // Contoh tarif Rp 8.000/kg
-        orderData['status'] = 'Antre';
-        orderData['createdAt'] = DateTime.now().toIso8601String();
+  Future<void> updateOrderStatus(String orderId, OrderStatus newStatus, {String? note}) async {
+    final order = await getOrder(orderId);
+    if (order == null) throw Exception('Order tidak ditemukan');
 
-        // 4. Tembak langsung ke Firestore database
-        await _ordersRef.add(orderData);
-    }
-    }
+    final updatedHistory = [
+      ...order.statusHistory,
+      StatusHistory(status: newStatus, timestamp: DateTime.now(), note: note),
+    ];
+
+    await _ordersRef.doc(orderId).update({
+      'status': newStatus.name,
+      'status_history': updatedHistory.map((e) => e.toJson()).toList(),
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
+}

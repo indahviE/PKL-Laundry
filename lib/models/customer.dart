@@ -1,7 +1,6 @@
-// lib/models/customer.dart
+import 'base_model.dart';
 
-class Customer {
-  final String id;
+class Customer extends BaseModel {
   final String companyId;
   final String customerCode;
   final String fullName;
@@ -20,7 +19,9 @@ class Customer {
   final bool isActive;
 
   Customer({
-    required this.id,
+    required super.id,
+    required super.createdAt,
+    required super.updatedAt,
     required this.companyId,
     required this.customerCode,
     required this.fullName,
@@ -42,6 +43,8 @@ class Customer {
   factory Customer.fromJson(Map<String, dynamic> json, String documentId) {
     return Customer(
       id: documentId,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : DateTime.now(),
       companyId: json['company_id'] ?? '',
       customerCode: json['customer_code'] ?? '',
       fullName: json['full_name'] ?? '',
@@ -79,6 +82,8 @@ class Customer {
       'loyalty_points': loyaltyPoints,
       'notes': notes,
       'is_active': isActive,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }
