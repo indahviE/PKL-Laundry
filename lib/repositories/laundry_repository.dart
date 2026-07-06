@@ -1,6 +1,7 @@
     import 'package:cloud_firestore/cloud_firestore.dart';
     import 'package:flutter_riverpod/flutter_riverpod.dart';
     import '../models/laundry.dart';
+    
 
     // Catatan: Jika kamu sudah membuat file models/laundry.dart, import di sini.
     // Untuk sementara, kita pakai Map<String, dynamic> terlebih dahulu.
