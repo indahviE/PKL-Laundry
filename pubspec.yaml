@@ -34,30 +34,33 @@ dependencies:
   cached_network_image: ^3.3.1
 
   # Utilities
-  freezed_annotation: ^2.4.1
+  freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
   crypto: ^3.0.3
 
   # Validation
-<<<<<<< HEAD
   email_validator: ^2.1.1
-=======
-  email_validator: ^2.1.0
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
->>>>>>> b2e6f0952caac322d671256516a7749afacb96bb
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
-  build_runner: ^2.4.9
-  freezed: ^2.4.7
-  json_serializable: ^6.8.0
+  
+  # Pastikan hanya ada satu entry ini
+  flutter_launcher_icons: ^0.13.1
 
-<<<<<<< HEAD
-=======
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.0
+  freezed: ^3.2.5
+  json_serializable: ^6.7.0
+
+# Konfigurasi ini harus diletakkan di luar dev_dependencies, 
+# biasanya di paling bawah file pubspec.yaml
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "asset/icon/Netwash Logo.png"
+  min_sdk_android: 21
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -68,6 +71,5 @@ dev_dependencies:
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
->>>>>>> b2e6f0952caac322d671256516a7749afacb96bb
 flutter:
   uses-material-design: true
