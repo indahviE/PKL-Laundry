@@ -1,4 +1,4 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 /// App Theme Configuration
 class AppTheme {
@@ -79,7 +79,7 @@ class AppTheme {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
-        iconThemeData: IconThemeData(color: darkColor),
+        iconTheme: const IconThemeData(color: darkColor),
         titleTextStyle: TextStyle(
           color: darkColor,
           fontSize: 18,
@@ -257,9 +257,9 @@ class AppTheme {
       ),
 
       // Bottom Sheet Theme
-      bottomSheetTheme: BottomSheetThemeData(
+      bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: Colors.white,
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(radiusXl),
             topRight: Radius.circular(radiusXl),
