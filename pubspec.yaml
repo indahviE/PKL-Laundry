@@ -67,11 +67,22 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  
+  # Pastikan hanya ada satu entry ini
+  flutter_launcher_icons: ^0.13.1
 
   flutter_lints: ^6.0.0
   build_runner: ^2.4.0
   freezed: ^3.2.5
   json_serializable: ^6.7.0
+
+# Konfigurasi ini harus diletakkan di luar dev_dependencies, 
+# biasanya di paling bawah file pubspec.yaml
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "asset/icon/Netwash Logo.png"
+  min_sdk_android: 21
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
