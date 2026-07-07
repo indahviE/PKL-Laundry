@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
-  // Pastikan binding Flutter sudah siap
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Inisialisasi Firebase Cloud (Otomatis membaca google-services.json di Android)
   await Firebase.initializeApp();
+
+  // Tambahkan ini untuk mengaktifkan offline persistence
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
 
   runApp(const MyApp());
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
