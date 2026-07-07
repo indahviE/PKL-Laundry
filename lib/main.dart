@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
+import 'core/config/routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,28 +19,32 @@ void main() async {
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
-  runApp(const MyApp());
+  // 3. Bungkus dengan ProviderScope agar Riverpod aktif
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
+// 4. Menggunakan ConsumerWidget agar bisa memantau routing
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 5. Membaca konfigurasi router Anda
+    final router = ref.watch(goRouterProvider);
+
+    // 6. Menggunakan .router agar sistem navigasi aktif
+    return MaterialApp.router(
       title: 'Netwash SaaS Laundry',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        useMaterial3: true, // Opsional: Biar tampilan UI-nya modern ala Material 3
+        useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'Backend & Firebase Terhubung 100%!',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
+      routerConfig: router, // 7. Pasang konfigurasinya di sini
     );
   }
 }

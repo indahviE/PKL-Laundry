@@ -79,7 +79,7 @@ class AppTheme {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: darkColor),
+        iconTheme: IconThemeData(color: darkColor), // PERBAIKAN: diubah ke iconTheme
         titleTextStyle: TextStyle(
           color: darkColor,
           fontSize: 18,
@@ -239,7 +239,7 @@ class AppTheme {
       ),
 
       // Card Theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData( // PERBAIKAN: diubah ke CardThemeData
         color: Colors.white,
         elevation: 2,
         shape: RoundedRectangleBorder(
@@ -249,7 +249,7 @@ class AppTheme {
       ),
 
       // Dialog Theme
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData( // PERBAIKAN: diubah ke DialogThemeData
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusLg),
@@ -327,7 +327,7 @@ class AppTheme {
         backgroundColor: gray800,
         elevation: 0,
         centerTitle: false,
-        iconThemeData: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Colors.white), // PERBAIKAN: diubah ke iconTheme
         titleTextStyle: TextStyle(
           color: Colors.white,
           fontSize: 18,
@@ -414,7 +414,7 @@ class AppTheme {
       ),
 
       // Card Theme (Dark)
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData( // PERBAIKAN: diubah ke CardThemeData
         color: gray800,
         elevation: 2,
         shape: RoundedRectangleBorder(
