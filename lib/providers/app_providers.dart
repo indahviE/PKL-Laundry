@@ -2,16 +2,30 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order; // Hindari bentrok keyword
 import '../repositories/order_repository.dart';
-import '../repositories/customer_repository.dart'; // Tambahkan ini
+import '../repositories/customer_repository.dart'; 
 import '../services/dashboard_service.dart';
 import '../models/order.dart';
-import '../models/customer.dart'; // Tambahkan ini
+import '../models/customer.dart'; 
 import '../models/subscription.dart';
 
-// Provider ID Pengguna aktif (Diambil dinamis lewat Auth State jika sudah siap)
-final userIdProvider = StateProvider<String>((ref) => "TARGET_USER_ID_FROM_FIREBASE_AUTH");
+// AKALAN CERDAS: Mengganti StateProvider lama menjadi Notifier versi baru yang lebih stabil di VS Code
+class UserNotifier extends Notifier<String> {
+  @override
+  String build() {
+    return "TARGET_USER_ID_FROM_FIREBASE_AUTH"; // ID Sementara sebelum ada Auth
+  }
 
-// Repository Providers (Pola Seragam: Membaca userId secara otomatis)
+  void updateUserId(String newId) {
+    state = newId;
+  }
+}
+
+// Ini pengganti userIdProvider yang merah tadi, dijamin Analyzer VS Code langsung hijau
+final userIdProvider = NotifierProvider<UserNotifier, String>(() {
+  return UserNotifier();
+});
+
+// Repository Providers (Membaca userIdNotifier secara otomatis)
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
   final uid = ref.watch(userIdProvider);
   return OrderRepository(userId: uid);
@@ -36,7 +50,7 @@ final customersStreamProvider = StreamProvider<List<Customer>>((ref) {
   return repo.streamCustomers();
 });
 
-// Stream Subscription (Urutan parameter .fromJson sudah diperbaiki)
+// Stream Subscription 
 final subscriptionStreamProvider = StreamProvider<Subscription?>((ref) {
   final uid = ref.watch(userIdProvider);
   return FirebaseFirestore.instance
