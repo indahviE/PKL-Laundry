@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/customer.dart';
+import '../providers/app_providers.dart';
 
 class CustomerRepository {
   final FirebaseFirestore _firestore;
@@ -46,6 +47,8 @@ class CustomerRepository {
   }
 }
 
-final customerRepositoryProvider = Provider.family<CustomerRepository, String>((ref, userId) {
-  return CustomerRepository(userId: userId);
+// FIX: Diubah dari .family menjadi Provider biasa agar seragam dengan Repo lainnya!
+final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
+  final uid = ref.watch(userIdProvider); // Diambil otomatis dari userIdProvider global
+  return CustomerRepository(userId: uid);
 });

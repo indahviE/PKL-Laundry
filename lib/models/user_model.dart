@@ -5,6 +5,7 @@ class UserModel extends BaseModel {
   final String email;
   final String role; 
   final String? companyId;
+  final String planId;
 
   UserModel({
     required super.id,
@@ -14,6 +15,7 @@ class UserModel extends BaseModel {
     required this.email,
     required this.role,
     this.companyId,
+    this.planId = 'starter',
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json, String documentId) {
@@ -29,6 +31,7 @@ class UserModel extends BaseModel {
       email: json['email'] ?? '',
       role: json['role'] ?? 'owner',
       companyId: json['company_id'],
+      planId: json['plan_id'] ?? 'starter',
     );
   }
 
@@ -38,6 +41,7 @@ class UserModel extends BaseModel {
       'email': email,
       'role': role,
       'company_id': companyId,
+      'plan_id': planId,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
