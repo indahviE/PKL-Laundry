@@ -42,3 +42,8 @@ class AuthRepository {
     }
   }
 }
+
+// Tambahkan ini di bawah AuthRepository
+final authStateProvider = StreamProvider<User?>((ref) {
+  return ref.read(authRepositoryProvider).authStateChanges;
+}); 
