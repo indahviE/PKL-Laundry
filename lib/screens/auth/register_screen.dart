@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
-// import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input.dart';
-// import '../../widgets/common/loading_widget.dart';
-// import '../../widgets/common/error_widget.dart';
+import 'package:go_router/go_router.dart';
 
 /// Register Screen
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -94,35 +92,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
 
     try {
-      // TODO: Connect ke Firebase atau backend API
-      // Simulasi register process
+      // Ambil router instance sebelum proses asinkronus (await) berjalan
+      // Ini dilakukan agar tidak terkena eror 'lifecycle active elements' bawaan Navigator context
+      final router = GoRouter.of(context);
+      final messenger = ScaffoldMessenger.of(context);
+
+      // Simulasi register process selama 2 detik
       await Future.delayed(const Duration(seconds: 2));
 
-      // TODO: Uncomment ini ketika Firebase auth siap
-      // final authService = ref.read(firebaseAuthServiceProvider);
-      // await authService.register(
-      //   email: _emailController.text,
-      //   password: _passwordController.text,
-      //   name: _nameController.text,
-      //   phone: _phoneController.text,
-      // );
+      // Tampilkan notifikasi sukses menggunakan variabel messenger yang aman
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Pendaftaran berhasil! (Testing mode)'),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
 
-      // TODO: Navigate ke email verification atau login
-      // context.go('/login/verify-email');
+      // Navigasi langsung menggunakan objek router yang sudah di-cache sejak awal
+      router.go('/login');
 
-      // Untuk sekarang, show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pendaftaran berhasil! (Testing mode)'),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
-      }
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -134,9 +128,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   /// Handle back to login
   void _handleBackToLogin() {
-    // TODO: Navigate ke login screen
-    // context.go('/login');
-    Navigator.pop(context);
+    context.go('/login');
   }
 
   @override
