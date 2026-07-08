@@ -1,16 +1,16 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import '../../firebase_options.dart';
 
-/// Initialize Firebase untuk aplikasi
-/// Harus dipanggil di main() sebelum runApp()
+/// Menginisialisasi Firebase untuk kebutuhan aplikasi.
+/// Fungsi ini wajib dipanggil di dalam main() sebelum runApp().
 Future<void> initializeFirebase() async {
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('✅ Firebase initialized successfully');
+    print('Firebase initialized successfully');
   } catch (e) {
-    print('❌ Firebase initialization error: $e');
+    print('Firebase initialization error: $e');
     rethrow;
   }
 }
