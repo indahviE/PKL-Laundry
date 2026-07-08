@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
-
-/// GoRouter configuration
+import '../../../screens/main/main_screen.dart';
+import '../../../screens/main/dashboard_screen.dart';
+/// Konfigurasi GoRouter untuk navigasi aplikasi.
 final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/login',
     routes: [
+      // Rute Autentikasi (Luar Navigasi Utama)
       GoRoute(
         path: '/login',
         name: 'login',
@@ -17,48 +19,56 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         name: 'register',
-        builder: (context, state) => const RegisterScreen(), 
+        builder: (context, state) => const RegisterScreen(),
       ),
-      GoRoute(
-        path: '/dashboard',
-        name: 'dashboard',
-        builder: (context, state) => const PlaceholderScreen(
-          title: 'Dashboard Screen',
-        ),
-      ),
-      GoRoute(
-        path: '/orders',
-        name: 'orders',
-        builder: (context, state) => const PlaceholderScreen(
-          title: 'Orders List Screen',
-        ),
-      ),
-      GoRoute(
-        path: '/customers',
-        name: 'customers',
-        builder: (context, state) => const PlaceholderScreen(
-          title: 'Customers List Screen',
-        ),
-      ),
-      GoRoute(
-        path: '/employees',
-        name: 'employees',
-        builder: (context, state) => const PlaceholderScreen(
-          title: 'Employees List Screen',
-        ),
-      ),
-      GoRoute(
-        path: '/settings',
-        name: 'settings',
-        builder: (context, state) => const PlaceholderScreen(
-          title: 'Settings Screen',
-        ),
+
+      // ShellRoute: Menggunakan MainScreen sebagai wadah navigasi (Bottom Navigation Bar)
+      ShellRoute(
+        builder: (context, state, child) {
+          // child di sini adalah halaman aktif (dashboard, orders, dll.) yang akan dimasukkan ke dalam MainScreen
+          return MainScreen(child: child);
+        },
+        routes: [
+          GoRoute(
+            path: '/dashboard',
+            name: 'dashboard',
+            builder: (context, state) => const DashboardScreen(), // Sudah diarahkan ke DashboardScreen asli
+          ),
+          GoRoute(
+            path: '/orders',
+            name: 'orders',
+            builder: (context, state) => const PlaceholderScreen(
+              title: 'Orders List Screen',
+            ),
+          ),
+          GoRoute(
+            path: '/customers',
+            name: 'customers',
+            builder: (context, state) => const PlaceholderScreen(
+              title: 'Customers List Screen',
+            ),
+          ),
+          GoRoute(
+            path: '/employees',
+            name: 'employees',
+            builder: (context, state) => const PlaceholderScreen(
+              title: 'Employees List Screen',
+            ),
+          ),
+          GoRoute(
+            path: '/settings',
+            name: 'settings',
+            builder: (context, state) => const PlaceholderScreen(
+              title: 'Settings Screen',
+            ),
+          ),
+        ],
       ),
     ],
   );
 });
 
-/// Placeholder Screen
+/// Halaman Placeholder Sementara
 class PlaceholderScreen extends StatelessWidget {
   final String title;
 

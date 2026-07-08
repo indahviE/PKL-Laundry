@@ -1,182 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../widgets/common/bottom_navigation.dart';
-import './dashboard_screen.dart';
 
-/// Main Screen - Layout utama setelah login
-class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+/// Main Screen - Layout utama setelah login (Wadah / Shell Navigasi)
+class MainScreen extends StatelessWidget {
+  /// child di sini diisi otomatis oleh GoRouter (ShellRoute)
+  /// berupa halaman aktif saat ini (Dashboard, Orders, dll.)
+  final Widget child;
 
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
+  const MainScreen({
+    Key? key,
+    required this.child,
+  }) : super(key: key);
 
-class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0;
+  /// Menentukan indeks tab bawah aktif berdasarkan path rute saat ini
+  int _calculateSelectedIndex(BuildContext context) {
+    final String location = GoRouterState.of(context).uri.path;
+    if (location.startsWith('/orders')) return 1;
+    if (location.startsWith('/customers')) return 2;
+    if (location.startsWith('/settings')) return 3;
+    return 0; // Default ke Dashboard ('/dashboard')
+  }
 
-  // List screens untuk setiap tab
-  final List<Widget> _screens = const [
-    DashboardScreen(),  // ← DASHBOARD SCREEN YANG BARU
-    _OrdersPlaceholder(),
-    _CustomersPlaceholder(),
-    _SettingsPlaceholder(),
-  ];
+  /// Fungsi untuk berpindah rute saat tab bawah diklik
+  void _onItemTapped(int index, BuildContext context) {
+    switch (index) {
+      case 0:
+        context.go('/dashboard');
+        break;
+      case 1:
+        context.go('/orders');
+        break;
+      case 2:
+        context.go('/customers');
+        break;
+      case 3:
+        context.go('/settings');
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      // Body langsung menampilkan halaman aktif yang dikirim oleh GoRouter
+      body: child, 
       bottomNavigationBar: CustomBottomNavigation(
-        currentIndex: _currentIndex,
+        currentIndex: _calculateSelectedIndex(context),
         items: NetWashBottomNavItems.items,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-      ),
-    );
-  }
-}
-
-// ============================================
-// PLACEHOLDER SCREENS (MASIH PLACEHOLDER)
-// ============================================
-
-/// Orders Placeholder
-class _OrdersPlaceholder extends StatelessWidget {
-  const _OrdersPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pesanan'),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.receipt_outlined,
-              size: 80,
-              color: Colors.grey,
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Daftar Pesanan',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Screen ini akan diimplementasikan segera',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {},
-              child: const Text('Tambah Pesanan'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Customers Placeholder
-class _CustomersPlaceholder extends StatelessWidget {
-  const _CustomersPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pelanggan'),
-        elevation: 0,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.people_outlined,
-              size: 80,
-              color: Colors.grey,
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Daftar Pelanggan',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Screen ini akan diimplementasikan segera',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Settings Placeholder
-class _SettingsPlaceholder extends StatelessWidget {
-  const _SettingsPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pengaturan'),
-        elevation: 0,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.settings_outlined,
-              size: 80,
-              color: Colors.grey,
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Pengaturan',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Screen ini akan diimplementasikan segera',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
+        onTap: (index) => _onItemTapped(index, context),
       ),
     );
   }
