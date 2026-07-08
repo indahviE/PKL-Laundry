@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
 import '../../../screens/main/main_screen.dart';
 import '../../../screens/main/dashboard_screen.dart';
+
 /// Konfigurasi GoRouter untuk navigasi aplikasi.
 final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -32,7 +35,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/dashboard',
             name: 'dashboard',
-            builder: (context, state) => const DashboardScreen(), // Sudah diarahkan ke DashboardScreen asli
+            builder: (context, state) => const DashboardScreen(),
           ),
           GoRoute(
             path: '/orders',
@@ -58,9 +61,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/settings',
             name: 'settings',
-            builder: (context, state) => const PlaceholderScreen(
-              title: 'Settings Screen',
-            ),
+            builder: (context, state) => const SettingsScreen(),
           ),
         ],
       ),
@@ -68,7 +69,64 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// Halaman Placeholder Sementara
+/// Halaman Settings & Profil
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Pengaturan & Profil'),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(16),
+              leading: const CircleAvatar(
+                radius: 28,
+                child: Icon(Icons.person, size: 32),
+              ),
+              title: Text(
+                user?.email ?? 'User NetWash',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text('Role: Owner'),
+            ),
+          ),
+          const SizedBox(height: 24),
+          ListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            tileColor: Colors.red.shade50,
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text(
+              'Keluar / Logout',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+            onTap: () async {
+              await FirebaseAuth.instance.signOut();
+              if (context.mounted) {
+                context.go('/login');
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Halaman Placeholder Sementara untuk fitur yang belum dibuat
 class PlaceholderScreen extends StatelessWidget {
   final String title;
 
