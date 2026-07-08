@@ -1,24 +1,55 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(FirebaseAuth.instance);
+  return AuthRepository(
+    FirebaseAuth.instance,
+    FirebaseFirestore.instance, 
+  );
 });
 
 class AuthRepository {
   final FirebaseAuth _auth;
+  final FirebaseFirestore _db; 
 
-  AuthRepository(this._auth);
+  AuthRepository(this._auth, this._db);
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   User? get currentUser => _auth.currentUser;
 
-  Future<UserCredential> registerWithEmailAndPassword(String email, String password) async {
+  Future<UserCredential> registerWithEmailAndPassword({
+    required String email,
+    required String password,
+    required String name,
+    required String phone,
+    String role = 'owner', 
+  }) async {
     try {
-      return await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = userCredential.user;
+
+      if (user != null) {
+        await _db.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'role': role, 
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      return userCredential;
     } on FirebaseAuthException catch (e) {
       throw Exception(e.message ?? 'Terjadi kesalahan saat registrasi.');
+    } catch (e) {
+      throw Exception('Gagal menyimpan data pengguna ke database: $e');
     }
   }
 
@@ -43,7 +74,6 @@ class AuthRepository {
   }
 }
 
-// Tambahkan ini di bawah AuthRepository
 final authStateProvider = StreamProvider<User?>((ref) {
   return ref.read(authRepositoryProvider).authStateChanges;
-}); 
+});

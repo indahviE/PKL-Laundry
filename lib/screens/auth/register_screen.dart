@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
 import '../../widgets/common/app_input.dart';
 import 'package:go_router/go_router.dart';
+import '../../repositories/auth_repository.dart';
 
 /// Register Screen
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -50,7 +51,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  /// Validate password strength
+  /// Validasi kekuatan kata sandi
   String? _validatePasswordStrength(String? value) {
     if (value == null || value.isEmpty) {
       return 'Password tidak boleh kosong';
@@ -70,7 +71,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return null;
   }
 
-  /// Handle register
+  /// Eksekusi Pendaftaran
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -92,29 +93,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
 
     try {
-      // Ambil router instance sebelum proses asinkronus (await) berjalan
-      // Ini dilakukan agar tidak terkena eror 'lifecycle active elements' bawaan Navigator context
       final router = GoRouter.of(context);
       final messenger = ScaffoldMessenger.of(context);
 
-      // Simulasi register process selama 2 detik
-      await Future.delayed(const Duration(seconds: 2));
+      final authRepo = ref.read(authRepositoryProvider);
+      
+      // Mengirimkan data lengkap, role otomatis menjadi 'owner' di repositori
+      await authRepo.registerWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        name: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        role: 'owner', 
+      );
 
-      // Tampilkan notifikasi sukses menggunakan variabel messenger yang aman
       messenger.showSnackBar(
         const SnackBar(
-          content: Text('Pendaftaran berhasil! (Testing mode)'),
+          content: Text('Pendaftaran berhasil! Profil owner telah dibuat.'),
           backgroundColor: AppTheme.successColor,
         ),
       );
 
-      // Navigasi langsung menggunakan objek router yang sudah di-cache sejak awal
       router.go('/login');
 
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString();
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
         });
       }
     } finally {
@@ -126,7 +131,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
-  /// Handle back to login
+  /// Kembali ke halaman login
   void _handleBackToLogin() {
     context.go('/login');
   }
@@ -150,37 +155,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
                 _buildHeader(),
-
-                // Spacer
                 const SizedBox(height: AppTheme.xl),
-
-                // Error message
                 if (_errorMessage != null) ...[
                   _buildErrorMessage(),
                   const SizedBox(height: AppTheme.lg),
                 ],
-
-                // Form
                 _buildForm(),
-
-                // Spacer
                 const SizedBox(height: AppTheme.lg),
-
-                // Terms & Conditions
                 _buildTermsCheckbox(),
-
-                // Spacer
                 const SizedBox(height: AppTheme.lg),
-
-                // Register button
                 _buildRegisterButton(),
-
-                // Spacer
                 const SizedBox(height: AppTheme.xl),
-
-                // Login link
                 _buildLoginLink(),
               ],
             ),
@@ -190,7 +176,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  /// Build header
   Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,7 +188,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
         const SizedBox(height: AppTheme.md),
         Text(
-          'Lengkapi data Anda untuk mendaftar',
+          'Lengkapi data Anda untuk mendaftar sebagai Owner',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppTheme.gray600,
               ),
@@ -212,7 +197,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  /// Build error message
   Widget _buildErrorMessage() {
     return Container(
       padding: const EdgeInsets.all(AppTheme.md),
@@ -223,17 +207,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.error_outline,
-            color: AppTheme.errorColor,
-          ),
+          const Icon(Icons.error_outline, color: AppTheme.errorColor),
           const SizedBox(width: AppTheme.md),
           Expanded(
             child: Text(
               _errorMessage ?? 'Terjadi kesalahan',
-              style: const TextStyle(
-                color: AppTheme.errorColor,
-              ),
+              style: const TextStyle(color: AppTheme.errorColor),
             ),
           ),
         ],
@@ -241,13 +220,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  /// Build form
   Widget _buildForm() {
     return Form(
       key: _formKey,
       child: Column(
         children: [
-          // Full name field
           AppInput(
             label: 'Nama Lengkap',
             controller: _nameController,
@@ -256,19 +233,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             prefixIcon: Icons.person_outline,
             enabled: !_isLoading,
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Nama tidak boleh kosong';
-              }
-              if (value.length < 3) {
-                return 'Nama minimal 3 karakter';
-              }
+              if (value == null || value.isEmpty) return 'Nama tidak boleh kosong';
+              if (value.length < 3) return 'Nama minimal 3 karakter';
               return null;
             },
           ),
-
           const SizedBox(height: AppTheme.lg),
-
-          // Phone field
           AppInput(
             label: 'Nomor Telepon',
             controller: _phoneController,
@@ -277,19 +247,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             prefixIcon: Icons.phone_outlined,
             enabled: !_isLoading,
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Nomor telepon tidak boleh kosong';
-              }
-              if (value.length < 10) {
-                return 'Nomor telepon minimal 10 digit';
-              }
+              if (value == null || value.isEmpty) return 'Nomor telepon tidak boleh kosong';
+              if (value.length < 10) return 'Nomor telepon minimal 10 digit';
               return null;
             },
           ),
-
           const SizedBox(height: AppTheme.lg),
-
-          // Email field
           AppInput(
             label: 'Email',
             controller: _emailController,
@@ -298,20 +261,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             prefixIcon: Icons.email_outlined,
             enabled: !_isLoading,
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Email tidak boleh kosong';
-              }
-              if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-                  .hasMatch(value)) {
+              if (value == null || value.isEmpty) return 'Email tidak boleh kosong';
+              if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(value)) {
                 return 'Format email tidak valid';
               }
               return null;
             },
           ),
-
           const SizedBox(height: AppTheme.lg),
-
-          // Password field
           AppInput(
             label: 'Password',
             controller: _passwordController,
@@ -321,23 +278,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             enabled: !_isLoading,
             suffixIcon: IconButton(
               icon: Icon(
-                _showPassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
+                _showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                 color: AppTheme.gray500,
               ),
-              onPressed: () {
-                setState(() {
-                  _showPassword = !_showPassword;
-                });
-              },
+              onPressed: () => setState(() => _showPassword = !_showPassword),
             ),
             validator: _validatePasswordStrength,
           ),
-
           const SizedBox(height: AppTheme.lg),
-
-          // Confirm password field
           AppInput(
             label: 'Konfirmasi Password',
             controller: _confirmPasswordController,
@@ -347,24 +295,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             enabled: !_isLoading,
             suffixIcon: IconButton(
               icon: Icon(
-                _showConfirmPassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
+                _showConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                 color: AppTheme.gray500,
               ),
-              onPressed: () {
-                setState(() {
-                  _showConfirmPassword = !_showConfirmPassword;
-                });
-              },
+              onPressed: () => setState(() => _showConfirmPassword = !_showConfirmPassword),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Konfirmasi password tidak boleh kosong';
-              }
-              if (value != _passwordController.text) {
-                return 'Password tidak cocok';
-              }
+              if (value == null || value.isEmpty) return 'Konfirmasi password tidak boleh kosong';
+              if (value != _passwordController.text) return 'Password tidak cocok';
               return null;
             },
           ),
@@ -373,38 +311,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  /// Build terms checkbox
   Widget _buildTermsCheckbox() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Checkbox(
           value: _agreeToTerms,
-          onChanged: !_isLoading
-              ? (value) {
-                  setState(() {
-                    _agreeToTerms = value ?? false;
-                  });
-                }
-              : null,
+          onChanged: !_isLoading ? (value) => setState(() => _agreeToTerms = value ?? false) : null,
           fillColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return AppTheme.primaryColor;
-            }
+            if (states.contains(WidgetState.selected)) return AppTheme.primaryColor;
             return Colors.transparent;
           }),
-          side: const BorderSide(
-            color: AppTheme.borderColor,
-          ),
+          side: const BorderSide(color: AppTheme.borderColor),
         ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(top: AppTheme.md),
             child: RichText(
               text: TextSpan(
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.gray600,
-                    ),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.gray600),
                 children: [
                   const TextSpan(text: 'Saya setuju dengan '),
                   TextSpan(
@@ -431,7 +356,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  /// Build register button
   Widget _buildRegisterButton() {
     return SizedBox(
       width: double.infinity,
@@ -440,9 +364,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primaryColor,
           padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
         ),
         child: _isLoading
             ? Row(
@@ -453,9 +375,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.white.withOpacity(0.7),
-                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.7)),
                     ),
                   ),
                   const SizedBox(width: AppTheme.md),
@@ -464,16 +384,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               )
             : const Text(
                 'Daftar Sekarang',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
       ),
     );
   }
 
-  /// Build login link
   Widget _buildLoginLink() {
     return Center(
       child: Wrap(
@@ -481,15 +397,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         children: [
           Text(
             'Sudah punya akun? ',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.gray600,
-                ),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.gray600),
           ),
           TextButton(
             onPressed: !_isLoading ? _handleBackToLogin : null,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm),
-            ),
+            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm)),
             child: Text(
               'Login Sekarang',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
