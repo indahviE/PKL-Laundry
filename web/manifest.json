@@ -1,6 +1,6 @@
 {
-    "name": "pkl_laundry",
-    "short_name": "pkl_laundry",
+    "name": "netwash",
+    "short_name": "netwash",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
