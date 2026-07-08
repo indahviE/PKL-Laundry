@@ -38,7 +38,7 @@ class MyApp extends ConsumerWidget {
 
     // 6. Menggunakan .router agar sistem navigasi aktif
     return MaterialApp.router(
-      title: 'Netwash SaaS Laundry',
+      title: 'Netwash',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/themes/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -33,31 +34,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  /// Handle login action
   void _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    // Trigger login via Riverpod provider
-    await ref.read(loginProvider.notifier).login(
-      email: email,
-      password: password,
-    );
+    try {
+      // Panggil notifier login
+      await ref.read(loginProvider.notifier).login(
+            email: email,
+            password: password,
+          );
 
-    // Get state setelah login
-    final loginState = ref.read(loginProvider);
+      // Setelah await selesai, cek state
+      final loginState = ref.read(loginProvider);
 
-    if (mounted) {
-      if (loginState.isSuccess) {
-        // Navigate ke dashboard
-        context.go('/dashboard');
-      } else if (loginState.error != null) {
-        // Show error dialog
-        _showErrorDialog(loginState.error ?? 'Unknown error');
+      if (mounted) {
+        if (loginState.isSuccess) {
+          context.go('/dashboard');
+        } else if (loginState.error != null) {
+          // Panggil fungsi error handler
+          _handleAuthError(loginState.error!);
+        }
       }
+    } catch (e) {
+      // Error tak terduga
+      _showErrorDialog("Terjadi kesalahan sistem: $e");
     }
+  }
+
+  // Fungsi tambahan untuk memetakan error Firebase
+  void _handleAuthError(String errorCode) {
+    String message = "";
+    switch (errorCode) {
+      case 'user-not-found':
+        message = "Email tidak terdaftar.";
+        break;
+      case 'wrong-password':
+        message = "Password yang Anda masukkan salah.";
+        break;
+      case 'invalid-email':
+        message = "Format email tidak valid.";
+        break;
+      case 'user-disabled':
+        message = "Akun ini telah dinonaktifkan.";
+        break;
+      default:
+        message = errorCode; // Tampilkan pesan asli jika kode tidak dikenal
+    }
+    _showErrorDialog(message);
   }
 
   /// Show error dialog
@@ -118,7 +144,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Email tidak boleh kosong';
                         }
-                        if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+                        if (!RegExp(
+                                r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
                             .hasMatch(value)) {
                           return 'Format email tidak valid';
                         }
