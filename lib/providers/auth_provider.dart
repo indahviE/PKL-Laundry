@@ -40,15 +40,17 @@ class LoginNotifier extends StateNotifier<LoginState> {
   LoginNotifier(this.ref) : super(LoginState());
 
   Future<void> login({required String email, required String password}) async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, error: null);
 
     try {
       final authRepo = ref.read(authRepositoryProvider);
-      
-      // Memanggil fungsi login dari repository Anda
       await authRepo.loginWithEmailAndPassword(email, password); 
       
       state = state.copyWith(isLoading: false, isSuccess: true);
+    } on FirebaseAuthException catch (e) {
+      // Mengirim 'code' bawaan Firebase (misal: 'user-not-found') 
+      // agar pas dionvert di _handleAuthError()
+      state = state.copyWith(isLoading: false, error: e.code);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
