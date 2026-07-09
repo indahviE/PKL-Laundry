@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,11 +13,72 @@ import '../../../screens/main/main_screen.dart';
 import '../../../screens/main/dashboard_screen.dart';
 import '../../screens/onboarding/setup_company_screen.dart';
 import '../../screens/onboarding/choose_plan_screen.dart';
+import '../../repositories/auth_repository.dart';
+
+/// Rute yang termasuk alur autentikasi (belum login).
+const _authRoutes = ['/login', '/register'];
+
+/// Rute yang termasuk alur onboarding (sudah login, belum lengkap datanya).
+const _onboardingRoutes = [
+  '/verify-email',
+  '/setup-profile',
+  '/setup-company',
+  '/choose-plan',
+];
 
 /// Konfigurasi GoRouter untuk navigasi aplikasi.
+/// Dilengkapi `redirect` yang mengecek status onboarding user tiap kali
+/// navigasi terjadi, supaya user tidak bisa "loncat" ke dashboard sebelum
+/// menyelesaikan verifikasi email, setup profile, setup perusahaan, dan
+/// pemilihan paket.
 final goRouterProvider = Provider<GoRouter>((ref) {
+  final authRepo = ref.watch(authRepositoryProvider);
+
   return GoRouter(
     initialLocation: '/login',
+    refreshListenable: GoRouterRefreshStream(authRepo.authStateChanges),
+    redirect: (context, state) async {
+      final user = authRepo.currentUser;
+      final location = state.matchedLocation;
+      final isAuthRoute = _authRoutes.contains(location);
+
+      // Belum login sama sekali -> paksa ke login, kecuali memang
+      // sedang menuju halaman login/register.
+      if (user == null) {
+        return isAuthRoute ? null : '/login';
+      }
+
+      // Sudah login tapi email belum diverifikasi -> paksa ke verify-email.
+      if (!user.emailVerified) {
+        return location == '/verify-email' ? null : '/verify-email';
+      }
+
+      // Ambil progress onboarding dari Firestore.
+      final profile = await authRepo.getUserProfile();
+      final profileCompleted = profile?['profileCompleted'] == true;
+      final companyCompleted = profile?['companyCompleted'] == true;
+      final planChosen = profile?['planChosen'] == true;
+
+      if (!profileCompleted) {
+        return location == '/setup-profile' ? null : '/setup-profile';
+      }
+
+      if (!companyCompleted) {
+        return location == '/setup-company' ? null : '/setup-company';
+      }
+
+      if (!planChosen) {
+        return location == '/choose-plan' ? null : '/choose-plan';
+      }
+
+      // Semua step onboarding sudah lengkap. Kalau user masih nyasar di
+      // halaman auth/onboarding, lempar ke dashboard.
+      if (isAuthRoute || _onboardingRoutes.contains(location)) {
+        return '/dashboard';
+      }
+
+      return null;
+    },
     routes: [
       // Rute Autentikasi (Luar Navigasi Utama)
       GoRoute(
@@ -28,15 +91,27 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'register',
         builder: (context, state) => const RegisterScreen(),
       ),
+
+      // Rute Onboarding (Luar Navigasi Utama, belum butuh bottom nav)
       GoRoute(
-      path: '/verify-email',
-      name: 'verify-email',
-      builder: (context, state) => const VerifyEmailScreen(),
+        path: '/verify-email',
+        name: 'verify-email',
+        builder: (context, state) => const VerifyEmailScreen(),
       ),
       GoRoute(
-      path: '/setup-profile',
-      name: 'setup-profile',
-      builder: (context, state) => const SetupProfileScreen(),
+        path: '/setup-profile',
+        name: 'setup-profile',
+        builder: (context, state) => const SetupProfileScreen(),
+      ),
+      GoRoute(
+        path: '/setup-company',
+        name: 'setup-company',
+        builder: (context, state) => const SetupCompanyScreen(),
+      ),
+      GoRoute(
+        path: '/choose-plan',
+        name: 'choose-plan',
+        builder: (context, state) => const ChoosePlanScreen(),
       ),
 
       // ShellRoute: Menggunakan MainScreen sebagai wadah navigasi (Bottom Navigation Bar)
@@ -74,21 +149,30 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             name: 'settings',
             builder: (context, state) => const SettingsScreen(),
           ),
-          GoRoute(
-            path: '/onboarding/setup-company',
-            name: 'setup-company',
-            builder: (context, state) => const SetupCompanyScreen(),
-          ),
-          GoRoute(
-            path: '/onboarding/choose-plan',
-            name: 'choose-plan',
-            builder: (context, state) => const ChoosePlanScreen(),
-          ),
         ],
       ),
     ],
   );
 });
+
+/// Helper supaya GoRouter otomatis re-evaluate `redirect` setiap kali status
+/// auth Firebase berubah (login/logout), bukan cuma pas navigasi manual.
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen(
+          (_) => notifyListeners(),
+        );
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
 
 /// Halaman Settings & Profil
 class SettingsScreen extends StatelessWidget {

@@ -148,6 +148,66 @@ class AuthRepository {
     return doc.data();
   }
 
+  /// Simpan data perusahaan & tandai step ini selesai.
+  /// Sesuai PRD Step 4: Setup Perusahaan.
+  /// (Disederhanakan: disimpan sebagai field di users/{uid}, bukan
+  /// subcollection terpisah, biar konsisten dengan pola yang sudah jalan)
+  Future<void> saveCompanyData({
+    required String companyName,
+    required String address,
+    required String city,
+    required String phone,
+    String? website,
+    String? description,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('Tidak ada user yang sedang login.');
+    }
+
+    try {
+      await _db.collection('users').doc(user.uid).update({
+        'company': {
+          'name': companyName,
+          'address': address,
+          'city': city,
+          'phone': phone,
+          'website': website,
+          'description': description,
+        },
+        'companyCompleted': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } on FirebaseException catch (e) {
+      throw Exception(e.message ?? 'Gagal menyimpan data perusahaan.');
+    }
+  }
+
+  /// Simpan paket yang dipilih & tandai step ini selesai.
+  /// Sesuai PRD Step 5: Pilih Paket.
+  Future<void> savePlanChoice({
+    required String planName,
+    required bool isYearly,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('Tidak ada user yang sedang login.');
+    }
+
+    try {
+      await _db.collection('users').doc(user.uid).update({
+        'subscription': {
+          'plan': planName,
+          'period': isYearly ? 'yearly' : 'monthly',
+        },
+        'planChosen': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } on FirebaseException catch (e) {
+      throw Exception(e.message ?? 'Gagal menyimpan pilihan paket.');
+    }
+  }
+
   Future<void> signOut() async {
     await _auth.signOut();
   }

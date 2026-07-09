@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import '../../core/themes/app_theme.dart';
+import '../../repositories/auth_repository.dart';
 
 /// Pricing Model
 class PricingPlan {
@@ -22,15 +27,19 @@ class PricingPlan {
   });
 }
 
-/// Choose Plan Screen - Step 5 dari onboarding
-class ChoosePlanScreen extends StatefulWidget {
+/// Choose Plan Screen — Step 5 dari onboarding.
+/// Sesuai PRD section 5.1 User Flow, Step 5: Pilih Paket.
+/// Alur: Setup Perusahaan → [halaman ini] → Pembayaran/Dashboard.
+/// Desain disamakan dengan screen onboarding lain (tanpa AppBar biru
+/// bawaan, warna & font konsisten AppTheme + GoogleFonts.poppins).
+class ChoosePlanScreen extends ConsumerStatefulWidget {
   const ChoosePlanScreen({Key? key}) : super(key: key);
 
   @override
-  State<ChoosePlanScreen> createState() => _ChoosePlanScreenState();
+  ConsumerState<ChoosePlanScreen> createState() => _ChoosePlanScreenState();
 }
 
-class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
+class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   // State
   bool _isYearly = false;
   bool _isLoading = false;
@@ -80,7 +89,7 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
           'API Access',
         ],
         isPopular: true,
-        color: const Color(0xFF5DADE2),
+        color: AppTheme.primaryColor,
       ),
       PricingPlan(
         name: 'Enterprise',
@@ -104,7 +113,10 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
     ];
   }
 
-  /// Handle select plan
+  /// Handle select plan — simpan pilihan paket lalu masuk ke dashboard.
+  /// (Step Pembayaran belum diimplementasikan; untuk MVP, pilih paket
+  /// langsung menandai onboarding selesai. Sambungkan ke halaman
+  /// pembayaran Stripe nanti kalau sudah siap.)
   Future<void> _handleSelectPlan(String planName) async {
     setState(() {
       _selectedPlan = planName;
@@ -112,43 +124,55 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
     });
 
     try {
-      // TODO: Save selected plan ke Firebase
-      // final subscriptionService = ref.read(subscriptionServiceProvider);
-      // await subscriptionService.selectPlan(
-      //   planName: planName,
-      //   period: _isYearly ? 'yearly' : 'monthly',
-      // );
+      final router = GoRouter.of(context);
+      final authRepo = ref.read(authRepositoryProvider);
 
-      // TODO: Navigate ke payment screen
-      // context.go('/onboarding/payment', extra: {
-      //   'planName': planName,
-      //   'isYearly': _isYearly,
-      // });
-
-      // Simulasi delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      await authRepo.savePlanChoice(
+        planName: planName,
+        isYearly: _isYearly,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Paket $planName dipilih! (Testing mode)'),
-            backgroundColor: const Color(0xFF51CF66),
+            content: Text(
+              'Paket $planName dipilih!',
+              style: GoogleFonts.poppins(fontSize: 13),
+            ),
+            backgroundColor: AppTheme.successColor,
           ),
         );
       }
+
+      // TODO: Ganti ke halaman pembayaran Stripe kalau sudah siap:
+      // router.go('/onboarding/payment', extra: {...});
+      router.go('/dashboard');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().replaceAll('Exception: ', ''),
+              style: GoogleFonts.poppins(fontSize: 13),
+            ),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  void _handleBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/setup-company');
     }
   }
 
@@ -172,134 +196,133 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
-      appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(isMobile ? AppTheme.lg : AppTheme.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Progress Indicator
-              _buildProgressIndicator(context),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // Header
-              _buildHeader(context),
-
-              const SizedBox(height: AppTheme.xl),
-
-              // Period Toggle
-              _buildPeriodToggle(context),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // Pricing Cards
-              _buildPricingCards(context, isMobile),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // FAQ Section
-              _buildFAQSection(context),
-
-              const SizedBox(height: AppTheme.lg),
-            ],
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 20 : 40,
+            vertical: 24,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 960),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildTopRow(),
+                  const SizedBox(height: 20),
+                  _buildStepIndicator(),
+                  const SizedBox(height: 28),
+                  _buildHeader(),
+                  const SizedBox(height: 28),
+                  Center(child: _buildPeriodToggle()),
+                  const SizedBox(height: 28),
+                  _buildPricingCards(isMobile),
+                  const SizedBox(height: 36),
+                  _buildFAQSection(),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  /// Build App Bar
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: const Text('Pilih Paket'),
-      elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: !_isLoading ? () => Navigator.pop(context) : null,
-      ),
-    );
-  }
-
-  /// Build Progress Indicator
-  Widget _buildProgressIndicator(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildTopRow() {
+    return Row(
       children: [
-        // Progress bar
-        Row(
-          children: [
-            Expanded(
-              flex: 5,
-              child: Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF5DADE2),
-                  borderRadius: BorderRadius.circular(3),
-                ),
+        Material(
+          color: AppTheme.cardColor,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: !_isLoading ? _handleBack : null,
+            child: const Padding(
+              padding: EdgeInsets.all(8),
+              child: Icon(
+                Icons.arrow_back_rounded,
+                color: AppTheme.textPrimary,
+                size: 20,
               ),
             ),
-            const SizedBox(width: AppTheme.sm),
-            Expanded(
-              flex: 2,
-              child: Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppTheme.md),
-
-        // Step indicator
-        Text(
-          'Step 5 dari 7',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF5DADE2),
-                fontWeight: FontWeight.w600,
-              ),
+          ),
         ),
       ],
     );
   }
 
-  /// Build Header
-  Widget _buildHeader(BuildContext context) {
+  /// Step indicator — 7 langkah sesuai PRD. Posisi saat ini: 5.
+  Widget _buildStepIndicator() {
+    const totalSteps = 7;
+    const currentStep = 5;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(totalSteps * 2 - 1, (index) {
+        if (index.isOdd) {
+          final stepBefore = (index + 1) ~/ 2;
+          final isDone = stepBefore < currentStep;
+          return Container(
+            width: 16,
+            height: 2,
+            color: isDone ? AppTheme.primaryColor : AppTheme.borderColor,
+          );
+        }
+        final step = (index ~/ 2) + 1;
+        final isActive = step == currentStep;
+        final isDone = step < currentStep;
+        return Container(
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(
+            color: (isActive || isDone)
+                ? AppTheme.primaryColor
+                : AppTheme.borderColor,
+            shape: BoxShape.circle,
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildHeader() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           'Pilih Paket yang Sesuai',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.darkColor,
-              ),
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
         ),
-        const SizedBox(height: AppTheme.md),
+        const SizedBox(height: 8),
         Text(
           'Setiap paket dirancang untuk memenuhi kebutuhan bisnis laundry Anda',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.gray600,
-              ),
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            fontSize: 13.5,
+            color: AppTheme.textSecondary,
+          ),
         ),
       ],
     );
   }
 
-  /// Build Period Toggle
-  Widget _buildPeriodToggle(BuildContext context) {
+  Widget _buildPeriodToggle() {
     return Container(
+      width: 280,
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.borderColor, width: 1),
       ),
-      padding: const EdgeInsets.all(AppTheme.sm),
+      padding: const EdgeInsets.all(4),
       child: Row(
         children: [
           Expanded(
@@ -309,9 +332,9 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
               onTap: () => setState(() => _isYearly = false),
             ),
           ),
-          const SizedBox(width: AppTheme.sm),
           Expanded(
             child: Stack(
+              clipBehavior: Clip.none,
               children: [
                 _buildToggleButton(
                   label: 'Tahunan',
@@ -320,22 +343,22 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
                 ),
                 if (_isYearly)
                   Positioned(
-                    top: -12,
-                    right: 8,
+                    top: -10,
+                    right: 4,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: AppTheme.sm,
+                        horizontal: 8,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF51CF66),
-                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                        color: AppTheme.successColor,
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         'Hemat ${_getDiscountPercentage()}%',
-                        style: const TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Colors.white,
-                          fontSize: 10,
+                          fontSize: 9.5,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -349,7 +372,6 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
     );
   }
 
-  /// Build Toggle Button
   Widget _buildToggleButton({
     required String label,
     required bool isSelected,
@@ -358,72 +380,98 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
           label,
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? const Color(0xFF5DADE2) : AppTheme.gray600,
+          style: GoogleFonts.poppins(
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            fontSize: 13,
+            color: isSelected ? Colors.white : AppTheme.textSecondary,
           ),
         ),
       ),
     );
   }
 
-  /// Build Pricing Cards
-  Widget _buildPricingCards(BuildContext context, bool isMobile) {
-    return Column(
-      children: List.generate(
-        _plans.length,
-        (index) => Column(
-          children: [
-            _PricingCard(
+  Widget _buildPricingCards(bool isMobile) {
+    if (isMobile) {
+      return Column(
+        children: List.generate(
+          _plans.length,
+          (index) => Padding(
+            padding: EdgeInsets.only(bottom: index < _plans.length - 1 ? 16 : 0),
+            child: _PricingCard(
               plan: _plans[index],
               price: _getDisplayPrice(_plans[index]),
               period: _isYearly ? 'tahun' : 'bulan',
               isSelected: _selectedPlan == _plans[index].name,
               isLoading: _isLoading,
+              formatCurrency: _formatCurrency,
               onSelect: () => _handleSelectPlan(_plans[index].name),
             ),
-            if (index < _plans.length - 1)
-              const SizedBox(height: AppTheme.lg),
-          ],
+          ),
+        ),
+      );
+    }
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: List.generate(
+          _plans.length,
+          (index) => Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: index < _plans.length - 1 ? 16 : 0,
+              ),
+              child: _PricingCard(
+                plan: _plans[index],
+                price: _getDisplayPrice(_plans[index]),
+                period: _isYearly ? 'tahun' : 'bulan',
+                isSelected: _selectedPlan == _plans[index].name,
+                isLoading: _isLoading,
+                formatCurrency: _formatCurrency,
+                onSelect: () => _handleSelectPlan(_plans[index].name),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  /// Build FAQ Section
-  Widget _buildFAQSection(BuildContext context) {
+  Widget _buildFAQSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(height: AppTheme.xxl),
-        const SizedBox(height: AppTheme.lg),
+        Divider(color: AppTheme.borderColor, height: 1),
+        const SizedBox(height: 24),
         Text(
           'Pertanyaan Umum',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
         ),
-        const SizedBox(height: AppTheme.lg),
+        const SizedBox(height: 16),
         _FAQItem(
           question: 'Bisakah saya mengubah paket setelah memilih?',
           answer:
               'Ya, Anda dapat meningkatkan, menurunkan, atau membatalkan paket kapan saja dari dashboard pengaturan.',
         ),
-        const SizedBox(height: AppTheme.lg),
+        const SizedBox(height: 12),
         _FAQItem(
           question: 'Apakah ada uji coba gratis?',
           answer:
               'Ya, Anda mendapatkan akses 14 hari gratis untuk semua paket sebelum pembayaran pertama.',
         ),
-        const SizedBox(height: AppTheme.lg),
+        const SizedBox(height: 12),
         _FAQItem(
           question: 'Bagaimana dengan dukungan pelanggan?',
           answer:
@@ -445,6 +493,7 @@ class _PricingCard extends StatelessWidget {
   final String period;
   final bool isSelected;
   final bool isLoading;
+  final String Function(double) formatCurrency;
   final VoidCallback onSelect;
 
   const _PricingCard({
@@ -453,75 +502,75 @@ class _PricingCard extends StatelessWidget {
     required this.period,
     required this.isSelected,
     required this.isLoading,
+    required this.formatCurrency,
     required this.onSelect,
   });
-
-  String _formatCurrency(double amount) {
-    return 'Rp ${(amount / 1000).toStringAsFixed(0)}K';
-  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppTheme.xl),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isSelected ? plan.color : Colors.grey.shade200,
+          color: isSelected ? plan.color : AppTheme.borderColor,
           width: isSelected ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
             color: isSelected
                 ? plan.color.withOpacity(0.15)
-                : Colors.black.withOpacity(0.05),
-            blurRadius: isSelected ? 16 : 8,
-            offset: const Offset(0, 4),
+                : Colors.black.withOpacity(0.03),
+            blurRadius: isSelected ? 20 : 10,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Header with popular badge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    plan.name,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      plan.name,
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppTheme.sm),
-                  Text(
-                    plan.description,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
+                    const SizedBox(height: 4),
+                    Text(
+                      plan.description,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               if (plan.isPopular)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.md,
-                    vertical: AppTheme.sm,
+                    horizontal: 10,
+                    vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: plan.color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    color: plan.color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     'Populer',
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: plan.color,
                     ),
@@ -529,53 +578,44 @@ class _PricingCard extends StatelessWidget {
                 ),
             ],
           ),
-
-          const SizedBox(height: AppTheme.xl),
-
-          // Price
+          const SizedBox(height: 20),
           RichText(
             text: TextSpan(
               children: [
                 TextSpan(
-                  text: _formatCurrency(price),
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
+                  text: formatCurrency(price),
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
                     color: plan.color,
                   ),
                 ),
                 TextSpan(
                   text: '/$period',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
                   ),
                 ),
               ],
             ),
           ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Features
+          const SizedBox(height: 18),
           ...List.generate(
             plan.features.length,
             (index) => Padding(
-              padding: const EdgeInsets.only(bottom: AppTheme.md),
+              padding: const EdgeInsets.only(bottom: 10),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: plan.color,
-                    size: 20,
-                  ),
-                  const SizedBox(width: AppTheme.md),
+                  Icon(Icons.check_circle_rounded, color: plan.color, size: 18),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       plan.features[index],
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppTheme.darkColor,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.5,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
                   ),
@@ -583,26 +623,26 @@ class _PricingCard extends StatelessWidget {
               ),
             ),
           ),
-
-          const SizedBox(height: AppTheme.xl),
-
-          // Select Button
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
+            height: 46,
             child: ElevatedButton(
               onPressed: !isLoading ? onSelect : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: isSelected ? plan.color : Colors.grey.shade200,
-                foregroundColor: isSelected ? Colors.white : AppTheme.darkColor,
-                padding: const EdgeInsets.symmetric(vertical: AppTheme.lg),
+                backgroundColor:
+                    isSelected ? plan.color : AppTheme.backgroundColor,
+                foregroundColor:
+                    isSelected ? Colors.white : AppTheme.textPrimary,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                 ),
               ),
               child: isLoading && isSelected
                   ? const SizedBox(
-                      height: 20,
-                      width: 20,
+                      height: 18,
+                      width: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(
@@ -612,9 +652,9 @@ class _PricingCard extends StatelessWidget {
                     )
                   : Text(
                       isSelected ? 'Paket Dipilih' : 'Pilih Paket',
-                      style: const TextStyle(
+                      style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
-                        fontSize: 14,
+                        fontSize: 13.5,
                       ),
                     ),
             ),
@@ -640,41 +680,41 @@ class _FAQItem extends StatefulWidget {
 }
 
 class _FAQItemState extends State<_FAQItem> {
-  bool _isExpanded = false;
-
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: Colors.grey.shade200),
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.borderColor),
       ),
-      child: ExpansionTile(
-        onExpansionChanged: (value) {
-          setState(() => _isExpanded = value);
-        },
-        title: Text(
-          widget.question,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            color: AppTheme.darkColor,
-          ),
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppTheme.lg),
-            child: Text(
-              widget.answer,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
-                height: 1.6,
-              ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          title: Text(
+            widget.question,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 13.5,
+              color: AppTheme.textPrimary,
             ),
           ),
-        ],
+          iconColor: AppTheme.primaryColor,
+          collapsedIconColor: AppTheme.textSecondary,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Text(
+                widget.answer,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.5,
+                  color: AppTheme.textSecondary,
+                  height: 1.6,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -103,7 +103,7 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
 
       // Sesuai alur PRD Step 4: Setup Perusahaan.
       // Sesuaikan nama route ini jika berbeda di router kamu.
-      router.go('/setup-company');
+      router.go('/onboarding/setup-company');
     } catch (e) {
       if (mounted) {
         setState(() {

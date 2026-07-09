@@ -1,16 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import '../../core/themes/app_theme.dart';
+import '../../repositories/auth_repository.dart';
 import '../../widgets/common/app_input.dart';
 
-/// Setup Company Screen - Step 4 dari onboarding
-class SetupCompanyScreen extends StatefulWidget {
+/// Setup Company Screen — Step 4 dari onboarding.
+/// Sesuai PRD section 5.1 User Flow, Step 4: Setup Perusahaan.
+/// Alur: Setup Profile → [halaman ini] → Pilih Paket.
+/// Data disimpan lewat AuthRepository.saveCompanyData() ke Firestore
+/// (users/{uid}.company + companyCompleted: true), supaya konsisten
+/// dengan pola yang dipakai ChoosePlanScreen (savePlanChoice) dan
+/// dikenali oleh redirect logic di routes.dart.
+/// Desain disamakan dengan SetupProfileScreen & VerifyEmailScreen
+/// (card putih polos, tanpa gradient, konsisten AppTheme).
+class SetupCompanyScreen extends ConsumerStatefulWidget {
   const SetupCompanyScreen({Key? key}) : super(key: key);
 
   @override
-  State<SetupCompanyScreen> createState() => _SetupCompanyScreenState();
+  ConsumerState<SetupCompanyScreen> createState() =>
+      _SetupCompanyScreenState();
 }
 
-class _SetupCompanyScreenState extends State<SetupCompanyScreen> {
+class _SetupCompanyScreenState extends ConsumerState<SetupCompanyScreen> {
   // Controllers
   late TextEditingController _companyNameController;
   late TextEditingController _addressController;
@@ -60,36 +74,39 @@ class _SetupCompanyScreenState extends State<SetupCompanyScreen> {
     });
 
     try {
-      // TODO: Connect ke Firebase atau backend API
-      // Simulasi save company process
-      await Future.delayed(const Duration(seconds: 2));
+      final router = GoRouter.of(context);
+      final authRepo = ref.read(authRepositoryProvider);
 
-      // TODO: Uncomment ini ketika Firebase setup siap
-      // final companyService = ref.read(companyServiceProvider);
-      // await companyService.createCompany(
-      //   name: _companyNameController.text,
-      //   address: _addressController.text,
-      //   city: _cityController.text,
-      //   phone: _phoneController.text,
-      //   website: _websiteController.text,
-      //   description: _descriptionController.text,
-      // );
+      await authRepo.saveCompanyData(
+        companyName: _companyNameController.text.trim(),
+        address: _addressController.text.trim(),
+        city: _cityController.text.trim(),
+        phone: _phoneController.text.trim(),
+        website: _websiteController.text.trim().isEmpty
+            ? null
+            : _websiteController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+      );
 
-      // TODO: Navigate ke choose plan screen
-      // context.go('/onboarding/choose-plan');
-
-      // Untuk sekarang, show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Data perusahaan berhasil disimpan! (Testing mode)'),
-            backgroundColor: Color(0xFF51CF66),
+          SnackBar(
+            content: Text(
+              'Data perusahaan berhasil disimpan!',
+              style: GoogleFonts.poppins(fontSize: 13),
+            ),
+            backgroundColor: AppTheme.successColor,
           ),
         );
       }
+
+      // Lanjut ke step 5: Pilih Paket, sesuai PRD 5.1
+      router.go('/choose-plan');
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
       if (mounted) {
@@ -100,177 +117,189 @@ class _SetupCompanyScreenState extends State<SetupCompanyScreen> {
     }
   }
 
+  void _handleBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/setup-profile');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
     return Scaffold(
-      appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(isMobile ? AppTheme.lg : AppTheme.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Progress Indicator
-              _buildProgressIndicator(context),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // Header
-              _buildHeader(context),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // Error Message
-              if (_errorMessage != null) ...[
-                _buildErrorMessage(context),
-                const SizedBox(height: AppTheme.lg),
-              ],
-
-              // Form
-              _buildForm(context),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // Save Button
-              _buildSaveButton(context),
-
-              const SizedBox(height: AppTheme.lg),
-
-              // Skip Link
-              _buildSkipLink(context),
-
-              const SizedBox(height: AppTheme.lg),
-            ],
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: _buildCard(),
+            ),
           ),
         ),
       ),
     );
   }
 
-  /// Build App Bar
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: const Text('Setup Perusahaan'),
-      elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: !_isLoading ? () => Navigator.pop(context) : null,
+  Widget _buildCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.08),
+            blurRadius: 32,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildTopRow(),
+          const SizedBox(height: 20),
+          _buildStepIndicator(),
+          const SizedBox(height: 24),
+          _buildHeader(),
+          const SizedBox(height: 28),
+          if (_errorMessage != null) ...[
+            _buildErrorMessage(),
+            const SizedBox(height: 20),
+          ],
+          _buildForm(),
+          const SizedBox(height: 28),
+          _buildSaveButton(),
+          const SizedBox(height: 16),
+          _buildBackLink(),
+        ],
       ),
     );
   }
 
-  /// Build Progress Indicator
-  Widget _buildProgressIndicator(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildTopRow() {
+    return Row(
       children: [
-        // Progress bar
-        Row(
-          children: [
-            Expanded(
-              flex: 4,
-              child: Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF5DADE2),
-                  borderRadius: BorderRadius.circular(3),
-                ),
+        Material(
+          color: AppTheme.backgroundColor,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: !_isLoading ? _handleBack : null,
+            child: const Padding(
+              padding: EdgeInsets.all(8),
+              child: Icon(
+                Icons.arrow_back_rounded,
+                color: AppTheme.textPrimary,
+                size: 20,
               ),
             ),
-            const SizedBox(width: AppTheme.sm),
-            Expanded(
-              flex: 3,
-              child: Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppTheme.md),
-
-        // Step indicator
-        Text(
-          'Step 4 dari 7',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Color(0xFF5DADE2),
-                fontWeight: FontWeight.w600,
-              ),
+          ),
         ),
       ],
     );
   }
 
-  /// Build Header
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Icon
-        Container(
-          padding: const EdgeInsets.all(AppTheme.lg),
+  /// Step indicator — 7 langkah sesuai PRD (Register, Verifikasi, Profile,
+  /// Perusahaan, Pilih Paket, Pembayaran, Setup Awal). Posisi saat ini: 4.
+  Widget _buildStepIndicator() {
+    const totalSteps = 7;
+    const currentStep = 4;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(totalSteps * 2 - 1, (index) {
+        if (index.isOdd) {
+          final stepBefore = (index + 1) ~/ 2;
+          final isDone = stepBefore < currentStep;
+          return Container(
+            width: 16,
+            height: 2,
+            color: isDone ? AppTheme.primaryColor : AppTheme.borderColor,
+          );
+        }
+        final step = (index ~/ 2) + 1;
+        final isActive = step == currentStep;
+        final isDone = step < currentStep;
+        return Container(
+          width: 9,
+          height: 9,
           decoration: BoxDecoration(
-            color: const Color(0xFF5DADE2).withOpacity(0.15),
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            color: (isActive || isDone)
+                ? AppTheme.primaryColor
+                : AppTheme.borderColor,
+            shape: BoxShape.circle,
           ),
-          child: const Icon(
+        );
+      }),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
             Icons.business_outlined,
-            color: Color(0xFF5DADE2),
-            size: 36,
+            color: AppTheme.primaryColor,
+            size: 34,
           ),
         ),
-        const SizedBox(height: AppTheme.xl),
-
-        // Title
+        const SizedBox(height: 20),
         Text(
           'Data Perusahaan',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.darkColor,
-              ),
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
         ),
-        const SizedBox(height: AppTheme.md),
-
-        // Subtitle
+        const SizedBox(height: 8),
         Text(
           'Lengkapi informasi perusahaan laundry Anda',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.gray600,
-              ),
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            fontSize: 13.5,
+            color: AppTheme.textSecondary,
+          ),
         ),
       ],
     );
   }
 
-  /// Build Error Message
-  Widget _buildErrorMessage(BuildContext context) {
+  Widget _buildErrorMessage() {
     return Container(
-      padding: const EdgeInsets.all(AppTheme.md),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.errorColor.withOpacity(0.1),
-        border: Border.all(color: AppTheme.errorColor),
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        color: AppTheme.errorColor.withOpacity(0.08),
+        border: Border.all(color: AppTheme.errorColor.withOpacity(0.3), width: 1),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.error_outline,
-            color: AppTheme.errorColor,
-          ),
-          const SizedBox(width: AppTheme.md),
+          const Icon(Icons.error_outline_rounded,
+              color: AppTheme.errorColor, size: 18),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               _errorMessage ?? 'Terjadi kesalahan',
-              style: const TextStyle(
+              style: GoogleFonts.poppins(
                 color: AppTheme.errorColor,
-                fontSize: 13,
+                fontSize: 12.5,
               ),
             ),
           ),
@@ -279,13 +308,11 @@ class _SetupCompanyScreenState extends State<SetupCompanyScreen> {
     );
   }
 
-  /// Build Form
-  Widget _buildForm(BuildContext context) {
+  Widget _buildForm() {
     return Form(
       key: _formKey,
       child: Column(
         children: [
-          // Company Name Field
           AppInput(
             label: 'Nama Perusahaan *',
             controller: _companyNameController,
@@ -302,10 +329,7 @@ class _SetupCompanyScreenState extends State<SetupCompanyScreen> {
               return null;
             },
           ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Address Field
+          const SizedBox(height: 20),
           AppInput(
             label: 'Alamat Lengkap *',
             controller: _addressController,
@@ -322,10 +346,7 @@ class _SetupCompanyScreenState extends State<SetupCompanyScreen> {
               return null;
             },
           ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // City Field
+          const SizedBox(height: 20),
           AppInput(
             label: 'Kota/Kabupaten *',
             controller: _cityController,
@@ -339,10 +360,7 @@ class _SetupCompanyScreenState extends State<SetupCompanyScreen> {
               return null;
             },
           ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Phone Field
+          const SizedBox(height: 20),
           AppInput(
             label: 'Nomor Telepon *',
             controller: _phoneController,
@@ -360,10 +378,7 @@ class _SetupCompanyScreenState extends State<SetupCompanyScreen> {
               return null;
             },
           ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Website Field (Optional)
+          const SizedBox(height: 20),
           AppInput(
             label: 'Website (Optional)',
             controller: _websiteController,
@@ -373,18 +388,16 @@ class _SetupCompanyScreenState extends State<SetupCompanyScreen> {
             enabled: !_isLoading,
             validator: (value) {
               if (value != null && value.isNotEmpty) {
-                if (!RegExp(r'^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$')
-                    .hasMatch(value)) {
+                if (!RegExp(
+                  r'^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$',
+                ).hasMatch(value)) {
                   return 'Format website tidak valid';
                 }
               }
               return null;
             },
           ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Description Field (Optional)
+          const SizedBox(height: 20),
           AppInput(
             label: 'Deskripsi Singkat (Optional)',
             controller: _descriptionController,
@@ -406,15 +419,17 @@ class _SetupCompanyScreenState extends State<SetupCompanyScreen> {
     );
   }
 
-  /// Build Save Button
-  Widget _buildSaveButton(BuildContext context) {
+  Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
+      height: 52,
       child: ElevatedButton(
         onPressed: !_isLoading ? _handleSaveCompany : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5DADE2),
-          padding: const EdgeInsets.symmetric(vertical: AppTheme.lg),
+          backgroundColor: AppTheme.primaryColor,
+          disabledBackgroundColor: AppTheme.primaryColor.withOpacity(0.5),
+          foregroundColor: Colors.white,
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           ),
@@ -423,48 +438,56 @@ class _SetupCompanyScreenState extends State<SetupCompanyScreen> {
             ? Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.white.withOpacity(0.7),
-                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   ),
-                  const SizedBox(width: AppTheme.md),
-                  const Text(
+                  const SizedBox(width: 12),
+                  Text(
                     'Sedang Menyimpan...',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      fontSize: 16,
                     ),
                   ),
                 ],
               )
-            : const Text(
-                'Lanjut ke Pilih Paket',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Lanjut ke Pilih Paket',
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward_rounded, size: 18),
+                ],
               ),
       ),
     );
   }
 
-  /// Build Skip Link
-  Widget _buildSkipLink(BuildContext context) {
+  Widget _buildBackLink() {
     return Center(
       child: TextButton(
-        onPressed: !_isLoading ? () => Navigator.pop(context) : null,
+        onPressed: !_isLoading ? _handleBack : null,
+        style: TextButton.styleFrom(
+          splashFactory: NoSplash.splashFactory,
+        ),
         child: Text(
           'Kembali',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Color(0xFF5DADE2),
-                fontWeight: FontWeight.w600,
-              ),
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textSecondary,
+          ),
         ),
       ),
     );
