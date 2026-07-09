@@ -89,7 +89,11 @@ class _MainScreenState extends State<MainScreen> {
       child: WillPopScope(
         onWillPop: () => _onWillPop(context),
         child: Scaffold(
-          extendBody: true,
+          // extendBody dimatikan: aktifkan lagi hanya jika CustomBottomNavigation
+          // memang dibuat transparan/melayang. Kalau nav bar solid (background putih
+          // penuh), extendBody:true akan membuat konten paling bawah tergambar di
+          // belakang nav bar sehingga terlihat seperti "tidak bisa discroll sampai habis".
+          extendBody: false,
           // Body langsung menampilkan halaman aktif yang dikirim oleh GoRouter,
           // dibungkus AnimatedSwitcher agar transisi antar tab terasa halus.
           body: AnimatedSwitcher(

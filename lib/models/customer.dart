@@ -1,5 +1,5 @@
 import 'base_model.dart';
-
+ 
 class Customer extends BaseModel {
   final String companyId;
   final String customerCode;
@@ -17,7 +17,7 @@ class Customer extends BaseModel {
   final int loyaltyPoints;
   final String notes;
   final bool isActive;
-
+ 
   Customer({
     required super.id,
     required super.createdAt,
@@ -39,12 +39,12 @@ class Customer extends BaseModel {
     required this.notes,
     required this.isActive,
   });
-
+ 
   factory Customer.fromJson(Map<String, dynamic> json, String documentId) {
     return Customer(
       id: documentId,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : DateTime.now(),
+      createdAt: dateTimeFromSnapshot(json['created_at']),
+      updatedAt: dateTimeFromSnapshot(json['updated_at']),
       companyId: json['company_id'] ?? '',
       customerCode: json['customer_code'] ?? '',
       fullName: json['full_name'] ?? '',
@@ -63,7 +63,8 @@ class Customer extends BaseModel {
       isActive: json['is_active'] ?? true,
     );
   }
-
+ 
+  @override
   Map<String, dynamic> toJson() {
     return {
       'company_id': companyId,
@@ -82,8 +83,9 @@ class Customer extends BaseModel {
       'loyalty_points': loyaltyPoints,
       'notes': notes,
       'is_active': isActive,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': createdAt,
+      'updated_at': updatedAt,
     };
   }
 }
+ 

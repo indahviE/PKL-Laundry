@@ -61,3 +61,8 @@ class LoginNotifier extends StateNotifier<LoginState> {
 final loginProvider = StateNotifierProvider<LoginNotifier, LoginState>((ref) {
   return LoginNotifier(ref);
 });
+
+final currentUserIdProvider = Provider<String>((ref) {
+  final authState = ref.watch(authStateProvider).value;
+  return authState?.uid ?? '';
+});
