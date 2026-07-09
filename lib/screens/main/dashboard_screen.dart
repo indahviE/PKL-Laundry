@@ -1,37 +1,39 @@
 import 'package:flutter/material.dart';
 import '../../core/themes/app_theme.dart';
 
-/// Dashboard Screen
+/// Dashboard Screen - Sesuai logo NetWash, design modern & responsive
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Scaffold(
       appBar: _buildAppBar(context),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(AppTheme.lg),
+          padding: EdgeInsets.all(isMobile ? AppTheme.lg : AppTheme.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Greeting Card
               _buildGreetingCard(context),
 
-              const SizedBox(height: AppTheme.xxl),
+              SizedBox(height: isMobile ? AppTheme.xl : AppTheme.xxl),
 
               // Stats Section
-              _buildStatsSection(context),
+              _buildStatsSection(context, isMobile),
 
-              const SizedBox(height: AppTheme.xxl),
+              SizedBox(height: isMobile ? AppTheme.xl : AppTheme.xxl),
 
               // Quick Actions
-              _buildQuickActions(context),
+              _buildQuickActions(context, isMobile),
 
-              const SizedBox(height: AppTheme.xxl),
+              SizedBox(height: isMobile ? AppTheme.xl : AppTheme.xxl),
 
               // Recent Orders
-              _buildRecentOrdersSection(context),
+              _buildRecentOrdersSection(context, isMobile),
 
               const SizedBox(height: AppTheme.lg),
             ],
@@ -44,8 +46,16 @@ class DashboardScreen extends StatelessWidget {
   /// Build App Bar
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
-      title: const Text('Dashboard'),
+      title: const Text(
+        'Dashboard',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 24,
+        ),
+      ),
       elevation: 0,
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
@@ -59,7 +69,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  /// Build Greeting Card
+  /// Build Greeting Card - Sesuai warna logo NetWash
   Widget _buildGreetingCard(BuildContext context) {
     final hour = DateTime.now().hour;
     final greeting = hour < 12
@@ -69,34 +79,65 @@ class DashboardScreen extends StatelessWidget {
             : 'Selamat Malam';
 
     return Container(
-      padding: const EdgeInsets.all(AppTheme.lg),
+      padding: const EdgeInsets.all(AppTheme.xl),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.primaryColor,
-            AppTheme.secondaryColor,
+            const Color(0xFF5DADE2), // Light blue sesuai logo NetWash
+            const Color(0xFF3498DB), // Slightly darker blue
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF5DADE2).withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            greeting,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      greeting,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: AppTheme.sm),
+                    Text(
+                      'Kelola bisnis laundry Anda dengan mudah',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white70,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(AppTheme.md),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
+                child: const Icon(
+                  Icons.local_laundry_service,
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  size: 32,
                 ),
-          ),
-          const SizedBox(height: AppTheme.md),
-          Text(
-            'Kelola bisnis laundry Anda dengan mudah',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white70,
-                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppTheme.lg),
           Container(
@@ -108,11 +149,23 @@ class DashboardScreen extends StatelessWidget {
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             ),
-            child: Text(
-              'Anda memiliki 3 pesanan baru hari ini',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white,
-                  ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.info_outlined,
+                  color: Colors.white,
+                  size: 16,
+                ),
+                const SizedBox(width: AppTheme.sm),
+                Text(
+                  'Anda memiliki 3 pesanan baru hari ini',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+              ],
             ),
           ),
         ],
@@ -121,7 +174,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   /// Build Stats Section
-  Widget _buildStatsSection(BuildContext context) {
+  Widget _buildStatsSection(BuildContext context, bool isMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -133,54 +186,41 @@ class DashboardScreen extends StatelessWidget {
         ),
         const SizedBox(height: AppTheme.lg),
 
-        // First Row
-        Row(
+        // Stats Grid
+        GridView.count(
+          crossAxisCount: isMobile ? 2 : 4,
+          crossAxisSpacing: AppTheme.lg,
+          mainAxisSpacing: AppTheme.lg,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           children: [
-            Expanded(
-              child: _StatCard(
-                icon: Icons.receipt_outlined,
-                iconColor: const Color(0xFF6C63FF),
-                title: 'Pesanan',
-                value: '12',
-                subtitle: 'pesanan baru',
-              ),
+            _StatCard(
+              icon: Icons.receipt_outlined,
+              iconColor: const Color(0xFF5DADE2),
+              title: 'Pesanan',
+              value: '12',
+              subtitle: 'pesanan baru',
             ),
-            const SizedBox(width: AppTheme.lg),
-            Expanded(
-              child: _StatCard(
-                icon: Icons.people_outlined,
-                iconColor: const Color(0xFF00D4FF),
-                title: 'Pelanggan',
-                value: '245',
-                subtitle: 'total pelanggan',
-              ),
+            _StatCard(
+              icon: Icons.people_outlined,
+              iconColor: const Color(0xFF3498DB),
+              title: 'Pelanggan',
+              value: '245',
+              subtitle: 'total pelanggan',
             ),
-          ],
-        ),
-
-        const SizedBox(height: AppTheme.lg),
-
-        // Second Row
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                icon: Icons.trending_up,
-                iconColor: const Color(0xFF51CF66),
-                title: 'Revenue',
-                value: 'Rp 5.2M',
-                subtitle: 'bulan ini',
-              ),
+            _StatCard(
+              icon: Icons.trending_up,
+              iconColor: const Color(0xFF51CF66),
+              title: 'Revenue',
+              value: 'Rp 5.2M',
+              subtitle: 'bulan ini',
             ),
-            const SizedBox(width: AppTheme.lg),
-            Expanded(
-              child: _StatCard(
-                icon: Icons.badge_outlined,
-                iconColor: const Color(0xFFFFA500),
-                title: 'Karyawan',
-                value: '8',
-                subtitle: 'total staff',
-              ),
+            _StatCard(
+              icon: Icons.badge_outlined,
+              iconColor: const Color(0xFFFFA500),
+              title: 'Karyawan',
+              value: '8',
+              subtitle: 'total staff',
             ),
           ],
         ),
@@ -189,7 +229,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   /// Build Quick Actions
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildQuickActions(BuildContext context, bool isMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -200,46 +240,36 @@ class DashboardScreen extends StatelessWidget {
               ),
         ),
         const SizedBox(height: AppTheme.lg),
-        Row(
+        GridView.count(
+          crossAxisCount: isMobile ? 2 : 4,
+          crossAxisSpacing: AppTheme.lg,
+          mainAxisSpacing: AppTheme.lg,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           children: [
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.add_circle_outline,
-                label: 'Pesanan Baru',
-                onPressed: () {},
-                color: AppTheme.primaryColor,
-              ),
+            _QuickActionButton(
+              icon: Icons.add_circle_outline,
+              label: 'Pesanan Baru',
+              onPressed: () {},
+              color: const Color(0xFF5DADE2),
             ),
-            const SizedBox(width: AppTheme.lg),
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.person_add_outlined,
-                label: 'Pelanggan Baru',
-                onPressed: () {},
-                color: AppTheme.secondaryColor,
-              ),
+            _QuickActionButton(
+              icon: Icons.person_add_outlined,
+              label: 'Pelanggan Baru',
+              onPressed: () {},
+              color: const Color(0xFF3498DB),
             ),
-          ],
-        ),
-        const SizedBox(height: AppTheme.lg),
-        Row(
-          children: [
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.assignment_outlined,
-                label: 'Laporan',
-                onPressed: () {},
-                color: AppTheme.warningColor,
-              ),
+            _QuickActionButton(
+              icon: Icons.assignment_outlined,
+              label: 'Laporan',
+              onPressed: () {},
+              color: const Color(0xFF51CF66),
             ),
-            const SizedBox(width: AppTheme.lg),
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.settings_outlined,
-                label: 'Pengaturan',
-                onPressed: () {},
-                color: AppTheme.infoColor,
-              ),
+            _QuickActionButton(
+              icon: Icons.settings_outlined,
+              label: 'Pengaturan',
+              onPressed: () {},
+              color: const Color(0xFFFFA500),
             ),
           ],
         ),
@@ -248,7 +278,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   /// Build Recent Orders Section
-  Widget _buildRecentOrdersSection(BuildContext context) {
+  Widget _buildRecentOrdersSection(BuildContext context, bool isMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -265,14 +295,17 @@ class DashboardScreen extends StatelessWidget {
               onPressed: () {},
               child: const Text(
                 'Lihat Semua',
-                style: TextStyle(color: AppTheme.primaryColor),
+                style: TextStyle(
+                  color: Color(0xFF5DADE2),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: AppTheme.lg),
 
-        // Recent Order 1
+        // Recent Orders List
         _RecentOrderCard(
           orderId: '#ORD-12345',
           customerName: 'Budi Santoso',
@@ -284,19 +317,17 @@ class DashboardScreen extends StatelessWidget {
 
         const SizedBox(height: AppTheme.md),
 
-        // Recent Order 2
         _RecentOrderCard(
           orderId: '#ORD-12344',
           customerName: 'Siti Nurhaliza',
           items: '3 item',
           status: 'Siap Diambil',
-          statusColor: AppTheme.successColor,
+          statusColor: const Color(0xFF51CF66),
           amount: 'Rp 90.000',
         ),
 
         const SizedBox(height: AppTheme.md),
 
-        // Recent Order 3
         _RecentOrderCard(
           orderId: '#ORD-12343',
           customerName: 'Ahmad Wijaya',
@@ -314,7 +345,7 @@ class DashboardScreen extends StatelessWidget {
 // HELPER WIDGETS
 // ============================================
 
-/// Stat Card Widget
+/// Stat Card Widget - Modern Design
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
@@ -342,8 +373,8 @@ class _StatCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 4,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -354,7 +385,7 @@ class _StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppTheme.md),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withOpacity(0.15),
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             ),
             child: Icon(
@@ -367,15 +398,17 @@ class _StatCard extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: AppTheme.sm),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppTheme.darkColor,
             ),
@@ -384,7 +417,7 @@ class _StatCard extends StatelessWidget {
           Text(
             subtitle,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               color: Colors.grey.shade600,
             ),
           ),
@@ -416,13 +449,14 @@ class _QuickActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppTheme.lg),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withOpacity(0.12),
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           border: Border.all(
-            color: color.withOpacity(0.3),
+            color: color.withOpacity(0.2),
           ),
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
@@ -438,6 +472,8 @@ class _QuickActionButton extends StatelessWidget {
                 color: color,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -466,14 +502,23 @@ class _RecentOrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Container(
-      padding: const EdgeInsets.all(AppTheme.lg),
+      padding: EdgeInsets.all(isMobile ? AppTheme.lg : AppTheme.xl),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         border: Border.all(
           color: Colors.grey.shade200,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,43 +526,50 @@ class _RecentOrderCard extends StatelessWidget {
           // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    orderId,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      orderId,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppTheme.sm),
-                  Text(
-                    customerName,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+                    const SizedBox(height: AppTheme.sm),
+                    Text(
+                      customerName,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: AppTheme.md),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppTheme.md,
                   vertical: AppTheme.sm,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 ),
                 child: Text(
                   status,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: statusColor,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -529,19 +581,29 @@ class _RecentOrderCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                items,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
+              Row(
+                children: [
+                  Icon(
+                    Icons.shopping_bag_outlined,
+                    size: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: AppTheme.sm),
+                  Text(
+                    items,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
               ),
               Text(
                 amount,
                 style: const TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.primaryColor,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF5DADE2),
                 ),
               ),
             ],
