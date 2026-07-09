@@ -414,7 +414,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
 
     return SizedBox(
-      height: 86,
+      height: 96,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: actions.length,
@@ -441,7 +441,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.black87),
+                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.black87, height: 1.15),
                   ),
                 ],
               ),
