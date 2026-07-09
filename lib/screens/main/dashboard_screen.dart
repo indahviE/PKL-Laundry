@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/themes/app_theme.dart';
+import 'package:go_router/go_router.dart';
 
 /// Dashboard Screen - NetWash
 /// Struktur baru: wave header + floating summary card + weekly chart +
@@ -422,12 +423,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
   Widget _buildQuickActions(BuildContext context) {
+    // Di sini kita tambahkan rute tujuan (String) ke dalam daftar menu Anda
     final actions = [
-      (Icons.add_circle_outline_rounded, 'Pesanan\nBaru', primaryBlue),
-      (Icons.person_add_alt_1_rounded, 'Pelanggan\nBaru', deepBlue),
-      (Icons.local_shipping_outlined, 'Antar\nJemput', const Color(0xFF27AE60)),
-      (Icons.bar_chart_rounded, 'Laporan', const Color(0xFFE67E22)),
-      (Icons.settings_outlined, 'Pengaturan', Colors.grey.shade700),
+      (Icons.add_circle_outline_rounded, 'Pesanan\nBaru', primaryBlue, '/create-order'),
+      (Icons.person_add_alt_1_rounded, 'Karyawan\nBaru', deepBlue, '/create-employee'), // 🟢 Diubah jadi Karyawan Baru & ditambah rutenya
+      (Icons.local_shipping_outlined, 'Antar\nJemput', const Color(0xFF27AE60), '/antar-jemput'),
+      (Icons.bar_chart_rounded, 'Laporan', const Color(0xFFE67E22), '/laporan'),
+      (Icons.settings_outlined, 'Pengaturan', Colors.grey.shade700, '/settings'),
     ];
 
     return SizedBox(
@@ -437,9 +439,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         itemCount: actions.length,
         separatorBuilder: (_, __) => const SizedBox(width: AppTheme.lg),
         itemBuilder: (context, i) {
-          final (icon, label, color) = actions[i];
+          // 🟢 Ambil variabel route nya di sini
+          final (icon, label, color, route) = actions[i]; 
           return InkWell(
-            onTap: () {},
+            onTap: () {
+              // 🟢 DISINI PERINTAH KLIKNYA! Sekarang otomatis jalan sesuai menu yang dipencet
+              context.push(route); 
+            },
             borderRadius: BorderRadius.circular(40),
             child: SizedBox(
               width: 64,
