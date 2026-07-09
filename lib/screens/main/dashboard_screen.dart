@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/themes/app_theme.dart';
 
 /// Dashboard Screen - NetWash
@@ -58,7 +59,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: bgColor,
-      body: Center(
+      body: DefaultTextStyle.merge(
+        // Menerapkan font Plus Jakarta Sans ke SEMUA Text di dalam dashboard ini,
+        // tanpa perlu mengubah tiap TextStyle satu-satu. Text yang tidak mengeset
+        // fontFamily sendiri otomatis mewarisi font ini.
+        style: GoogleFonts.plusJakartaSans(),
+        child: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxContentWidth),
           child: CustomScrollView(
@@ -78,7 +84,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   isMobile ? AppTheme.lg : AppTheme.xxl,
                   0,
                   isMobile ? AppTheme.lg : AppTheme.xxl,
-                  AppTheme.xl,
+                  AppTheme.xxl,
                 ),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
@@ -100,6 +106,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -185,7 +192,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: AppTheme.xl),
             Text(
               greeting,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 22,
+                letterSpacing: -0.3,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -226,9 +238,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Rp 5.200.000',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                    letterSpacing: -0.3,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Row(
