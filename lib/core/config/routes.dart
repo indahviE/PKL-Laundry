@@ -11,9 +11,9 @@ import '../../screens/auth/verify_email_screen.dart';
 import '../../screens/auth/setup_profile_screen.dart';
 import '../../../screens/main/main_screen.dart';
 import '../../../screens/main/dashboard_screen.dart';
-import '../../screens/onboarding/payment_screen.dart';
 import '../../screens/onboarding/setup_company_screen.dart';
 import '../../screens/onboarding/choose_plan_screen.dart';
+import '../../screens/onboarding/payment_screen.dart';
 import '../../repositories/auth_repository.dart';
 
 /// Rute yang termasuk alur autentikasi (belum login).
@@ -31,8 +31,8 @@ const _onboardingRoutes = [
 /// Konfigurasi GoRouter untuk navigasi aplikasi.
 /// Dilengkapi `redirect` yang mengecek status onboarding user tiap kali
 /// navigasi terjadi, supaya user tidak bisa "loncat" ke dashboard sebelum
-/// menyelesaikan verifikasi email, setup profile, setup perusahaan, dan
-/// pemilihan paket.
+/// menyelesaikan verifikasi email, setup profile, setup perusahaan,
+/// pemilihan paket, DAN pembayaran (PRD 5.1 Step 1-6).
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authRepo = ref.watch(authRepositoryProvider);
 
@@ -71,6 +71,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       if (!planChosen) {
         return location == '/choose-plan' ? null : '/choose-plan';
+      }
+
+      // Paket sudah dipilih tapi belum tentu sudah dibayar — cek
+      // subscription aktif (ditulis oleh Stripe webhook, lihat PRD 4.6).
+      // Ini yang mencegah user "loncat" ke dashboard cuma dengan
+      // memilih paket tanpa menyelesaikan pembayaran.
+      final paymentActive = await authRepo.hasActiveSubscription();
+      if (!paymentActive) {
+        return location == '/payment' ? null : '/payment';
       }
 
       // Semua step onboarding sudah lengkap. Kalau user masih nyasar di
@@ -116,19 +125,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ChoosePlanScreen(),
       ),
       GoRoute(
-      path: '/payment',
-      name: 'payment',
-      builder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>?;
-        if (extra == null) {
-          return const ChoosePlanScreen();
-        }
-        return PaymentScreen(
-          planName: extra['planName'] as String,
-          isYearly: extra['isYearly'] as bool,
-          price: extra['price'] as double,
-        );
-      },
+        path: '/payment',
+        name: 'payment',
+        builder: (context, state) {
+          // `extra` dikirim dari ChoosePlanScreen lewat context.push.
+          // Kalau user masuk ke /payment tanpa extra (mis. refresh
+          // browser atau deep link langsung), redirect balik ke
+          // /choose-plan supaya dia pilih paket dulu.
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra == null) {
+            return const ChoosePlanScreen();
+          }
+          return PaymentScreen(
+            planName: extra['planName'] as String,
+            isYearly: extra['isYearly'] as bool,
+            price: extra['price'] as double,
+          );
+        },
       ),
 
       // ShellRoute: Menggunakan MainScreen sebagai wadah navigasi (Bottom Navigation Bar)
