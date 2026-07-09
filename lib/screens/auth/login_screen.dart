@@ -129,13 +129,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               return SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildMobileBrandHeader(),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 440),
-                        child: _buildLoginCard(isLoading, isMobile),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 440),
+                          child: _buildLoginCard(isLoading, isMobile),
+                        ),
                       ),
                     ),
                   ],
@@ -208,7 +211,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'Kelola bisnis laundry Anda\ndengan mudah dan efisien',
+                  'Kelola perusahaan, cabang, dan\nkaryawan laundry Anda dalam satu aplikasi',
                   style: GoogleFonts.poppins(
                     fontSize: 17,
                     fontWeight: FontWeight.w400,
@@ -228,9 +231,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Widget _buildFeatureChips() {
     final features = [
-      ('Cuci Kilat', Icons.local_laundry_service_rounded),
-      ('Setrika Rapi', Icons.iron_rounded),
-      ('Antar Jemput', Icons.local_shipping_outlined),
+      ('Multi Cabang', Icons.storefront_outlined),
+      ('Manajemen Karyawan', Icons.badge_outlined),
+      ('Laporan Real-time', Icons.bar_chart_rounded),
     ];
 
     return Column(
@@ -294,39 +297,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: CustomPaint(painter: _LaundryPatternPainter()),
             ),
           ),
-          // Tambahkan SizedBox(width: double.infinity) di sini 
-          // agar Column memaksa lebarnya memenuhi layar
-          SizedBox(
-            width: double.infinity,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _buildLogoBadge(size: 68, iconSize: 34),
-                const SizedBox(height: 18),
-                Text(
-                  'NetWash',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                  ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildLogoBadge(size: 68, iconSize: 34),
+              const SizedBox(height: 18),
+              Text(
+                'NetWash',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Kelola bisnis laundry Anda dengan mudah',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white.withOpacity(0.9),
-                    height: 1.5,
-                  ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Kelola perusahaan & karyawan laundry Anda',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.white.withOpacity(0.9),
+                  height: 1.5,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -334,37 +331,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   /// Badge logo putih membulat berbayang — dipakai di mobile & desktop
- /// Badge logo membulat — dinamis mengikuti Brightness tema
   Widget _buildLogoBadge({required double size, required double iconSize}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       width: size,
       height: size,
       padding: EdgeInsets.all(size * 0.18),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.gray800 : Colors.white, // Latar logo menyesuaikan mode
+        color: Colors.white,
         borderRadius: BorderRadius.circular(size * 0.28),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.15),
+            color: Colors.black.withOpacity(0.15),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: _buildLogo(isDark),
+      child: _buildLogo(),
     );
   }
 
-  /// Logo aplikasi (reusable) — otomatis ganti tint/warna saat Dark Mode
-  Widget _buildLogo(bool isDark) {
+  /// Logo aplikasi (reusable) — menggunakan asset icon app yang sudah ada
+  Widget _buildLogo() {
     return Image.asset(
       'asset/icon/Netwash_Logo.png',
       fit: BoxFit.contain,
-      // Jika ingin logo berwarna putih / terang saat Dark Mode:
-      // color: isDark ? Colors.white : null,
-      // colorBlendMode: isDark ? BlendMode.srcIn : null,
       errorBuilder: (context, error, stackTrace) {
         return Container(
           decoration: BoxDecoration(

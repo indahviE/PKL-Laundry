@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
+import '../../screens/auth/verify_email_screen.dart';
+import '../../screens/auth/setup_profile_screen.dart';
 import '../../../screens/main/main_screen.dart';
 import '../../../screens/main/dashboard_screen.dart';
 
@@ -23,6 +25,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/register',
         name: 'register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+      path: '/verify-email',
+      name: 'verify-email',
+      builder: (context, state) => const VerifyEmailScreen(),
+      ),
+      GoRoute(
+      path: '/setup-profile',
+      name: 'setup-profile',
+      builder: (context, state) => const SetupProfileScreen(),
       ),
 
       // ShellRoute: Menggunakan MainScreen sebagai wadah navigasi (Bottom Navigation Bar)
