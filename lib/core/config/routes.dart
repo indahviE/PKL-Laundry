@@ -11,6 +11,7 @@ import '../../screens/auth/verify_email_screen.dart';
 import '../../screens/auth/setup_profile_screen.dart';
 import '../../../screens/main/main_screen.dart';
 import '../../../screens/main/dashboard_screen.dart';
+import '../../screens/onboarding/payment_screen.dart';
 import '../../screens/onboarding/setup_company_screen.dart';
 import '../../screens/onboarding/choose_plan_screen.dart';
 import '../../repositories/auth_repository.dart';
@@ -24,6 +25,7 @@ const _onboardingRoutes = [
   '/setup-profile',
   '/setup-company',
   '/choose-plan',
+  '/payment',
 ];
 
 /// Konfigurasi GoRouter untuk navigasi aplikasi.
@@ -112,6 +114,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/choose-plan',
         name: 'choose-plan',
         builder: (context, state) => const ChoosePlanScreen(),
+      ),
+      GoRoute(
+      path: '/payment',
+      name: 'payment',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        if (extra == null) {
+          return const ChoosePlanScreen();
+        }
+        return PaymentScreen(
+          planName: extra['planName'] as String,
+          isYearly: extra['isYearly'] as bool,
+          price: extra['price'] as double,
+        );
+      },
       ),
 
       // ShellRoute: Menggunakan MainScreen sebagai wadah navigasi (Bottom Navigation Bar)

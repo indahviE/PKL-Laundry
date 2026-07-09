@@ -29,7 +29,7 @@ class PricingPlan {
 
 /// Choose Plan Screen — Step 5 dari onboarding.
 /// Sesuai PRD section 5.1 User Flow, Step 5: Pilih Paket.
-/// Alur: Setup Perusahaan → [halaman ini] → Pembayaran/Dashboard.
+/// Alur: Setup Perusahaan → [halaman ini] → Pembayaran (Stripe) → Dashboard.
 /// Desain disamakan dengan screen onboarding lain (tanpa AppBar biru
 /// bawaan, warna & font konsisten AppTheme + GoogleFonts.poppins).
 class ChoosePlanScreen extends ConsumerStatefulWidget {
@@ -42,7 +42,6 @@ class ChoosePlanScreen extends ConsumerStatefulWidget {
 class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   // State
   bool _isYearly = false;
-  bool _isLoading = false;
   String? _selectedPlan;
 
   // Pricing plans
@@ -113,40 +112,41 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
     ];
   }
 
-  /// Handle select plan — simpan pilihan paket lalu masuk ke dashboard.
-  /// (Step Pembayaran belum diimplementasikan; untuk MVP, pilih paket
-  /// langsung menandai onboarding selesai. Sambungkan ke halaman
-  /// pembayaran Stripe nanti kalau sudah siap.)
-  Future<void> _handleSelectPlan(String planName) async {
+  bool _isNavigating = false;
+
+  /// Handle select plan.
+  /// Simpan pilihan paket SEKARANG (planChosen: true) supaya redirect
+  /// logic di routes.dart mengizinkan user masuk ke /payment — kalau
+  /// baru disimpan setelah bayar, router akan terus menendang user balik
+  /// ke /choose-plan karena planChosen masih false.
+  /// Status pembayaran AKTUAL (sudah bayar atau belum) tetap dicek
+  /// terpisah lewat AuthRepository.hasActiveSubscription() /
+  /// watchActiveSubscription(), bukan lewat flag ini.
+  /// Sesuai PRD Step 5 → Step 6: Pilih Paket → lanjut ke Pembayaran.
+  Future<void> _handleSelectPlan(PricingPlan plan) async {
+    if (_isNavigating) return;
+
     setState(() {
-      _selectedPlan = planName;
-      _isLoading = true;
+      _selectedPlan = plan.name;
+      _isNavigating = true;
     });
 
     try {
-      final router = GoRouter.of(context);
       final authRepo = ref.read(authRepositoryProvider);
-
       await authRepo.savePlanChoice(
-        planName: planName,
+        planName: plan.name,
         isYearly: _isYearly,
       );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Paket $planName dipilih!',
-              style: GoogleFonts.poppins(fontSize: 13),
-            ),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
-      }
-
-      // TODO: Ganti ke halaman pembayaran Stripe kalau sudah siap:
-      // router.go('/onboarding/payment', extra: {...});
-      router.go('/dashboard');
+      if (!mounted) return;
+      context.push(
+        '/payment',
+        extra: {
+          'planName': plan.name,
+          'isYearly': _isYearly,
+          'price': _getDisplayPrice(plan),
+        },
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -162,7 +162,7 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
     } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isNavigating = false;
         });
       }
     }
@@ -239,7 +239,7 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
-            onTap: !_isLoading ? _handleBack : null,
+            onTap: _handleBack,
             child: const Padding(
               padding: EdgeInsets.all(8),
               child: Icon(
@@ -410,9 +410,9 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
               price: _getDisplayPrice(_plans[index]),
               period: _isYearly ? 'tahun' : 'bulan',
               isSelected: _selectedPlan == _plans[index].name,
-              isLoading: _isLoading,
+              isLoading: _isNavigating && _selectedPlan == _plans[index].name,
               formatCurrency: _formatCurrency,
-              onSelect: () => _handleSelectPlan(_plans[index].name),
+              onSelect: () => _handleSelectPlan(_plans[index]),
             ),
           ),
         ),
@@ -434,9 +434,10 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
                 price: _getDisplayPrice(_plans[index]),
                 period: _isYearly ? 'tahun' : 'bulan',
                 isSelected: _selectedPlan == _plans[index].name,
-                isLoading: _isLoading,
+                isLoading:
+                    _isNavigating && _selectedPlan == _plans[index].name,
                 formatCurrency: _formatCurrency,
-                onSelect: () => _handleSelectPlan(_plans[index].name),
+                onSelect: () => _handleSelectPlan(_plans[index]),
               ),
             ),
           ),
@@ -501,7 +502,7 @@ class _PricingCard extends StatelessWidget {
     required this.price,
     required this.period,
     required this.isSelected,
-    required this.isLoading,
+    this.isLoading = false,
     required this.formatCurrency,
     required this.onSelect,
   });
@@ -639,14 +640,14 @@ class _PricingCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                 ),
               ),
-              child: isLoading && isSelected
-                  ? const SizedBox(
-                      height: 18,
+              child: isLoading
+                  ? SizedBox(
                       width: 18,
+                      height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white,
+                          isSelected ? Colors.white : plan.color,
                         ),
                       ),
                     )
@@ -682,38 +683,47 @@ class _FAQItem extends StatefulWidget {
 class _FAQItemState extends State<_FAQItem> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.borderColor),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          title: Text(
-            widget.question,
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w600,
-              fontSize: 13.5,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          iconColor: AppTheme.primaryColor,
-          collapsedIconColor: AppTheme.textSecondary,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Text(
-                widget.answer,
-                style: GoogleFonts.poppins(
-                  fontSize: 12.5,
-                  color: AppTheme.textSecondary,
-                  height: 1.6,
-                ),
+    // Pakai Material (bukan Container) sebagai pembungkus warna, supaya
+    // ink splash dari ListTile internal ExpansionTile ikut ter-render di
+    // lapisan yang sama dengan warnanya — kalau warnanya ditaruh di
+    // Container biasa di atas Material, splash-nya ketutup dan Flutter
+    // melempar warning "ink splashes may be invisible".
+    return Material(
+      color: AppTheme.cardColor,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.borderColor),
+        ),
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            title: Text(
+              widget.question,
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 13.5,
+                color: AppTheme.textPrimary,
               ),
             ),
-          ],
+            iconColor: AppTheme.primaryColor,
+            collapsedIconColor: AppTheme.textSecondary,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Text(
+                  widget.answer,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.5,
+                    color: AppTheme.textSecondary,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

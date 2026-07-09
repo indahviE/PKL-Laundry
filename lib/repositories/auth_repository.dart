@@ -183,8 +183,15 @@ class AuthRepository {
     }
   }
 
-  /// Simpan paket yang dipilih & tandai step ini selesai.
+  /// Simpan paket yang DIPILIH user & tandai step "pilih paket" selesai.
   /// Sesuai PRD Step 5: Pilih Paket.
+  ///
+  /// PENTING: ini BUKAN tanda pembayaran berhasil. Ini cuma mencatat
+  /// pilihan user supaya kalau dia keluar-masuk app sebelum bayar, router
+  /// tahu harus arahkan ke halaman /payment (bukan balik ke /choose-plan).
+  /// Status langganan AKTIF baru tercatat lewat `watchActiveSubscription()`
+  /// setelah Stripe webhook menuliskan dokumen di subcollection
+  /// `subscriptions` (lihat PRD 4.6 `handleSuccessfulPayment`).
   Future<void> savePlanChoice({
     required String planName,
     required bool isYearly,
@@ -206,6 +213,45 @@ class AuthRepository {
     } on FirebaseException catch (e) {
       throw Exception(e.message ?? 'Gagal menyimpan pilihan paket.');
     }
+  }
+
+  /// Stream real-time: true selama ada dokumen di
+  /// `users/{uid}/subscriptions/` dengan `status == 'active'`.
+  ///
+  /// Dokumen ini ditulis oleh Cloud Function `stripeWebhook` (event
+  /// `checkout.session.completed`), BUKAN oleh client. Dipakai
+  /// PaymentScreen untuk mendeteksi pembayaran sukses tanpa bergantung
+  /// pada user kembali ke app dari browser Stripe Checkout.
+  Stream<bool> watchActiveSubscription() {
+    final user = _auth.currentUser;
+    if (user == null) return Stream.value(false);
+
+    return _db
+        .collection('users')
+        .doc(user.uid)
+        .collection('subscriptions')
+        .where('status', isEqualTo: 'active')
+        .limit(1)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.isNotEmpty);
+  }
+
+  /// Versi one-shot dari `watchActiveSubscription()`, dipakai oleh
+  /// `redirect` di GoRouter (butuh Future, bukan Stream) supaya user
+  /// tidak bisa "loncat" ke dashboard sebelum pembayaran webhook masuk.
+  Future<bool> hasActiveSubscription() async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+
+    final query = await _db
+        .collection('users')
+        .doc(user.uid)
+        .collection('subscriptions')
+        .where('status', isEqualTo: 'active')
+        .limit(1)
+        .get();
+
+    return query.docs.isNotEmpty;
   }
 
   Future<void> signOut() async {
