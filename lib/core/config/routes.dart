@@ -9,6 +9,8 @@ import '../../screens/auth/verify_email_screen.dart';
 import '../../screens/auth/setup_profile_screen.dart';
 import '../../../screens/main/main_screen.dart';
 import '../../../screens/main/dashboard_screen.dart';
+import '../../screens/onboarding/setup_company_screen.dart';
+import '../../screens/onboarding/choose_plan_screen.dart';
 
 /// Konfigurasi GoRouter untuk navigasi aplikasi.
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -52,28 +54,35 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/orders',
             name: 'orders',
-            builder: (context, state) => const PlaceholderScreen(
-              title: 'Orders List Screen',
-            ),
+            builder: (context, state) =>
+                const PlaceholderScreen(title: 'Orders List Screen'),
           ),
           GoRoute(
             path: '/customers',
             name: 'customers',
-            builder: (context, state) => const PlaceholderScreen(
-              title: 'Customers List Screen',
-            ),
+            builder: (context, state) =>
+                const PlaceholderScreen(title: 'Customers List Screen'),
           ),
           GoRoute(
             path: '/employees',
             name: 'employees',
-            builder: (context, state) => const PlaceholderScreen(
-              title: 'Employees List Screen',
-            ),
+            builder: (context, state) =>
+                const PlaceholderScreen(title: 'Employees List Screen'),
           ),
           GoRoute(
             path: '/settings',
             name: 'settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '/onboarding/setup-company',
+            name: 'setup-company',
+            builder: (context, state) => const SetupCompanyScreen(),
+          ),
+          GoRoute(
+            path: '/onboarding/choose-plan',
+            name: 'choose-plan',
+            builder: (context, state) => const ChoosePlanScreen(),
           ),
         ],
       ),
@@ -142,43 +151,27 @@ class SettingsScreen extends StatelessWidget {
 class PlaceholderScreen extends StatelessWidget {
   final String title;
 
-  const PlaceholderScreen({
-    Key? key,
-    required this.title,
-  }) : super(key: key);
+  const PlaceholderScreen({Key? key, required this.title}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(title), centerTitle: true),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.work_outline,
-              size: 80,
-              color: Colors.grey,
-            ),
+            const Icon(Icons.work_outline, size: 80, color: Colors.grey),
             const SizedBox(height: 24),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             const Text(
               'Screen ini akan diimplementasikan segera',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
           ],
