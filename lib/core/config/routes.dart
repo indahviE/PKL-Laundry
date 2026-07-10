@@ -17,6 +17,7 @@ import '../../screens/onboarding/payment_screen.dart';
 import '../../screens/settings/setting_screen.dart';
 import '../../repositories/auth_repository.dart';
 import '../../screens/employees/create_employee_screen.dart';
+import '../../screens/laundries/create_laundry_screen.dart';
 /// Rute yang termasuk alur autentikasi (belum login).
 const _authRoutes = ['/login', '/register'];
 
@@ -143,6 +144,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             price: extra['price'] as double,
           );
         },
+      ),
+      GoRoute(
+        path: '/laundries/create',
+        builder: (context, state) => const CreateLaundryScreen(),
       ),
 
       // ShellRoute: Menggunakan MainScreen sebagai wadah navigasi (Bottom Navigation Bar)
