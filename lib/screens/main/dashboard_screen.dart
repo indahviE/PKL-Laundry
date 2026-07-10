@@ -317,151 +317,162 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final userRef = FirebaseFirestore.instance.collection('users').doc(_currentUserId);
 
     return StreamBuilder<QuerySnapshot>(
-      stream: userRef.collection('employees').snapshots(),
-      builder: (context, employeeSnap) {
+      stream: userRef.collection('laundries').snapshots(),
+      builder: (context, laundrySnap) {
         return StreamBuilder<QuerySnapshot>(
-          stream: userRef.collection('service_types').snapshots(),
-          builder: (context, serviceSnap) {
-            
-            // Setup Cabang dipaksa true karena sudah diselesaikan saat awal onboarding pendaftaran
-            bool hasBranch = true; 
-            bool hasEmployee = employeeSnap.hasData && employeeSnap.data!.docs.isNotEmpty;
-            bool hasService = serviceSnap.hasData && serviceSnap.data!.docs.isNotEmpty;
+          stream: userRef.collection('employees').snapshots(),
+          builder: (context, employeeSnap) {
+            return StreamBuilder<QuerySnapshot>(
+              stream: userRef.collection('service_types').snapshots(),
+              builder: (context, serviceSnap) {
 
-            final List<_SetupStep> steps = [
-              _SetupStep(
-                title: 'Mulai Setup Cabang',
-                subtitle: 'Lengkapi profil & alamat cabang',
-                icon: Icons.store_mall_directory_outlined,
-                completed: hasBranch,
-                route: '/setup/branch',
-              ),
-              _SetupStep(
-                title: 'Tambahkan Karyawan',
-                subtitle: 'Undang staf untuk kelola pesanan',
-                icon: Icons.person_add_alt_1_rounded,
-                completed: hasEmployee,
-                route: '/setup/employees',
-              ),
-              _SetupStep(
-                title: 'Tambahkan Layanan',
-                subtitle: 'Atur jenis cuci & harga',
-                icon: Icons.local_laundry_service_rounded,
-                completed: hasService,
-                route: '/setup/services',
-              ),
-            ];
+                bool hasBranch = laundrySnap.hasData && laundrySnap.data!.docs.isNotEmpty;
+                bool hasEmployee = employeeSnap.hasData && employeeSnap.data!.docs.isNotEmpty;
+                bool hasService = serviceSnap.hasData && serviceSnap.data!.docs.isNotEmpty;
 
-            // Jika semua langkah setup selesai dilakukan, sembunyikan card secara otomatis
-            if (steps.every((s) => s.completed)) return const SizedBox.shrink();
+                final List<_SetupStep> steps = [
+                  _SetupStep(
+                    title: 'Mulai Setup Cabang',
+                    subtitle: 'Lengkapi profil & alamat cabang',
+                    icon: Icons.store_mall_directory_outlined,
+                    completed: hasBranch,
+                    // Langsung ke CRUD asli (CreateLaundryScreen), bukan
+                    // '/setup/branch' yang tidak terdaftar di routes.dart.
+                    route: '/laundries/create',
+                  ),
+                  _SetupStep(
+                    title: 'Tambahkan Karyawan',
+                    subtitle: 'Undang staf untuk kelola pesanan',
+                    icon: Icons.person_add_alt_1_rounded,
+                    completed: hasEmployee,
+                    // Langsung ke CRUD asli (CreateEmployeeScreen).
+                    route: '/employees/create',
+                  ),
+                  _SetupStep(
+                    title: 'Tambahkan Layanan',
+                    subtitle: 'Atur jenis cuci & harga',
+                    icon: Icons.local_laundry_service_rounded,
+                    completed: hasService,
+                    // CRUD layanan masih PlaceholderScreen di routes.dart,
+                    // tapi setidaknya path-nya valid dan tidak error.
+                    // Ganti PlaceholderScreen di routes.dart begitu
+                    // CreateServiceScreen sudah jadi.
+                    route: '/services/create',
+                  ),
+                ];
 
-            int done = steps.where((s) => s.completed).length;
-            double progress = done / steps.length;
+                // Jika semua langkah setup selesai dilakukan, sembunyikan card secara otomatis
+                if (steps.every((s) => s.completed)) return const SizedBox.shrink();
 
-            return Container(
-              padding: const EdgeInsets.all(AppTheme.lg),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                int done = steps.where((s) => s.completed).length;
+                double progress = done / steps.length;
+
+                return Container(
+                  padding: const EdgeInsets.all(AppTheme.lg),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: primaryBlue.withOpacity(0.15),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: primaryBlue.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                            ),
+                            child: const Icon(Icons.rocket_launch_rounded, color: textBlue, size: 18),
+                          ),
+                          const SizedBox(width: AppTheme.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Selesaikan Setup Cabang',
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '$done dari ${steps.length} langkah selesai',
+                                  style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 18),
+                            color: Colors.grey.shade400,
+                            onPressed: () => setState(() => _setupDismissed = true),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppTheme.md),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 6,
+                          backgroundColor: Colors.grey.shade100,
+                          valueColor: const AlwaysStoppedAnimation(primaryBlue),
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.lg),
+                      ...List.generate(steps.length, (i) {
+                        final step = steps[i];
+                        final isLast = i == steps.length - 1;
+                        return InkWell(
+                          onTap: () => context.push(step.route),
                           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                        ),
-                        child: const Icon(Icons.rocket_launch_rounded, color: textBlue, size: 18),
-                      ),
-                      const SizedBox(width: AppTheme.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Selesaikan Setup Cabang',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87),
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: isLast ? 0 : AppTheme.md),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 30, height: 30,
+                                  decoration: BoxDecoration(
+                                    color: step.completed ? const Color(0xFF27AE60).withOpacity(0.12) : Colors.grey.shade100,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    step.completed ? Icons.check_rounded : step.icon,
+                                    size: 16,
+                                    color: step.completed ? const Color(0xFF27AE60) : Colors.grey.shade500,
+                                  ),
+                                ),
+                                const SizedBox(width: AppTheme.md),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        step.title,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: step.completed ? Colors.grey.shade400 : Colors.black87,
+                                          decoration: step.completed ? TextDecoration.lineThrough : null,
+                                        ),
+                                      ),
+                                      Text(step.subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                                    ],
+                                  ),
+                                ),
+                                if (!step.completed)
+                                  Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey.shade400),
+                              ],
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '$done dari ${steps.length} langkah selesai',
-                              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 18),
-                        color: Colors.grey.shade400,
-                        onPressed: () => setState(() => _setupDismissed = true),
-                      ),
+                          ),
+                        );
+                      }),
                     ],
                   ),
-                  const SizedBox(height: AppTheme.md),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 6,
-                      backgroundColor: Colors.grey.shade100,
-                      valueColor: const AlwaysStoppedAnimation(primaryBlue),
-                    ),
-                  ),
-                  const SizedBox(height: AppTheme.lg),
-                  ...List.generate(steps.length, (i) {
-                    final step = steps[i];
-                    final isLast = i == steps.length - 1;
-                    return InkWell(
-                      onTap: () => context.push(step.route),
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      child: Padding(
-                        padding: EdgeInsets.only(bottom: isLast ? 0 : AppTheme.md),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 30, height: 30,
-                              decoration: BoxDecoration(
-                                color: step.completed ? const Color(0xFF27AE60).withOpacity(0.12) : Colors.grey.shade100,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                step.completed ? Icons.check_rounded : step.icon,
-                                size: 16,
-                                color: step.completed ? const Color(0xFF27AE60) : Colors.grey.shade500,
-                              ),
-                            ),
-                            const SizedBox(width: AppTheme.md),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    step.title,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: step.completed ? Colors.grey.shade400 : Colors.black87,
-                                      decoration: step.completed ? TextDecoration.lineThrough : null,
-                                    ),
-                                  ),
-                                  Text(step.subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-                                ],
-                              ),
-                            ),
-                            if (!step.completed)
-                              Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey.shade400),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
+                );
+              },
             );
           },
         );

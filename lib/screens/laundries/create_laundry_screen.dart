@@ -88,6 +88,44 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
     super.dispose();
   }
 
+  /// MIGRASI DATA LAMA: sebelum fix, AuthRepository.saveCompanyData()
+  /// hanya menulis data perusahaan ke field `company` di users/{uid},
+  /// bukan ke subcollection users/{uid}/companies yang dibaca layar ini.
+  /// Akun yang sempat menyelesaikan Setup Company SEBELUM fix tersebut
+  /// jadi tidak punya dokumen apa pun di subcollection `companies`,
+  /// meskipun sudah pernah mengisi data perusahaan.
+  ///
+  /// Method ini mengecek kondisi itu dan otomatis menyalin data lama ke
+  /// subcollection, sekali saja, supaya dropdown perusahaan di bawah
+  /// tidak kosong tanpa perlu user mengulang proses onboarding (yang
+  /// sudah tidak bisa diakses lagi karena companyCompleted sudah true).
+  /// Aman dipanggil berkali-kali — no-op kalau subcollection sudah terisi
+  /// atau memang tidak ada data lama untuk dimigrasikan.
+  Future<void> _migrateLegacyCompanyIfNeeded(String userId) async {
+    final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId);
+    final companiesRef = userDocRef.collection('companies');
+
+    try {
+      final existing = await companiesRef.limit(1).get();
+      if (existing.docs.isNotEmpty) return; // Sudah ada, tidak perlu migrasi
+
+      final userDoc = await userDocRef.get();
+      final legacyCompany = userDoc.data()?['company'] as Map<String, dynamic>?;
+
+      // Tidak ada data lama untuk dimigrasikan (mis. akun baru yang memang
+      // belum pernah mengisi Setup Company sama sekali).
+      if (legacyCompany == null || legacyCompany['name'] == null) return;
+
+      await companiesRef.add({
+        ...legacyCompany,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint("Gagal migrasi data perusahaan lama: $e");
+    }
+  }
+
   /// Mengambil data perusahaan milik user, untuk relasi company_id
   /// (relasi laundries.company_id sesuai Blueprint §3.2.3)
   Future<void> _fetchCompaniesData() async {
@@ -95,6 +133,10 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
     if (user == null) return;
 
     try {
+      // Jalankan migrasi data lama dulu (lihat dokumentasi method di atas)
+      // sebelum query, supaya akun lama juga langsung dapat datanya.
+      await _migrateLegacyCompanyIfNeeded(user.uid);
+
       final companySnap = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)

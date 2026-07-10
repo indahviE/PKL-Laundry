@@ -150,8 +150,14 @@ class AuthRepository {
 
   /// Simpan data perusahaan & tandai step ini selesai.
   /// Sesuai PRD Step 4: Setup Perusahaan.
-  /// (Disederhanakan: disimpan sebagai field di users/{uid}, bukan
-  /// subcollection terpisah, biar konsisten dengan pola yang sudah jalan)
+  ///
+  /// Ditulis ke DUA tempat sekaligus:
+  /// 1. Field `company` + flag `companyCompleted` di users/{uid} — dipakai
+  ///    oleh redirect logic di routes.dart untuk cek progres onboarding.
+  /// 2. Subcollection users/{uid}/companies/{companyId} — dipakai oleh
+  ///    layar lain (mis. CreateLaundryScreen) yang butuh dropdown daftar
+  ///    perusahaan milik user. Field `name` WAJIB ada karena itu yang
+  ///    dibaca CreateLaundryScreen._fetchCompaniesData().
   Future<void> saveCompanyData({
     required String companyName,
     required String address,
@@ -166,18 +172,47 @@ class AuthRepository {
     }
 
     try {
-      await _db.collection('users').doc(user.uid).update({
-        'company': {
-          'name': companyName,
-          'address': address,
-          'city': city,
-          'phone': phone,
-          'website': website,
-          'description': description,
-        },
+      final companyData = {
+        'name': companyName,
+        'address': address,
+        'city': city,
+        'phone': phone,
+        'website': website,
+        'description': description,
+      };
+
+      final userDocRef = _db.collection('users').doc(user.uid);
+      final companiesRef = userDocRef.collection('companies');
+
+      // Cek apakah user sudah pernah punya dokumen company sebelumnya,
+      // supaya tombol "Simpan" yang dipencet berkali-kali (mis. user
+      // kembali ke step ini lewat tombol back) tidak bikin dokumen
+      // company duplikat di subcollection.
+      final existing = await companiesRef.limit(1).get();
+
+      final batch = _db.batch();
+
+      if (existing.docs.isNotEmpty) {
+        batch.update(existing.docs.first.reference, {
+          ...companyData,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        final newCompanyRef = companiesRef.doc();
+        batch.set(newCompanyRef, {
+          ...companyData,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      batch.update(userDocRef, {
+        'company': companyData,
         'companyCompleted': true,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      await batch.commit();
     } on FirebaseException catch (e) {
       throw Exception(e.message ?? 'Gagal menyimpan data perusahaan.');
     }
