@@ -121,7 +121,32 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       isActive,
     ) {
       if (!isActive || !mounted) return;
-      context.go('/dashboard');
+
+      // Tampilkan popup singkat dulu sebelum pindah ke dashboard.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Pembayaran berhasil! Mengarahkan ke dashboard...',
+                  style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.successColor,
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) context.go('/dashboard');
+      });
     });
   }
 
