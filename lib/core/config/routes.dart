@@ -14,8 +14,10 @@ import '../../../screens/main/dashboard_screen.dart';
 import '../../screens/onboarding/setup_company_screen.dart';
 import '../../screens/onboarding/choose_plan_screen.dart';
 import '../../screens/onboarding/payment_screen.dart';
+import '../../screens/settings/setting_screen.dart';
 import '../../repositories/auth_repository.dart';
-
+import '../../screens/employees/create_employee_screen.dart';
+import '../../screens/laundries/create_laundry_screen.dart';
 /// Rute yang termasuk alur autentikasi (belum login).
 const _authRoutes = ['/login', '/register'];
 
@@ -143,6 +145,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+      GoRoute(
+        path: '/laundries/create',
+        builder: (context, state) => const CreateLaundryScreen(),
+      ),
 
       // ShellRoute: Menggunakan MainScreen sebagai wadah navigasi (Bottom Navigation Bar)
       ShellRoute(
@@ -175,6 +181,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 const PlaceholderScreen(title: 'Employees List Screen'),
           ),
           GoRoute(
+            path: '/create-employee',
+            builder: (context, state) => const CreateEmployeeScreen(),
+          ),
+          GoRoute(
             path: '/settings',
             name: 'settings',
             builder: (context, state) => const SettingsScreen(),
@@ -204,62 +214,6 @@ class GoRouterRefreshStream extends ChangeNotifier {
   }
 }
 
-/// Halaman Settings & Profil
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pengaturan & Profil'),
-        centerTitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: const CircleAvatar(
-                radius: 28,
-                child: Icon(Icons.person, size: 32),
-              ),
-              title: Text(
-                user?.email ?? 'User NetWash',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: const Text('Role: Owner'),
-            ),
-          ),
-          const SizedBox(height: 24),
-          ListTile(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            tileColor: Colors.red.shade50,
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text(
-              'Keluar / Logout',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
-            onTap: () async {
-              await FirebaseAuth.instance.signOut();
-              if (context.mounted) {
-                context.go('/login');
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 /// Halaman Placeholder Sementara untuk fitur yang belum dibuat
 class PlaceholderScreen extends StatelessWidget {
