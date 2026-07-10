@@ -5,21 +5,65 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// --- Auth ---
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
 import '../../screens/auth/verify_email_screen.dart';
 import '../../screens/auth/setup_profile_screen.dart';
+
+// --- Main / Shell ---
 import '../../../screens/main/main_screen.dart';
 import '../../../screens/main/dashboard_screen.dart';
+
+// --- Onboarding ---
 import '../../screens/onboarding/setup_company_screen.dart';
 import '../../screens/onboarding/choose_plan_screen.dart';
 import '../../screens/onboarding/payment_screen.dart';
+
+// --- Settings ---
 import '../../screens/settings/setting_screen.dart';
+
+// --- Repositories ---
 import '../../repositories/auth_repository.dart';
+
+// --- Employees (sudah ada) ---
 import '../../screens/employees/create_employee_screen.dart';
-import '../../screens/laundries/create_laundry_screen.dart';
-/// Rute yang termasuk alur autentikasi (belum login).
-const _authRoutes = ['/login', '/register'];
+
+// --- Laundries (sudah ada) ---
+import 'package:netwash/screens/laundries/create_laundry_screen.dart';
+
+// =====================================================================
+// CATATAN UNTUK TIM: Screen di bawah ini BELUM dibuat filenya, jadi rutenya
+// sementara memakai PlaceholderScreen. Begitu file aslinya sudah jadi,
+// tinggal:
+//   1. Uncomment import yang sesuai di bagian bawah (sudah disiapkan).
+//   2. Ganti `builder: (context, state) => const PlaceholderScreen(...)`
+//      jadi `builder: (context, state) => const NamaScreenAsli(...)`.
+// Struktur path TIDAK perlu diubah lagi, sudah final sesuai
+// Lampiran B (netwash.md).
+// =====================================================================
+
+// import '../../screens/auth/forgot_password_screen.dart';
+// import '../../screens/orders/orders_list_screen.dart';
+// import '../../screens/orders/order_detail_screen.dart';
+// import '../../screens/orders/create_order_screen.dart';
+// import '../../screens/orders/update_order_status_screen.dart';
+// import '../../screens/customers/customers_list_screen.dart';
+// import '../../screens/customers/customer_detail_screen.dart';
+// import '../../screens/customers/create_customer_screen.dart';
+// import '../../screens/employees/employees_list_screen.dart';
+// import '../../screens/employees/employee_detail_screen.dart';
+// import '../../screens/laundries/laundries_list_screen.dart';
+// import '../../screens/laundries/laundry_detail_screen.dart';
+// import '../../screens/services/services_list_screen.dart';
+// import '../../screens/services/create_service_screen.dart';
+// import '../../screens/reports/reports_screen.dart';
+// import '../../screens/reports/report_detail_screen.dart';
+// import '../../screens/settings/profile_screen.dart';
+// import '../../screens/settings/subscription_screen.dart';
+// import '../../screens/onboarding/setup_company_screen.dart'; // dipakai ulang utk /companies/create
+
+const _authRoutes = ['/login', '/register', '/forgot-password'];
 
 /// Rute yang termasuk alur onboarding (sudah login, belum lengkap datanya).
 const _onboardingRoutes = [
@@ -29,6 +73,13 @@ const _onboardingRoutes = [
   '/choose-plan',
   '/payment',
 ];
+
+/// Alias rute lama yang masih dipertahankan supaya tombol/navigasi yang
+/// sudah terlanjur dipasang di layar lain tidak putus. Key = path lama,
+/// Value = path kanonik baru yang dipakai di seluruh file ini.
+const Map<String, String> _legacyRouteAliases = {
+  '/create-employee': '/employees/create',
+};
 
 /// Konfigurasi GoRouter untuk navigasi aplikasi.
 /// Dilengkapi `redirect` yang mengecek status onboarding user tiap kali
@@ -44,10 +95,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) async {
       final user = authRepo.currentUser;
       final location = state.matchedLocation;
+
+      // Alias rute lama -> rute kanonik baru, dicek paling awal.
+      if (_legacyRouteAliases.containsKey(location)) {
+        return _legacyRouteAliases[location];
+      }
+
       final isAuthRoute = _authRoutes.contains(location);
 
       // Belum login sama sekali -> paksa ke login, kecuali memang
-      // sedang menuju halaman login/register.
+      // sedang menuju halaman login/register/forgot-password.
       if (user == null) {
         return isAuthRoute ? null : '/login';
       }
@@ -93,7 +150,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // Rute Autentikasi (Luar Navigasi Utama)
+      // =================================================================
+      // AUTENTIKASI (Luar Navigasi Utama)
+      // =================================================================
       GoRoute(
         path: '/login',
         name: 'login',
@@ -104,8 +163,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'register',
         builder: (context, state) => const RegisterScreen(),
       ),
+      GoRoute(
+        path: '/forgot-password',
+        name: 'forgot-password',
+        // TODO: ganti ke ForgotPasswordScreen() setelah file dibuat
+        // (screens/auth/forgot_password_screen.dart, sesuai Lampiran B).
+        builder: (context, state) =>
+            const PlaceholderScreen(title: 'Lupa Password'),
+      ),
 
-      // Rute Onboarding (Luar Navigasi Utama, belum butuh bottom nav)
+      // =================================================================
+      // ONBOARDING (Luar Navigasi Utama, belum butuh bottom nav)
+      // =================================================================
       GoRoute(
         path: '/verify-email',
         name: 'verify-email',
@@ -145,15 +214,188 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+
+      // =================================================================
+      // PERUSAHAAN (Companies) — di luar shell, dipakai saat user
+      // ingin menambah perusahaan tambahan di luar alur onboarding.
+      // Direferensikan dari CreateLaundryScreen ("+ Daftarkan Perusahaan").
+      // =================================================================
       GoRoute(
-        path: '/laundries/create',
-        builder: (context, state) => const CreateLaundryScreen(),
+        path: '/companies/create',
+        name: 'companies-create',
+        // TODO: idealnya pakai screen dedicated utk "tambah perusahaan lain"
+        // (bukan SetupCompanyScreen onboarding, karena itu biasanya
+        // menandai companyCompleted=true di flow pendaftaran pertama).
+        builder: (context, state) =>
+            const PlaceholderScreen(title: 'Tambah Perusahaan Baru'),
       ),
 
-      // ShellRoute: Menggunakan MainScreen sebagai wadah navigasi (Bottom Navigation Bar)
+      // =================================================================
+      // CABANG / LAUNDRIES (§3.2.3) — di luar shell (full page)
+      // =================================================================
+      GoRoute(
+        path: '/laundries',
+        name: 'laundries',
+        // TODO: ganti ke LaundriesListScreen() setelah file dibuat
+        // (screens/laundries/laundries_list_screen.dart).
+        builder: (context, state) =>
+            const PlaceholderScreen(title: 'Daftar Cabang'),
+      ),
+      GoRoute(
+        path: '/laundries/create',
+        name: 'laundries-create',
+        builder: (context, state) => const CreateLaundryScreen(),
+      ),
+      GoRoute(
+        path: '/laundries/:laundryId',
+        name: 'laundry-detail',
+        // TODO: ganti ke LaundryDetailScreen(laundryId: ...) setelah file
+        // dibuat (screens/laundries/laundry_detail_screen.dart).
+        builder: (context, state) => PlaceholderScreen(
+          title: 'Detail Cabang (${state.pathParameters['laundryId']})',
+        ),
+      ),
+
+      // =================================================================
+      // KARYAWAN / EMPLOYEES (§3.3.2) — di luar shell (full page)
+      // =================================================================
+      GoRoute(
+        path: '/employees/create',
+        name: 'employees-create',
+        builder: (context, state) => const CreateEmployeeScreen(),
+      ),
+      GoRoute(
+        path: '/employees/:employeeId',
+        name: 'employee-detail',
+        // TODO: ganti ke EmployeeDetailScreen(employeeId: ...) setelah file
+        // dibuat (screens/employees/employee_detail_screen.dart).
+        builder: (context, state) => PlaceholderScreen(
+          title: 'Detail Karyawan (${state.pathParameters['employeeId']})',
+        ),
+      ),
+
+      // =================================================================
+      // PELANGGAN / CUSTOMERS (§3.3.1, alur §5.4) — di luar shell
+      // =================================================================
+      GoRoute(
+        path: '/customers/create',
+        name: 'customers-create',
+        // TODO: ganti ke CreateCustomerScreen() setelah file dibuat
+        // (screens/customers/create_customer_screen.dart).
+        builder: (context, state) =>
+            const PlaceholderScreen(title: 'Tambah Pelanggan'),
+      ),
+      GoRoute(
+        path: '/customers/:customerId',
+        name: 'customer-detail',
+        // TODO: ganti ke CustomerDetailScreen(customerId: ...) setelah file
+        // dibuat (screens/customers/customer_detail_screen.dart).
+        builder: (context, state) => PlaceholderScreen(
+          title: 'Detail Pelanggan (${state.pathParameters['customerId']})',
+        ),
+      ),
+
+      // =================================================================
+      // PESANAN / ORDERS (§3.4, alur §5.2 & §5.3) — di luar shell
+      // =================================================================
+      GoRoute(
+        path: '/orders/create',
+        name: 'orders-create',
+        // TODO: ganti ke CreateOrderScreen() setelah file dibuat
+        // (screens/orders/create_order_screen.dart).
+        builder: (context, state) =>
+            const PlaceholderScreen(title: 'Buat Pesanan Baru'),
+      ),
+      GoRoute(
+        path: '/orders/:orderId',
+        name: 'order-detail',
+        // TODO: ganti ke OrderDetailScreen(orderId: ...) setelah file
+        // dibuat (screens/orders/order_detail_screen.dart).
+        builder: (context, state) => PlaceholderScreen(
+          title: 'Detail Pesanan (${state.pathParameters['orderId']})',
+        ),
+      ),
+      GoRoute(
+        path: '/orders/:orderId/update-status',
+        name: 'order-update-status',
+        // TODO: ganti ke UpdateOrderStatusScreen(orderId: ...) setelah file
+        // dibuat (screens/orders/update_order_status_screen.dart).
+        builder: (context, state) => PlaceholderScreen(
+          title: 'Update Status Pesanan (${state.pathParameters['orderId']})',
+        ),
+      ),
+
+      // =================================================================
+      // JENIS LAYANAN / SERVICE TYPES (§3.3.3) — di luar shell
+      // =================================================================
+      GoRoute(
+        path: '/services',
+        name: 'services',
+        // TODO: ganti ke ServicesListScreen() setelah file dibuat
+        // (screens/services/services_list_screen.dart).
+        builder: (context, state) =>
+            const PlaceholderScreen(title: 'Daftar Layanan'),
+      ),
+      GoRoute(
+        path: '/services/create',
+        name: 'services-create',
+        // TODO: ganti ke CreateServiceScreen() setelah file dibuat
+        // (screens/services/create_service_screen.dart).
+        builder: (context, state) =>
+            const PlaceholderScreen(title: 'Tambah Jenis Layanan'),
+      ),
+
+      // =================================================================
+      // LAPORAN / REPORTS (§6 Metrik) — di luar shell
+      // =================================================================
+      GoRoute(
+        path: '/reports',
+        name: 'reports',
+        // TODO: ganti ke ReportsScreen() setelah file dibuat
+        // (screens/reports/reports_screen.dart).
+        builder: (context, state) =>
+            const PlaceholderScreen(title: 'Laporan'),
+      ),
+      GoRoute(
+        path: '/reports/:reportId',
+        name: 'report-detail',
+        // TODO: ganti ke ReportDetailScreen(reportId: ...) setelah file
+        // dibuat (screens/reports/report_detail_screen.dart).
+        builder: (context, state) => PlaceholderScreen(
+          title: 'Detail Laporan (${state.pathParameters['reportId']})',
+        ),
+      ),
+
+      // =================================================================
+      // PENGATURAN / SETTINGS (§3.6, sub-halaman) — di luar shell
+      // =================================================================
+      GoRoute(
+        path: '/settings/profile',
+        name: 'settings-profile',
+        // TODO: ganti ke ProfileScreen() setelah file dibuat
+        // (screens/settings/profile_screen.dart).
+        builder: (context, state) =>
+            const PlaceholderScreen(title: 'Profil Saya'),
+      ),
+      GoRoute(
+        path: '/settings/subscription',
+        name: 'settings-subscription',
+        // Dirujuk oleh dialog "Batas Kuota Tercapai" di
+        // CreateEmployeeScreen & CreateLaundryScreen — WAJIB ada supaya
+        // tombol "Upgrade Paket" tidak crash.
+        // TODO: ganti ke SubscriptionScreen() setelah file dibuat
+        // (screens/settings/subscription_screen.dart).
+        builder: (context, state) =>
+            const PlaceholderScreen(title: 'Upgrade Paket Langganan'),
+      ),
+
+      // =================================================================
+      // ShellRoute: MainScreen sebagai wadah navigasi (Bottom Navigation)
+      // =================================================================
       ShellRoute(
         builder: (context, state, child) {
-          // child di sini adalah halaman aktif (dashboard, orders, dll.) yang akan dimasukkan ke dalam MainScreen
+          // child di sini adalah halaman aktif (dashboard, orders, dll.)
+          // yang akan dimasukkan ke dalam MainScreen
           return MainScreen(child: child);
         },
         routes: [
@@ -165,24 +407,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/orders',
             name: 'orders',
+            // TODO: ganti ke OrdersListScreen() setelah file dibuat
+            // (screens/orders/orders_list_screen.dart).
             builder: (context, state) =>
                 const PlaceholderScreen(title: 'Orders List Screen'),
           ),
           GoRoute(
             path: '/customers',
             name: 'customers',
+            // TODO: ganti ke CustomersListScreen() setelah file dibuat
+            // (screens/customers/customers_list_screen.dart).
             builder: (context, state) =>
                 const PlaceholderScreen(title: 'Customers List Screen'),
           ),
           GoRoute(
             path: '/employees',
             name: 'employees',
+            // TODO: ganti ke EmployeesListScreen() setelah file dibuat
+            // (screens/employees/employees_list_screen.dart).
             builder: (context, state) =>
                 const PlaceholderScreen(title: 'Employees List Screen'),
-          ),
-          GoRoute(
-            path: '/create-employee',
-            builder: (context, state) => const CreateEmployeeScreen(),
           ),
           GoRoute(
             path: '/settings',
@@ -214,8 +458,9 @@ class GoRouterRefreshStream extends ChangeNotifier {
   }
 }
 
-
-/// Halaman Placeholder Sementara untuk fitur yang belum dibuat
+/// Halaman Placeholder Sementara untuk fitur yang belum dibuat.
+/// Dipakai di seluruh rute yang screen aslinya belum diimplementasikan
+/// (lihat komentar TODO di masing-masing GoRoute di atas).
 class PlaceholderScreen extends StatelessWidget {
   final String title;
 
