@@ -126,7 +126,7 @@ class SettingsScreen extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Pengaturan',
+                'Settings',
                 style: GoogleFonts.poppins(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
