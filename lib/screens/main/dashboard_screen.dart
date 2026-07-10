@@ -56,7 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       backgroundColor: bgColor,
       body: DefaultTextStyle.merge(
         // Menerapkan font Plus Jakarta Sans ke seluruh teks di dalam dashboard ini
-        style: GoogleFonts.plusJakartaSans(),
+        style: GoogleFonts.poppins(),
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxContentWidth),
@@ -161,6 +161,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Image.asset(
                         'asset/icon/Netwash_Logo.png',
                         fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.local_laundry_service_rounded,
+                            color: textBlue,
+                            size: 20,
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: AppTheme.md),
