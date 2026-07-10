@@ -147,11 +147,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Container(
                       width: 38,
                       height: 38,
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        // Putih solid (bukan transparan) supaya logo tetap
+                        // kontras dan tidak menyatu dengan gradient biru header,
+                        // konsisten dengan gaya badge logo di halaman login.
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      child: const Icon(Icons.local_laundry_service_rounded, color: Colors.white, size: 20),
+                      // Logo NetWash asli, disimpan di asset/icon/Netwash_Logo.png
+                      // Pastikan sudah didaftarkan di pubspec.yaml:
+                      //   flutter:
+                      //     assets:
+                      //       - asset/icon/Netwash_Logo.png
+                      child: Image.asset(
+                        'asset/icon/Netwash_Logo.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                     const SizedBox(width: AppTheme.md),
                     const Text(
