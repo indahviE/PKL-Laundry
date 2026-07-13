@@ -46,7 +46,7 @@ class SettingsScreen extends StatelessWidget {
                                 icon: Icons.person_outline_rounded,
                                 title: 'Edit Profil',
                                 subtitle: 'Ubah nama & foto profil',
-                                onTap: () {},
+                                onTap: () => context.push('/settings/profile'),
                               ),
                               _buildTile(
                                 icon: Icons.lock_outline_rounded,
