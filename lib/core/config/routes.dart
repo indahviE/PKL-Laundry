@@ -199,13 +199,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/laundries',
         name: 'laundries',
-<<<<<<< HEAD
-
-        
-        // TODO: ganti ke LaundriesListScreen() setelah file dibuat
-        // (screens/laundries/laundries_list_screen.dart).
-=======
->>>>>>> a8f147524a98317feeed79bacf009eaacf93903c
         builder: (context, state) =>
             const PlaceholderScreen(title: 'Daftar Cabang'),
       ),
@@ -284,15 +277,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) =>
             const CreateServiceScreen(),
       ),
-<<<<<<< HEAD
-      
-      // =================================================================
-      // LAPORAN / REPORTS (§6 Metrik) — di luar shell
-      // =================================================================
-=======
 
       // ==================== REPORTS ====================
->>>>>>> a8f147524a98317feeed79bacf009eaacf93903c
       GoRoute(
         path: '/reports',
         name: 'reports',

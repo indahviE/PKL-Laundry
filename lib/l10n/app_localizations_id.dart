@@ -160,4 +160,142 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get otherProviderNotice =>
       'Akun kamu login pakai provider lain (misalnya Google), jadi gak ada password yang bisa diubah di sini.';
+
+  @override
+  String get greetingMorning => 'Selamat Pagi';
+
+  @override
+  String get greetingAfternoon => 'Selamat Sore';
+
+  @override
+  String get greetingEvening => 'Selamat Malam';
+
+  @override
+  String get dashboardSubtitle => 'Berikut ringkasan bisnis laundry Anda';
+
+  @override
+  String get revenueThisMonthLabel => 'Pendapatan bulan ini';
+
+  @override
+  String get autoSyncLabel => 'Sinkronisasi otomatis';
+
+  @override
+  String get customersLabel => 'Pelanggan';
+
+  @override
+  String get activeOrdersLabel => 'Pesanan aktif';
+
+  @override
+  String get setupBranchTitle => 'Mulai Setup Cabang';
+
+  @override
+  String get setupBranchSubtitle => 'Lengkapi profil & alamat cabang';
+
+  @override
+  String get setupEmployeeTitle => 'Tambahkan Karyawan';
+
+  @override
+  String get setupEmployeeSubtitle => 'Undang staf untuk kelola pesanan';
+
+  @override
+  String get setupServiceTitle => 'Tambahkan Layanan';
+
+  @override
+  String get setupServiceSubtitle => 'Atur jenis cuci & harga';
+
+  @override
+  String get completeBranchSetupTitle => 'Selesaikan Setup Cabang';
+
+  @override
+  String setupStepsProgress(int done, int total) {
+    return '$done dari $total langkah selesai';
+  }
+
+  @override
+  String get newOrderAction => 'Pesanan\nBaru';
+
+  @override
+  String get newEmployeeAction => 'Karyawan\nBaru';
+
+  @override
+  String get manageServicesAction => 'Kelola\nLayanan';
+
+  @override
+  String get pickupDeliveryAction => 'Antar\nJemput';
+
+  @override
+  String get reportAction => 'Laporan';
+
+  @override
+  String get settingsAction => 'Pengaturan';
+
+  @override
+  String quotaLimitReached(String label) {
+    return 'Batas kuota paket Starter untuk $label telah tercapai! Silakan upgrade.';
+  }
+
+  @override
+  String get weeklyRevenueTitle => 'Pendapatan Mingguan';
+
+  @override
+  String get sevenDaysLabel => '7 hari';
+
+  @override
+  String get dayMon => 'Sen';
+
+  @override
+  String get dayTue => 'Sel';
+
+  @override
+  String get dayWed => 'Rab';
+
+  @override
+  String get dayThu => 'Kam';
+
+  @override
+  String get dayFri => 'Jum';
+
+  @override
+  String get daySat => 'Sab';
+
+  @override
+  String get daySun => 'Min';
+
+  @override
+  String get mainOrdersTitle => 'Pesanan Utama';
+
+  @override
+  String get viewAllLabel => 'Lihat Semua';
+
+  @override
+  String get filterAll => 'Semua';
+
+  @override
+  String get filterProcessing => 'Diproses';
+
+  @override
+  String get filterReady => 'Siap Diambil';
+
+  @override
+  String get filterCompleted => 'Selesai';
+
+  @override
+  String get noOrdersData => 'Tidak ada data pesanan.';
+
+  @override
+  String get noOrdersForStatus => 'Tidak ada pesanan dengan status ini.';
+
+  @override
+  String get statusCancelled => 'Batal';
+
+  @override
+  String get statusProcessing => 'Sedang Diproses';
+
+  @override
+  String get defaultCustomerName => 'Pelanggan Umum';
+
+  @override
+  String orderDetailSummary(String count, String amount) {
+    return '$count item · Rp $amount';
+  }
 }

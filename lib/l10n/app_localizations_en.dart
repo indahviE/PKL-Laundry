@@ -160,4 +160,142 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get otherProviderNotice =>
       'Your account is signed in with another provider (e.g. Google), so there\'s no password to change here.';
+
+  @override
+  String get greetingMorning => 'Good Morning';
+
+  @override
+  String get greetingAfternoon => 'Good Afternoon';
+
+  @override
+  String get greetingEvening => 'Good Evening';
+
+  @override
+  String get dashboardSubtitle => 'Here\'s a summary of your laundry business';
+
+  @override
+  String get revenueThisMonthLabel => 'Revenue this month';
+
+  @override
+  String get autoSyncLabel => 'Auto-synced';
+
+  @override
+  String get customersLabel => 'Customers';
+
+  @override
+  String get activeOrdersLabel => 'Active orders';
+
+  @override
+  String get setupBranchTitle => 'Start Branch Setup';
+
+  @override
+  String get setupBranchSubtitle => 'Complete branch profile & address';
+
+  @override
+  String get setupEmployeeTitle => 'Add Employees';
+
+  @override
+  String get setupEmployeeSubtitle => 'Invite staff to manage orders';
+
+  @override
+  String get setupServiceTitle => 'Add Services';
+
+  @override
+  String get setupServiceSubtitle => 'Set wash types & prices';
+
+  @override
+  String get completeBranchSetupTitle => 'Complete Branch Setup';
+
+  @override
+  String setupStepsProgress(int done, int total) {
+    return '$done of $total steps completed';
+  }
+
+  @override
+  String get newOrderAction => 'New\nOrder';
+
+  @override
+  String get newEmployeeAction => 'New\nEmployee';
+
+  @override
+  String get manageServicesAction => 'Manage\nServices';
+
+  @override
+  String get pickupDeliveryAction => 'Pickup &\nDelivery';
+
+  @override
+  String get reportAction => 'Report';
+
+  @override
+  String get settingsAction => 'Settings';
+
+  @override
+  String quotaLimitReached(String label) {
+    return 'The Starter plan quota limit for $label has been reached! Please upgrade.';
+  }
+
+  @override
+  String get weeklyRevenueTitle => 'Weekly Revenue';
+
+  @override
+  String get sevenDaysLabel => '7 days';
+
+  @override
+  String get dayMon => 'Mon';
+
+  @override
+  String get dayTue => 'Tue';
+
+  @override
+  String get dayWed => 'Wed';
+
+  @override
+  String get dayThu => 'Thu';
+
+  @override
+  String get dayFri => 'Fri';
+
+  @override
+  String get daySat => 'Sat';
+
+  @override
+  String get daySun => 'Sun';
+
+  @override
+  String get mainOrdersTitle => 'Main Orders';
+
+  @override
+  String get viewAllLabel => 'View All';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get filterProcessing => 'Processing';
+
+  @override
+  String get filterReady => 'Ready for Pickup';
+
+  @override
+  String get filterCompleted => 'Completed';
+
+  @override
+  String get noOrdersData => 'No order data yet.';
+
+  @override
+  String get noOrdersForStatus => 'No orders with this status.';
+
+  @override
+  String get statusCancelled => 'Cancelled';
+
+  @override
+  String get statusProcessing => 'In Progress';
+
+  @override
+  String get defaultCustomerName => 'General Customer';
+
+  @override
+  String orderDetailSummary(String count, String amount) {
+    return '$count items · Rp $amount';
+  }
 }

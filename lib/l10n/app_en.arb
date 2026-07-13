@@ -97,6 +97,7 @@
 
   "newOrderAction": "New\nOrder",
   "newEmployeeAction": "New\nEmployee",
+  "manageServicesAction": "Manage\nServices",
   "pickupDeliveryAction": "Pickup &\nDelivery",
   "reportAction": "Report",
   "settingsAction": "Settings",

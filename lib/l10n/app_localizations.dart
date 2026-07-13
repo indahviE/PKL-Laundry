@@ -373,6 +373,270 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Akun kamu login pakai provider lain (misalnya Google), jadi gak ada password yang bisa diubah di sini.'**
   String get otherProviderNotice;
+
+  /// No description provided for @greetingMorning.
+  ///
+  /// In id, this message translates to:
+  /// **'Selamat Pagi'**
+  String get greetingMorning;
+
+  /// No description provided for @greetingAfternoon.
+  ///
+  /// In id, this message translates to:
+  /// **'Selamat Sore'**
+  String get greetingAfternoon;
+
+  /// No description provided for @greetingEvening.
+  ///
+  /// In id, this message translates to:
+  /// **'Selamat Malam'**
+  String get greetingEvening;
+
+  /// No description provided for @dashboardSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Berikut ringkasan bisnis laundry Anda'**
+  String get dashboardSubtitle;
+
+  /// No description provided for @revenueThisMonthLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pendapatan bulan ini'**
+  String get revenueThisMonthLabel;
+
+  /// No description provided for @autoSyncLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Sinkronisasi otomatis'**
+  String get autoSyncLabel;
+
+  /// No description provided for @customersLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan'**
+  String get customersLabel;
+
+  /// No description provided for @activeOrdersLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan aktif'**
+  String get activeOrdersLabel;
+
+  /// No description provided for @setupBranchTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai Setup Cabang'**
+  String get setupBranchTitle;
+
+  /// No description provided for @setupBranchSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Lengkapi profil & alamat cabang'**
+  String get setupBranchSubtitle;
+
+  /// No description provided for @setupEmployeeTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambahkan Karyawan'**
+  String get setupEmployeeTitle;
+
+  /// No description provided for @setupEmployeeSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Undang staf untuk kelola pesanan'**
+  String get setupEmployeeSubtitle;
+
+  /// No description provided for @setupServiceTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambahkan Layanan'**
+  String get setupServiceTitle;
+
+  /// No description provided for @setupServiceSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Atur jenis cuci & harga'**
+  String get setupServiceSubtitle;
+
+  /// No description provided for @completeBranchSetupTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesaikan Setup Cabang'**
+  String get completeBranchSetupTitle;
+
+  /// No description provided for @setupStepsProgress.
+  ///
+  /// In id, this message translates to:
+  /// **'{done} dari {total} langkah selesai'**
+  String setupStepsProgress(int done, int total);
+
+  /// No description provided for @newOrderAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan\nBaru'**
+  String get newOrderAction;
+
+  /// No description provided for @newEmployeeAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Karyawan\nBaru'**
+  String get newEmployeeAction;
+
+  /// No description provided for @manageServicesAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola\nLayanan'**
+  String get manageServicesAction;
+
+  /// No description provided for @pickupDeliveryAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Antar\nJemput'**
+  String get pickupDeliveryAction;
+
+  /// No description provided for @reportAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Laporan'**
+  String get reportAction;
+
+  /// No description provided for @settingsAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengaturan'**
+  String get settingsAction;
+
+  /// No description provided for @quotaLimitReached.
+  ///
+  /// In id, this message translates to:
+  /// **'Batas kuota paket Starter untuk {label} telah tercapai! Silakan upgrade.'**
+  String quotaLimitReached(String label);
+
+  /// No description provided for @weeklyRevenueTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pendapatan Mingguan'**
+  String get weeklyRevenueTitle;
+
+  /// No description provided for @sevenDaysLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'7 hari'**
+  String get sevenDaysLabel;
+
+  /// No description provided for @dayMon.
+  ///
+  /// In id, this message translates to:
+  /// **'Sen'**
+  String get dayMon;
+
+  /// No description provided for @dayTue.
+  ///
+  /// In id, this message translates to:
+  /// **'Sel'**
+  String get dayTue;
+
+  /// No description provided for @dayWed.
+  ///
+  /// In id, this message translates to:
+  /// **'Rab'**
+  String get dayWed;
+
+  /// No description provided for @dayThu.
+  ///
+  /// In id, this message translates to:
+  /// **'Kam'**
+  String get dayThu;
+
+  /// No description provided for @dayFri.
+  ///
+  /// In id, this message translates to:
+  /// **'Jum'**
+  String get dayFri;
+
+  /// No description provided for @daySat.
+  ///
+  /// In id, this message translates to:
+  /// **'Sab'**
+  String get daySat;
+
+  /// No description provided for @daySun.
+  ///
+  /// In id, this message translates to:
+  /// **'Min'**
+  String get daySun;
+
+  /// No description provided for @mainOrdersTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan Utama'**
+  String get mainOrdersTitle;
+
+  /// No description provided for @viewAllLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Lihat Semua'**
+  String get viewAllLabel;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua'**
+  String get filterAll;
+
+  /// No description provided for @filterProcessing.
+  ///
+  /// In id, this message translates to:
+  /// **'Diproses'**
+  String get filterProcessing;
+
+  /// No description provided for @filterReady.
+  ///
+  /// In id, this message translates to:
+  /// **'Siap Diambil'**
+  String get filterReady;
+
+  /// No description provided for @filterCompleted.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai'**
+  String get filterCompleted;
+
+  /// No description provided for @noOrdersData.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada data pesanan.'**
+  String get noOrdersData;
+
+  /// No description provided for @noOrdersForStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada pesanan dengan status ini.'**
+  String get noOrdersForStatus;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In id, this message translates to:
+  /// **'Batal'**
+  String get statusCancelled;
+
+  /// No description provided for @statusProcessing.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang Diproses'**
+  String get statusProcessing;
+
+  /// No description provided for @defaultCustomerName.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan Umum'**
+  String get defaultCustomerName;
+
+  /// No description provided for @orderDetailSummary.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} item · Rp {amount}'**
+  String orderDetailSummary(String count, String amount);
 }
 
 class _AppLocalizationsDelegate
