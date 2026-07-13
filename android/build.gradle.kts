@@ -1,6 +1,5 @@
 plugins {
-    // Hanya satu baris ini saja yang dibutuhkan di file ini:
-    id("com.google.gms.google-services") version "4.5.0" apply false
+    // kosongkan, tidak perlu deklarasi plugin di sini
 }
 
 allprojects {

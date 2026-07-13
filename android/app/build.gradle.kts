@@ -1,9 +1,10 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    id("dev.flutter.flutter-gradle-plugin")
-    // Tambahkan baris ini TANPA version dan TANPA apply false:
     id("com.google.gms.google-services")
+    // WAJIB ADA — ini yang bikin Flutter tooling mengenali project ini.
+    // Harus di baris PALING AKHIR, setelah android & kotlin plugin.
+    id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
