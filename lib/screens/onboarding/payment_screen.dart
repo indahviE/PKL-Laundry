@@ -80,7 +80,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       final session = await _stripeService.createCheckoutSession(
         planName: widget.planName,
         isYearly: widget.isYearly,
-        successUrl: 'https://netwash.app/payment/success',
+        successUrl: 'https://netwash-stripe-backend.vercel.app/payment-success.html',
         cancelUrl: 'https://netwash.app/payment/cancel',
       );
 
