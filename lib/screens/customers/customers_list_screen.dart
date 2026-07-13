@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/themes/app_theme.dart';
+import 'create_customer_screen.dart';
 
 /// Customer Model
 class CustomerItem {
@@ -158,6 +161,15 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
+  /// Buka Create Customer screen, refresh list kalau berhasil disimpan
+  Future<void> _openCreateCustomer(BuildContext context) async {
+    final result = await context.push<bool>('/customers/create');
+    if (result == true && mounted) {
+      // TODO: refresh dari Firestore begitu backend-nya siap
+      _applyFiltersAndSearch();
+    }
+  }
+
   /// Get initials for avatar
   String _getInitials(String name) {
     final parts = name.trim().split(' ');
@@ -169,103 +181,119 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
     return Scaffold(
-      appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(isMobile ? AppTheme.lg : AppTheme.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with action button
-              _buildHeader(context),
-
-              const SizedBox(height: AppTheme.xl),
-
-              // Search bar
-              _buildSearchBar(context),
-
-              const SizedBox(height: AppTheme.lg),
-
-              // Filter buttons
-              _buildFilterButtons(context),
-
-              const SizedBox(height: AppTheme.xl),
-
-              // Stats summary
-              _buildStatsSummary(context, isMobile),
-
-              const SizedBox(height: AppTheme.xl),
-
-              // Customers list
-              _filteredCustomers.isEmpty
-                  ? _buildEmptyState(context)
-                  : _buildCustomersList(context, isMobile),
-
-              const SizedBox(height: AppTheme.lg),
-            ],
-          ),
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 900),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 16 : 24,
+                      isMobile ? 16 : 24,
+                      isMobile ? 16 : 24,
+                      24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(context),
+                        const SizedBox(height: 22),
+                        _buildSearchBar(context),
+                        const SizedBox(height: AppTheme.lg),
+                        _buildFilterButtons(context),
+                        const SizedBox(height: AppTheme.xl),
+                        _buildStatsSummary(context, isMobile),
+                        const SizedBox(height: AppTheme.xl),
+                        _filteredCustomers.isEmpty
+                            ? _buildEmptyState(context)
+                            : _buildCustomersList(context, isMobile),
+                        const SizedBox(height: AppTheme.lg),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  /// Build App Bar
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: const Text(
-        'Pelanggan',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 24,
-        ),
-      ),
-      elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-    );
-  }
-
-  /// Build header
+  /// Build header (solid, no gradient)
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Daftar Pelanggan',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(13),
                   ),
-            ),
-            const SizedBox(height: AppTheme.sm),
-            Text(
-              'Kelola data pelanggan laundry Anda',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.gray600,
+                  child: Icon(
+                    Icons.people_alt_rounded,
+                    color: AppTheme.primaryColor,
+                    size: 22,
                   ),
+                ),
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pelanggan',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Kelola data pelanggan laundry Anda',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w400,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),
         ElevatedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Navigasi ke Create Customer akan ditambahkan'),
-              ),
-            );
-          },
-          icon: const Icon(Icons.person_add_outlined),
-          label: const Text('Pelanggan Baru'),
+          onPressed: () => _openCreateCustomer(context),
+          icon: const Icon(Icons.person_add_outlined, size: 18),
+          label: Text(
+            'Baru',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
+          ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF5DADE2),
+            backgroundColor: AppTheme.primaryColor,
+            foregroundColor: Colors.white,
+            elevation: 0,
             padding: const EdgeInsets.symmetric(
               horizontal: AppTheme.lg,
               vertical: AppTheme.md,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             ),
           ),
         ),
@@ -275,27 +303,44 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
 
   /// Build search bar
   Widget _buildSearchBar(BuildContext context) {
-    return TextField(
-      controller: _searchController,
-      onChanged: (value) => _applyFiltersAndSearch(),
-      decoration: InputDecoration(
-        hintText: 'Cari nama atau nomor telepon...',
-        prefixIcon: const Icon(Icons.search),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          borderSide: const BorderSide(color: AppTheme.borderColor),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          borderSide: const BorderSide(color: AppTheme.borderColor),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          borderSide: const BorderSide(color: Color(0xFF5DADE2), width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.lg,
-          vertical: AppTheme.md,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) => _applyFiltersAndSearch(),
+        style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+        decoration: InputDecoration(
+          hintText: 'Cari nama atau nomor telepon...',
+          hintStyle: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textTertiary),
+          prefixIcon: Icon(Icons.search, color: AppTheme.textTertiary),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
+          ),
+          filled: true,
+          fillColor: AppTheme.cardColor,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.lg,
+            vertical: AppTheme.md,
+          ),
         ),
       ),
     );
@@ -324,6 +369,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                 });
                 _applyFiltersAndSearch();
               },
+              showCheckmark: false,
               label: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -332,12 +378,18 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                   Text(filters[index].$2),
                 ],
               ),
-              backgroundColor: Colors.grey.shade100,
-              selectedColor: const Color(0xFF5DADE2).withOpacity(0.2),
-              labelStyle: TextStyle(
+              backgroundColor: AppTheme.cardColor,
+              selectedColor: AppTheme.primaryColor.withOpacity(0.12),
+              side: BorderSide(
                 color: _selectedFilter == filters[index].$1
-                    ? const Color(0xFF5DADE2)
-                    : AppTheme.gray600,
+                    ? AppTheme.primaryColor.withOpacity(0.4)
+                    : AppTheme.borderColor,
+              ),
+              labelStyle: GoogleFonts.poppins(
+                fontSize: 12.5,
+                color: _selectedFilter == filters[index].$1
+                    ? AppTheme.primaryColor
+                    : AppTheme.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -362,7 +414,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
             title: 'Total Pelanggan',
             value: '$totalCustomers',
             icon: Icons.people_outline,
-            color: const Color(0xFF5DADE2),
+            color: AppTheme.primaryColor,
           ),
         ),
         const SizedBox(width: AppTheme.lg),
@@ -385,32 +437,49 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
         padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
         child: Column(
           children: [
-            Icon(
-              Icons.people_outline,
-              size: 80,
-              color: Colors.grey.shade400,
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.people_outline,
+                size: 40,
+                color: AppTheme.primaryColor.withOpacity(0.6),
+              ),
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
               'Tidak ada pelanggan',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
             ),
             const SizedBox(height: AppTheme.sm),
             Text(
               'Tambahkan pelanggan baru untuk memulai',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.gray600,
-                  ),
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+              ),
             ),
             const SizedBox(height: AppTheme.xl),
             ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.person_add_outlined),
-              label: const Text('Tambah Pelanggan'),
+              onPressed: () => _openCreateCustomer(context),
+              icon: const Icon(Icons.person_add_outlined, size: 18),
+              label: Text('Tambah Pelanggan', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5DADE2),
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.xl, vertical: AppTheme.md),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
               ),
             ),
           ],
@@ -431,13 +500,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
               initials: _getInitials(_filteredCustomers[index].name),
               formattedSpent: _formatCurrency(_filteredCustomers[index].totalSpent),
               formattedLastOrder: _formatLastOrder(_filteredCustomers[index].lastOrderDate),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Detail pelanggan ${_filteredCustomers[index].name}'),
-                  ),
-                );
-              },
+              onTap: () => context.push('/customers/${_filteredCustomers[index].id}'),
             ),
             if (index < _filteredCustomers.length - 1)
               const SizedBox(height: AppTheme.lg),
@@ -452,7 +515,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
 // HELPER WIDGETS
 // ============================================
 
-/// Stat Box Widget (sama seperti di OrdersListScreen)
+/// Stat Box Widget
 class _StatBox extends StatelessWidget {
   final String title;
   final String value;
@@ -471,13 +534,13 @@ class _StatBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -487,8 +550,8 @@ class _StatBox extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppTheme.sm),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(
               icon,
@@ -499,17 +562,18 @@ class _StatBox extends StatelessWidget {
           const SizedBox(height: AppTheme.md),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            style: GoogleFonts.poppins(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
             ),
           ),
-          const SizedBox(height: AppTheme.sm),
+          const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               fontSize: 12,
-              color: Colors.grey.shade600,
+              color: AppTheme.textTertiary,
             ),
           ),
         ],
@@ -542,14 +606,13 @@ class _CustomerCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppTheme.lg),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardColor,
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              color: AppTheme.primaryColor.withOpacity(0.06),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -560,12 +623,12 @@ class _CustomerCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: const Color(0xFF5DADE2).withOpacity(0.15),
+                  backgroundColor: AppTheme.primaryColor.withOpacity(0.12),
                   child: Text(
                     initials,
-                    style: const TextStyle(
-                      color: Color(0xFF5DADE2),
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.poppins(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.w700,
                       fontSize: 15,
                     ),
                   ),
@@ -575,26 +638,21 @@ class _CustomerCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              customer.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        customer.name,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.5,
+                          color: AppTheme.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
                         customer.phone,
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 12.5,
-                          color: Colors.grey.shade600,
+                          color: AppTheme.textSecondary,
                         ),
                       ),
                     ],
@@ -603,16 +661,16 @@ class _CustomerCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppTheme.md,
-                    vertical: AppTheme.sm,
+                    vertical: 6,
                   ),
                   decoration: BoxDecoration(
                     color: (customer.isActive ? const Color(0xFF51CF66) : Colors.grey)
-                        .withOpacity(0.15),
+                        .withOpacity(0.12),
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Text(
                     customer.isActive ? 'Aktif' : 'Tidak Aktif',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: customer.isActive ? const Color(0xFF51CF66) : Colors.grey.shade600,
@@ -621,11 +679,9 @@ class _CustomerCard extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: AppTheme.lg),
-            const Divider(height: 1),
+            Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
             const SizedBox(height: AppTheme.md),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -633,15 +689,15 @@ class _CustomerCard extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.receipt_long_outlined,
-                      size: 16,
-                      color: Colors.grey.shade600,
+                      size: 15,
+                      color: AppTheme.textTertiary,
                     ),
-                    const SizedBox(width: AppTheme.sm),
+                    const SizedBox(width: 6),
                     Text(
                       '${customer.totalOrders} pesanan',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11.5,
+                        color: AppTheme.textTertiary,
                       ),
                     ),
                   ],
@@ -650,25 +706,25 @@ class _CustomerCard extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.schedule_outlined,
-                      size: 16,
-                      color: Colors.grey.shade600,
+                      size: 15,
+                      color: AppTheme.textTertiary,
                     ),
-                    const SizedBox(width: AppTheme.sm),
+                    const SizedBox(width: 6),
                     Text(
                       formattedLastOrder,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11.5,
+                        color: AppTheme.textTertiary,
                       ),
                     ),
                   ],
                 ),
                 Text(
                   formattedSpent,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF5DADE2),
+                    color: AppTheme.primaryColor,
                   ),
                 ),
               ],

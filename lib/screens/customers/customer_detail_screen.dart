@@ -1,4 +1,5 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/themes/app_theme.dart';
 
 /// Model riwayat pesanan singkat untuk ditampilkan di detail pelanggan
@@ -87,7 +88,7 @@ class CustomerDetailScreen extends StatelessWidget {
       case 'pending':
         return Colors.orange;
       case 'processing':
-        return const Color(0xFF5DADE2);
+        return AppTheme.primaryColor;
       case 'completed':
         return const Color(0xFF51CF66);
       case 'cancelled':
@@ -122,90 +123,141 @@ class CustomerDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
     return Scaffold(
-      appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(isMobile ? AppTheme.lg : AppTheme.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Profile card
-              _buildProfileCard(context),
-
-              const SizedBox(height: AppTheme.xl),
-
-              // Quick contact actions
-              _buildQuickActions(context),
-
-              const SizedBox(height: AppTheme.xl),
-
-              // Stats row
-              _buildStatsRow(context, isMobile),
-
-              const SizedBox(height: AppTheme.xl),
-
-              // Contact info
-              _buildContactInfo(context),
-
-              const SizedBox(height: AppTheme.xl),
-
-              // Order history
-              _buildOrderHistoryHeader(context),
-              const SizedBox(height: AppTheme.lg),
-              _buildOrderHistoryList(context),
-
-              const SizedBox(height: AppTheme.lg),
-            ],
-          ),
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 16 : 24,
+                      isMobile ? 16 : 24,
+                      isMobile ? 16 : 24,
+                      24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTopBar(context),
+                        const SizedBox(height: AppTheme.xl),
+                        _buildProfileCard(context),
+                        const SizedBox(height: AppTheme.xl),
+                        _buildQuickActions(context),
+                        const SizedBox(height: AppTheme.xl),
+                        _buildStatsRow(context, isMobile),
+                        const SizedBox(height: AppTheme.xl),
+                        _buildContactInfo(context),
+                        const SizedBox(height: AppTheme.xl),
+                        _buildOrderHistoryHeader(context),
+                        const SizedBox(height: AppTheme.lg),
+                        _buildOrderHistoryList(context),
+                        const SizedBox(height: AppTheme.lg),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  /// Build App Bar
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: const Text('Detail Pelanggan'),
-      elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      actions: [
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert),
-          onSelected: (value) {
-            if (value == 'edit') {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Navigasi ke Edit Pelanggan akan ditambahkan')),
-              );
-            } else if (value == 'delete') {
-              _showDeleteConfirmation(context);
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                children: [
-                  Icon(Icons.edit_outlined, size: 18),
-                  SizedBox(width: 10),
-                  Text('Edit Pelanggan'),
-                ],
+  /// Build top bar (back button + title + menu)
+  Widget _buildTopBar(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            InkWell(
+              onTap: () => Navigator.pop(context),
+              borderRadius: BorderRadius.circular(11),
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppTheme.cardColor,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withOpacity(0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: AppTheme.textPrimary),
               ),
             ),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                  SizedBox(width: 10),
-                  Text('Hapus Pelanggan', style: TextStyle(color: Colors.red)),
-                ],
+            const SizedBox(width: 14),
+            Text(
+              'Detail Pelanggan',
+              style: GoogleFonts.poppins(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
               ),
             ),
           ],
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: AppTheme.cardColor,
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor.withOpacity(0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: AppTheme.textPrimary),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            ),
+            onSelected: (value) {
+              if (value == 'edit') {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Navigasi ke Edit Pelanggan akan ditambahkan')),
+                );
+              } else if (value == 'delete') {
+                _showDeleteConfirmation(context);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_outlined, size: 18, color: AppTheme.textPrimary),
+                    const SizedBox(width: 10),
+                    Text('Edit Pelanggan', style: GoogleFonts.poppins(fontSize: 13.5)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                    const SizedBox(width: 10),
+                    Text('Hapus Pelanggan',
+                        style: GoogleFonts.poppins(color: Colors.red, fontSize: 13.5)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -216,12 +268,16 @@ class CustomerDetailScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: const Text('Hapus Pelanggan?'),
-        content: Text('Data pelanggan "$_name" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.'),
+        title: Text('Hapus Pelanggan?', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: Text(
+          'Data pelanggan "$_name" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.',
+          style: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 13.5),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+            child: Text('Batal',
+                style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
           ),
           TextButton(
             onPressed: () {
@@ -231,7 +287,8 @@ class CustomerDetailScreen extends StatelessWidget {
                 const SnackBar(content: Text('Pelanggan berhasil dihapus (Testing mode)')),
               );
             },
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+            child: Text('Hapus',
+                style: GoogleFonts.poppins(color: Colors.red, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -244,14 +301,13 @@ class CustomerDetailScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppTheme.xl),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -259,12 +315,12 @@ class CustomerDetailScreen extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 36,
-            backgroundColor: const Color(0xFF5DADE2).withOpacity(0.15),
+            backgroundColor: AppTheme.primaryColor.withOpacity(0.12),
             child: Text(
               _getInitials(_name),
-              style: const TextStyle(
-                color: Color(0xFF5DADE2),
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.poppins(
+                color: AppTheme.primaryColor,
+                fontWeight: FontWeight.w700,
                 fontSize: 24,
               ),
             ),
@@ -272,23 +328,27 @@ class CustomerDetailScreen extends StatelessWidget {
           const SizedBox(height: AppTheme.md),
           Text(
             _name,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             'Bergabung sejak ${_formatJoinDate(_joinDate)}',
-            style: TextStyle(fontSize: 12.5, color: Colors.grey.shade500),
+            style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textTertiary),
           ),
           const SizedBox(height: AppTheme.md),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 6),
             decoration: BoxDecoration(
-              color: (_isActive ? const Color(0xFF51CF66) : Colors.grey).withOpacity(0.15),
+              color: (_isActive ? const Color(0xFF51CF66) : Colors.grey).withOpacity(0.12),
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             ),
             child: Text(
               _isActive ? 'Pelanggan Aktif' : 'Tidak Aktif',
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: _isActive ? const Color(0xFF51CF66) : Colors.grey.shade600,
@@ -312,11 +372,11 @@ class CustomerDetailScreen extends StatelessWidget {
               );
             },
             icon: const Icon(Icons.call_outlined, size: 18),
-            label: const Text('Telepon'),
+            label: Text('Telepon', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
-              foregroundColor: const Color(0xFF5DADE2),
-              side: const BorderSide(color: Color(0xFF5DADE2)),
+              foregroundColor: AppTheme.primaryColor,
+              side: BorderSide(color: AppTheme.primaryColor),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
             ),
           ),
@@ -330,9 +390,11 @@ class CustomerDetailScreen extends StatelessWidget {
               );
             },
             icon: const Icon(Icons.chat_outlined, size: 18),
-            label: const Text('WhatsApp'),
+            label: Text('WhatsApp', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF51CF66),
+              foregroundColor: Colors.white,
+              elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
             ),
@@ -351,7 +413,7 @@ class CustomerDetailScreen extends StatelessWidget {
             icon: Icons.receipt_long_outlined,
             label: 'Total Pesanan',
             value: '$_totalOrders',
-            color: const Color(0xFF5DADE2),
+            color: AppTheme.primaryColor,
           ),
         ),
         const SizedBox(width: AppTheme.lg),
@@ -373,16 +435,26 @@ class CustomerDetailScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Informasi Kontak',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
           ),
           const SizedBox(height: AppTheme.lg),
           _ContactRow(icon: Icons.phone_outlined, label: 'Telepon', value: _phone),
@@ -401,7 +473,11 @@ class CustomerDetailScreen extends StatelessWidget {
       children: [
         Text(
           'Riwayat Pesanan',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
         ),
         TextButton(
           onPressed: () {
@@ -409,9 +485,9 @@ class CustomerDetailScreen extends StatelessWidget {
               const SnackBar(content: Text('Navigasi ke semua riwayat pesanan akan ditambahkan')),
             );
           },
-          child: const Text(
+          child: Text(
             'Lihat Semua',
-            style: TextStyle(color: Color(0xFF5DADE2), fontWeight: FontWeight.w600),
+            style: GoogleFonts.poppins(color: AppTheme.primaryColor, fontWeight: FontWeight.w600, fontSize: 13),
           ),
         ),
       ],
@@ -425,7 +501,7 @@ class CustomerDetailScreen extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           'Belum ada riwayat pesanan',
-          style: TextStyle(color: Colors.grey.shade500),
+          style: GoogleFonts.poppins(color: AppTheme.textTertiary),
         ),
       );
     }
@@ -437,9 +513,15 @@ class CustomerDetailScreen extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: AppTheme.md),
           padding: const EdgeInsets.all(AppTheme.md),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.cardColor,
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor.withOpacity(0.05),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -449,18 +531,20 @@ class CustomerDetailScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(order.id, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                        Text(order.id,
+                            style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.textPrimary)),
                         const SizedBox(width: 6),
                         Text(
                           '· ${order.itemCount} item',
-                          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500),
+                          style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textTertiary),
                         ),
                       ],
                     ),
                     const SizedBox(height: 3),
                     Text(
                       _formatOrderDate(order.date),
-                      style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500),
+                      style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textTertiary),
                     ),
                   ],
                 ),
@@ -473,13 +557,14 @@ class CustomerDetailScreen extends StatelessWidget {
                 ),
                 child: Text(
                   _getStatusLabel(order.status),
-                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: statusColor),
+                  style: GoogleFonts.poppins(fontSize: 10.5, fontWeight: FontWeight.w700, color: statusColor),
                 ),
               ),
               const SizedBox(width: AppTheme.md),
               Text(
                 _formatCurrency(order.amount),
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF5DADE2)),
+                style: GoogleFonts.poppins(
+                    fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
               ),
             ],
           ),
@@ -511,9 +596,15 @@ class _StatTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,22 +612,22 @@ class _StatTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppTheme.sm),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(height: AppTheme.md),
           Text(
             value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+            style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textTertiary),
           ),
         ],
       ),
@@ -560,15 +651,17 @@ class _ContactRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: Colors.grey.shade500),
+        Icon(icon, size: 18, color: AppTheme.textTertiary),
         const SizedBox(width: AppTheme.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500)),
+              Text(label, style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textTertiary)),
               const SizedBox(height: 2),
-              Text(value, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500)),
+              Text(value,
+                  style: GoogleFonts.poppins(
+                      fontSize: 13.5, fontWeight: FontWeight.w500, color: AppTheme.textPrimary)),
             ],
           ),
         ),
