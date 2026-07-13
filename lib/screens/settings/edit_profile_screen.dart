@@ -1,8 +1,9 @@
-import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/themes/app_theme.dart';
@@ -17,7 +18,7 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  File? _pickedImage;
+  Uint8List? _pickedBytes;
   bool _isSaving = false;
 
   User? get _user => FirebaseAuth.instance.currentUser;
@@ -46,7 +47,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         maxWidth: 800,
       );
       if (picked != null) {
-        setState(() => _pickedImage = File(picked.path));
+        final bytes = await picked.readAsBytes();
+        setState(() => _pickedBytes = bytes);
       }
     } catch (e) {
       debugPrint('Pick image error: $e');
@@ -57,14 +59,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  // Backend Vercel Indah (netwash-stripe-backend)
+  static const _uploadEndpoint =
+      'https://netwash-stripe-backend.vercel.app/api/upload-photo';
+
   Future<String?> _uploadPhoto(String uid) async {
-    if (_pickedImage == null) return _user?.photoURL;
-    final ref = FirebaseStorage.instance
-        .ref()
-        .child('profile_photos')
-        .child('$uid.jpg');
-    await ref.putFile(_pickedImage!);
-    return ref.getDownloadURL();
+    if (_pickedBytes == null) return _user?.photoURL;
+
+    final base64Image = 'data:image/jpeg;base64,${base64Encode(_pickedBytes!)}';
+
+    final response = await http
+        .post(
+          Uri.parse(_uploadEndpoint),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'image': base64Image, 'uid': uid}),
+        )
+        .timeout(
+          const Duration(seconds: 20),
+          onTimeout: () => throw Exception('Upload timeout, cek koneksi kamu'),
+        );
+
+    if (response.statusCode != 200) {
+      throw Exception('Upload gagal (${response.statusCode}): ${response.body}');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return data['url'] as String?;
   }
 
   Future<void> _save() async {
@@ -196,15 +216,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     offset: const Offset(0, 6),
                   ),
                 ],
-                image: _pickedImage != null
+                image: _pickedBytes != null
                     ? DecorationImage(
-                        image: FileImage(_pickedImage!), fit: BoxFit.cover)
+                        image: MemoryImage(_pickedBytes!), fit: BoxFit.cover)
                     : (photoUrl != null
                         ? DecorationImage(
                             image: NetworkImage(photoUrl), fit: BoxFit.cover)
                         : null),
               ),
-              child: (_pickedImage == null && photoUrl == null)
+              child: (_pickedBytes == null && photoUrl == null)
                   ? Text(
                       _nameController.text.isNotEmpty
                           ? _nameController.text[0].toUpperCase()

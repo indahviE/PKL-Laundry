@@ -5,15 +5,33 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/themes/app_theme.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
   @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  User? get _user => FirebaseAuth.instance.currentUser;
+
+  // Dipanggil tiap balik dari EditProfileScreen biar avatar & nama
+  // langsung keupdate tanpa harus restart app / re-login.
+  Future<void> _openEditProfile() async {
+    final result = await context.push('/settings/profile');
+    if (result == true) {
+      await _user?.reload();
+      if (mounted) setState(() {});
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _user;
     final displayName = user?.displayName?.trim().isNotEmpty == true
         ? user!.displayName!
         : (user?.email?.split('@').first ?? 'User NetWash');
+    final photoUrl = user?.photoURL;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -29,7 +47,7 @@ class SettingsScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildHeader(context, displayName, user?.email),
+                      _buildHeader(context, displayName, user?.email, photoUrl),
                       Padding(
                         padding: EdgeInsets.fromLTRB(
                           isMobile ? 16 : 24,
@@ -46,7 +64,7 @@ class SettingsScreen extends StatelessWidget {
                                 icon: Icons.person_outline_rounded,
                                 title: 'Edit Profil',
                                 subtitle: 'Ubah nama & foto profil',
-                                onTap: () => context.push('/settings/profile'),
+                                onTap: _openEditProfile,
                               ),
                               _buildTile(
                                 icon: Icons.lock_outline_rounded,
@@ -108,9 +126,14 @@ class SettingsScreen extends StatelessWidget {
 
   // ==========================================================
   // HEADER — gradient sama kayak brand panel login, isi avatar +
-  // nama + role badge
+  // nama + role badge. Avatar sekarang nampilin foto asli kalau ada.
   // ==========================================================
-  Widget _buildHeader(BuildContext context, String name, String? email) {
+  Widget _buildHeader(
+    BuildContext context,
+    String name,
+    String? email,
+    String? photoUrl,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 36),
@@ -150,15 +173,23 @@ class SettingsScreen extends StatelessWidget {
                   offset: const Offset(0, 8),
                 ),
               ],
+              image: (photoUrl != null && photoUrl.isNotEmpty)
+                  ? DecorationImage(
+                      image: NetworkImage(photoUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: GoogleFonts.poppins(
-                fontSize: 30,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.primaryColor,
-              ),
-            ),
+            child: (photoUrl == null || photoUrl.isEmpty)
+                ? Text(
+                    name.isNotEmpty ? name[0].toUpperCase() : '?',
+                    style: GoogleFonts.poppins(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.primaryColor,
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(height: 14),
           Text(
