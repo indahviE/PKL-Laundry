@@ -33,6 +33,17 @@ import '../../screens/employees/create_employee_screen.dart';
 // --- Laundries ---
 import 'package:netwash/screens/laundries/create_laundry_screen.dart';
 
+// --- Orders ---
+import '../../screens/orders/order_list_screen.dart';
+import '../../screens/orders/create_order_screen.dart';
+import '../../screens/orders/order_detail_screen.dart';
+
+// --- Customers ---
+import '../../screens/customers/customers_list_screen.dart';
+import '../../screens/customers/customer_detail_screen.dart';
+import '../../screens/customers/create_customer_screen.dart';
+
+
 // Screen di bawah belum dibuat filenya, pakai PlaceholderScreen sementara.
 // import '../../screens/auth/forgot_password_screen.dart';
 // import '../../screens/orders/orders_list_screen.dart';
@@ -218,33 +229,31 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // ==================== CUSTOMERS ====================
+     // ==================== CUSTOMERS ====================
       GoRoute(
         path: '/customers/create',
         name: 'customers-create',
-        builder: (context, state) =>
-            const PlaceholderScreen(title: 'Tambah Pelanggan'),
+        builder: (context, state) => const CreateCustomerScreen(),
       ),
       GoRoute(
         path: '/customers/:customerId',
         name: 'customer-detail',
-        builder: (context, state) => PlaceholderScreen(
-          title: 'Detail Pelanggan (${state.pathParameters['customerId']})',
+        builder: (context, state) => CustomerDetailScreen(
+          customerId: state.pathParameters['customerId'] ?? '',
         ),
       ),
 
-      // ==================== ORDERS ====================
+// ==================== ORDERS ====================
       GoRoute(
         path: '/orders/create',
         name: 'orders-create',
-        builder: (context, state) =>
-            const PlaceholderScreen(title: 'Buat Pesanan Baru'),
+        builder: (context, state) => const CreateOrderScreen(), 
       ),
       GoRoute(
         path: '/orders/:orderId',
         name: 'order-detail',
-        builder: (context, state) => PlaceholderScreen(
-          title: 'Detail Pesanan (${state.pathParameters['orderId']})',
+        builder: (context, state) => OrderDetailScreen( 
+          orderId: state.pathParameters['orderId'] ?? '',
         ),
       ),
       GoRoute(
@@ -310,17 +319,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             name: 'dashboard',
             builder: (context, state) => const DashboardScreen(),
           ),
-          GoRoute(
+         GoRoute(
             path: '/orders',
             name: 'orders',
-            builder: (context, state) =>
-                const PlaceholderScreen(title: 'Orders List Screen'),
+            builder: (context, state) => const OrdersListScreen(), 
           ),
           GoRoute(
             path: '/customers',
             name: 'customers',
-            builder: (context, state) =>
-                const PlaceholderScreen(title: 'Customers List Screen'),
+            builder: (context, state) => const CustomersListScreen(), 
           ),
           GoRoute(
             path: '/employees',
