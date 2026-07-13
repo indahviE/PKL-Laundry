@@ -22,6 +22,7 @@ import '../../screens/onboarding/payment_screen.dart';
 // --- Settings ---
 import '../../screens/settings/setting_screen.dart';
 import '../../screens/settings/edit_profile_screen.dart';
+import '../../screens/settings/change_password_screen.dart';
 
 // --- Repositories ---
 import '../../repositories/auth_repository.dart';
@@ -288,6 +289,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'settings-profile',
         builder: (context, state) => const EditProfileScreen(),
       ),
+      GoRoute(
+      path: '/settings/change-password',
+      builder: (context, state) => const ChangePasswordScreen(),
+    ),
       GoRoute(
         path: '/settings/subscription',
         name: 'settings-subscription',

@@ -70,7 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 icon: Icons.lock_outline_rounded,
                                 title: 'Ubah Password',
                                 subtitle: 'Perbarui kata sandi akun',
-                                onTap: () {},
+                                onTap: ()  => context.push('/settings/change-password'),
                                 showDivider: false,
                               ),
                             ]),
