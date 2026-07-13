@@ -126,6 +126,412 @@
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
+<<<<<<< HEAD
+=======
+            const SizedBox(height: AppTheme.xl),
+            Text(
+              greeting,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 22,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Berikut ringkasan bisnis laundry Anda',
+              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================
+  // REAL-TIME SUMMARY CARD (Firestore Stream)
+  // ============================================
+  Widget _buildBalanceCardRealtime() {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(_currentUserId);
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: userRef.collection('orders').snapshots(),
+      builder: (context, orderSnapshot) {
+        return StreamBuilder<QuerySnapshot>(
+          stream: userRef.collection('customers').snapshots(),
+          builder: (context, customerSnapshot) {
+            int totalCustomers = customerSnapshot.hasData ? customerSnapshot.data!.docs.length : 0;
+            int activeOrders = 0;
+            double totalRevenueThisMonth = 0;
+
+            if (orderSnapshot.hasData) {
+              final now = DateTime.now();
+              final startOfMonth = DateTime(now.year, now.month, 1);
+
+              for (var doc in orderSnapshot.data!.docs) {
+                final data = doc.data() as Map<String, dynamic>;
+                String status = data['status'] ?? 'pending';
+                
+                // Menghitung pesanan yang belum selesai
+                if (['pending', 'confirmed', 'in_progress', 'washing', 'drying', 'ironing', 'quality_check', 'ready'].contains(status)) {
+                  activeOrders++;
+                }
+
+                // Menghitung pendapatan dari transaksi sukses (paid) bulan ini
+                Timestamp? orderDate = data['order_date'] as Timestamp?;
+                if (orderDate != null && orderDate.toDate().isAfter(startOfMonth)) {
+                  if (data['payment_status'] == 'paid') {
+                    totalRevenueThisMonth += (data['total_amount'] ?? 0).toDouble();
+                  }
+                }
+              }
+            }
+
+            // Memformat visual ke UI Card asli
+            return Container(
+              padding: const EdgeInsets.all(AppTheme.lg),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryBlue.withOpacity(0.15),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pendapatan bulan ini',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Rp ${totalRevenueThisMonth.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.black87,
+                            letterSpacing: -0.3,
+                           ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text('Sinkronisasi otomatis', style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+                      ],
+                    ),
+                  ),
+                  Container(width: 1, height: 50, color: Colors.grey.shade200),
+                  const SizedBox(width: AppTheme.lg),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('$totalCustomers', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textBlue)),
+                      Text('Pelanggan', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                      const SizedBox(height: 10),
+                      Text('$activeOrders', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textBlue)),
+                      Text('Pesanan aktif', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ============================================
+  // REAL-TIME SETUP ONBOARDING CHECKLIST
+  // ============================================
+  Widget _buildSetupChecklistRealtime() {
+    if (_setupDismissed) return const SizedBox.shrink();
+
+    final userRef = FirebaseFirestore.instance.collection('users').doc(_currentUserId);
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: userRef.collection('laundries').snapshots(),
+      builder: (context, laundrySnap) {
+        return StreamBuilder<QuerySnapshot>(
+          stream: userRef.collection('employees').snapshots(),
+          builder: (context, employeeSnap) {
+            return StreamBuilder<QuerySnapshot>(
+              stream: userRef.collection('service_types').snapshots(),
+              builder: (context, serviceSnap) {
+
+                bool hasBranch = laundrySnap.hasData && laundrySnap.data!.docs.isNotEmpty;
+                bool hasEmployee = employeeSnap.hasData && employeeSnap.data!.docs.isNotEmpty;
+                bool hasService = serviceSnap.hasData && serviceSnap.data!.docs.isNotEmpty;
+
+                final List<_SetupStep> steps = [
+                  _SetupStep(
+                    title: 'Mulai Setup Cabang',
+                    subtitle: 'Lengkapi profil & alamat cabang',
+                    icon: Icons.store_mall_directory_outlined,
+                    completed: hasBranch,
+                    // Langsung ke CRUD asli (CreateLaundryScreen), bukan
+                    // '/setup/branch' yang tidak terdaftar di routes.dart.
+                    route: '/laundries/create',
+                  ),
+                  _SetupStep(
+                    title: 'Tambahkan Karyawan',
+                    subtitle: 'Undang staf untuk kelola pesanan',
+                    icon: Icons.person_add_alt_1_rounded,
+                    completed: hasEmployee,
+                    // Langsung ke CRUD asli (CreateEmployeeScreen).
+                    route: '/employees/create',
+                  ),
+                  _SetupStep(
+                    title: 'Tambahkan Layanan',
+                    subtitle: 'Atur jenis cuci & harga',
+                    icon: Icons.local_laundry_service_rounded,
+                    completed: hasService,
+                    // CRUD layanan masih PlaceholderScreen di routes.dart,
+                    // tapi setidaknya path-nya valid dan tidak error.
+                    // Ganti PlaceholderScreen di routes.dart begitu
+                    // CreateServiceScreen sudah jadi.
+                    route: '/services/create',
+                  ),
+                ];
+
+                // Jika semua langkah setup selesai dilakukan, sembunyikan card secara otomatis
+                if (steps.every((s) => s.completed)) return const SizedBox.shrink();
+
+                int done = steps.where((s) => s.completed).length;
+                double progress = done / steps.length;
+
+                return Container(
+                  padding: const EdgeInsets.all(AppTheme.lg),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: primaryBlue.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                            ),
+                            child: const Icon(Icons.rocket_launch_rounded, color: textBlue, size: 18),
+                          ),
+                          const SizedBox(width: AppTheme.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Selesaikan Setup Cabang',
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '$done dari ${steps.length} langkah selesai',
+                                  style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 18),
+                            color: Colors.grey.shade400,
+                            onPressed: () => setState(() => _setupDismissed = true),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppTheme.md),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 6,
+                          backgroundColor: Colors.grey.shade100,
+                          valueColor: const AlwaysStoppedAnimation(primaryBlue),
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.lg),
+                      ...List.generate(steps.length, (i) {
+                        final step = steps[i];
+                        final isLast = i == steps.length - 1;
+                        return InkWell(
+                          onTap: () => context.push(step.route),
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: isLast ? 0 : AppTheme.md),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 30, height: 30,
+                                  decoration: BoxDecoration(
+                                    color: step.completed ? const Color(0xFF27AE60).withOpacity(0.12) : Colors.grey.shade100,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    step.completed ? Icons.check_rounded : step.icon,
+                                    size: 16,
+                                    color: step.completed ? const Color(0xFF27AE60) : Colors.grey.shade500,
+                                  ),
+                                ),
+                                const SizedBox(width: AppTheme.md),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        step.title,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: step.completed ? Colors.grey.shade400 : Colors.black87,
+                                          decoration: step.completed ? TextDecoration.lineThrough : null,
+                                        ),
+                                      ),
+                                      Text(step.subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                                    ],
+                                  ),
+                                ),
+                                if (!step.completed)
+                                  Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey.shade400),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ============================================
+  // QUICK ACTIONS + FEATURE GATING INTEGRATION
+  // ============================================
+  Widget _buildQuickActions(BuildContext context) {
+    final actions = [
+      (Icons.add_circle_outline_rounded, 'Pesanan\nBaru', primaryBlue, '/create-order', 'orders', 500),
+      (Icons.person_add_alt_1_rounded, 'Karyawan\nBaru', deepBlue, '/create-employee', 'employees', 5),
+      (Icons.local_laundry_service_outlined, 'Kelola\nLayanan', const Color(0xFF9C27B0), '/services', '', 0),
+      (Icons.local_shipping_outlined, 'Antar\nJemput', const Color(0xFF27AE60), '/antar-jemput', '', 0),
+      (Icons.bar_chart_rounded, 'Laporan', const Color(0xFFE67E22), '/laporan', '', 0),
+      (Icons.settings_outlined, 'Pengaturan', Colors.grey.shade700, '/settings', '', 0),
+    ];
+
+    return SizedBox(
+      height: 96,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: actions.length,
+        separatorBuilder: (_, __) => const SizedBox(width: AppTheme.lg),
+        itemBuilder: (context, i) {
+          final (icon, label, color, route, collectionToCheck, limit) = actions[i]; 
+          return InkWell(
+            onTap: () async {
+              if (collectionToCheck.isNotEmpty) {
+                final snap = await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(_currentUserId)
+                    .collection(collectionToCheck)
+                    .count()
+                    .get();
+                
+                // Mengantisipasi nilai null safety pada properti count
+                if ((snap.count ?? 0) >= limit) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Batas kuota harian/bulanan paket Starter untuk $label telah tercapai! Silakan upgrade.'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                  return;
+                }
+              }
+              context.push(route); 
+            },
+            borderRadius: BorderRadius.circular(40),
+            child: SizedBox(
+              width: 64,
+              child: Column(
+                children: [
+                  Container(
+                    width: 52, height: 52,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: color, size: 24),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.black87, height: 1.15),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ============================================
+  // REAL-TIME WEEKLY REVENUE CHART
+  // ============================================
+  Widget _buildWeeklyChartRealtime() {
+    final startOfWeek = DateTime.now().subtract(const Duration(days: 7));
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentUserId)
+          .collection('orders')
+          .where('order_date', isGreaterThanOrEqualTo: startOfWeek)
+          .snapshots(),
+      builder: (context, snapshot) {
+        List<double> values = List.filled(7, 0.0);
+        List<String> days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+        if (snapshot.hasData) {
+          for (var doc in snapshot.data!.docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            Timestamp? orderDate = data['order_date'] as Timestamp?;
+            if (orderDate != null && data['payment_status'] == 'paid') {
+              int weekday = orderDate.toDate().weekday - 1; 
+              if (weekday >= 0 && weekday < 7) {
+                values[weekday] += (data['total_amount'] ?? 0).toDouble();
+              }
+            }
+          }
+        }
+
+        double maxVal = values.reduce((a, b) => a > b ? a : b);
+        List<double> scaledValues = values.map((v) => maxVal > 0 ? (v / maxVal) : 0.0).toList();
+
+        return Container(
+          padding: const EdgeInsets.all(AppTheme.lg),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            border: Border.all(color: Colors.grey.shade200),
+>>>>>>> a8effc79b92a003536f6d0162829827671f75826
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

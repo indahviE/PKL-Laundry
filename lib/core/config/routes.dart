@@ -33,6 +33,17 @@ import '../../screens/employees/create_employee_screen.dart';
 // --- Laundries ---
 import 'package:netwash/screens/laundries/create_laundry_screen.dart';
 
+// --- Orders ---
+import '../../screens/orders/order_list_screen.dart';
+import '../../screens/orders/create_order_screen.dart';
+import '../../screens/orders/order_detail_screen.dart';
+
+// --- Customers ---
+import '../../screens/customers/customers_list_screen.dart';
+import '../../screens/customers/customer_detail_screen.dart';
+import '../../screens/customers/create_customer_screen.dart';
+
+
 // Screen di bawah belum dibuat filenya, pakai PlaceholderScreen sementara.
 // import '../../screens/auth/forgot_password_screen.dart';
 // import '../../screens/orders/orders_list_screen.dart';
@@ -46,8 +57,8 @@ import 'package:netwash/screens/laundries/create_laundry_screen.dart';
 // import '../../screens/employees/employee_detail_screen.dart';
 // import '../../screens/laundries/laundries_list_screen.dart';
 // import '../../screens/laundries/laundry_detail_screen.dart';
-// import '../../screens/services/services_list_screen.dart';
-// import '../../screens/services/create_service_screen.dart';
+import '../../screens/services/services_list_screen.dart';
+import '../../screens/services/create_service_screen.dart';
 // import '../../screens/reports/reports_screen.dart';
 // import '../../screens/reports/report_detail_screen.dart';
 // import '../../screens/settings/subscription_screen.dart';
@@ -188,6 +199,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/laundries',
         name: 'laundries',
+<<<<<<< HEAD
+
+        
+        // TODO: ganti ke LaundriesListScreen() setelah file dibuat
+        // (screens/laundries/laundries_list_screen.dart).
+=======
+>>>>>>> a8f147524a98317feeed79bacf009eaacf93903c
         builder: (context, state) =>
             const PlaceholderScreen(title: 'Daftar Cabang'),
       ),
@@ -218,33 +236,31 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // ==================== CUSTOMERS ====================
+     // ==================== CUSTOMERS ====================
       GoRoute(
         path: '/customers/create',
         name: 'customers-create',
-        builder: (context, state) =>
-            const PlaceholderScreen(title: 'Tambah Pelanggan'),
+        builder: (context, state) => const CreateCustomerScreen(),
       ),
       GoRoute(
         path: '/customers/:customerId',
         name: 'customer-detail',
-        builder: (context, state) => PlaceholderScreen(
-          title: 'Detail Pelanggan (${state.pathParameters['customerId']})',
+        builder: (context, state) => CustomerDetailScreen(
+          customerId: state.pathParameters['customerId'] ?? '',
         ),
       ),
 
-      // ==================== ORDERS ====================
+// ==================== ORDERS ====================
       GoRoute(
         path: '/orders/create',
         name: 'orders-create',
-        builder: (context, state) =>
-            const PlaceholderScreen(title: 'Buat Pesanan Baru'),
+        builder: (context, state) => const CreateOrderScreen(), 
       ),
       GoRoute(
         path: '/orders/:orderId',
         name: 'order-detail',
-        builder: (context, state) => PlaceholderScreen(
-          title: 'Detail Pesanan (${state.pathParameters['orderId']})',
+        builder: (context, state) => OrderDetailScreen( 
+          orderId: state.pathParameters['orderId'] ?? '',
         ),
       ),
       GoRoute(
@@ -260,16 +276,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/services',
         name: 'services',
         builder: (context, state) =>
-            const PlaceholderScreen(title: 'Daftar Layanan'),
+            const ServicesListScreen(),
       ),
       GoRoute(
         path: '/services/create',
         name: 'services-create',
         builder: (context, state) =>
-            const PlaceholderScreen(title: 'Tambah Jenis Layanan'),
+            const CreateServiceScreen(),
       ),
+<<<<<<< HEAD
+      
+      // =================================================================
+      // LAPORAN / REPORTS (§6 Metrik) — di luar shell
+      // =================================================================
+=======
 
       // ==================== REPORTS ====================
+>>>>>>> a8f147524a98317feeed79bacf009eaacf93903c
       GoRoute(
         path: '/reports',
         name: 'reports',
@@ -310,17 +333,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             name: 'dashboard',
             builder: (context, state) => const DashboardScreen(),
           ),
-          GoRoute(
+         GoRoute(
             path: '/orders',
             name: 'orders',
-            builder: (context, state) =>
-                const PlaceholderScreen(title: 'Orders List Screen'),
+            builder: (context, state) => const OrdersListScreen(), 
           ),
           GoRoute(
             path: '/customers',
             name: 'customers',
-            builder: (context, state) =>
-                const PlaceholderScreen(title: 'Customers List Screen'),
+            builder: (context, state) => const CustomersListScreen(), 
           ),
           GoRoute(
             path: '/employees',
