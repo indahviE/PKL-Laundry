@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/themes/app_theme.dart';
 import '../../widgets/common/app_input.dart';
 
@@ -63,7 +64,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
             backgroundColor: Color(0xFF51CF66),
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -79,44 +80,81 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
     return Scaffold(
-      appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(isMobile ? AppTheme.lg : AppTheme.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              _buildHeader(context),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // Form
-              _buildForm(context),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // Save Button
-              _buildSaveButton(context),
-
-              const SizedBox(height: AppTheme.lg),
-            ],
-          ),
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 16 : 24,
+                      isMobile ? 16 : 24,
+                      isMobile ? 16 : 24,
+                      24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTopBar(context),
+                        const SizedBox(height: AppTheme.xl),
+                        _buildHeader(context),
+                        const SizedBox(height: AppTheme.xxl),
+                        _buildForm(context),
+                        const SizedBox(height: AppTheme.xxl),
+                        _buildSaveButton(context),
+                        const SizedBox(height: AppTheme.lg),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  /// Build App Bar
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: const Text('Tambah Pelanggan'),
-      elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
+  /// Build top bar (back button + title)
+  Widget _buildTopBar(BuildContext context) {
+    return Row(
+      children: [
+        InkWell(
+          onTap: () => Navigator.pop(context, false),
+          borderRadius: BorderRadius.circular(11),
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppTheme.cardColor,
+              borderRadius: BorderRadius.circular(11),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: AppTheme.textPrimary),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Text(
+          'Tambah Pelanggan',
+          style: GoogleFonts.poppins(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 
@@ -128,28 +166,31 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
         Container(
           padding: const EdgeInsets.all(AppTheme.lg),
           decoration: BoxDecoration(
-            color: const Color(0xFF5DADE2).withOpacity(0.15),
+            color: AppTheme.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.person_add_alt_1_rounded,
-            color: Color(0xFF5DADE2),
-            size: 36,
+            color: AppTheme.primaryColor,
+            size: 34,
           ),
         ),
         const SizedBox(height: AppTheme.xl),
         Text(
           'Pelanggan Baru',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: GoogleFonts.poppins(
+            fontSize: 21,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
         ),
-        const SizedBox(height: AppTheme.md),
+        const SizedBox(height: AppTheme.sm),
         Text(
           'Lengkapi data pelanggan untuk menambahkannya ke sistem',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.gray600,
-              ),
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: AppTheme.textSecondary,
+          ),
         ),
       ],
     );
@@ -157,85 +198,99 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
 
   /// Build Form
   Widget _buildForm(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          // Nama Lengkap
-          AppInput(
-            label: 'Nama Lengkap *',
-            controller: _nameController,
-            hintText: 'Masukkan nama pelanggan',
-            prefixIcon: Icons.person_outline,
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Nama pelanggan tidak boleh kosong';
-              }
-              return null;
-            },
-          ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // No. Telepon
-          AppInput(
-            label: 'No. Telepon *',
-            controller: _phoneController,
-            hintText: 'Contoh: 081234567890',
-            prefixIcon: Icons.phone_outlined,
-            keyboardType: TextInputType.phone,
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'No. telepon tidak boleh kosong';
-              }
-              if (!RegExp(r'^[0-9]{9,14}$').hasMatch(value.trim())) {
-                return 'Format no. telepon tidak valid';
-              }
-              return null;
-            },
-          ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Email (opsional)
-          AppInput(
-            label: 'Email (Opsional)',
-            controller: _emailController,
-            hintText: 'Masukkan email pelanggan',
-            prefixIcon: Icons.mail_outline_rounded,
-            keyboardType: TextInputType.emailAddress,
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) return null;
-              if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-                  .hasMatch(value.trim())) {
-                return 'Format email tidak valid';
-              }
-              return null;
-            },
-          ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Alamat (opsional)
-          AppInput(
-            label: 'Alamat (Opsional)',
-            controller: _addressController,
-            hintText: 'Masukkan alamat pelanggan',
-            prefixIcon: Icons.location_on_outlined,
-            maxLines: 2,
-          ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Catatan (opsional)
-          AppInput(
-            label: 'Catatan (Opsional)',
-            controller: _notesController,
-            hintText: 'Catatan khusus untuk pelanggan ini',
-            prefixIcon: Icons.note_outlined,
-            maxLines: 3,
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.lg),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
         ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            // Nama Lengkap
+            AppInput(
+              label: 'Nama Lengkap *',
+              controller: _nameController,
+              hintText: 'Masukkan nama pelanggan',
+              prefixIcon: Icons.person_outline,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Nama pelanggan tidak boleh kosong';
+                }
+                return null;
+              },
+            ),
+
+            const SizedBox(height: AppTheme.lg),
+
+            // No. Telepon
+            AppInput(
+              label: 'No. Telepon *',
+              controller: _phoneController,
+              hintText: 'Contoh: 081234567890',
+              prefixIcon: Icons.phone_outlined,
+              keyboardType: TextInputType.phone,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'No. telepon tidak boleh kosong';
+                }
+                if (!RegExp(r'^[0-9]{9,14}$').hasMatch(value.trim())) {
+                  return 'Format no. telepon tidak valid';
+                }
+                return null;
+              },
+            ),
+
+            const SizedBox(height: AppTheme.lg),
+
+            // Email (opsional)
+            AppInput(
+              label: 'Email (Opsional)',
+              controller: _emailController,
+              hintText: 'Masukkan email pelanggan',
+              prefixIcon: Icons.mail_outline_rounded,
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) return null;
+                if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+                    .hasMatch(value.trim())) {
+                  return 'Format email tidak valid';
+                }
+                return null;
+              },
+            ),
+
+            const SizedBox(height: AppTheme.lg),
+
+            // Alamat (opsional)
+            AppInput(
+              label: 'Alamat (Opsional)',
+              controller: _addressController,
+              hintText: 'Masukkan alamat pelanggan',
+              prefixIcon: Icons.location_on_outlined,
+              maxLines: 2,
+            ),
+
+            const SizedBox(height: AppTheme.lg),
+
+            // Catatan (opsional)
+            AppInput(
+              label: 'Catatan (Opsional)',
+              controller: _notesController,
+              hintText: 'Catatan khusus untuk pelanggan ini',
+              prefixIcon: Icons.note_outlined,
+              maxLines: 3,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -244,11 +299,16 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
   Widget _buildSaveButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
+      height: 52,
       child: ElevatedButton(
         onPressed: !_isLoading ? _handleSaveCustomer : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5DADE2),
-          padding: const EdgeInsets.symmetric(vertical: AppTheme.lg),
+          backgroundColor: AppTheme.primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          ),
         ),
         child: _isLoading
             ? Row(
@@ -265,17 +325,17 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
                     ),
                   ),
                   const SizedBox(width: AppTheme.md),
-                  const Text(
+                  Text(
                     'Sedang Menyimpan...',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                   ),
                 ],
               )
-            : const Text(
+            : Text(
                 'Simpan Pelanggan',
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
-                  fontSize: 16,
+                  fontSize: 15,
                 ),
               ),
       ),
