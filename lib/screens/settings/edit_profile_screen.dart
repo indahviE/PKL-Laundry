@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/themes/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -39,6 +40,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickImage() async {
+    final t = AppLocalizations.of(context)!;
     try {
       final picker = ImagePicker();
       final picked = await picker.pickImage(
@@ -54,7 +56,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       debugPrint('Pick image error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal buka galeri: $e')),
+        SnackBar(content: Text(t.galleryOpenError(e.toString()))),
       );
     }
   }
@@ -63,7 +65,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   static const _uploadEndpoint =
       'https://netwash-stripe-backend.vercel.app/api/upload-photo';
 
-  Future<String?> _uploadPhoto(String uid) async {
+  Future<String?> _uploadPhoto(String uid, AppLocalizations t) async {
     if (_pickedBytes == null) return _user?.photoURL;
 
     final base64Image = 'data:image/jpeg;base64,${base64Encode(_pickedBytes!)}';
@@ -76,11 +78,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         )
         .timeout(
           const Duration(seconds: 20),
-          onTimeout: () => throw Exception('Upload timeout, cek koneksi kamu'),
+          onTimeout: () => throw Exception(t.uploadTimeoutError),
         );
 
     if (response.statusCode != 200) {
-      throw Exception('Upload gagal (${response.statusCode}): ${response.body}');
+      throw Exception(
+        t.uploadFailedError(response.statusCode.toString(), response.body),
+      );
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -88,13 +92,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _save() async {
+    final t = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
     final user = _user;
     if (user == null) return;
 
     setState(() => _isSaving = true);
     try {
-      final photoUrl = await _uploadPhoto(user.uid);
+      final photoUrl = await _uploadPhoto(user.uid, t);
       await user.updateDisplayName(_nameController.text.trim());
       if (photoUrl != null) {
         await user.updatePhotoURL(photoUrl);
@@ -103,13 +108,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profil berhasil diperbarui')),
+        SnackBar(content: Text(t.profileUpdateSuccess)),
       );
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal update profil: $e')),
+        SnackBar(content: Text(t.profileUpdateError(e.toString()))),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -118,6 +123,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
@@ -129,7 +135,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildHeader(context),
+                  _buildHeader(context, t),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                     child: Form(
@@ -139,13 +145,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         children: [
                           _buildAvatarPicker(),
                           const SizedBox(height: 24),
-                          _sectionLabel('Nama Lengkap'),
-                          _buildNameField(),
+                          _sectionLabel(t.fullNameLabel),
+                          _buildNameField(t),
                           const SizedBox(height: 18),
-                          _sectionLabel('Email'),
+                          _sectionLabel(t.emailLabel),
                           _buildEmailField(),
                           const SizedBox(height: 32),
-                          _buildSaveButton(),
+                          _buildSaveButton(t),
                         ],
                       ),
                     ),
@@ -163,7 +169,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // HEADER — sama persis gaya gradient di SettingsScreen, cuma
   // ditambah tombol back
   // ==========================================================
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppLocalizations t) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 20, 24, 28),
@@ -183,7 +189,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           const SizedBox(width: 4),
           Text(
-            'Edit Profil',
+            t.editProfileTitle,
             style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -297,14 +303,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildNameField() {
+  Widget _buildNameField(AppLocalizations t) {
     return TextFormField(
       controller: _nameController,
       style: GoogleFonts.poppins(fontSize: 14.5, color: AppTheme.textPrimary),
       decoration: _inputDecoration(icon: Icons.person_outline_rounded),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
-          return 'Nama tidak boleh kosong';
+          return t.nameEmptyError;
         }
         return null;
       },
@@ -321,7 +327,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildSaveButton() {
+  Widget _buildSaveButton(AppLocalizations t) {
     return SizedBox(
       height: 52,
       child: ElevatedButton(
@@ -344,7 +350,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               )
             : Text(
-                'Simpan Perubahan',
+                t.saveChangesButton,
                 style: GoogleFonts.poppins(
                   fontSize: 14.5,
                   fontWeight: FontWeight.w600,

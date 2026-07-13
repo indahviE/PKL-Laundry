@@ -11,6 +11,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  flutter_localizations:
+    sdk: flutter
+
   image_picker: ^1.1.2
 
   # cloud_functions: ^5.1.3
@@ -34,7 +37,7 @@ dependencies:
 
   # UI Components
   cupertino_icons: ^1.0.6
-  intl: ^0.19.0
+  intl: ^0.20.2
   google_fonts: ^6.2.1
   cached_network_image: ^3.3.1
 
@@ -47,38 +50,27 @@ dependencies:
   email_validator: ^2.1.1
   http: ^1.6.0
 
+  shared_preferences: ^2.3.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  
-  # Pastikan hanya ada satu entry ini
-  flutter_launcher_icons: ^0.13.1
 
+  flutter_launcher_icons: ^0.13.1
   flutter_lints: ^6.0.0
   build_runner: ^2.4.0
   freezed: ^3.2.5
   json_serializable: ^6.7.0
 
-# Konfigurasi ini harus diletakkan di luar dev_dependencies, 
-# biasanya di paling bawah file pubspec.yaml
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   image_path: "asset/icon/Netwash_Logo.png"
   min_sdk_android: 21
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
-
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-
-# The following section is specific to Flutter packages.
 flutter:
   uses-material-design: true
+  generate: true
   assets:
     - asset/icon/
-    - asset/illustration/  # tambah ini jika ada ilustrasi
+    - asset/illustration/

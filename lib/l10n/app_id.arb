@@ -1,0 +1,140 @@
+{
+  "@@locale": "id",
+  "settingsTitle": "Settings",
+  "sectionAccount": "Akun",
+  "editProfileTitle": "Edit Profil",
+  "editProfileSubtitle": "Ubah nama & foto profil",
+  "changePasswordTitle": "Ubah Password",
+  "changePasswordSubtitle": "Perbarui kata sandi akun",
+  "sectionPreference": "Preferensi",
+  "notificationTitle": "Notifikasi",
+  "notificationSubtitle": "Atur pemberitahuan aplikasi",
+  "languageTitle": "Bahasa",
+  "sectionOther": "Lainnya",
+  "helpTitle": "Bantuan",
+  "helpSubtitle": "FAQ & dukungan",
+  "aboutTitle": "Tentang Aplikasi",
+  "logoutButton": "Keluar / Logout",
+  "logoutDialogTitle": "Keluar Akun?",
+  "logoutDialogContent": "Kamu harus login lagi untuk mengakses akun ini.",
+  "cancel": "Batal",
+  "logout": "Keluar",
+  "roleOwner": "Owner",
+
+  "fullNameLabel": "Nama Lengkap",
+  "emailLabel": "Email",
+  "nameEmptyError": "Nama tidak boleh kosong",
+  "saveChangesButton": "Simpan Perubahan",
+  "galleryOpenError": "Gagal buka galeri: {error}",
+  "@galleryOpenError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "uploadTimeoutError": "Upload timeout, cek koneksi kamu",
+  "uploadFailedError": "Upload gagal ({code}): {body}",
+  "@uploadFailedError": {
+    "placeholders": {
+      "code": { "type": "String" },
+      "body": { "type": "String" }
+    }
+  },
+  "profileUpdateSuccess": "Profil berhasil diperbarui",
+  "profileUpdateError": "Gagal update profil: {error}",
+  "@profileUpdateError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "oldPasswordLabel": "Password Lama",
+  "newPasswordLabel": "Password Baru",
+  "confirmPasswordLabel": "Konfirmasi Password Baru",
+  "oldPasswordRequiredError": "Password lama wajib diisi",
+  "newPasswordRequiredError": "Password baru wajib diisi",
+  "passwordMinLengthError": "Minimal 6 karakter",
+  "newPasswordSameAsOldError": "Password baru gak boleh sama dengan yang lama",
+  "confirmPasswordRequiredError": "Konfirmasi password wajib diisi",
+  "confirmPasswordMismatchError": "Konfirmasi tidak cocok dengan password baru",
+  "savePasswordButton": "Simpan Password Baru",
+  "passwordChangeSuccess": "Password berhasil diubah",
+  "wrongOldPasswordError": "Password lama salah",
+  "weakPasswordError": "Password baru terlalu lemah, minimal 6 karakter",
+  "requiresRecentLoginError": "Sesi login kamu udah lama, silakan login ulang dulu",
+  "tooManyRequestsError": "Terlalu banyak percobaan, coba lagi nanti",
+  "passwordChangeGenericError": "Gagal ubah password: {error}",
+  "@passwordChangeGenericError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "otherProviderNotice": "Akun kamu login pakai provider lain (misalnya Google), jadi gak ada password yang bisa diubah di sini.",
+
+  "greetingMorning": "Selamat Pagi",
+  "greetingAfternoon": "Selamat Sore",
+  "greetingEvening": "Selamat Malam",
+  "dashboardSubtitle": "Berikut ringkasan bisnis laundry Anda",
+
+  "revenueThisMonthLabel": "Pendapatan bulan ini",
+  "autoSyncLabel": "Sinkronisasi otomatis",
+  "customersLabel": "Pelanggan",
+  "activeOrdersLabel": "Pesanan aktif",
+
+  "setupBranchTitle": "Mulai Setup Cabang",
+  "setupBranchSubtitle": "Lengkapi profil & alamat cabang",
+  "setupEmployeeTitle": "Tambahkan Karyawan",
+  "setupEmployeeSubtitle": "Undang staf untuk kelola pesanan",
+  "setupServiceTitle": "Tambahkan Layanan",
+  "setupServiceSubtitle": "Atur jenis cuci & harga",
+  "completeBranchSetupTitle": "Selesaikan Setup Cabang",
+  "setupStepsProgress": "{done} dari {total} langkah selesai",
+  "@setupStepsProgress": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "newOrderAction": "Pesanan\nBaru",
+  "newEmployeeAction": "Karyawan\nBaru",
+  "pickupDeliveryAction": "Antar\nJemput",
+  "reportAction": "Laporan",
+  "settingsAction": "Pengaturan",
+  "quotaLimitReached": "Batas kuota paket Starter untuk {label} telah tercapai! Silakan upgrade.",
+  "@quotaLimitReached": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+
+  "weeklyRevenueTitle": "Pendapatan Mingguan",
+  "sevenDaysLabel": "7 hari",
+  "dayMon": "Sen",
+  "dayTue": "Sel",
+  "dayWed": "Rab",
+  "dayThu": "Kam",
+  "dayFri": "Jum",
+  "daySat": "Sab",
+  "daySun": "Min",
+
+  "mainOrdersTitle": "Pesanan Utama",
+  "viewAllLabel": "Lihat Semua",
+
+  "filterAll": "Semua",
+  "filterProcessing": "Diproses",
+  "filterReady": "Siap Diambil",
+  "filterCompleted": "Selesai",
+
+  "noOrdersData": "Tidak ada data pesanan.",
+  "noOrdersForStatus": "Tidak ada pesanan dengan status ini.",
+  "statusCancelled": "Batal",
+  "statusProcessing": "Sedang Diproses",
+  "defaultCustomerName": "Pelanggan Umum",
+  "orderDetailSummary": "{count} item · Rp {amount}",
+  "@orderDetailSummary": {
+    "placeholders": {
+      "count": { "type": "String" },
+      "amount": { "type": "String" }
+    }
+  }
+}

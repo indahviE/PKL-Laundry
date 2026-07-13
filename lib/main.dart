@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'core/config/routes.dart';
+import 'core/providers/locale.provider.dart';
+import 'l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 1. Inisialisasi Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
   // 2. Setup Offline Persistence
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
@@ -36,7 +40,10 @@ class MyApp extends ConsumerWidget {
     // 5. Membaca konfigurasi router Anda
     final router = ref.watch(goRouterProvider);
 
-    // 6. Menggunakan .router agar sistem navigasi aktif
+    // 6. Membaca bahasa yang lagi aktif
+    final locale = ref.watch(localeProvider);
+
+    // 7. Menggunakan .router agar sistem navigasi aktif
     return MaterialApp.router(
       title: 'Netwash',
       debugShowCheckedModeBanner: false,
@@ -44,7 +51,20 @@ class MyApp extends ConsumerWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      routerConfig: router, // 7. Pasang konfigurasinya di sini
+      routerConfig: router,
+
+      // ==== Localization setup ====
+      locale: locale,
+      supportedLocales: const [
+        Locale('id'),
+        Locale('en'),
+      ],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
     );
   }
 }

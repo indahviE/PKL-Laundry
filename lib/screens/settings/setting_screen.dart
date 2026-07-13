@@ -2,21 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/themes/app_theme.dart';
+import '../../core/providers/locale.provider.dart';
+import '../../l10n/app_localizations.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   User? get _user => FirebaseAuth.instance.currentUser;
 
-  // Dipanggil tiap balik dari EditProfileScreen biar avatar & nama
-  // langsung keupdate tanpa harus restart app / re-login.
   Future<void> _openEditProfile() async {
     final result = await context.push('/settings/profile');
     if (result == true) {
@@ -27,6 +28,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final currentLocale = ref.watch(localeProvider);
     final user = _user;
     final displayName = user?.displayName?.trim().isNotEmpty == true
         ? user!.displayName!
@@ -47,7 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildHeader(context, displayName, user?.email, photoUrl),
+                      _buildHeader(context, t, displayName, user?.email, photoUrl),
                       Padding(
                         padding: EdgeInsets.fromLTRB(
                           isMobile ? 16 : 24,
@@ -58,58 +61,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _sectionLabel('Akun'),
+                            _sectionLabel(t.sectionAccount),
                             _buildSectionCard([
                               _buildTile(
                                 icon: Icons.person_outline_rounded,
-                                title: 'Edit Profil',
-                                subtitle: 'Ubah nama & foto profil',
+                                title: t.editProfileTitle,
+                                subtitle: t.editProfileSubtitle,
                                 onTap: _openEditProfile,
                               ),
                               _buildTile(
                                 icon: Icons.lock_outline_rounded,
-                                title: 'Ubah Password',
-                                subtitle: 'Perbarui kata sandi akun',
-                                onTap: ()  => context.push('/settings/change-password'),
+                                title: t.changePasswordTitle,
+                                subtitle: t.changePasswordSubtitle,
+                                onTap: () =>
+                                    context.push('/settings/change-password'),
                                 showDivider: false,
                               ),
                             ]),
                             const SizedBox(height: 20),
-                            _sectionLabel('Preferensi'),
+                            _sectionLabel(t.sectionPreference),
                             _buildSectionCard([
                               _buildTile(
                                 icon: Icons.notifications_outlined,
-                                title: 'Notifikasi',
-                                subtitle: 'Atur pemberitahuan aplikasi',
+                                title: t.notificationTitle,
+                                subtitle: t.notificationSubtitle,
                                 onTap: () {},
                               ),
                               _buildTile(
                                 icon: Icons.language_outlined,
-                                title: 'Bahasa',
-                                subtitle: 'Indonesia',
-                                onTap: () {},
+                                title: t.languageTitle,
+                                subtitle: currentLocale.languageCode == 'id'
+                                    ? 'Indonesia'
+                                    : 'English',
+                                onTap: () => _showLanguagePicker(
+                                    context, t, currentLocale),
                                 showDivider: false,
                               ),
                             ]),
                             const SizedBox(height: 20),
-                            _sectionLabel('Lainnya'),
+                            _sectionLabel(t.sectionOther),
                             _buildSectionCard([
                               _buildTile(
                                 icon: Icons.help_outline_rounded,
-                                title: 'Bantuan',
-                                subtitle: 'FAQ & dukungan',
+                                title: t.helpTitle,
+                                subtitle: t.helpSubtitle,
                                 onTap: () {},
                               ),
                               _buildTile(
                                 icon: Icons.info_outline_rounded,
-                                title: 'Tentang Aplikasi',
+                                title: t.aboutTitle,
                                 subtitle: 'NetWash v1.0.0',
                                 onTap: () {},
                                 showDivider: false,
                               ),
                             ]),
                             const SizedBox(height: 28),
-                            _buildLogoutButton(context),
+                            _buildLogoutButton(context, t),
                           ],
                         ),
                       ),
@@ -125,11 +132,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ==========================================================
-  // HEADER — gradient sama kayak brand panel login, isi avatar +
-  // nama + role badge. Avatar sekarang nampilin foto asli kalau ada.
+  // Dialog pilih bahasa — sekarang beneran manggil localeProvider
+  // ==========================================================
+  void _showLanguagePicker(
+    BuildContext context,
+    AppLocalizations t,
+    Locale currentLocale,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        title: Text(
+          t.languageTitle,
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<String>(
+              value: 'id',
+              groupValue: currentLocale.languageCode,
+              title: Text('Indonesia', style: GoogleFonts.poppins()),
+              activeColor: AppTheme.primaryColor,
+              onChanged: (value) {
+                ref.read(localeProvider.notifier).setLocale(const Locale('id'));
+                Navigator.pop(dialogContext);
+              },
+            ),
+            RadioListTile<String>(
+              value: 'en',
+              groupValue: currentLocale.languageCode,
+              title: Text('English', style: GoogleFonts.poppins()),
+              activeColor: AppTheme.primaryColor,
+              onChanged: (value) {
+                ref.read(localeProvider.notifier).setLocale(const Locale('en'));
+                Navigator.pop(dialogContext);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================================
+  // HEADER
   // ==========================================================
   Widget _buildHeader(
     BuildContext context,
+    AppLocalizations t,
     String name,
     String? email,
     String? photoUrl,
@@ -149,7 +206,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Row(
             children: [
               Text(
-                'Settings',
+                t.settingsTitle,
                 style: GoogleFonts.poppins(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -219,7 +276,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'Owner',
+              t.roleOwner,
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -330,14 +387,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildLogoutButton(BuildContext context) {
+  Widget _buildLogoutButton(BuildContext context, AppLocalizations t) {
     return SizedBox(
       height: 52,
       child: OutlinedButton.icon(
-        onPressed: () => _confirmLogout(context),
+        onPressed: () => _confirmLogout(context, t),
         icon: const Icon(Icons.logout_rounded, size: 19),
         label: Text(
-          'Keluar / Logout',
+          t.logoutButton,
           style: GoogleFonts.poppins(
             fontSize: 14.5,
             fontWeight: FontWeight.w600,
@@ -354,7 +411,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _confirmLogout(BuildContext context) {
+  void _confirmLogout(BuildContext context, AppLocalizations t) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -362,21 +419,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
         title: Text(
-          'Keluar Akun?',
+          t.logoutDialogTitle,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: AppTheme.textPrimary,
           ),
         ),
         content: Text(
-          'Kamu harus login lagi untuk mengakses akun ini.',
+          t.logoutDialogContent,
           style: GoogleFonts.poppins(color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
-              'Batal',
+              t.cancel,
               style: GoogleFonts.poppins(color: AppTheme.textSecondary),
             ),
           ),
@@ -389,7 +446,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
             },
             child: Text(
-              'Keluar',
+              t.logout,
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
                 color: Colors.red,

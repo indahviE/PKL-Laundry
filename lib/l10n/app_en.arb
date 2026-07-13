@@ -1,0 +1,140 @@
+{
+  "@@locale": "en",
+  "settingsTitle": "Settings",
+  "sectionAccount": "Account",
+  "editProfileTitle": "Edit Profile",
+  "editProfileSubtitle": "Change name & profile photo",
+  "changePasswordTitle": "Change Password",
+  "changePasswordSubtitle": "Update account password",
+  "sectionPreference": "Preferences",
+  "notificationTitle": "Notifications",
+  "notificationSubtitle": "Manage app notifications",
+  "languageTitle": "Language",
+  "sectionOther": "Others",
+  "helpTitle": "Help",
+  "helpSubtitle": "FAQ & support",
+  "aboutTitle": "About App",
+  "logoutButton": "Log Out",
+  "logoutDialogTitle": "Log Out?",
+  "logoutDialogContent": "You'll need to log in again to access this account.",
+  "cancel": "Cancel",
+  "logout": "Log Out",
+  "roleOwner": "Owner",
+
+  "fullNameLabel": "Full Name",
+  "emailLabel": "Email",
+  "nameEmptyError": "Name cannot be empty",
+  "saveChangesButton": "Save Changes",
+  "galleryOpenError": "Failed to open gallery: {error}",
+  "@galleryOpenError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "uploadTimeoutError": "Upload timed out, check your connection",
+  "uploadFailedError": "Upload failed ({code}): {body}",
+  "@uploadFailedError": {
+    "placeholders": {
+      "code": { "type": "String" },
+      "body": { "type": "String" }
+    }
+  },
+  "profileUpdateSuccess": "Profile updated successfully",
+  "profileUpdateError": "Failed to update profile: {error}",
+  "@profileUpdateError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "oldPasswordLabel": "Old Password",
+  "newPasswordLabel": "New Password",
+  "confirmPasswordLabel": "Confirm New Password",
+  "oldPasswordRequiredError": "Old password is required",
+  "newPasswordRequiredError": "New password is required",
+  "passwordMinLengthError": "Minimum 6 characters",
+  "newPasswordSameAsOldError": "New password cannot be the same as the old one",
+  "confirmPasswordRequiredError": "Password confirmation is required",
+  "confirmPasswordMismatchError": "Confirmation does not match the new password",
+  "savePasswordButton": "Save New Password",
+  "passwordChangeSuccess": "Password changed successfully",
+  "wrongOldPasswordError": "Old password is incorrect",
+  "weakPasswordError": "New password is too weak, minimum 6 characters",
+  "requiresRecentLoginError": "Your session has expired, please log in again",
+  "tooManyRequestsError": "Too many attempts, try again later",
+  "passwordChangeGenericError": "Failed to change password: {error}",
+  "@passwordChangeGenericError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "otherProviderNotice": "Your account is signed in with another provider (e.g. Google), so there's no password to change here.",
+
+  "greetingMorning": "Good Morning",
+  "greetingAfternoon": "Good Afternoon",
+  "greetingEvening": "Good Evening",
+  "dashboardSubtitle": "Here's a summary of your laundry business",
+
+  "revenueThisMonthLabel": "Revenue this month",
+  "autoSyncLabel": "Auto-synced",
+  "customersLabel": "Customers",
+  "activeOrdersLabel": "Active orders",
+
+  "setupBranchTitle": "Start Branch Setup",
+  "setupBranchSubtitle": "Complete branch profile & address",
+  "setupEmployeeTitle": "Add Employees",
+  "setupEmployeeSubtitle": "Invite staff to manage orders",
+  "setupServiceTitle": "Add Services",
+  "setupServiceSubtitle": "Set wash types & prices",
+  "completeBranchSetupTitle": "Complete Branch Setup",
+  "setupStepsProgress": "{done} of {total} steps completed",
+  "@setupStepsProgress": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "newOrderAction": "New\nOrder",
+  "newEmployeeAction": "New\nEmployee",
+  "pickupDeliveryAction": "Pickup &\nDelivery",
+  "reportAction": "Report",
+  "settingsAction": "Settings",
+  "quotaLimitReached": "The Starter plan quota limit for {label} has been reached! Please upgrade.",
+  "@quotaLimitReached": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+
+  "weeklyRevenueTitle": "Weekly Revenue",
+  "sevenDaysLabel": "7 days",
+  "dayMon": "Mon",
+  "dayTue": "Tue",
+  "dayWed": "Wed",
+  "dayThu": "Thu",
+  "dayFri": "Fri",
+  "daySat": "Sat",
+  "daySun": "Sun",
+
+  "mainOrdersTitle": "Main Orders",
+  "viewAllLabel": "View All",
+
+  "filterAll": "All",
+  "filterProcessing": "Processing",
+  "filterReady": "Ready for Pickup",
+  "filterCompleted": "Completed",
+
+  "noOrdersData": "No order data yet.",
+  "noOrdersForStatus": "No orders with this status.",
+  "statusCancelled": "Cancelled",
+  "statusProcessing": "In Progress",
+  "defaultCustomerName": "General Customer",
+  "orderDetailSummary": "{count} items · Rp {amount}",
+  "@orderDetailSummary": {
+    "placeholders": {
+      "count": { "type": "String" },
+      "amount": { "type": "String" }
+    }
+  }
+}
