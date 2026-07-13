@@ -487,6 +487,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final actions = [
       (Icons.add_circle_outline_rounded, 'Pesanan\nBaru', primaryBlue, '/create-order', 'orders', 500),
       (Icons.person_add_alt_1_rounded, 'Karyawan\nBaru', deepBlue, '/create-employee', 'employees', 5),
+      (Icons.local_laundry_service_outlined, 'Kelola\nLayanan', const Color(0xFF9C27B0), '/services', '', 0),
       (Icons.local_shipping_outlined, 'Antar\nJemput', const Color(0xFF27AE60), '/antar-jemput', '', 0),
       (Icons.bar_chart_rounded, 'Laporan', const Color(0xFFE67E22), '/laporan', '', 0),
       (Icons.settings_outlined, 'Pengaturan', Colors.grey.shade700, '/settings', '', 0),

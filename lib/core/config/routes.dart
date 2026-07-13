@@ -55,8 +55,8 @@ import 'package:netwash/screens/laundries/create_laundry_screen.dart';
 // import '../../screens/employees/employee_detail_screen.dart';
 // import '../../screens/laundries/laundries_list_screen.dart';
 // import '../../screens/laundries/laundry_detail_screen.dart';
-// import '../../screens/services/services_list_screen.dart';
-// import '../../screens/services/create_service_screen.dart';
+import '../../screens/services/services_list_screen.dart';
+import '../../screens/services/create_service_screen.dart';
 // import '../../screens/reports/reports_screen.dart';
 // import '../../screens/reports/report_detail_screen.dart';
 // import '../../screens/settings/profile_screen.dart';
@@ -236,6 +236,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/laundries',
         name: 'laundries',
+
+        
         // TODO: ganti ke LaundriesListScreen() setelah file dibuat
         // (screens/laundries/laundries_list_screen.dart).
         builder: (context, state) =>
@@ -334,7 +336,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         // TODO: ganti ke ServicesListScreen() setelah file dibuat
         // (screens/services/services_list_screen.dart).
         builder: (context, state) =>
-            const PlaceholderScreen(title: 'Daftar Layanan'),
+            const ServicesListScreen(),
       ),
       GoRoute(
         path: '/services/create',
@@ -342,9 +344,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         // TODO: ganti ke CreateServiceScreen() setelah file dibuat
         // (screens/services/create_service_screen.dart).
         builder: (context, state) =>
-            const PlaceholderScreen(title: 'Tambah Jenis Layanan'),
+            const CreateServiceScreen(),
       ),
-
+      
       // =================================================================
       // LAPORAN / REPORTS (§6 Metrik) — di luar shell
       // =================================================================
