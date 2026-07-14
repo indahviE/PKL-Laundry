@@ -635,7 +635,7 @@ class _CustomerCard extends StatelessWidget {
                       Icons.receipt_long_outlined,
                       size: 16,
                       color: Colors.grey.shade600,
-                    ),
+                    ), 
                     const SizedBox(width: AppTheme.sm),
                     Text(
                       '${customer.totalOrders} pesanan',
