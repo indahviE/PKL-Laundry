@@ -175,7 +175,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const SizedBox(width: AppTheme.md),
                     const Text(
-                      'NetWash',
+                      'Netwash',
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17),
                     ),
                   ],
