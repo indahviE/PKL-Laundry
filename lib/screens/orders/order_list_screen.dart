@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/themes/app_theme.dart';
 
 /// Order Model
@@ -125,13 +127,22 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
     setState(() {});
   }
 
+  /// Buka Create Order screen, refresh list kalau berhasil disimpan
+  Future<void> _openCreateOrder(BuildContext context) async {
+    final result = await context.push<bool>('/orders/create');
+    if (result == true && mounted) {
+      // TODO: refresh dari Firestore begitu backend-nya siap
+      _applyFiltersAndSearch();
+    }
+  }
+
   /// Get status color
   Color _getStatusColor(String status) {
     switch (status) {
       case 'pending':
         return Colors.orange;
       case 'processing':
-        return const Color(0xFF5DADE2);
+        return AppTheme.primaryColor;
       case 'completed':
         return const Color(0xFF51CF66);
       case 'cancelled':
@@ -169,103 +180,119 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
     return Scaffold(
-      appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(isMobile ? AppTheme.lg : AppTheme.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with action button
-              _buildHeader(context),
-
-              const SizedBox(height: AppTheme.xl),
-
-              // Search bar
-              _buildSearchBar(context),
-
-              const SizedBox(height: AppTheme.lg),
-
-              // Filter buttons
-              _buildFilterButtons(context),
-
-              const SizedBox(height: AppTheme.xl),
-
-              // Stats summary
-              _buildStatsSummary(context, isMobile),
-
-              const SizedBox(height: AppTheme.xl),
-
-              // Orders table/list
-              _filteredOrders.isEmpty
-                  ? _buildEmptyState(context)
-                  : _buildOrdersList(context, isMobile),
-
-              const SizedBox(height: AppTheme.lg),
-            ],
-          ),
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 900),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 16 : 24,
+                      isMobile ? 16 : 24,
+                      isMobile ? 16 : 24,
+                      24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(context),
+                        const SizedBox(height: 22),
+                        _buildSearchBar(context),
+                        const SizedBox(height: AppTheme.lg),
+                        _buildFilterButtons(context),
+                        const SizedBox(height: AppTheme.xl),
+                        _buildStatsSummary(context, isMobile),
+                        const SizedBox(height: AppTheme.xl),
+                        _filteredOrders.isEmpty
+                            ? _buildEmptyState(context)
+                            : _buildOrdersList(context, isMobile),
+                        const SizedBox(height: AppTheme.lg),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  /// Build App Bar
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: const Text(
-        'Pesanan',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 24,
-        ),
-      ),
-      elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-    );
-  }
-
-  /// Build header
+  /// Build header (solid, no gradient) — sama gayanya dengan CustomersListScreen
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Daftar Pesanan',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(13),
                   ),
-            ),
-            const SizedBox(height: AppTheme.sm),
-            Text(
-              'Kelola semua pesanan laundry Anda',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.gray600,
+                  child: Icon(
+                    Icons.receipt_long_rounded,
+                    color: AppTheme.primaryColor,
+                    size: 22,
                   ),
+                ),
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pesanan',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Kelola semua pesanan laundry Anda',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w400,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),
         ElevatedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Navigasi ke Create Order akan ditambahkan'),
-              ),
-            );
-          },
-          icon: const Icon(Icons.add),
-          label: const Text('Pesanan Baru'),
+          onPressed: () => _openCreateOrder(context),
+          icon: const Icon(Icons.add, size: 18),
+          label: Text(
+            'Baru',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
+          ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF5DADE2),
+            backgroundColor: AppTheme.primaryColor,
+            foregroundColor: Colors.white,
+            elevation: 0,
             padding: const EdgeInsets.symmetric(
               horizontal: AppTheme.lg,
               vertical: AppTheme.md,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             ),
           ),
         ),
@@ -275,27 +302,44 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
 
   /// Build search bar
   Widget _buildSearchBar(BuildContext context) {
-    return TextField(
-      controller: _searchController,
-      onChanged: (value) => _applyFiltersAndSearch(),
-      decoration: InputDecoration(
-        hintText: 'Cari pesanan atau pelanggan...',
-        prefixIcon: const Icon(Icons.search),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          borderSide: const BorderSide(color: AppTheme.borderColor),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          borderSide: const BorderSide(color: AppTheme.borderColor),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          borderSide: const BorderSide(color: Color(0xFF5DADE2), width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.lg,
-          vertical: AppTheme.md,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) => _applyFiltersAndSearch(),
+        style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+        decoration: InputDecoration(
+          hintText: 'Cari pesanan atau pelanggan...',
+          hintStyle: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textTertiary),
+          prefixIcon: Icon(Icons.search, color: AppTheme.textTertiary),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
+          ),
+          filled: true,
+          fillColor: AppTheme.cardColor,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.lg,
+            vertical: AppTheme.md,
+          ),
         ),
       ),
     );
@@ -304,11 +348,11 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
   /// Build filter buttons
   Widget _buildFilterButtons(BuildContext context) {
     final filters = [
-      ('all', 'Semua', Icons.all_inbox),
-      ('pending', 'Menunggu', Icons.schedule),
-      ('processing', 'Diproses', Icons.local_laundry_service),
-      ('completed', 'Selesai', Icons.check_circle),
-      ('cancelled', 'Dibatalkan', Icons.cancel),
+      ('all', 'Semua', Icons.all_inbox_outlined),
+      ('pending', 'Menunggu', Icons.schedule_outlined),
+      ('processing', 'Diproses', Icons.local_laundry_service_outlined),
+      ('completed', 'Selesai', Icons.check_circle_outline),
+      ('cancelled', 'Dibatalkan', Icons.cancel_outlined),
     ];
 
     return SingleChildScrollView(
@@ -326,6 +370,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                 });
                 _applyFiltersAndSearch();
               },
+              showCheckmark: false,
               label: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -334,12 +379,18 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                   Text(filters[index].$2),
                 ],
               ),
-              backgroundColor: Colors.grey.shade100,
-              selectedColor: const Color(0xFF5DADE2).withOpacity(0.2),
-              labelStyle: TextStyle(
+              backgroundColor: AppTheme.cardColor,
+              selectedColor: AppTheme.primaryColor.withOpacity(0.12),
+              side: BorderSide(
                 color: _selectedFilter == filters[index].$1
-                    ? const Color(0xFF5DADE2)
-                    : AppTheme.gray600,
+                    ? AppTheme.primaryColor.withOpacity(0.4)
+                    : AppTheme.borderColor,
+              ),
+              labelStyle: GoogleFonts.poppins(
+                fontSize: 12.5,
+                color: _selectedFilter == filters[index].$1
+                    ? AppTheme.primaryColor
+                    : AppTheme.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -364,7 +415,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
             title: 'Total Pesanan',
             value: '$totalOrders',
             icon: Icons.receipt_outlined,
-            color: const Color(0xFF5DADE2),
+            color: AppTheme.primaryColor,
           ),
         ),
         const SizedBox(width: AppTheme.lg),
@@ -387,32 +438,49 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
         padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
         child: Column(
           children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 80,
-              color: Colors.grey.shade400,
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.inbox_outlined,
+                size: 40,
+                color: AppTheme.primaryColor.withOpacity(0.6),
+              ),
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
               'Tidak ada pesanan',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
             ),
             const SizedBox(height: AppTheme.sm),
             Text(
               'Buat pesanan baru untuk memulai',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.gray600,
-                  ),
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+              ),
             ),
             const SizedBox(height: AppTheme.xl),
             ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.add),
-              label: const Text('Buat Pesanan'),
+              onPressed: () => _openCreateOrder(context),
+              icon: const Icon(Icons.add, size: 18),
+              label: Text('Buat Pesanan', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5DADE2),
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.xl, vertical: AppTheme.md),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
               ),
             ),
           ],
@@ -434,13 +502,9 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
               statusLabel: _getStatusLabel(_filteredOrders[index].status),
               formattedAmount: _formatCurrency(_filteredOrders[index].amount),
               formattedDate: _formatDate(_filteredOrders[index].date),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Detail pesanan ${_filteredOrders[index].id}'),
-                  ),
-                );
-              },
+              onTap: () => context.push(
+                '/orders/${_filteredOrders[index].id.replaceAll('#', '')}',
+              ),
             ),
             if (index < _filteredOrders.length - 1)
               const SizedBox(height: AppTheme.lg),
@@ -455,7 +519,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
 // HELPER WIDGETS
 // ============================================
 
-/// Stat Box Widget
+/// Stat Box Widget — sama persis gayanya dengan CustomersListScreen
 class _StatBox extends StatelessWidget {
   final String title;
   final String value;
@@ -474,13 +538,13 @@ class _StatBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -490,8 +554,8 @@ class _StatBox extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppTheme.sm),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(
               icon,
@@ -502,17 +566,18 @@ class _StatBox extends StatelessWidget {
           const SizedBox(height: AppTheme.md),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            style: GoogleFonts.poppins(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
             ),
           ),
-          const SizedBox(height: AppTheme.sm),
+          const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               fontSize: 12,
-              color: Colors.grey.shade600,
+              color: AppTheme.textTertiary,
             ),
           ),
         ],
@@ -521,7 +586,7 @@ class _StatBox extends StatelessWidget {
   }
 }
 
-/// Order Card Widget
+/// Order Card Widget — sama persis gayanya dengan CustomerCard
 class _OrderCard extends StatelessWidget {
   final OrderItem order;
   final Color statusColor;
@@ -547,14 +612,13 @@ class _OrderCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppTheme.lg),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardColor,
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              color: AppTheme.primaryColor.withOpacity(0.06),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -569,17 +633,18 @@ class _OrderCard extends StatelessWidget {
                   children: [
                     Text(
                       order.id,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: AppTheme.sm),
+                    const SizedBox(height: 2),
                     Text(
                       order.customerName,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.5,
+                        color: AppTheme.textSecondary,
                       ),
                     ),
                   ],
@@ -587,16 +652,16 @@ class _OrderCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppTheme.md,
-                    vertical: AppTheme.sm,
+                    vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.15),
+                    color: statusColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Text(
                     statusLabel,
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: statusColor,
                     ),
@@ -604,9 +669,9 @@ class _OrderCard extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: AppTheme.lg),
-
+            Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
+            const SizedBox(height: AppTheme.md),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -614,15 +679,15 @@ class _OrderCard extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.shopping_bag_outlined,
-                      size: 16,
-                      color: Colors.grey.shade600,
+                      size: 15,
+                      color: AppTheme.textTertiary,
                     ),
-                    const SizedBox(width: AppTheme.sm),
+                    const SizedBox(width: 6),
                     Text(
                       '${order.itemCount} item',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11.5,
+                        color: AppTheme.textTertiary,
                       ),
                     ),
                   ],
@@ -631,25 +696,25 @@ class _OrderCard extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.calendar_today_outlined,
-                      size: 16,
-                      color: Colors.grey.shade600,
+                      size: 15,
+                      color: AppTheme.textTertiary,
                     ),
-                    const SizedBox(width: AppTheme.sm),
+                    const SizedBox(width: 6),
                     Text(
                       formattedDate,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11.5,
+                        color: AppTheme.textTertiary,
                       ),
                     ),
                   ],
                 ),
                 Text(
                   formattedAmount,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF5DADE2),
+                    color: AppTheme.primaryColor,
                   ),
                 ),
               ],

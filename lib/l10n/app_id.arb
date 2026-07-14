@@ -137,5 +137,123 @@
       "count": { "type": "String" },
       "amount": { "type": "String" }
     }
+  },
+
+  "serviceNameLabel": "Nama Layanan",
+  "serviceNameHint": "Contoh: Cuci Kering Setrika Reguler",
+  "serviceNameError": "Nama layanan tidak boleh kosong",
+  "serviceDescriptionLabel": "Deskripsi (Opsional)",
+  "serviceDescriptionHint": "Contoh: Proses cuci, pengeringan mesin, dan setrika rapi.",
+  "pricingMethodLabel": "Metode Perhitungan Harga",
+  "pricePerKgLabel": "Harga per Kg (Rp)",
+  "pricePerItemLabel": "Harga per Item (Rp)",
+  "priceHint": "Contoh: 10000",
+  "priceEmptyError": "Harga tidak boleh kosong",
+  "priceInvalidError": "Masukkan angka yang valid",
+  "durationHint": "Contoh: 24",
+
+  "createServiceAppBarTitle": "Tambah Layanan Baru",
+  "createServiceSectionTitle": "Detail Layanan Laundry",
+  "createServiceSectionSubtitle": "Masukkan informasi jenis paket jasa laundry yang kamu sediakan.",
+  "pricingTypeKgFull": "Per Kilogram (Kg)",
+  "pricingTypeItemFull": "Per Satuan Item",
+  "durationLabelFull": "Estimasi Waktu Pengerjaan (Dalam Jam)",
+  "durationEmptyErrorFull": "Estimasi durasi pengerjaan tidak boleh kosong",
+  "durationInvalidErrorFull": "Masukkan angka bulat jam yang valid",
+  "saveServiceButton": "Simpan Layanan",
+  "sessionNotFoundError": "Sesi pengguna tidak ditemukan. Silakan login kembali.",
+  "companyNotSetupError": "Perusahaan belum dibuat. Selesaikan proses onboarding (setup perusahaan) terlebih dahulu.",
+  "addServiceSuccess": "Layanan berhasil ditambahkan!",
+  "addServiceError": "Gagal menambahkan layanan: {error}",
+  "@addServiceError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "servicesListAppBarTitle": "Daftar Layanan",
+  "servicesListSubtitle": "Kelola jenis cuci, harga, dan estimasi durasi",
+  "newServiceFab": "Layanan Baru",
+  "emptyServicesTitle": "Belum ada layanan terdaftar",
+  "emptyServicesSubtitle": "Tekan tombol \"Layanan Baru\" untuk\nmenambahkan jenis cuci pertama Anda",
+  "errorStateTitle": "Terjadi kesalahan",
+  "editServiceMenuItem": "Edit Layanan",
+  "deactivateMenuItem": "Nonaktifkan",
+  "activateMenuItem": "Aktifkan",
+  "deleteMenuItem": "Hapus Permanen",
+  "serviceActivatedSnackbar": "Layanan \"{name}\" diaktifkan kembali",
+  "@serviceActivatedSnackbar": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "serviceDeactivatedSnackbar": "Layanan \"{name}\" dinonaktifkan",
+  "@serviceDeactivatedSnackbar": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "toggleStatusError": "Gagal mengubah status: {error}",
+  "@toggleStatusError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "deleteConfirmTitle": "Hapus Permanen?",
+  "deleteConfirmContent": "Layanan \"{name}\" akan dihapus permanen dari database dan TIDAK BISA dikembalikan.\n\nJika layanan ini masih atau pernah dipakai di pesanan, sebaiknya gunakan opsi \"Nonaktifkan\" saja agar riwayat pesanan lama tetap tampil normal.",
+  "@deleteConfirmContent": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "deletePermanentButton": "Hapus Permanen",
+  "deleteServiceSuccess": "Layanan \"{name}\" berhasil dihapus permanen",
+  "@deleteServiceSuccess": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "deleteServiceError": "Gagal menghapus layanan: {error}",
+  "@deleteServiceError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "durationInHours": "{hours} Jam",
+  "@durationInHours": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "activeStatusChip": "Aktif",
+  "inactiveStatusChip": "Nonaktif",
+  "pricePerKgValue": "Rp {price} / Kg",
+  "@pricePerKgValue": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  "pricePerItemValue": "Rp {price} / Item",
+  "@pricePerItemValue": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  "editServiceSheetTitle": "Edit Layanan",
+  "editServiceSheetSubtitle": "Perbarui detail jenis layanan laundry ini",
+  "pricingTypeKgShort": "Per Kg",
+  "pricingTypeItemShort": "Per Item",
+  "durationLabelShort": "Estimasi Waktu Pengerjaan (Jam)",
+  "durationEmptyErrorShort": "Estimasi durasi tidak boleh kosong",
+  "durationInvalidErrorShort": "Masukkan angka bulat yang valid",
+  "activeServiceSwitchTitle": "Layanan Aktif",
+  "activeServiceSwitchSubtitle": "Nonaktifkan jika layanan sedang tidak ditawarkan",
+  "savingButtonLabel": "Menyimpan...",
+  "saveChangesSuccess": "Perubahan berhasil disimpan",
+  "saveChangesError": "Gagal menyimpan perubahan: {error}",
+  "@saveChangesError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
   }
 }

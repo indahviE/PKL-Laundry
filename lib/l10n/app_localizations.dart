@@ -637,6 +637,366 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'{count} item · Rp {amount}'**
   String orderDetailSummary(String count, String amount);
+
+  /// No description provided for @serviceNameLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama Layanan'**
+  String get serviceNameLabel;
+
+  /// No description provided for @serviceNameHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: Cuci Kering Setrika Reguler'**
+  String get serviceNameHint;
+
+  /// No description provided for @serviceNameError.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama layanan tidak boleh kosong'**
+  String get serviceNameError;
+
+  /// No description provided for @serviceDescriptionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Deskripsi (Opsional)'**
+  String get serviceDescriptionLabel;
+
+  /// No description provided for @serviceDescriptionHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: Proses cuci, pengeringan mesin, dan setrika rapi.'**
+  String get serviceDescriptionHint;
+
+  /// No description provided for @pricingMethodLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Metode Perhitungan Harga'**
+  String get pricingMethodLabel;
+
+  /// No description provided for @pricePerKgLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Harga per Kg (Rp)'**
+  String get pricePerKgLabel;
+
+  /// No description provided for @pricePerItemLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Harga per Item (Rp)'**
+  String get pricePerItemLabel;
+
+  /// No description provided for @priceHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: 10000'**
+  String get priceHint;
+
+  /// No description provided for @priceEmptyError.
+  ///
+  /// In id, this message translates to:
+  /// **'Harga tidak boleh kosong'**
+  String get priceEmptyError;
+
+  /// No description provided for @priceInvalidError.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan angka yang valid'**
+  String get priceInvalidError;
+
+  /// No description provided for @durationHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: 24'**
+  String get durationHint;
+
+  /// No description provided for @createServiceAppBarTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah Layanan Baru'**
+  String get createServiceAppBarTitle;
+
+  /// No description provided for @createServiceSectionTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail Layanan Laundry'**
+  String get createServiceSectionTitle;
+
+  /// No description provided for @createServiceSectionSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan informasi jenis paket jasa laundry yang kamu sediakan.'**
+  String get createServiceSectionSubtitle;
+
+  /// No description provided for @pricingTypeKgFull.
+  ///
+  /// In id, this message translates to:
+  /// **'Per Kilogram (Kg)'**
+  String get pricingTypeKgFull;
+
+  /// No description provided for @pricingTypeItemFull.
+  ///
+  /// In id, this message translates to:
+  /// **'Per Satuan Item'**
+  String get pricingTypeItemFull;
+
+  /// No description provided for @durationLabelFull.
+  ///
+  /// In id, this message translates to:
+  /// **'Estimasi Waktu Pengerjaan (Dalam Jam)'**
+  String get durationLabelFull;
+
+  /// No description provided for @durationEmptyErrorFull.
+  ///
+  /// In id, this message translates to:
+  /// **'Estimasi durasi pengerjaan tidak boleh kosong'**
+  String get durationEmptyErrorFull;
+
+  /// No description provided for @durationInvalidErrorFull.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan angka bulat jam yang valid'**
+  String get durationInvalidErrorFull;
+
+  /// No description provided for @saveServiceButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan Layanan'**
+  String get saveServiceButton;
+
+  /// No description provided for @sessionNotFoundError.
+  ///
+  /// In id, this message translates to:
+  /// **'Sesi pengguna tidak ditemukan. Silakan login kembali.'**
+  String get sessionNotFoundError;
+
+  /// No description provided for @companyNotSetupError.
+  ///
+  /// In id, this message translates to:
+  /// **'Perusahaan belum dibuat. Selesaikan proses onboarding (setup perusahaan) terlebih dahulu.'**
+  String get companyNotSetupError;
+
+  /// No description provided for @addServiceSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Layanan berhasil ditambahkan!'**
+  String get addServiceSuccess;
+
+  /// No description provided for @addServiceError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menambahkan layanan: {error}'**
+  String addServiceError(String error);
+
+  /// No description provided for @servicesListAppBarTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar Layanan'**
+  String get servicesListAppBarTitle;
+
+  /// No description provided for @servicesListSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola jenis cuci, harga, dan estimasi durasi'**
+  String get servicesListSubtitle;
+
+  /// No description provided for @newServiceFab.
+  ///
+  /// In id, this message translates to:
+  /// **'Layanan Baru'**
+  String get newServiceFab;
+
+  /// No description provided for @emptyServicesTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada layanan terdaftar'**
+  String get emptyServicesTitle;
+
+  /// No description provided for @emptyServicesSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tekan tombol \"Layanan Baru\" untuk\nmenambahkan jenis cuci pertama Anda'**
+  String get emptyServicesSubtitle;
+
+  /// No description provided for @errorStateTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Terjadi kesalahan'**
+  String get errorStateTitle;
+
+  /// No description provided for @editServiceMenuItem.
+  ///
+  /// In id, this message translates to:
+  /// **'Edit Layanan'**
+  String get editServiceMenuItem;
+
+  /// No description provided for @deactivateMenuItem.
+  ///
+  /// In id, this message translates to:
+  /// **'Nonaktifkan'**
+  String get deactivateMenuItem;
+
+  /// No description provided for @activateMenuItem.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktifkan'**
+  String get activateMenuItem;
+
+  /// No description provided for @deleteMenuItem.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus Permanen'**
+  String get deleteMenuItem;
+
+  /// No description provided for @serviceActivatedSnackbar.
+  ///
+  /// In id, this message translates to:
+  /// **'Layanan \"{name}\" diaktifkan kembali'**
+  String serviceActivatedSnackbar(String name);
+
+  /// No description provided for @serviceDeactivatedSnackbar.
+  ///
+  /// In id, this message translates to:
+  /// **'Layanan \"{name}\" dinonaktifkan'**
+  String serviceDeactivatedSnackbar(String name);
+
+  /// No description provided for @toggleStatusError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal mengubah status: {error}'**
+  String toggleStatusError(String error);
+
+  /// No description provided for @deleteConfirmTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus Permanen?'**
+  String get deleteConfirmTitle;
+
+  /// No description provided for @deleteConfirmContent.
+  ///
+  /// In id, this message translates to:
+  /// **'Layanan \"{name}\" akan dihapus permanen dari database dan TIDAK BISA dikembalikan.\n\nJika layanan ini masih atau pernah dipakai di pesanan, sebaiknya gunakan opsi \"Nonaktifkan\" saja agar riwayat pesanan lama tetap tampil normal.'**
+  String deleteConfirmContent(String name);
+
+  /// No description provided for @deletePermanentButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus Permanen'**
+  String get deletePermanentButton;
+
+  /// No description provided for @deleteServiceSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Layanan \"{name}\" berhasil dihapus permanen'**
+  String deleteServiceSuccess(String name);
+
+  /// No description provided for @deleteServiceError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menghapus layanan: {error}'**
+  String deleteServiceError(String error);
+
+  /// No description provided for @durationInHours.
+  ///
+  /// In id, this message translates to:
+  /// **'{hours} Jam'**
+  String durationInHours(int hours);
+
+  /// No description provided for @activeStatusChip.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktif'**
+  String get activeStatusChip;
+
+  /// No description provided for @inactiveStatusChip.
+  ///
+  /// In id, this message translates to:
+  /// **'Nonaktif'**
+  String get inactiveStatusChip;
+
+  /// No description provided for @pricePerKgValue.
+  ///
+  /// In id, this message translates to:
+  /// **'Rp {price} / Kg'**
+  String pricePerKgValue(String price);
+
+  /// No description provided for @pricePerItemValue.
+  ///
+  /// In id, this message translates to:
+  /// **'Rp {price} / Item'**
+  String pricePerItemValue(String price);
+
+  /// No description provided for @editServiceSheetTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Edit Layanan'**
+  String get editServiceSheetTitle;
+
+  /// No description provided for @editServiceSheetSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Perbarui detail jenis layanan laundry ini'**
+  String get editServiceSheetSubtitle;
+
+  /// No description provided for @pricingTypeKgShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Per Kg'**
+  String get pricingTypeKgShort;
+
+  /// No description provided for @pricingTypeItemShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Per Item'**
+  String get pricingTypeItemShort;
+
+  /// No description provided for @durationLabelShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Estimasi Waktu Pengerjaan (Jam)'**
+  String get durationLabelShort;
+
+  /// No description provided for @durationEmptyErrorShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Estimasi durasi tidak boleh kosong'**
+  String get durationEmptyErrorShort;
+
+  /// No description provided for @durationInvalidErrorShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan angka bulat yang valid'**
+  String get durationInvalidErrorShort;
+
+  /// No description provided for @activeServiceSwitchTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Layanan Aktif'**
+  String get activeServiceSwitchTitle;
+
+  /// No description provided for @activeServiceSwitchSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Nonaktifkan jika layanan sedang tidak ditawarkan'**
+  String get activeServiceSwitchSubtitle;
+
+  /// No description provided for @savingButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyimpan...'**
+  String get savingButtonLabel;
+
+  /// No description provided for @saveChangesSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Perubahan berhasil disimpan'**
+  String get saveChangesSuccess;
+
+  /// No description provided for @saveChangesError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menyimpan perubahan: {error}'**
+  String saveChangesError(String error);
 }
 
 class _AppLocalizationsDelegate

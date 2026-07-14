@@ -298,4 +298,214 @@ class AppLocalizationsEn extends AppLocalizations {
   String orderDetailSummary(String count, String amount) {
     return '$count items · Rp $amount';
   }
+
+  @override
+  String get serviceNameLabel => 'Service Name';
+
+  @override
+  String get serviceNameHint => 'Example: Regular Wash & Iron';
+
+  @override
+  String get serviceNameError => 'Service name cannot be empty';
+
+  @override
+  String get serviceDescriptionLabel => 'Description (Optional)';
+
+  @override
+  String get serviceDescriptionHint =>
+      'Example: Washing, machine drying, and neat ironing.';
+
+  @override
+  String get pricingMethodLabel => 'Pricing Method';
+
+  @override
+  String get pricePerKgLabel => 'Price per Kg (Rp)';
+
+  @override
+  String get pricePerItemLabel => 'Price per Item (Rp)';
+
+  @override
+  String get priceHint => 'Example: 10000';
+
+  @override
+  String get priceEmptyError => 'Price cannot be empty';
+
+  @override
+  String get priceInvalidError => 'Enter a valid number';
+
+  @override
+  String get durationHint => 'Example: 24';
+
+  @override
+  String get createServiceAppBarTitle => 'Add New Service';
+
+  @override
+  String get createServiceSectionTitle => 'Laundry Service Details';
+
+  @override
+  String get createServiceSectionSubtitle =>
+      'Enter the details of the laundry service package you offer.';
+
+  @override
+  String get pricingTypeKgFull => 'Per Kilogram (Kg)';
+
+  @override
+  String get pricingTypeItemFull => 'Per Item';
+
+  @override
+  String get durationLabelFull => 'Estimated Turnaround (In Hours)';
+
+  @override
+  String get durationEmptyErrorFull => 'Estimated turnaround cannot be empty';
+
+  @override
+  String get durationInvalidErrorFull => 'Enter a valid whole number of hours';
+
+  @override
+  String get saveServiceButton => 'Save Service';
+
+  @override
+  String get sessionNotFoundError =>
+      'User session not found. Please log in again.';
+
+  @override
+  String get companyNotSetupError =>
+      'Company not created yet. Please complete the onboarding (company setup) first.';
+
+  @override
+  String get addServiceSuccess => 'Service added successfully!';
+
+  @override
+  String addServiceError(String error) {
+    return 'Failed to add service: $error';
+  }
+
+  @override
+  String get servicesListAppBarTitle => 'Service List';
+
+  @override
+  String get servicesListSubtitle =>
+      'Manage wash types, prices, and estimated durations';
+
+  @override
+  String get newServiceFab => 'New Service';
+
+  @override
+  String get emptyServicesTitle => 'No services registered yet';
+
+  @override
+  String get emptyServicesSubtitle =>
+      'Tap the \"New Service\" button to\nadd your first wash type';
+
+  @override
+  String get errorStateTitle => 'An error occurred';
+
+  @override
+  String get editServiceMenuItem => 'Edit Service';
+
+  @override
+  String get deactivateMenuItem => 'Deactivate';
+
+  @override
+  String get activateMenuItem => 'Activate';
+
+  @override
+  String get deleteMenuItem => 'Delete Permanently';
+
+  @override
+  String serviceActivatedSnackbar(String name) {
+    return 'Service \"$name\" reactivated';
+  }
+
+  @override
+  String serviceDeactivatedSnackbar(String name) {
+    return 'Service \"$name\" deactivated';
+  }
+
+  @override
+  String toggleStatusError(String error) {
+    return 'Failed to change status: $error';
+  }
+
+  @override
+  String get deleteConfirmTitle => 'Delete Permanently?';
+
+  @override
+  String deleteConfirmContent(String name) {
+    return 'Service \"$name\" will be permanently deleted from the database and CANNOT be recovered.\n\nIf this service is or has been used in an order, it\'s recommended to use the \"Deactivate\" option instead so old order history still displays correctly.';
+  }
+
+  @override
+  String get deletePermanentButton => 'Delete Permanently';
+
+  @override
+  String deleteServiceSuccess(String name) {
+    return 'Service \"$name\" permanently deleted';
+  }
+
+  @override
+  String deleteServiceError(String error) {
+    return 'Failed to delete service: $error';
+  }
+
+  @override
+  String durationInHours(int hours) {
+    return '$hours hrs';
+  }
+
+  @override
+  String get activeStatusChip => 'Active';
+
+  @override
+  String get inactiveStatusChip => 'Inactive';
+
+  @override
+  String pricePerKgValue(String price) {
+    return 'Rp $price / Kg';
+  }
+
+  @override
+  String pricePerItemValue(String price) {
+    return 'Rp $price / Item';
+  }
+
+  @override
+  String get editServiceSheetTitle => 'Edit Service';
+
+  @override
+  String get editServiceSheetSubtitle =>
+      'Update the details of this laundry service';
+
+  @override
+  String get pricingTypeKgShort => 'Per Kg';
+
+  @override
+  String get pricingTypeItemShort => 'Per Item';
+
+  @override
+  String get durationLabelShort => 'Estimated Turnaround (Hours)';
+
+  @override
+  String get durationEmptyErrorShort => 'Estimated duration cannot be empty';
+
+  @override
+  String get durationInvalidErrorShort => 'Enter a valid whole number';
+
+  @override
+  String get activeServiceSwitchTitle => 'Service Active';
+
+  @override
+  String get activeServiceSwitchSubtitle =>
+      'Turn off if this service is not currently offered';
+
+  @override
+  String get savingButtonLabel => 'Saving...';
+
+  @override
+  String get saveChangesSuccess => 'Changes saved successfully';
+
+  @override
+  String saveChangesError(String error) {
+    return 'Failed to save changes: $error';
+  }
 }

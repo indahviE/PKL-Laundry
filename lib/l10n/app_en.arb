@@ -137,5 +137,123 @@
       "count": { "type": "String" },
       "amount": { "type": "String" }
     }
+  },
+
+  "serviceNameLabel": "Service Name",
+  "serviceNameHint": "Example: Regular Wash & Iron",
+  "serviceNameError": "Service name cannot be empty",
+  "serviceDescriptionLabel": "Description (Optional)",
+  "serviceDescriptionHint": "Example: Washing, machine drying, and neat ironing.",
+  "pricingMethodLabel": "Pricing Method",
+  "pricePerKgLabel": "Price per Kg (Rp)",
+  "pricePerItemLabel": "Price per Item (Rp)",
+  "priceHint": "Example: 10000",
+  "priceEmptyError": "Price cannot be empty",
+  "priceInvalidError": "Enter a valid number",
+  "durationHint": "Example: 24",
+
+  "createServiceAppBarTitle": "Add New Service",
+  "createServiceSectionTitle": "Laundry Service Details",
+  "createServiceSectionSubtitle": "Enter the details of the laundry service package you offer.",
+  "pricingTypeKgFull": "Per Kilogram (Kg)",
+  "pricingTypeItemFull": "Per Item",
+  "durationLabelFull": "Estimated Turnaround (In Hours)",
+  "durationEmptyErrorFull": "Estimated turnaround cannot be empty",
+  "durationInvalidErrorFull": "Enter a valid whole number of hours",
+  "saveServiceButton": "Save Service",
+  "sessionNotFoundError": "User session not found. Please log in again.",
+  "companyNotSetupError": "Company not created yet. Please complete the onboarding (company setup) first.",
+  "addServiceSuccess": "Service added successfully!",
+  "addServiceError": "Failed to add service: {error}",
+  "@addServiceError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "servicesListAppBarTitle": "Service List",
+  "servicesListSubtitle": "Manage wash types, prices, and estimated durations",
+  "newServiceFab": "New Service",
+  "emptyServicesTitle": "No services registered yet",
+  "emptyServicesSubtitle": "Tap the \"New Service\" button to\nadd your first wash type",
+  "errorStateTitle": "An error occurred",
+  "editServiceMenuItem": "Edit Service",
+  "deactivateMenuItem": "Deactivate",
+  "activateMenuItem": "Activate",
+  "deleteMenuItem": "Delete Permanently",
+  "serviceActivatedSnackbar": "Service \"{name}\" reactivated",
+  "@serviceActivatedSnackbar": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "serviceDeactivatedSnackbar": "Service \"{name}\" deactivated",
+  "@serviceDeactivatedSnackbar": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "toggleStatusError": "Failed to change status: {error}",
+  "@toggleStatusError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "deleteConfirmTitle": "Delete Permanently?",
+  "deleteConfirmContent": "Service \"{name}\" will be permanently deleted from the database and CANNOT be recovered.\n\nIf this service is or has been used in an order, it's recommended to use the \"Deactivate\" option instead so old order history still displays correctly.",
+  "@deleteConfirmContent": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "deletePermanentButton": "Delete Permanently",
+  "deleteServiceSuccess": "Service \"{name}\" permanently deleted",
+  "@deleteServiceSuccess": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "deleteServiceError": "Failed to delete service: {error}",
+  "@deleteServiceError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "durationInHours": "{hours} hrs",
+  "@durationInHours": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "activeStatusChip": "Active",
+  "inactiveStatusChip": "Inactive",
+  "pricePerKgValue": "Rp {price} / Kg",
+  "@pricePerKgValue": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  "pricePerItemValue": "Rp {price} / Item",
+  "@pricePerItemValue": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  "editServiceSheetTitle": "Edit Service",
+  "editServiceSheetSubtitle": "Update the details of this laundry service",
+  "pricingTypeKgShort": "Per Kg",
+  "pricingTypeItemShort": "Per Item",
+  "durationLabelShort": "Estimated Turnaround (Hours)",
+  "durationEmptyErrorShort": "Estimated duration cannot be empty",
+  "durationInvalidErrorShort": "Enter a valid whole number",
+  "activeServiceSwitchTitle": "Service Active",
+  "activeServiceSwitchSubtitle": "Turn off if this service is not currently offered",
+  "savingButtonLabel": "Saving...",
+  "saveChangesSuccess": "Changes saved successfully",
+  "saveChangesError": "Failed to save changes: {error}",
+  "@saveChangesError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
   }
 }

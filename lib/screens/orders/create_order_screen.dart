@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/themes/app_theme.dart';
 import '../../widgets/common/app_input.dart';
 
@@ -29,7 +30,6 @@ class CreateOrderScreen extends StatefulWidget {
 
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
   // Controllers
-  late TextEditingController _customerController;
   late TextEditingController _notesController;
 
   // Form key
@@ -58,16 +58,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     {'id': '6', 'name': 'Dress', 'price': 40000},
   ];
 
-  late final List<Map<String, String>> _paymentMethods = [
-    {'id': 'cash', 'label': 'Tunai'},
-    {'id': 'transfer', 'label': 'Transfer Bank'},
-    {'id': 'credit', 'label': 'Kredit'},
+  late final List<Map<String, dynamic>> _paymentMethods = [
+    {'id': 'cash', 'label': 'Tunai', 'icon': Icons.payments_outlined},
+    {'id': 'transfer', 'label': 'Transfer Bank', 'icon': Icons.account_balance_outlined},
+    {'id': 'credit', 'label': 'Kredit', 'icon': Icons.credit_card_outlined},
   ];
 
   @override
   void initState() {
     super.initState();
-    _customerController = TextEditingController();
     _notesController = TextEditingController();
     _orderItems = [
       OrderItemForm(
@@ -81,7 +80,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   @override
   void dispose() {
-    _customerController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -91,7 +89,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Pilih Layanan'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+        title: Text(
+          'Pilih Layanan',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+        ),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
@@ -100,8 +102,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             itemBuilder: (context, index) {
               final service = _availableServices[index];
               return ListTile(
-                title: Text(service['name']),
-                subtitle: Text('Rp ${service['price']}'),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                title: Text(
+                  service['name'],
+                  style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w500, color: AppTheme.textPrimary),
+                ),
+                subtitle: Text(
+                  'Rp ${service['price']}',
+                  style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                ),
                 onTap: () {
                   setState(() {
                     _orderItems.add(
@@ -122,7 +131,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup'),
+            child: Text('Tutup', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
           ),
         ],
       ),
@@ -156,7 +165,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
     try {
       await Future.delayed(const Duration(seconds: 2));
-      // TODO: Save order ke backend
+      // TODO: Save order ke backend (Firestore)
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -165,7 +174,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             backgroundColor: Color(0xFF51CF66),
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -191,59 +200,87 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
     return Scaffold(
-      appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(isMobile ? AppTheme.lg : AppTheme.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Progress Indicator
-              _buildProgressIndicator(context),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // Header
-              _buildHeader(context),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // Form
-              _buildForm(context),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // Order Items Section
-              _buildOrderItemsSection(context),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // Price Summary
-              _buildPriceSummary(context),
-
-              const SizedBox(height: AppTheme.xxl),
-
-              // Save Button
-              _buildSaveButton(context),
-
-              const SizedBox(height: AppTheme.lg),
-            ],
-          ),
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 16 : 24,
+                      isMobile ? 16 : 24,
+                      isMobile ? 16 : 24,
+                      24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTopBar(context),
+                        const SizedBox(height: AppTheme.xl),
+                        _buildProgressIndicator(context),
+                        const SizedBox(height: AppTheme.xxl),
+                        _buildHeader(context),
+                        const SizedBox(height: AppTheme.xxl),
+                        _buildForm(context),
+                        const SizedBox(height: AppTheme.xxl),
+                        _buildOrderItemsSection(context),
+                        const SizedBox(height: AppTheme.xxl),
+                        _buildPriceSummary(context),
+                        const SizedBox(height: AppTheme.xxl),
+                        _buildSaveButton(context),
+                        const SizedBox(height: AppTheme.lg),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  /// Build App Bar
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: const Text('Buat Pesanan Baru'),
-      elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
+  /// Build top bar (back button + title) — sama gayanya dengan CreateCustomerScreen
+  Widget _buildTopBar(BuildContext context) {
+    return Row(
+      children: [
+        InkWell(
+          onTap: () => Navigator.pop(context, false),
+          borderRadius: BorderRadius.circular(11),
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppTheme.cardColor,
+              borderRadius: BorderRadius.circular(11),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: AppTheme.textPrimary),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Text(
+          'Buat Pesanan Baru',
+          style: GoogleFonts.poppins(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 
@@ -259,7 +296,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               child: Container(
                 height: 6,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF5DADE2),
+                  color: AppTheme.primaryColor,
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -270,7 +307,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               child: Container(
                 height: 6,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: AppTheme.borderColor,
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -280,10 +317,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         const SizedBox(height: AppTheme.md),
         Text(
           'Step 1 dari 2',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF5DADE2),
-                fontWeight: FontWeight.w600,
-              ),
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: AppTheme.primaryColor,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
@@ -297,28 +335,31 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         Container(
           padding: const EdgeInsets.all(AppTheme.lg),
           decoration: BoxDecoration(
-            color: const Color(0xFF5DADE2).withOpacity(0.15),
+            color: AppTheme.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           ),
-          child: const Icon(
-            Icons.add_circle_outlined,
-            color: Color(0xFF5DADE2),
-            size: 36,
+          child: Icon(
+            Icons.add_circle_outline_rounded,
+            color: AppTheme.primaryColor,
+            size: 34,
           ),
         ),
         const SizedBox(height: AppTheme.xl),
         Text(
           'Pesanan Baru',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: GoogleFonts.poppins(
+            fontSize: 21,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
         ),
-        const SizedBox(height: AppTheme.md),
+        const SizedBox(height: AppTheme.sm),
         Text(
           'Buat dan kelola pesanan laundry baru',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.gray600,
-              ),
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: AppTheme.textSecondary,
+          ),
         ),
       ],
     );
@@ -326,91 +367,142 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   /// Build Form
   Widget _buildForm(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          // Customer Dropdown
-          DropdownButtonFormField<String>(
-            value: _selectedCustomer,
-            onChanged: (value) => setState(() => _selectedCustomer = value),
-            items: _customers
-                .map((customer) => DropdownMenuItem(
-                      value: customer,
-                      child: Text(customer),
-                    ))
-                .toList(),
-            decoration: InputDecoration(
-              labelText: 'Pelanggan *',
-              hintText: 'Pilih pelanggan',
-              prefixIcon: const Icon(Icons.person_outline),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-              ),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Pilih pelanggan terlebih dahulu';
-              }
-              return null;
-            },
-          ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Payment Method
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Metode Pembayaran *',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-              const SizedBox(height: AppTheme.md),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppTheme.borderColor),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                ),
-                child: Column(
-                  children: List.generate(
-                    _paymentMethods.length,
-                    (index) => Column(
-                      children: [
-                        RadioListTile<String>(
-                          value: _paymentMethods[index]['id']!,
-                          groupValue: _selectedPaymentMethod,
-                          onChanged: (value) {
-                            setState(
-                              () => _selectedPaymentMethod = value,
-                            );
-                          },
-                          title: Text(_paymentMethods[index]['label']!),
-                          dense: true,
-                        ),
-                        if (index < _paymentMethods.length - 1)
-                          const Divider(height: 0),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Notes
-          AppInput(
-            label: 'Catatan (Optional)',
-            controller: _notesController,
-            hintText: 'Tulis catatan khusus untuk pesanan ini',
-            prefixIcon: Icons.note_outlined,
-            maxLines: 3,
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.lg),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
         ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            // Customer Dropdown
+            DropdownButtonFormField<String>(
+              value: _selectedCustomer,
+              onChanged: (value) => setState(() => _selectedCustomer = value),
+              style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+              items: _customers
+                  .map((customer) => DropdownMenuItem(
+                        value: customer,
+                        child: Text(customer, style: GoogleFonts.poppins(fontSize: 13.5)),
+                      ))
+                  .toList(),
+              decoration: InputDecoration(
+                labelText: 'Pelanggan *',
+                labelStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+                hintText: 'Pilih pelanggan',
+                hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
+                prefixIcon: Icon(Icons.person_outline, color: AppTheme.textTertiary),
+                filled: true,
+                fillColor: AppTheme.backgroundColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
+                ),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Pilih pelanggan terlebih dahulu';
+                }
+                return null;
+              },
+            ),
+
+            const SizedBox(height: AppTheme.lg),
+
+            // Payment Method
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Metode Pembayaran *',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppTheme.md),
+                Row(
+                  children: List.generate(_paymentMethods.length, (index) {
+                    final method = _paymentMethods[index];
+                    final isSelected = _selectedPaymentMethod == method['id'];
+                    return Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          right: index < _paymentMethods.length - 1 ? AppTheme.sm : 0,
+                        ),
+                        child: InkWell(
+                          onTap: () => setState(() => _selectedPaymentMethod = method['id']),
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: AppTheme.md, horizontal: AppTheme.sm),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppTheme.primaryColor.withOpacity(0.1)
+                                  : AppTheme.backgroundColor,
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              border: Border.all(
+                                color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+                                width: isSelected ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  method['icon'],
+                                  size: 20,
+                                  color: isSelected ? AppTheme.primaryColor : AppTheme.textTertiary,
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  method['label'],
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: AppTheme.lg),
+
+            // Notes
+            AppInput(
+              label: 'Catatan (Opsional)',
+              controller: _notesController,
+              hintText: 'Tulis catatan khusus untuk pesanan ini',
+              prefixIcon: Icons.note_outlined,
+              maxLines: 3,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -425,20 +517,25 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           children: [
             Text(
               'Item Pesanan',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
             ),
             ElevatedButton.icon(
               onPressed: !_isLoading ? _addOrderItem : null,
-              icon: const Icon(Icons.add),
-              label: const Text('Tambah Item'),
+              icon: const Icon(Icons.add, size: 16),
+              label: Text('Tambah Item', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5DADE2),
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppTheme.md,
                   vertical: AppTheme.sm,
                 ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
               ),
             ),
           ],
@@ -449,130 +546,114 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             final index = entry.key;
             final item = entry.value;
 
-            return Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(AppTheme.lg),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: AppTheme.sm),
-                                Text(
-                                  _formatCurrency(item.price),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF5DADE2),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: !_isLoading
-                                ? () => _removeOrderItem(index)
-                                : null,
-                            color: AppTheme.errorColor,
-                          ),
-                        ],
-                      ),
-                      const Divider(height: AppTheme.lg),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Jumlah',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          Row(
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppTheme.lg),
+              child: Container(
+                padding: const EdgeInsets.all(AppTheme.lg),
+                decoration: BoxDecoration(
+                  color: AppTheme.cardColor,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withOpacity(0.06),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove),
-                                onPressed: item.quantity > 1
-                                    ? () {
-                                        setState(
-                                          () => item.quantity--,
-                                        );
-                                      }
-                                    : null,
-                                iconSize: 20,
-                              ),
-                              SizedBox(
-                                width: 40,
-                                child: TextField(
-                                  textAlign: TextAlign.center,
-                                  keyboardType: TextInputType.number,
-                                  controller: TextEditingController(
-                                    text: item.quantity.toString(),
-                                  ),
-                                  onChanged: (value) {
-                                    setState(
-                                      () {
-                                        item.quantity =
-                                            int.tryParse(value) ?? 1;
-                                      },
-                                    );
-                                  },
-                                  decoration: InputDecoration(
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        AppTheme.radiusMd,
-                                      ),
-                                    ),
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
-                                      vertical: AppTheme.sm,
-                                    ),
-                                  ),
+                              Text(
+                                item.name,
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: AppTheme.textPrimary,
                                 ),
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.add),
-                                onPressed: !_isLoading
-                                    ? () {
-                                        setState(
-                                          () => item.quantity++,
-                                        );
-                                      }
-                                    : null,
-                                iconSize: 20,
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatCurrency(item.price),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: AppTheme.primaryColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
-                          Text(
-                            _formatCurrency(item.subtotal),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF5DADE2),
+                        ),
+                        InkWell(
+                          onTap: !_isLoading ? () => _removeOrderItem(index) : null,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.errorColor.withOpacity(0.1),
+                              shape: BoxShape.circle,
                             ),
+                            child: Icon(Icons.close, size: 16, color: AppTheme.errorColor),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppTheme.md),
+                    Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
+                    const SizedBox(height: AppTheme.md),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Jumlah',
+                          style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                        ),
+                        Row(
+                          children: [
+                            _QuantityButton(
+                              icon: Icons.remove,
+                              onTap: item.quantity > 1
+                                  ? () => setState(() => item.quantity--)
+                                  : null,
+                            ),
+                            SizedBox(
+                              width: 36,
+                              child: Text(
+                                '${item.quantity}',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                            ),
+                            _QuantityButton(
+                              icon: Icons.add,
+                              onTap: !_isLoading ? () => setState(() => item.quantity++) : null,
+                            ),
+                          ],
+                        ),
+                        Text(
+                          _formatCurrency(item.subtotal),
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppTheme.lg),
-              ],
+              ),
             );
           },
         ),
@@ -587,51 +668,54 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Ringkasan Harga',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
           ),
           const SizedBox(height: AppTheme.lg),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Subtotal',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text('Subtotal', style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary)),
               Text(
                 _formatCurrency(total),
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5, color: AppTheme.textPrimary),
               ),
             ],
           ),
           const SizedBox(height: AppTheme.md),
-          const Divider(),
+          Divider(color: AppTheme.borderColor),
           const SizedBox(height: AppTheme.md),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Total',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: GoogleFonts.poppins(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
               ),
               Text(
                 _formatCurrency(total),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF5DADE2),
+                style: GoogleFonts.poppins(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.primaryColor,
                 ),
               ),
             ],
@@ -645,11 +729,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   Widget _buildSaveButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
+      height: 52,
       child: ElevatedButton(
         onPressed: !_isLoading ? _handleSaveOrder : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5DADE2),
-          padding: const EdgeInsets.symmetric(vertical: AppTheme.lg),
+          backgroundColor: AppTheme.primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          ),
         ),
         child: _isLoading
             ? Row(
@@ -666,19 +755,49 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     ),
                   ),
                   const SizedBox(width: AppTheme.md),
-                  const Text(
+                  Text(
                     'Sedang Menyimpan...',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                   ),
                 ],
               )
-            : const Text(
+            : Text(
                 'Simpan Pesanan',
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
-                  fontSize: 16,
+                  fontSize: 15,
                 ),
               ),
+      ),
+    );
+  }
+}
+
+/// Tombol bulat kecil untuk stepper jumlah item
+class _QuantityButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _QuantityButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = onTap != null;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: isEnabled ? AppTheme.primaryColor.withOpacity(0.1) : AppTheme.backgroundColor,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          size: 16,
+          color: isEnabled ? AppTheme.primaryColor : AppTheme.textTertiary,
+        ),
       ),
     );
   }

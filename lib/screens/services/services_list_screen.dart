@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../l10n/app_localizations.dart';
 import '../../core/themes/app_theme.dart';
 import '../../models/service.dart';
 import '../../providers/auth_provider.dart';
@@ -14,6 +15,8 @@ class ServicesListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+
     // Menggunakan authStateProvider sesuai berkas auth_provider.dart
     final authState = ref.watch(authStateProvider);
     final userId = authState.value?.uid ?? '';
@@ -26,7 +29,7 @@ class ServicesListScreen extends ConsumerWidget {
         bottom: false,
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _buildHeader(context)),
+            SliverToBoxAdapter(child: _buildHeader(context, l10n)),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
               sliver: StreamBuilder<List<Service>>(
@@ -42,7 +45,7 @@ class ServicesListScreen extends ConsumerWidget {
                   if (snapshot.hasError) {
                     return SliverFillRemaining(
                       hasScrollBody: false,
-                      child: _buildErrorState(snapshot.error),
+                      child: _buildErrorState(context, l10n, snapshot.error),
                     );
                   }
 
@@ -51,7 +54,7 @@ class ServicesListScreen extends ConsumerWidget {
                   if (services.isEmpty) {
                     return SliverFillRemaining(
                       hasScrollBody: false,
-                      child: _buildEmptyState(),
+                      child: _buildEmptyState(l10n),
                     );
                   }
 
@@ -62,8 +65,8 @@ class ServicesListScreen extends ConsumerWidget {
                         return _ServiceCard(
                           service: service,
                           onEdit: () => _showEditSheet(context, serviceRepository, service),
-                          onToggleActive: () => _toggleActive(context, serviceRepository, service),
-                          onDelete: () => _confirmDelete(context, serviceRepository, service),
+                          onToggleActive: () => _toggleActive(context, l10n, serviceRepository, service),
+                          onDelete: () => _confirmDelete(context, l10n, serviceRepository, service),
                         );
                       },
                       childCount: services.length,
@@ -81,7 +84,7 @@ class ServicesListScreen extends ConsumerWidget {
         elevation: 2,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: Text(
-          'Layanan Baru',
+          l10n.newServiceFab,
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white),
         ),
       ),
@@ -92,7 +95,7 @@ class ServicesListScreen extends ConsumerWidget {
   // HEADER — gradient banner senada dengan login_screen.dart,
   // konsisten dengan brand identity NetWash
   // ==========================================================
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -127,7 +130,7 @@ class ServicesListScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Daftar Layanan',
+                      l10n.servicesListAppBarTitle,
                       style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -137,7 +140,7 @@ class ServicesListScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Kelola jenis cuci, harga, dan estimasi durasi',
+                      l10n.servicesListSubtitle,
                       style: GoogleFonts.poppins(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w400,
@@ -170,7 +173,7 @@ class ServicesListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 48),
@@ -188,7 +191,7 @@ class ServicesListScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Belum ada layanan terdaftar',
+              l10n.emptyServicesTitle,
               style: GoogleFonts.poppins(
                 fontSize: 15.5,
                 color: AppTheme.textPrimary,
@@ -197,7 +200,7 @@ class ServicesListScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Tekan tombol "Layanan Baru" untuk\nmenambahkan jenis cuci pertama Anda',
+              l10n.emptyServicesSubtitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
             ),
@@ -207,7 +210,7 @@ class ServicesListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorState(Object? error) {
+  Widget _buildErrorState(BuildContext context, AppLocalizations l10n, Object? error) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -217,7 +220,7 @@ class ServicesListScreen extends ConsumerWidget {
             Icon(Icons.error_outline_rounded, size: 44, color: Colors.red.shade300),
             const SizedBox(height: 16),
             Text(
-              'Terjadi kesalahan',
+              l10n.errorStateTitle,
               style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
             ),
             const SizedBox(height: 6),
@@ -250,7 +253,7 @@ class ServicesListScreen extends ConsumerWidget {
   // justru untuk kasus ini, supaya riwayat order lama yang masih
   // menyimpan snapshot service_name/harga tidak terganggu.
   // ==========================================================
-  void _toggleActive(BuildContext context, ServiceRepository repo, Service service) async {
+  void _toggleActive(BuildContext context, AppLocalizations l10n, ServiceRepository repo, Service service) async {
     final newStatus = !service.isActive;
     try {
       await repo.updateService(service.id, {'is_active': newStatus});
@@ -259,8 +262,8 @@ class ServicesListScreen extends ConsumerWidget {
           SnackBar(
             content: Text(
               newStatus
-                  ? 'Layanan "${service.name}" diaktifkan kembali'
-                  : 'Layanan "${service.name}" dinonaktifkan',
+                  ? l10n.serviceActivatedSnackbar(service.name)
+                  : l10n.serviceDeactivatedSnackbar(service.name),
             ),
             backgroundColor: newStatus ? Colors.green[600] : Colors.grey[700],
           ),
@@ -269,7 +272,7 @@ class ServicesListScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal mengubah status: $e'), backgroundColor: Colors.red[600]),
+          SnackBar(content: Text(l10n.toggleStatusError(e.toString())), backgroundColor: Colors.red[600]),
         );
       }
     }
@@ -282,7 +285,7 @@ class ServicesListScreen extends ConsumerWidget {
   // bukan default action. Nonaktifkan (di atas) adalah cara yang
   // direkomendasikan untuk pemakaian sehari-hari.
   // ==========================================================
-  void _confirmDelete(BuildContext context, ServiceRepository repo, Service service) {
+  void _confirmDelete(BuildContext context, AppLocalizations l10n, ServiceRepository repo, Service service) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -293,22 +296,20 @@ class ServicesListScreen extends ConsumerWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Hapus Permanen?',
+                l10n.deleteConfirmTitle,
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
               ),
             ),
           ],
         ),
         content: Text(
-          'Layanan "${service.name}" akan dihapus permanen dari database dan TIDAK BISA dikembalikan.\n\n'
-          'Jika layanan ini masih atau pernah dipakai di pesanan, sebaiknya gunakan opsi "Nonaktifkan" saja '
-          'agar riwayat pesanan lama tetap tampil normal.',
+          l10n.deleteConfirmContent(service.name),
           style: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Batal', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
+            child: Text(l10n.cancel, style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
           ),
           TextButton(
             onPressed: () async {
@@ -318,7 +319,7 @@ class ServicesListScreen extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Layanan "${service.name}" berhasil dihapus permanen'),
+                      content: Text(l10n.deleteServiceSuccess(service.name)),
                       backgroundColor: Colors.green[600],
                     ),
                   );
@@ -327,14 +328,14 @@ class ServicesListScreen extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Gagal menghapus layanan: $e'),
+                      content: Text(l10n.deleteServiceError(e.toString())),
                       backgroundColor: Colors.red[600],
                     ),
                   );
                 }
               }
             },
-            child: Text('Hapus Permanen', style: GoogleFonts.poppins(color: Colors.red[600], fontWeight: FontWeight.w600)),
+            child: Text(l10n.deletePermanentButton, style: GoogleFonts.poppins(color: Colors.red[600], fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -361,10 +362,11 @@ class _ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isPerKg = service.pricingType == PricingType.perKg;
     final hargaText = isPerKg
-        ? 'Rp ${service.pricePerKg?.toStringAsFixed(0) ?? '0'} / Kg'
-        : 'Rp ${service.pricePerItem?.toStringAsFixed(0) ?? '0'} / Item';
+        ? l10n.pricePerKgValue(service.pricePerKg?.toStringAsFixed(0) ?? '0')
+        : l10n.pricePerItemValue(service.pricePerItem?.toStringAsFixed(0) ?? '0');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -435,7 +437,7 @@ class _ServiceCard extends StatelessWidget {
                       children: [
                         const Icon(Icons.edit_outlined, size: 18, color: Colors.black87),
                         const SizedBox(width: 10),
-                        Text('Edit Layanan', style: GoogleFonts.poppins(fontSize: 13.5)),
+                        Text(l10n.editServiceMenuItem, style: GoogleFonts.poppins(fontSize: 13.5)),
                       ],
                     ),
                   ),
@@ -450,7 +452,7 @@ class _ServiceCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          service.isActive ? 'Nonaktifkan' : 'Aktifkan',
+                          service.isActive ? l10n.deactivateMenuItem : l10n.activateMenuItem,
                           style: GoogleFonts.poppins(fontSize: 13.5),
                         ),
                       ],
@@ -463,7 +465,7 @@ class _ServiceCard extends StatelessWidget {
                       children: [
                         Icon(Icons.delete_forever_outlined, size: 18, color: Colors.red[600]),
                         const SizedBox(width: 10),
-                        Text('Hapus Permanen', style: GoogleFonts.poppins(fontSize: 13.5, color: Colors.red[600])),
+                        Text(l10n.deleteMenuItem, style: GoogleFonts.poppins(fontSize: 13.5, color: Colors.red[600])),
                       ],
                     ),
                   ),
@@ -479,7 +481,7 @@ class _ServiceCard extends StatelessWidget {
               Icon(Icons.access_time_rounded, size: 15, color: AppTheme.textTertiary),
               const SizedBox(width: 5),
               Text(
-                '${service.estimatedDuration} Jam',
+                l10n.durationInHours(service.estimatedDuration),
                 style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
               ),
               const Spacer(),
@@ -490,7 +492,7 @@ class _ServiceCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  service.isActive ? 'Aktif' : 'Nonaktif',
+                  service.isActive ? l10n.activeStatusChip : l10n.inactiveStatusChip,
                   style: GoogleFonts.poppins(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w600,
@@ -564,6 +566,7 @@ class _EditServiceSheetState extends State<_EditServiceSheet> {
 
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isSaving = true);
 
     try {
@@ -587,7 +590,7 @@ class _EditServiceSheetState extends State<_EditServiceSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Perubahan berhasil disimpan'),
+            content: Text(l10n.saveChangesSuccess),
             backgroundColor: Colors.green[600],
           ),
         );
@@ -597,7 +600,7 @@ class _EditServiceSheetState extends State<_EditServiceSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menyimpan perubahan: $e'),
+            content: Text(l10n.saveChangesError(e.toString())),
             backgroundColor: Colors.red[600],
           ),
         );
@@ -609,6 +612,8 @@ class _EditServiceSheetState extends State<_EditServiceSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
@@ -639,34 +644,34 @@ class _EditServiceSheetState extends State<_EditServiceSheet> {
                   ),
                 ),
                 Text(
-                  'Edit Layanan',
+                  l10n.editServiceSheetTitle,
                   style: GoogleFonts.poppins(fontSize: 19, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Perbarui detail jenis layanan laundry ini',
+                  l10n.editServiceSheetSubtitle,
                   style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
                 ),
                 const SizedBox(height: 22),
 
                 AppInput(
                   controller: _nameController,
-                  label: 'Nama Layanan',
-                  hintText: 'Contoh: Cuci Kering Setrika Reguler',
-                  validator: (val) => val == null || val.isEmpty ? 'Nama layanan tidak boleh kosong' : null,
+                  label: l10n.serviceNameLabel,
+                  hintText: l10n.serviceNameHint,
+                  validator: (val) => val == null || val.isEmpty ? l10n.serviceNameError : null,
                 ),
                 const SizedBox(height: 16),
 
                 AppInput(
                   controller: _descriptionController,
-                  label: 'Deskripsi (Opsional)',
-                  hintText: 'Contoh: Proses cuci, pengeringan mesin, dan setrika rapi.',
+                  label: l10n.serviceDescriptionLabel,
+                  hintText: l10n.serviceDescriptionHint,
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
 
                 Text(
-                  'Metode Perhitungan Harga',
+                  l10n.pricingMethodLabel,
                   style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
                 ),
                 const SizedBox(height: 8),
@@ -674,7 +679,7 @@ class _EditServiceSheetState extends State<_EditServiceSheet> {
                   children: [
                     Expanded(
                       child: ChoiceChip(
-                        label: Center(child: Text('Per Kg', style: GoogleFonts.poppins(fontWeight: FontWeight.w500))),
+                        label: Center(child: Text(l10n.pricingTypeKgShort, style: GoogleFonts.poppins(fontWeight: FontWeight.w500))),
                         selected: _pricingType == PricingType.perKg,
                         onSelected: (selected) {
                           if (selected) setState(() => _pricingType = PricingType.perKg);
@@ -684,7 +689,7 @@ class _EditServiceSheetState extends State<_EditServiceSheet> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: ChoiceChip(
-                        label: Center(child: Text('Per Item', style: GoogleFonts.poppins(fontWeight: FontWeight.w500))),
+                        label: Center(child: Text(l10n.pricingTypeItemShort, style: GoogleFonts.poppins(fontWeight: FontWeight.w500))),
                         selected: _pricingType == PricingType.perItem,
                         onSelected: (selected) {
                           if (selected) setState(() => _pricingType = PricingType.perItem);
@@ -697,12 +702,12 @@ class _EditServiceSheetState extends State<_EditServiceSheet> {
 
                 AppInput(
                   controller: _priceController,
-                  label: _pricingType == PricingType.perKg ? 'Harga per Kg (Rp)' : 'Harga per Item (Rp)',
-                  hintText: 'Contoh: 10000',
+                  label: _pricingType == PricingType.perKg ? l10n.pricePerKgLabel : l10n.pricePerItemLabel,
+                  hintText: l10n.priceHint,
                   keyboardType: TextInputType.number,
                   validator: (val) {
-                    if (val == null || val.isEmpty) return 'Harga tidak boleh kosong';
-                    if (double.tryParse(val) == null) return 'Masukkan angka yang valid';
+                    if (val == null || val.isEmpty) return l10n.priceEmptyError;
+                    if (double.tryParse(val) == null) return l10n.priceInvalidError;
                     return null;
                   },
                 ),
@@ -710,12 +715,12 @@ class _EditServiceSheetState extends State<_EditServiceSheet> {
 
                 AppInput(
                   controller: _durationController,
-                  label: 'Estimasi Waktu Pengerjaan (Jam)',
-                  hintText: 'Contoh: 24',
+                  label: l10n.durationLabelShort,
+                  hintText: l10n.durationHint,
                   keyboardType: TextInputType.number,
                   validator: (val) {
-                    if (val == null || val.isEmpty) return 'Estimasi durasi tidak boleh kosong';
-                    if (int.tryParse(val) == null) return 'Masukkan angka bulat yang valid';
+                    if (val == null || val.isEmpty) return l10n.durationEmptyErrorShort;
+                    if (int.tryParse(val) == null) return l10n.durationInvalidErrorShort;
                     return null;
                   },
                 ),
@@ -727,11 +732,11 @@ class _EditServiceSheetState extends State<_EditServiceSheet> {
                   onChanged: (val) => setState(() => _isActive = val),
                   activeColor: AppTheme.primaryColor,
                   title: Text(
-                    'Layanan Aktif',
+                    l10n.activeServiceSwitchTitle,
                     style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
                   ),
                   subtitle: Text(
-                    'Nonaktifkan jika layanan sedang tidak ditawarkan',
+                    l10n.activeServiceSwitchSubtitle,
                     style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textSecondary),
                   ),
                 ),
@@ -740,7 +745,7 @@ class _EditServiceSheetState extends State<_EditServiceSheet> {
                 SizedBox(
                   height: 52,
                   child: AppButton(
-                    label: _isSaving ? 'Menyimpan...' : 'Simpan Perubahan',
+                    label: _isSaving ? l10n.savingButtonLabel : l10n.saveChangesButton,
                     onPressed: _isSaving ? null : _handleSave,
                     isLoading: _isSaving,
                   ),
