@@ -12,7 +12,20 @@
           "package_name": "com.netwash.pkl_laundry"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "397480771765-mjkcg7r81ot650k6dtqnuvifjhvrofqu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.netwash.pkl_laundry",
+            "certificate_hash": "2a4070001fc788926848b65d82adeb8f35f564f8"
+          }
+        },
+        {
+          "client_id": "397480771765-30h3v9rser0i6m6h63ipadabblq0h3ud.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCJ_EX4SKODMS0L8MIiVr99BDliDdekamg"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "397480771765-30h3v9rser0i6m6h63ipadabblq0h3ud.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "397480771765-c48mulrbrb40mmoqjacnt0cm1ii74aet.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.netwash.pklLaundry"
+              }
+            }
+          ]
         }
       }
     }

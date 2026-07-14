@@ -4,11 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../l10n/app_localizations.dart';
+import '../../core/themes/app_theme.dart';
 import '../../models/service.dart';
 import '../../providers/auth_provider.dart';
 import '../../repositories/service_repository.dart';
-import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input.dart';
 
 class CreateServiceScreen extends ConsumerStatefulWidget {
@@ -50,7 +49,6 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
   void _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
 
     try {
@@ -62,7 +60,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
       if (userId.isEmpty) {
-        throw Exception(l10n.sessionNotFoundError);
+        throw Exception('Sesi pengguna tidak ditemukan. Silakan login kembali.');
       }
 
       // Sesuai blueprint: setiap dokumen di users/{user_id}/service_types/
@@ -78,7 +76,9 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
           .get();
 
       if (companySnapshot.docs.isEmpty) {
-        throw Exception(l10n.companyNotSetupError);
+        throw Exception(
+          'Perusahaan belum dibuat. Selesaikan proses onboarding (setup perusahaan) terlebih dahulu.',
+        );
       }
 
       final companyId = companySnapshot.docs.first.id;
@@ -105,9 +105,9 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.addServiceSuccess),
-            backgroundColor: Colors.green[600],
+          const SnackBar(
+            content: Text('Layanan berhasil ditambahkan!'),
+            backgroundColor: Color(0xFF51CF66),
           ),
         );
         context.pop();
@@ -116,8 +116,8 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.addServiceError(e.toString())),
-            backgroundColor: Colors.red[600],
+            content: Text('Gagal menambahkan layanan: $e'),
+            backgroundColor: AppTheme.errorColor,
           ),
         );
       }
@@ -128,134 +128,321 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          l10n.createServiceAppBarTitle,
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.createServiceSectionTitle,
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 800;
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        isMobile ? 16 : 24,
+                        isMobile ? 16 : 24,
+                        isMobile ? 16 : 24,
+                        24,
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildTopBar(context),
+                            const SizedBox(height: AppTheme.xl),
+                            _buildHeader(context),
+                            const SizedBox(height: AppTheme.xxl),
+                            _buildForm(context),
+                            const SizedBox(height: AppTheme.xxl),
+                            _buildSaveButton(context),
+                            const SizedBox(height: AppTheme.lg),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.createServiceSectionSubtitle,
-                  style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 24),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
 
-                AppInput(
-                  controller: _nameController,
-                  hintText: l10n.serviceNameHint,
-                  label: l10n.serviceNameLabel,
-                  keyboardType: TextInputType.text,
-                  validator: (val) => val == null || val.isEmpty ? l10n.serviceNameError : null,
-                ),
-                const SizedBox(height: 16),
-
-                AppInput(
-                  controller: _descriptionController,
-                  hintText: l10n.serviceDescriptionHint,
-                  label: l10n.serviceDescriptionLabel,
-                  keyboardType: TextInputType.text,
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 16),
-
-                Text(
-                  l10n.pricingMethodLabel,
-                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[700]),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ChoiceChip(
-                        label: Center(
-                          child: Text(
-                            l10n.pricingTypeKgFull,
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                        selected: _selectedPricingType == PricingType.perKg,
-                        onSelected: (selected) {
-                          if (selected) setState(() => _selectedPricingType = PricingType.perKg);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ChoiceChip(
-                        label: Center(
-                          child: Text(
-                            l10n.pricingTypeItemFull,
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                        selected: _selectedPricingType == PricingType.perItem,
-                        onSelected: (selected) {
-                          if (selected) setState(() => _selectedPricingType = PricingType.perItem);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                AppInput(
-                  controller: _priceController,
-                  hintText: l10n.priceHint,
-                  label: _selectedPricingType == PricingType.perKg ? l10n.pricePerKgLabel : l10n.pricePerItemLabel,
-                  keyboardType: TextInputType.number,
-                  validator: (val) {
-                    if (val == null || val.isEmpty) return l10n.priceEmptyError;
-                    if (double.tryParse(val) == null) return l10n.priceInvalidError;
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                AppInput(
-                  controller: _durationController,
-                  hintText: l10n.durationHint,
-                  label: l10n.durationLabelFull,
-                  keyboardType: TextInputType.number,
-                  validator: (val) {
-                    if (val == null || val.isEmpty) return l10n.durationEmptyErrorFull;
-                    if (int.tryParse(val) == null) return l10n.durationInvalidErrorFull;
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 32),
-
-                AppButton(
-                  label: l10n.saveServiceButton,
-                  onPressed: _handleSubmit,
-                  isLoading: _isLoading,
+  /// Build top bar (back button + title)
+  Widget _buildTopBar(BuildContext context) {
+    return Row(
+      children: [
+        InkWell(
+          onTap: () => context.pop(),
+          borderRadius: BorderRadius.circular(11),
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppTheme.cardColor,
+              borderRadius: BorderRadius.circular(11),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
+            child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: AppTheme.textPrimary),
           ),
         ),
+        const SizedBox(width: 14),
+        Text(
+          'Tambah Layanan',
+          style: GoogleFonts.poppins(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build Header
+  Widget _buildHeader(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(AppTheme.lg),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          ),
+          child: Icon(
+            Icons.local_laundry_service_rounded,
+            color: AppTheme.primaryColor,
+            size: 34,
+          ),
+        ),
+        const SizedBox(height: AppTheme.xl),
+        Text(
+          'Layanan Baru',
+          style: GoogleFonts.poppins(
+            fontSize: 21,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        const SizedBox(height: AppTheme.sm),
+        Text(
+          'Lengkapi detail jenis layanan laundry yang kamu sediakan',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build Form
+  Widget _buildForm(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.lg),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Nama Layanan
+          AppInput(
+            label: 'Nama Layanan *',
+            controller: _nameController,
+            hintText: 'Contoh: Cuci Kering Setrika Reguler',
+            prefixIcon: Icons.label_outline_rounded,
+            validator: (val) =>
+                val == null || val.trim().isEmpty ? 'Nama layanan tidak boleh kosong' : null,
+          ),
+
+          const SizedBox(height: AppTheme.lg),
+
+          // Deskripsi (opsional)
+          AppInput(
+            label: 'Deskripsi (Opsional)',
+            controller: _descriptionController,
+            hintText: 'Contoh: Proses cuci, pengeringan mesin, dan setrika rapi.',
+            prefixIcon: Icons.notes_rounded,
+            maxLines: 3,
+          ),
+
+          const SizedBox(height: AppTheme.lg),
+
+          // Metode Perhitungan Harga
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Metode Perhitungan Harga',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppTheme.sm),
+          Row(
+            children: [
+              Expanded(
+                child: _buildPricingTypeChip(
+                  label: 'Per Kilogram (Kg)',
+                  isSelected: _selectedPricingType == PricingType.perKg,
+                  onTap: () => setState(() => _selectedPricingType = PricingType.perKg),
+                ),
+              ),
+              const SizedBox(width: AppTheme.md),
+              Expanded(
+                child: _buildPricingTypeChip(
+                  label: 'Per Satuan Item',
+                  isSelected: _selectedPricingType == PricingType.perItem,
+                  onTap: () => setState(() => _selectedPricingType = PricingType.perItem),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppTheme.lg),
+
+          // Harga
+          AppInput(
+            label: _selectedPricingType == PricingType.perKg
+                ? 'Harga per Kg (Rp) *'
+                : 'Harga per Item (Rp) *',
+            controller: _priceController,
+            hintText: 'Contoh: 10000',
+            prefixIcon: Icons.payments_outlined,
+            keyboardType: TextInputType.number,
+            validator: (val) {
+              if (val == null || val.trim().isEmpty) return 'Harga tidak boleh kosong';
+              if (double.tryParse(val.trim()) == null) return 'Masukkan angka yang valid';
+              return null;
+            },
+          ),
+
+          const SizedBox(height: AppTheme.lg),
+
+          // Estimasi Waktu Pengerjaan
+          AppInput(
+            label: 'Estimasi Waktu Pengerjaan (Jam) *',
+            controller: _durationController,
+            hintText: 'Contoh: 24',
+            prefixIcon: Icons.timelapse_rounded,
+            keyboardType: TextInputType.number,
+            validator: (val) {
+              if (val == null || val.trim().isEmpty) {
+                return 'Estimasi durasi pengerjaan tidak boleh kosong';
+              }
+              if (int.tryParse(val.trim()) == null) return 'Masukkan angka bulat jam yang valid';
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Chip pemilihan metode harga, dibuat manual (bukan ChoiceChip) supaya
+  /// stylingnya konsisten dengan AppTheme (radius, warna, shadow) seperti
+  /// komponen lain di layar ini.
+  Widget _buildPricingTypeChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : AppTheme.backgroundColor,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          border: Border.all(
+            color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build Save Button
+  Widget _buildSaveButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        onPressed: !_isLoading ? _handleSubmit : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          ),
+        ),
+        child: _isLoading
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.md),
+                  Text(
+                    'Sedang Menyimpan...',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              )
+            : Text(
+                'Simpan Layanan',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
       ),
     );
   }
