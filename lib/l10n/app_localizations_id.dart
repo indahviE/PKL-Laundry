@@ -298,4 +298,215 @@ class AppLocalizationsId extends AppLocalizations {
   String orderDetailSummary(String count, String amount) {
     return '$count item · Rp $amount';
   }
+
+  @override
+  String get serviceNameLabel => 'Nama Layanan';
+
+  @override
+  String get serviceNameHint => 'Contoh: Cuci Kering Setrika Reguler';
+
+  @override
+  String get serviceNameError => 'Nama layanan tidak boleh kosong';
+
+  @override
+  String get serviceDescriptionLabel => 'Deskripsi (Opsional)';
+
+  @override
+  String get serviceDescriptionHint =>
+      'Contoh: Proses cuci, pengeringan mesin, dan setrika rapi.';
+
+  @override
+  String get pricingMethodLabel => 'Metode Perhitungan Harga';
+
+  @override
+  String get pricePerKgLabel => 'Harga per Kg (Rp)';
+
+  @override
+  String get pricePerItemLabel => 'Harga per Item (Rp)';
+
+  @override
+  String get priceHint => 'Contoh: 10000';
+
+  @override
+  String get priceEmptyError => 'Harga tidak boleh kosong';
+
+  @override
+  String get priceInvalidError => 'Masukkan angka yang valid';
+
+  @override
+  String get durationHint => 'Contoh: 24';
+
+  @override
+  String get createServiceAppBarTitle => 'Tambah Layanan Baru';
+
+  @override
+  String get createServiceSectionTitle => 'Detail Layanan Laundry';
+
+  @override
+  String get createServiceSectionSubtitle =>
+      'Masukkan informasi jenis paket jasa laundry yang kamu sediakan.';
+
+  @override
+  String get pricingTypeKgFull => 'Per Kilogram (Kg)';
+
+  @override
+  String get pricingTypeItemFull => 'Per Satuan Item';
+
+  @override
+  String get durationLabelFull => 'Estimasi Waktu Pengerjaan (Dalam Jam)';
+
+  @override
+  String get durationEmptyErrorFull =>
+      'Estimasi durasi pengerjaan tidak boleh kosong';
+
+  @override
+  String get durationInvalidErrorFull => 'Masukkan angka bulat jam yang valid';
+
+  @override
+  String get saveServiceButton => 'Simpan Layanan';
+
+  @override
+  String get sessionNotFoundError =>
+      'Sesi pengguna tidak ditemukan. Silakan login kembali.';
+
+  @override
+  String get companyNotSetupError =>
+      'Perusahaan belum dibuat. Selesaikan proses onboarding (setup perusahaan) terlebih dahulu.';
+
+  @override
+  String get addServiceSuccess => 'Layanan berhasil ditambahkan!';
+
+  @override
+  String addServiceError(String error) {
+    return 'Gagal menambahkan layanan: $error';
+  }
+
+  @override
+  String get servicesListAppBarTitle => 'Daftar Layanan';
+
+  @override
+  String get servicesListSubtitle =>
+      'Kelola jenis cuci, harga, dan estimasi durasi';
+
+  @override
+  String get newServiceFab => 'Layanan Baru';
+
+  @override
+  String get emptyServicesTitle => 'Belum ada layanan terdaftar';
+
+  @override
+  String get emptyServicesSubtitle =>
+      'Tekan tombol \"Layanan Baru\" untuk\nmenambahkan jenis cuci pertama Anda';
+
+  @override
+  String get errorStateTitle => 'Terjadi kesalahan';
+
+  @override
+  String get editServiceMenuItem => 'Edit Layanan';
+
+  @override
+  String get deactivateMenuItem => 'Nonaktifkan';
+
+  @override
+  String get activateMenuItem => 'Aktifkan';
+
+  @override
+  String get deleteMenuItem => 'Hapus Permanen';
+
+  @override
+  String serviceActivatedSnackbar(String name) {
+    return 'Layanan \"$name\" diaktifkan kembali';
+  }
+
+  @override
+  String serviceDeactivatedSnackbar(String name) {
+    return 'Layanan \"$name\" dinonaktifkan';
+  }
+
+  @override
+  String toggleStatusError(String error) {
+    return 'Gagal mengubah status: $error';
+  }
+
+  @override
+  String get deleteConfirmTitle => 'Hapus Permanen?';
+
+  @override
+  String deleteConfirmContent(String name) {
+    return 'Layanan \"$name\" akan dihapus permanen dari database dan TIDAK BISA dikembalikan.\n\nJika layanan ini masih atau pernah dipakai di pesanan, sebaiknya gunakan opsi \"Nonaktifkan\" saja agar riwayat pesanan lama tetap tampil normal.';
+  }
+
+  @override
+  String get deletePermanentButton => 'Hapus Permanen';
+
+  @override
+  String deleteServiceSuccess(String name) {
+    return 'Layanan \"$name\" berhasil dihapus permanen';
+  }
+
+  @override
+  String deleteServiceError(String error) {
+    return 'Gagal menghapus layanan: $error';
+  }
+
+  @override
+  String durationInHours(int hours) {
+    return '$hours Jam';
+  }
+
+  @override
+  String get activeStatusChip => 'Aktif';
+
+  @override
+  String get inactiveStatusChip => 'Nonaktif';
+
+  @override
+  String pricePerKgValue(String price) {
+    return 'Rp $price / Kg';
+  }
+
+  @override
+  String pricePerItemValue(String price) {
+    return 'Rp $price / Item';
+  }
+
+  @override
+  String get editServiceSheetTitle => 'Edit Layanan';
+
+  @override
+  String get editServiceSheetSubtitle =>
+      'Perbarui detail jenis layanan laundry ini';
+
+  @override
+  String get pricingTypeKgShort => 'Per Kg';
+
+  @override
+  String get pricingTypeItemShort => 'Per Item';
+
+  @override
+  String get durationLabelShort => 'Estimasi Waktu Pengerjaan (Jam)';
+
+  @override
+  String get durationEmptyErrorShort => 'Estimasi durasi tidak boleh kosong';
+
+  @override
+  String get durationInvalidErrorShort => 'Masukkan angka bulat yang valid';
+
+  @override
+  String get activeServiceSwitchTitle => 'Layanan Aktif';
+
+  @override
+  String get activeServiceSwitchSubtitle =>
+      'Nonaktifkan jika layanan sedang tidak ditawarkan';
+
+  @override
+  String get savingButtonLabel => 'Menyimpan...';
+
+  @override
+  String get saveChangesSuccess => 'Perubahan berhasil disimpan';
+
+  @override
+  String saveChangesError(String error) {
+    return 'Gagal menyimpan perubahan: $error';
+  }
 }
