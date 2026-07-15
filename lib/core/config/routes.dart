@@ -43,6 +43,9 @@ import '../../screens/customers/customers_list_screen.dart';
 import '../../screens/customers/customer_detail_screen.dart';
 import '../../screens/customers/create_customer_screen.dart';
 
+// --- Reports ---
+import '../../screens/reports/reports_screen.dart';
+
 
 // Screen di bawah belum dibuat filenya, pakai PlaceholderScreen sementara.
 // import '../../screens/auth/forgot_password_screen.dart';
@@ -287,12 +290,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // ==================== REPORTS ====================
       GoRoute(
-        path: '/reports',
+        path: '/laporan',
         name: 'reports',
-        builder: (context, state) => const PlaceholderScreen(title: 'Laporan'),
+        builder: (context, state) => const ReportsScreen(),
       ),
       GoRoute(
-        path: '/reports/:reportId',
+        path: '/laporan/:reportId',
         name: 'report-detail',
         builder: (context, state) => PlaceholderScreen(
           title: 'Detail Laporan (${state.pathParameters['reportId']})',
