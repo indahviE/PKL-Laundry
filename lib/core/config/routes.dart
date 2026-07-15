@@ -43,6 +43,9 @@ import '../../screens/customers/customers_list_screen.dart';
 import '../../screens/customers/customer_detail_screen.dart';
 import '../../screens/customers/create_customer_screen.dart';
 
+// --- Reports ---
+import '../../screens/reports/reports_screen.dart';
+
 
 // Screen di bawah belum dibuat filenya, pakai PlaceholderScreen sementara.
 // import '../../screens/auth/forgot_password_screen.dart';
@@ -53,8 +56,8 @@ import '../../screens/customers/create_customer_screen.dart';
 // import '../../screens/customers/customers_list_screen.dart';
 // import '../../screens/customers/customer_detail_screen.dart';
 // import '../../screens/customers/create_customer_screen.dart';
-// import '../../screens/employees/employees_list_screen.dart';
-// import '../../screens/employees/employee_detail_screen.dart';
+import '../../screens/employees/employees_list_screen.dart';
+import '../../screens/employees/employee_detail_screen.dart';
 // import '../../screens/laundries/laundries_list_screen.dart';
 // import '../../screens/laundries/laundry_detail_screen.dart';
 import '../../screens/services/services_list_screen.dart';
@@ -220,16 +223,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // ==================== EMPLOYEES ====================
       GoRoute(
+        path: '/employees',
+        name: 'employees-list',
+        builder: (context, state) => const EmployeesListScreen(),
+      ),
+
+      GoRoute(
         path: '/employees/create',
         name: 'employees-create',
         builder: (context, state) => const CreateEmployeeScreen(),
       ),
-      GoRoute(
-        path: '/employees/:employeeId',
+     GoRoute(
+        path: '/employees/:employeeId', // Tetap pakai '/' karena rute ini sejajar/independen
         name: 'employee-detail',
-        builder: (context, state) => PlaceholderScreen(
-          title: 'Detail Karyawan (${state.pathParameters['employeeId']})',
-        ),
+        builder: (context, state) {
+          final id = state.pathParameters['employeeId'] ?? '';
+          return EmployeeDetailScreen(employeeId: id);
+        },
       ),
 
      // ==================== CUSTOMERS ====================
@@ -283,12 +293,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // ==================== REPORTS ====================
       GoRoute(
-        path: '/reports',
+        path: '/laporan',
         name: 'reports',
-        builder: (context, state) => const PlaceholderScreen(title: 'Laporan'),
+        builder: (context, state) => const ReportsScreen(),
       ),
       GoRoute(
-        path: '/reports/:reportId',
+        path: '/laporan/:reportId',
         name: 'report-detail',
         builder: (context, state) => PlaceholderScreen(
           title: 'Detail Laporan (${state.pathParameters['reportId']})',

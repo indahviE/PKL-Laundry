@@ -43,6 +43,14 @@ class EmployeeRepository {
     return Employee.fromJson(doc.data()!, doc.id);
   }
 
+  /// Stream satu dokumen karyawan (real-time), dipakai halaman detail.
+  Stream<Employee?> streamEmployee(String employeeId) {
+    return _employeesRef.doc(employeeId).snapshots().map((doc) {
+      if (!doc.exists || doc.data() == null) return null;
+      return Employee.fromJson(doc.data()!, doc.id);
+    });
+  }
+
   Stream<List<Employee>> streamEmployees() {
     return _employeesRef.snapshots().map((snapshot) {
       return snapshot.docs.map((doc) => Employee.fromJson(doc.data(), doc.id)).toList();
@@ -82,4 +90,12 @@ class EmployeeRepository {
 final employeeRepositoryProvider = Provider<EmployeeRepository>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   return EmployeeRepository(userId: userId);
+});
+
+/// Stream real-time satu dokumen karyawan berdasarkan ID, dipakai oleh
+/// EmployeeDetailScreen supaya halaman detail langsung ikut ter-update
+/// begitu ada perubahan di Firestore (mis. setelah terminasi).
+final employeeDetailProvider = StreamProvider.family<Employee?, String>((ref, employeeId) {
+  final repo = ref.watch(employeeRepositoryProvider);
+  return repo.streamEmployee(employeeId);
 });
