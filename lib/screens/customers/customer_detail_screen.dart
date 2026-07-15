@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 /// Model riwayat pesanan singkat untuk ditampilkan di detail pelanggan
 class _OrderHistoryItem {
   final String id;
+  final String orderNumber;
   final String status;
   final double amount;
   final int itemCount;
@@ -17,11 +18,28 @@ class _OrderHistoryItem {
 
   _OrderHistoryItem({
     required this.id,
+    required this.orderNumber,
     required this.status,
     required this.amount,
     required this.itemCount,
     required this.date,
   });
+
+  /// Mapping dari dokumen Firestore users/{uid}/orders/{orderId}
+  factory _OrderHistoryItem.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    final orderDate = data['order_date'];
+    return _OrderHistoryItem(
+      id: doc.id,
+      orderNumber: (data['order_number'] ?? doc.id) as String,
+      status: (data['status'] ?? 'pending') as String,
+      amount: ((data['total_amount'] ?? 0) as num).toDouble(),
+      itemCount: (data['total_items'] ?? 0) is int
+          ? data['total_items'] as int
+          : ((data['total_items'] ?? 0) as num).toInt(),
+      date: orderDate is Timestamp ? orderDate.toDate() : DateTime.now(),
+    );
+  }
 }
 
 /// Model data pelanggan untuk halaman detail, di-fetch dari
@@ -82,15 +100,20 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  // Riwayat pesanan masih dummy — ganti dengan query ke
-  // users/{uid}/orders (where customer_id == widget.customerId)
-  // begitu backend order-nya siap.
-  final List<_OrderHistoryItem> _orderHistory = const [];
+  // FIX: sebelumnya ini const [] yang di-hardcode kosong selamanya
+  // (comment lama bilang "masih dummy, ganti nanti") — padahal
+  // fitur order sudah jalan dan datanya sudah ada di Firestore.
+  // Sekarang beneran di-fetch dari users/{uid}/orders lewat
+  // _fetchOrderHistory().
+  List<_OrderHistoryItem> _orderHistory = [];
+  bool _isLoadingHistory = true;
+  String? _historyErrorMessage;
 
   @override
   void initState() {
     super.initState();
     _fetchCustomer();
+    _fetchOrderHistory();
   }
 
   Future<void> _fetchCustomer() async {
@@ -124,6 +147,45 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;
+      });
+    }
+  }
+
+  /// Ambil riwayat pesanan customer ini dari users/{uid}/orders,
+  /// filter customer_id == widget.customerId, diurutkan terbaru dulu.
+  /// Catatan: query where + orderBy field berbeda butuh composite
+  /// index di Firestore — kalau ada error "failed-precondition" pas
+  /// jalan pertama kali, Firestore console biasanya kasih link
+  /// langsung buat bikin index-nya otomatis.
+  Future<void> _fetchOrderHistory() async {
+    setState(() {
+      _isLoadingHistory = true;
+      _historyErrorMessage = null;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw 'Sesi tidak ditemukan, silakan login ulang.';
+      }
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('orders')
+          .where('customer_id', isEqualTo: widget.customerId)
+          .orderBy('order_date', descending: true)
+          .limit(5)
+          .get();
+
+      setState(() {
+        _orderHistory = snapshot.docs.map((d) => _OrderHistoryItem.fromFirestore(d)).toList();
+        _isLoadingHistory = false;
+      });
+    } catch (e) {
+      setState(() {
+        _historyErrorMessage = e.toString();
+        _isLoadingHistory = false;
       });
     }
   }
@@ -198,7 +260,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   Future<void> _openWhatsapp(BuildContext context, String phone, String customerName) async {
     final normalized = _normalizePhone(phone);
-    final message = 'Halo $customerName, ini Mintwash 😊 . '
+    final message = 'Halo kak $customerName!, ini Mintwash 😊 . '
         'Cucian kamu sudah selesai dan kering nih, '
         'Mau diantar ke alamat atau mau diambil sendiri ya?';
 
@@ -620,6 +682,44 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   }
 
   Widget _buildOrderHistoryList(BuildContext context, AppLocalizations l10n) {
+    if (_isLoadingHistory) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.xl),
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
+        ),
+      );
+    }
+
+    if (_historyErrorMessage != null) {
+      return Container(
+        padding: const EdgeInsets.all(AppTheme.md),
+        decoration: BoxDecoration(
+          color: AppTheme.errorColor.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline_rounded, size: 18, color: AppTheme.errorColor),
+            const SizedBox(width: AppTheme.sm),
+            Expanded(
+              child: Text(
+                _historyErrorMessage!,
+                style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.errorColor),
+              ),
+            ),
+            TextButton(
+              onPressed: _fetchOrderHistory,
+              child: Text('Coba lagi', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_orderHistory.isEmpty) {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: AppTheme.xl),
@@ -656,7 +756,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                   children: [
                     Row(
                       children: [
-                        Text(order.id,
+                        Text(order.orderNumber,
                             style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.textPrimary)),
                         const SizedBox(width: 6),
