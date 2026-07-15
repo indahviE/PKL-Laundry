@@ -46,6 +46,9 @@ import '../../screens/customers/create_customer_screen.dart';
 // --- Reports ---
 import '../../screens/reports/reports_screen.dart';
 
+// --- Pickup & Delivery (Antar Jemput) ---
+import '../../screens/delivery/pickup_delivery_screen.dart';
+
 
 // Screen di bawah belum dibuat filenya, pakai PlaceholderScreen sementara.
 // import '../../screens/auth/forgot_password_screen.dart';
@@ -309,6 +312,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => PlaceholderScreen(
           title: 'Detail Laporan (${state.pathParameters['reportId']})',
         ),
+      ),
+
+      // ==================== ANTAR JEMPUT (Pickup & Delivery) ====================
+      GoRoute(
+        path: '/antar-jemput',
+        name: 'pickup-delivery',
+        builder: (context, state) => const PickupDeliveryScreen(),
       ),
 
       // ==================== SETTINGS ====================
