@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
 
 /// Order Model
 class OrderItem {
-  final String id;
+  final String id; // Firestore document id
+  final String orderNumber;
   final String customerName;
   final String status; // 'pending', 'processing', 'completed', 'cancelled'
   final double amount;
@@ -15,6 +19,7 @@ class OrderItem {
 
   OrderItem({
     required this.id,
+    required this.orderNumber,
     required this.customerName,
     required this.status,
     required this.amount,
@@ -22,6 +27,26 @@ class OrderItem {
     required this.date,
     required this.customerPhone,
   });
+
+  /// Mapping dari dokumen Firestore users/{uid}/orders/{orderId}
+  /// sesuai skema di PRD (bagian 3.4.1 Struktur Data Pesanan)
+  factory OrderItem.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    final orderDate = data['order_date'];
+
+    return OrderItem(
+      id: doc.id,
+      orderNumber: (data['order_number'] ?? doc.id) as String,
+      customerName: (data['customer_name'] ?? '') as String,
+      status: (data['status'] ?? 'pending') as String,
+      amount: ((data['total_amount'] ?? 0) as num).toDouble(),
+      itemCount: (data['total_items'] ?? 0) is int
+          ? data['total_items'] as int
+          : ((data['total_items'] ?? 0) as num).toInt(),
+      date: orderDate is Timestamp ? orderDate.toDate() : DateTime.now(),
+      customerPhone: (data['customer_phone'] ?? '') as String,
+    );
+  }
 }
 
 /// Orders List Screen
@@ -38,81 +63,63 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
 
   // State
   String _selectedFilter = 'all'; // all, pending, processing, completed, cancelled
-  late List<OrderItem> _allOrders;
-  late List<OrderItem> _filteredOrders;
+  List<OrderItem> _allOrders = [];
+  List<OrderItem> _filteredOrders = [];
+
+  bool _isLoading = true;
+  String? _errorMessage;
+  StreamSubscription<QuerySnapshot>? _ordersSubscription;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
-    _initializeSampleOrders();
-    _filteredOrders = _allOrders;
+    _listenToOrders();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _ordersSubscription?.cancel();
     super.dispose();
   }
 
-  /// Initialize sample orders
-  void _initializeSampleOrders() {
-    _allOrders = [
-      OrderItem(
-        id: '#ORD-12345',
-        customerName: 'Budi Santoso',
-        status: 'processing',
-        amount: 150000,
-        itemCount: 5,
-        date: DateTime.now(),
-        customerPhone: '081234567890',
-      ),
-      OrderItem(
-        id: '#ORD-12344',
-        customerName: 'Siti Nurhaliza',
-        status: 'completed',
-        amount: 90000,
-        itemCount: 3,
-        date: DateTime.now().subtract(const Duration(days: 1)),
-        customerPhone: '082345678901',
-      ),
-      OrderItem(
-        id: '#ORD-12343',
-        customerName: 'Ahmad Wijaya',
-        status: 'pending',
-        amount: 220000,
-        itemCount: 8,
-        date: DateTime.now(),
-        customerPhone: '083456789012',
-      ),
-      OrderItem(
-        id: '#ORD-12342',
-        customerName: 'Rina Gunawan',
-        status: 'processing',
-        amount: 175000,
-        itemCount: 6,
-        date: DateTime.now().subtract(const Duration(days: 2)),
-        customerPhone: '084567890123',
-      ),
-      OrderItem(
-        id: '#ORD-12341',
-        customerName: 'Doni Hermawan',
-        status: 'completed',
-        amount: 320000,
-        itemCount: 12,
-        date: DateTime.now().subtract(const Duration(days: 3)),
-        customerPhone: '085678901234',
-      ),
-      OrderItem(
-        id: '#ORD-12340',
-        customerName: 'Eka Putri',
-        status: 'cancelled',
-        amount: 110000,
-        itemCount: 4,
-        date: DateTime.now().subtract(const Duration(days: 4)),
-        customerPhone: '086789012345',
-      ),
-    ];
+  /// Subscribe realtime ke users/{uid}/orders di Firestore.
+  /// Begitu CreateOrderScreen nulis dokumen baru, list ini
+  /// otomatis ke-update tanpa perlu manual refresh.
+  void _listenToOrders() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Sesi tidak ditemukan, silakan login ulang.';
+      });
+      return;
+    }
+
+    final ordersRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('orders')
+        .orderBy('order_date', descending: true);
+
+    _ordersSubscription?.cancel();
+    _ordersSubscription = ordersRef.snapshots().listen(
+      (snapshot) {
+        _allOrders = snapshot.docs.map((doc) => OrderItem.fromFirestore(doc)).toList();
+        setState(() {
+          _isLoading = false;
+          _errorMessage = null;
+        });
+        _applyFiltersAndSearch();
+      },
+      onError: (error) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = error.toString();
+        });
+      },
+    );
   }
 
   /// Filter dan search orders
@@ -121,19 +128,17 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
       bool statusMatch = _selectedFilter == 'all' || order.status == _selectedFilter;
       bool searchMatch = _searchController.text.isEmpty ||
           order.customerName.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-          order.id.toLowerCase().contains(_searchController.text.toLowerCase());
+          order.orderNumber.toLowerCase().contains(_searchController.text.toLowerCase());
       return statusMatch && searchMatch;
     }).toList();
     setState(() {});
   }
 
-  /// Buka Create Order screen, refresh list kalau berhasil disimpan
+  /// Buka Create Order screen. List sudah realtime lewat
+  /// snapshots(), jadi begitu order baru tersimpan, dia
+  /// otomatis muncul di sini tanpa perlu logic refresh manual.
   Future<void> _openCreateOrder(BuildContext context) async {
-    final result = await context.push<bool>('/orders/create');
-    if (result == true && mounted) {
-      // TODO: refresh dari Firestore begitu backend-nya siap
-      _applyFiltersAndSearch();
-    }
+    await context.push<bool>('/orders/create');
   }
 
   /// Get status color
@@ -209,9 +214,14 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                         const SizedBox(height: AppTheme.xl),
                         _buildStatsSummary(context, isMobile),
                         const SizedBox(height: AppTheme.xl),
-                        _filteredOrders.isEmpty
-                            ? _buildEmptyState(context)
-                            : _buildOrdersList(context, isMobile),
+                        if (_isLoading)
+                          _buildLoadingState(context)
+                        else if (_errorMessage != null)
+                          _buildErrorState(context)
+                        else if (_filteredOrders.isEmpty)
+                          _buildEmptyState(context)
+                        else
+                          _buildOrdersList(context, isMobile),
                         const SizedBox(height: AppTheme.lg),
                       ],
                     ),
@@ -431,6 +441,41 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
     );
   }
 
+  /// Build loading state
+  Widget _buildLoadingState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
+        child: CircularProgressIndicator(color: AppTheme.primaryColor),
+      ),
+    );
+  }
+
+  /// Build error state
+  Widget _buildErrorState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline_rounded, size: 40, color: AppTheme.errorColor),
+            const SizedBox(height: AppTheme.md),
+            Text(
+              _errorMessage ?? '',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: AppTheme.lg),
+            TextButton(
+              onPressed: _listenToOrders,
+              child: Text('Coba lagi', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Build empty state
   Widget _buildEmptyState(BuildContext context) {
     return Center(
@@ -502,9 +547,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
               statusLabel: _getStatusLabel(_filteredOrders[index].status),
               formattedAmount: _formatCurrency(_filteredOrders[index].amount),
               formattedDate: _formatDate(_filteredOrders[index].date),
-              onTap: () => context.push(
-                '/orders/${_filteredOrders[index].id.replaceAll('#', '')}',
-              ),
+              onTap: () => context.push('/orders/${_filteredOrders[index].id}'),
             ),
             if (index < _filteredOrders.length - 1)
               const SizedBox(height: AppTheme.lg),
@@ -632,7 +675,7 @@ class _OrderCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      order.id,
+                      order.orderNumber,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
