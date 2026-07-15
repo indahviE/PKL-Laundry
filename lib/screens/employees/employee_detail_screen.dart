@@ -53,9 +53,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
             data: (employee) => employee != null
                 ? IconButton(
                     icon: Icon(Icons.edit_outlined, color: AppTheme.primaryColor),
-                    onPressed: () {
-                      // Implementasi navigasi ke halaman edit employee di sini
-                    },
+                    onPressed: () => context.push('/employees/${employee.id}/edit'),
                   )
                 : const SizedBox(),
             error: (_, __) => const SizedBox(),

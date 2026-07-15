@@ -5,10 +5,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
 
-/// Create Employee Screen - NetWash
-/// Dilengkapi dengan Feature Gating kuota karyawan berdasarkan paket langganan aktif
+/// Create / Edit Employee Screen - NetWash
+/// Dilengkapi dengan Feature Gating kuota karyawan berdasarkan paket langganan aktif.
+///
+/// Sekarang mendukung mode edit: kirim `employeeId` untuk membuka layar ini
+/// dalam mode edit (data existing akan di-load & disimpan lewat update),
+/// sama seperti pola CreateLaundryScreen yang dipakai `/laundries/:id/edit`.
 class CreateEmployeeScreen extends StatefulWidget {
-  const CreateEmployeeScreen({Key? key}) : super(key: key);
+  final String? employeeId;
+
+  const CreateEmployeeScreen({Key? key, this.employeeId}) : super(key: key);
 
   @override
   State<CreateEmployeeScreen> createState() => _CreateEmployeeScreenState();
@@ -34,6 +40,9 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
   bool _isActive = true;
   bool _isLoading = false;
 
+  // true saat data existing sedang di-fetch untuk mode edit
+  bool _isFetchingEmployee = false;
+
   // List Cabang Laundry dari Firestore
   List<Map<String, dynamic>> _laundriesList = [];
 
@@ -42,10 +51,12 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
   bool _canManageCustomer = true;
   bool _canViewReport = false;
 
+  bool get _isEditMode => widget.employeeId != null;
+
   @override
   void initState() {
     super.initState();
-    _fetchLaundriesData();
+    _initData();
   }
 
   @override
@@ -56,6 +67,15 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
     _salaryController.dispose();
     _commissionController.dispose();
     super.dispose();
+  }
+
+  /// Urutan init: ambil daftar cabang dulu, baru (jika mode edit) ambil data
+  /// karyawan existing - supaya dropdown cabang sudah terisi saat value di-set.
+  Future<void> _initData() async {
+    await _fetchLaundriesData();
+    if (_isEditMode) {
+      await _fetchEmployeeData();
+    }
   }
 
   /// Mengambil data cabang laundry terdaftar milik user
@@ -80,8 +100,8 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
           // (relasi laundries.company_id sesuai Blueprint §3.2.3)
           'company_id': doc.data()['company_id'],
         }).toList();
-        
-        if (_laundriesList.isNotEmpty) {
+
+        if (_laundriesList.isNotEmpty && _selectedLaundryId == null) {
           _selectedLaundryId = _laundriesList.first['id'];
         }
       });
@@ -90,7 +110,75 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
     }
   }
 
-  /// FEATURE GATING: Validasi sisa kuota karyawan berdasarkan plan aktif
+  /// Mode edit: ambil dokumen karyawan existing lalu isi seluruh form
+  /// dengan data tersebut, sama seperti CreateLaundryScreen mem-prefill
+  /// form-nya saat dibuka lewat `/laundries/:id/edit`.
+  Future<void> _fetchEmployeeData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _isFetchingEmployee = true);
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('employees')
+          .doc(widget.employeeId)
+          .get();
+
+      if (!doc.exists || doc.data() == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Data karyawan tidak ditemukan.'),
+              backgroundColor: Colors.orangeAccent,
+            ),
+          );
+          context.pop();
+        }
+        return;
+      }
+
+      final data = doc.data()!;
+      final permissions = (data['permissions'] as Map<String, dynamic>?) ?? {};
+      final hireDateRaw = data['hire_date'];
+
+      setState(() {
+        _fullNameController.text = (data['full_name'] as String?) ?? '';
+        _employeeCodeController.text = (data['employee_code'] as String?) ?? '';
+        _positionController.text = (data['position'] as String?) ?? '';
+        _salaryController.text = ((data['salary'] as num?) ?? 0).toString();
+        _commissionController.text = ((data['commission_rate'] as num?) ?? 0).toString();
+        _selectedLaundryId = (data['laundry_id'] as String?) ?? _selectedLaundryId;
+        _selectedProfileId = data['profile_id'] as String?;
+        _isActive = (data['is_active'] as bool?) ?? true;
+        _canCreateOrder = (permissions['can_create_order'] as bool?) ?? true;
+        _canManageCustomer = (permissions['can_manage_customer'] as bool?) ?? true;
+        _canViewReport = (permissions['can_view_report'] as bool?) ?? false;
+        _hireDate = _parseHireDate(hireDateRaw) ?? _hireDate;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat data karyawan: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isFetchingEmployee = false);
+    }
+  }
+
+  DateTime? _parseHireDate(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is Timestamp) return raw.toDate();
+    if (raw is String) return DateTime.tryParse(raw);
+    return null;
+  }
+
+  /// FEATURE GATING: Validasi sisa kuota karyawan berdasarkan plan aktif.
+  /// Hanya relevan saat menambah karyawan baru - saat edit, jumlah karyawan
+  /// tidak bertambah sehingga pengecekan kuota dilewati.
   Future<bool> _checkEmployeeLimit(String userId) async {
     final firestore = FirebaseFirestore.instance;
 
@@ -136,7 +224,9 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
     return employeeCountSnap.count ?? 0;
   }
 
-  /// Menyimpan data karyawan ke Firestore
+  /// Menyimpan data karyawan ke Firestore - membuat dokumen baru saat mode
+  /// tambah, atau meng-update dokumen existing saat mode edit (tanpa
+  /// mengecek kuota lagi & tanpa menimpa created_at).
   Future<void> _saveEmployee() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedLaundryId == null) {
@@ -154,33 +244,36 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
 
       final currentUserId = user.uid;
 
-      // Jalankan pengecekan limitasi paket
-      final isQuotaAvailable = await _checkEmployeeLimit(currentUserId);
-      if (!isQuotaAvailable) {
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Batas Kuota Tercapai'),
-              content: const Text('Jumlah karyawan Anda telah mencapai batas maksimal kuota paket langganan saat ini. Silakan upgrade paket.'),
-              actions: [
-                TextButton(
-                  onPressed: () => ctx.pop(),
-                  child: const Text('Batal', style: TextStyle(color: Colors.grey)),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: textBlue),
-                  onPressed: () {
-                    ctx.pop();
-                    context.push('/settings/subscription');
-                  },
-                  child: const Text('Upgrade Paket', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            ),
-          );
+      // Pengecekan limitasi paket hanya berlaku saat menambah karyawan baru
+      if (!_isEditMode) {
+        final isQuotaAvailable = await _checkEmployeeLimit(currentUserId);
+        if (!isQuotaAvailable) {
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Batas Kuota Tercapai'),
+                content: const Text('Jumlah karyawan Anda telah mencapai batas maksimal kuota paket langganan saat ini. Silakan upgrade paket.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => ctx.pop(),
+                    child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: textBlue),
+                    onPressed: () {
+                      ctx.pop();
+                      context.push('/settings/subscription');
+                    },
+                    child: const Text('Upgrade Paket', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              ),
+            );
+          }
+          setState(() => _isLoading = false);
+          return;
         }
-        return;
       }
 
       // Ambil company_id dari CABANG yang dipilih (relasi laundries.company_id
@@ -204,11 +297,10 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
         return;
       }
 
-      final employeeRef = FirebaseFirestore.instance
+      final employeesRef = FirebaseFirestore.instance
           .collection('users')
           .doc(currentUserId)
-          .collection('employees')
-          .doc();
+          .collection('employees');
 
       // Mapping data model presisi sesuai skema Blueprint §3.3.2 & Lampiran A
       final Map<String, dynamic> employeeData = {
@@ -225,22 +317,32 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
         'commission_rate': double.tryParse(_commissionController.text.trim()) ?? 0.0,
         'hire_date':
             '${_hireDate.year.toString().padLeft(4, '0')}-${_hireDate.month.toString().padLeft(2, '0')}-${_hireDate.day.toString().padLeft(2, '0')}',
-        'termination_date': null,
         'is_active': _isActive,
         'permissions': {
           'can_create_order': _canCreateOrder,
           'can_manage_customer': _canManageCustomer,
           'can_view_report': _canViewReport,
         },
-        'created_at': FieldValue.serverTimestamp(),
         'updated_at': FieldValue.serverTimestamp(),
       };
 
-      await employeeRef.set(employeeData);
+      if (_isEditMode) {
+        // Update dokumen existing - created_at & termination_date tidak disentuh
+        // supaya riwayat lama tetap konsisten (selaras dengan
+        // EmployeeRepository.updateEmployee).
+        await employeesRef.doc(widget.employeeId).update(employeeData);
+      } else {
+        employeeData['termination_date'] = null;
+        employeeData['created_at'] = FieldValue.serverTimestamp();
+        await employeesRef.doc().set(employeeData);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Staf karyawan berhasil ditambahkan!'), backgroundColor: Color(0xFF27AE60)),
+          SnackBar(
+            content: Text(_isEditMode ? 'Data karyawan berhasil diperbarui!' : 'Staf karyawan berhasil ditambahkan!'),
+            backgroundColor: const Color(0xFF27AE60),
+          ),
         );
         context.pop();
       }
@@ -261,7 +363,7 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
       backgroundColor: const Color(0xFFF5F8FB),
       appBar: AppBar(
         title: Text(
-          'Tambah Karyawan Baru',
+          _isEditMode ? 'Edit Data Karyawan' : 'Tambah Karyawan Baru',
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 16),
         ),
         backgroundColor: Colors.white,
@@ -273,7 +375,7 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
       ),
       body: DefaultTextStyle.merge(
         style: GoogleFonts.plusJakartaSans(),
-        child: _isLoading
+        child: (_isLoading || _isFetchingEmployee)
             ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(textBlue)))
             : SingleChildScrollView(
                 padding: const EdgeInsets.all(AppTheme.lg),
@@ -294,7 +396,9 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
                             const SizedBox(width: AppTheme.md),
                             Expanded(
                               child: Text(
-                                'Sistem akan memvalidasi limitasi kuota paket langganan Anda secara otomatis sebelum menyimpan data karyawan.',
+                                _isEditMode
+                                    ? 'Perubahan akan langsung tersimpan pada data karyawan ini.'
+                                    : 'Sistem akan memvalidasi limitasi kuota paket langganan Anda secara otomatis sebelum menyimpan data karyawan.',
                                 style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.3),
                               ),
                             ),
@@ -341,8 +445,8 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
                               child: const Text('+ Daftarkan Cabang Baru Terlebih Dahulu', style: TextStyle(color: textBlue, fontSize: 13)),
                             )
                           : DropdownButtonFormField<String>(
-                              value: _laundriesList.any((element) => element['id'] == _selectedLaundryId) 
-                                  ? _selectedLaundryId 
+                              value: _laundriesList.any((element) => element['id'] == _selectedLaundryId)
+                                  ? _selectedLaundryId
                                   : null,
                               items: _laundriesList.map((laundry) {
                                 return DropdownMenuItem<String>(
@@ -476,7 +580,10 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
                             elevation: 0,
                           ),
-                          child: const Text('Simpan Data Karyawan', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            _isEditMode ? 'Simpan Perubahan' : 'Simpan Data Karyawan',
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                     ],

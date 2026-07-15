@@ -131,12 +131,39 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     );
   }
 
+  /// Header: tombol back (conditional, hanya muncul kalau screen ini bisa
+  /// di-pop) + icon + judul, dan CTA "Baru" di kanan.
   Widget _buildHeader(BuildContext context) {
+    final canGoBack = context.canPop();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
+            if (canGoBack) ...[
+              InkWell(
+                onTap: () => context.pop(),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardColor,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withOpacity(0.06),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 20),
+                ),
+              ),
+              const SizedBox(width: AppTheme.md),
+            ],
             Container(
               width: 44,
               height: 44,

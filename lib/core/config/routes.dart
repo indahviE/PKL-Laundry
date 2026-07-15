@@ -247,6 +247,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return EmployeeDetailScreen(employeeId: id);
         },
       ),
+      GoRoute(
+      path: '/employees/:employeeId/edit',
+      name: 'employee-edit',
+      builder: (context, state) {
+        final id = state.pathParameters['employeeId'] ?? '';
+        return CreateEmployeeScreen(employeeId: id);
+      },
+    ),
 
      // ==================== CUSTOMERS ====================
       GoRoute(
