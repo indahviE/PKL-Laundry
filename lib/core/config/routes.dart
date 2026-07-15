@@ -58,8 +58,8 @@ import '../../screens/reports/reports_screen.dart';
 // import '../../screens/customers/create_customer_screen.dart';
 import '../../screens/employees/employees_list_screen.dart';
 import '../../screens/employees/employee_detail_screen.dart';
-// import '../../screens/laundries/laundries_list_screen.dart';
-// import '../../screens/laundries/laundry_detail_screen.dart';
+import '../../screens/laundries/laundries_list_screen.dart';
+import '../../screens/laundries/laundry_detail_screen.dart';
 import '../../screens/services/services_list_screen.dart';
 import '../../screens/services/create_service_screen.dart';
 // import '../../screens/reports/reports_screen.dart';
@@ -203,7 +203,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/laundries',
         name: 'laundries',
         builder: (context, state) =>
-            const PlaceholderScreen(title: 'Daftar Cabang'),
+            const LaundriesListScreen(),
       ),
       GoRoute(
         path: '/laundries/create',
@@ -213,8 +213,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/laundries/:laundryId',
         name: 'laundry-detail',
-        builder: (context, state) => PlaceholderScreen(
-          title: 'Detail Cabang (${state.pathParameters['laundryId']})',
+        builder: (context, state) => LaundryDetailScreen(
+          laundryId: state.pathParameters['laundryId'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/laundries/:id/edit',
+        builder: (context, state) => CreateLaundryScreen(
+          laundryId: state.pathParameters['id'],
         ),
       ),
 

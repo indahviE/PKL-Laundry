@@ -490,6 +490,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final actions = [
       (Icons.add_circle_outline_rounded, t.newOrderAction, primaryBlue, '/create-order', 'orders', 500),
       (Icons.person_add_alt_1_rounded, t.newEmployeeAction, deepBlue, '/create-employee', 'employees', 5),
+      (Icons.storefront_outlined, 'Kelola\nCabang', const Color(0xFF00A896), '/laundries', '', 0),
       (Icons.badge_outlined, 'Kelola\nKaryawan', deepBlue, '/employees', '', 0),
       (Icons.local_laundry_service_outlined, t.manageServicesAction, const Color(0xFF9C27B0), '/services', '', 0),
       (Icons.local_shipping_outlined, t.pickupDeliveryAction, const Color(0xFF27AE60), '/antar-jemput', '', 0),

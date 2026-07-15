@@ -5,11 +5,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
 
-/// Create Laundry (Cabang) Screen - NetWash
+/// Create / Edit Laundry (Cabang) Screen - NetWash
 /// Skema data & feature gating mengikuti Blueprint §3.2.3 (Manajemen Cabang)
 /// dan §3.6.3 (Feature Gating - canAddLaundry).
+///
+/// Dual-mode:
+/// - laundryId == null  -> mode CREATE (form kosong, quota dicek sebelum simpan)
+/// - laundryId != null  -> mode EDIT (data existing di-load & di-prefill,
+///   quota TIDAK dicek ulang karena tidak menambah cabang baru)
 class CreateLaundryScreen extends StatefulWidget {
-  const CreateLaundryScreen({Key? key}) : super(key: key);
+  final String? laundryId;
+
+  const CreateLaundryScreen({Key? key, this.laundryId}) : super(key: key);
 
   @override
   State<CreateLaundryScreen> createState() => _CreateLaundryScreenState();
@@ -20,6 +27,8 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
 
   static const Color textBlue = Color(0xFF0288D1);
   static const Color primaryBlue = Color(0xFF8ED8F5);
+
+  bool get isEditMode => widget.laundryId != null;
 
   // Controller input form - field dasar sesuai skema laundries (§3.2.3)
   final _nameController = TextEditingController();
@@ -37,6 +46,9 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
   String? _selectedManagerId;
   bool _isActive = true;
   bool _isLoading = false;
+
+  // Loading khusus saat mengambil data existing di mode edit
+  bool _isLoadingInitialData = false;
 
   // List Perusahaan & Karyawan (untuk dropdown company_id & manager_id)
   List<Map<String, dynamic>> _companiesList = [];
@@ -71,6 +83,9 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
     };
     _fetchCompaniesData();
     _fetchEmployeesData();
+    if (isEditMode) {
+      _loadExistingLaundry();
+    }
   }
 
   @override
@@ -86,6 +101,87 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
     _latController.dispose();
     _lngController.dispose();
     super.dispose();
+  }
+
+  /// MODE EDIT: Ambil data cabang existing dari Firestore dan prefill semua
+  /// controller/state form, termasuk operating_hours dan lokasi (jika ada).
+  Future<void> _loadExistingLaundry() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _isLoadingInitialData = true);
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('laundries')
+          .doc(widget.laundryId)
+          .get();
+
+      final data = doc.data();
+      if (data == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Data cabang tidak ditemukan.'), backgroundColor: Colors.redAccent),
+          );
+          context.pop();
+        }
+        return;
+      }
+
+      _nameController.text = (data['name'] ?? '') as String;
+      _codeController.text = (data['code'] ?? '') as String;
+      _addressController.text = (data['address'] ?? '') as String;
+      _cityController.text = (data['city'] ?? '') as String;
+      _provinceController.text = (data['province'] ?? '') as String;
+      _phoneController.text = (data['phone'] ?? '') as String;
+      _emailController.text = (data['email'] ?? '') as String;
+      _capacityController.text = (data['capacity']?.toString() ?? '');
+      _selectedCompanyId = data['company_id'] as String?;
+      _selectedManagerId = data['manager_id'] as String?;
+      _isActive = (data['is_active'] as bool?) ?? true;
+
+      final location = data['location'] as Map<String, dynamic>?;
+      if (location != null) {
+        _latController.text = (location['lat']?.toString() ?? '');
+        _lngController.text = (location['lng']?.toString() ?? '');
+      }
+
+      final rawHours = data['operating_hours'] as Map<String, dynamic>?;
+      if (rawHours != null) {
+        final loadedHours = {
+          for (final d in _days)
+            d['key']!: {
+              'open': (rawHours[d['key']]?['open'] ?? '08:00') as String,
+              'close': (rawHours[d['key']]?['close'] ?? '20:00') as String,
+            },
+        };
+        // Cek apakah semua hari punya jam yang sama -> pakai toggle uniform
+        final firstOpen = loadedHours[_days.first['key']]!['open'];
+        final firstClose = loadedHours[_days.first['key']]!['close'];
+        final allSame = loadedHours.values.every(
+          (h) => h['open'] == firstOpen && h['close'] == firstClose,
+        );
+
+        setState(() {
+          _operatingHours = loadedHours;
+          _useSameHoursForAllDays = allSame;
+          if (allSame) {
+            _uniformOpen = firstOpen!;
+            _uniformClose = firstClose!;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat data cabang: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingInitialData = false);
+    }
   }
 
   /// MIGRASI DATA LAMA: sebelum fix, AuthRepository.saveCompanyData()
@@ -149,7 +245,10 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
           'name': doc.data()['name'] ?? 'Perusahaan Tanpa Nama',
         }).toList();
 
-        if (_companiesList.isNotEmpty) {
+        // Di mode create, auto-pilih perusahaan pertama sebagai default.
+        // Di mode edit, JANGAN override _selectedCompanyId yang sudah/akan
+        // di-load dari data existing lewat _loadExistingLaundry().
+        if (!isEditMode && _companiesList.isNotEmpty && _selectedCompanyId == null) {
           _selectedCompanyId = _companiesList.first['id'];
         }
       });
@@ -188,6 +287,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
   /// FEATURE GATING: Validasi sisa kuota cabang berdasarkan plan aktif
   /// Persis mengikuti SubscriptionService.canAddLaundry (Blueprint §3.6.3):
   /// baca `limits.max_laundries` dari dokumen subscription, -1 = unlimited.
+  /// HANYA dipanggil di mode CREATE — edit tidak menambah jumlah cabang.
   Future<bool> _checkLaundryLimit(String userId) async {
     final firestore = FirebaseFirestore.instance;
 
@@ -246,7 +346,8 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
     }
   }
 
-  /// Menyimpan data cabang ke Firestore
+  /// Menyimpan data cabang ke Firestore (create dokumen baru ATAU update
+  /// dokumen existing, tergantung isEditMode).
   Future<void> _saveLaundry() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCompanyId == null) {
@@ -264,34 +365,37 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
 
       final currentUserId = user.uid;
 
-      // Jalankan pengecekan limitasi paket (Blueprint §3.6.3)
-      final isQuotaAvailable = await _checkLaundryLimit(currentUserId);
-      if (!isQuotaAvailable) {
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Batas Kuota Tercapai'),
-              content: const Text('Jumlah cabang Anda telah mencapai batas maksimal kuota paket langganan saat ini. Silakan upgrade paket.'),
-              actions: [
-                TextButton(
-                  onPressed: () => ctx.pop(),
-                  child: const Text('Batal', style: TextStyle(color: Colors.grey)),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: textBlue),
-                  onPressed: () {
-                    ctx.pop();
-                    context.push('/settings/subscription');
-                  },
-                  child: const Text('Upgrade Paket', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            ),
-          );
-          setState(() => _isLoading = false);
+      // Pengecekan kuota (Blueprint §3.6.3) hanya relevan saat menambah
+      // cabang baru. Saat edit, jumlah cabang tidak bertambah jadi dilewati.
+      if (!isEditMode) {
+        final isQuotaAvailable = await _checkLaundryLimit(currentUserId);
+        if (!isQuotaAvailable) {
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Batas Kuota Tercapai'),
+                content: const Text('Jumlah cabang Anda telah mencapai batas maksimal kuota paket langganan saat ini. Silakan upgrade paket.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => ctx.pop(),
+                    child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: textBlue),
+                    onPressed: () {
+                      ctx.pop();
+                      context.push('/settings/subscription');
+                    },
+                    child: const Text('Upgrade Paket', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              ),
+            );
+            setState(() => _isLoading = false);
+          }
+          return;
         }
-        return;
       }
 
       // Susun operating_hours sesuai skema §3.2.3 (per hari, key monday..sunday)
@@ -319,12 +423,6 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
         };
       }
 
-      final laundryRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId)
-          .collection('laundries')
-          .doc();
-
       // Mapping data model presisi sesuai skema Blueprint §3.2.3 & Lampiran A
       final Map<String, dynamic> laundryData = {
         'company_id': _selectedCompanyId,
@@ -340,15 +438,34 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
         'capacity': int.tryParse(_capacityController.text.trim()) ?? 0,
         'is_active': _isActive,
         if (locationData != null) 'location': locationData,
-        'created_at': FieldValue.serverTimestamp(),
         'updated_at': FieldValue.serverTimestamp(),
       };
 
-      await laundryRef.set(laundryData);
+      if (isEditMode) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserId)
+            .collection('laundries')
+            .doc(widget.laundryId)
+            .update(laundryData);
+      } else {
+        final laundryRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserId)
+            .collection('laundries')
+            .doc();
+        await laundryRef.set({
+          ...laundryData,
+          'created_at': FieldValue.serverTimestamp(),
+        });
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cabang laundry berhasil ditambahkan!'), backgroundColor: Color(0xFF27AE60)),
+          SnackBar(
+            content: Text(isEditMode ? 'Perubahan cabang berhasil disimpan!' : 'Cabang laundry berhasil ditambahkan!'),
+            backgroundColor: const Color(0xFF27AE60),
+          ),
         );
         context.pop();
       }
@@ -369,7 +486,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       backgroundColor: const Color(0xFFF5F8FB),
       appBar: AppBar(
         title: Text(
-          'Tambah Cabang Baru',
+          isEditMode ? 'Edit Data Cabang' : 'Tambah Cabang Baru',
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 16),
         ),
         backgroundColor: Colors.white,
@@ -381,7 +498,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       ),
       body: DefaultTextStyle.merge(
         style: GoogleFonts.plusJakartaSans(),
-        child: _isLoading
+        child: (_isLoading || _isLoadingInitialData)
             ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(textBlue)))
             : SingleChildScrollView(
                 padding: const EdgeInsets.all(AppTheme.lg),
@@ -398,11 +515,17 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.storefront_outlined, color: textBlue, size: 20),
+                            Icon(
+                              isEditMode ? Icons.edit_outlined : Icons.storefront_outlined,
+                              color: textBlue,
+                              size: 20,
+                            ),
                             const SizedBox(width: AppTheme.md),
                             Expanded(
                               child: Text(
-                                'Sistem akan memvalidasi limitasi kuota cabang sesuai paket langganan Anda secara otomatis sebelum menyimpan data.',
+                                isEditMode
+                                    ? 'Perubahan akan langsung tersimpan ke data cabang ini. Kuota paket langganan tidak berlaku untuk pengeditan.'
+                                    : 'Sistem akan memvalidasi limitasi kuota cabang sesuai paket langganan Anda secara otomatis sebelum menyimpan data.',
                                 style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.3),
                               ),
                             ),
@@ -673,7 +796,10 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
                             elevation: 0,
                           ),
-                          child: const Text('Simpan Data Cabang', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            isEditMode ? 'Simpan Perubahan' : 'Simpan Data Cabang',
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                     ],

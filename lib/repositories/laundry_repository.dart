@@ -73,3 +73,21 @@ final laundryRepositoryProvider = Provider<LaundryRepository>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   return LaundryRepository(userId: userId);
 });
+
+/// Stream real-time daftar cabang milik user yang sedang login.
+final laundriesStreamProvider = StreamProvider<List<Laundry>>((ref) {
+  final repo = ref.watch(laundryRepositoryProvider);
+  return repo.streamLaundries();
+});
+
+/// Ambil satu cabang secara real-time berdasarkan id, diturunkan dari
+/// [laundriesStreamProvider] supaya tidak perlu query terpisah ke Firestore.
+final laundryByIdProvider = Provider.family<AsyncValue<Laundry?>, String>((ref, laundryId) {
+  final laundriesAsync = ref.watch(laundriesStreamProvider);
+  return laundriesAsync.whenData((laundries) {
+    for (final laundry in laundries) {
+      if (laundry.id == laundryId) return laundry;
+    }
+    return null;
+  });
+});
