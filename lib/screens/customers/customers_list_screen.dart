@@ -201,7 +201,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildHeader(context, l10n),
+                        _buildHeader(context, l10n, isMobile),
                         const SizedBox(height: 22),
                         _buildSearchBar(context, l10n),
                         const SizedBox(height: AppTheme.lg),
@@ -231,76 +231,83 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   }
 
   /// Build header (solid, no gradient)
-  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
+  ///
+  /// FIX overflow mobile: judul + subtitle sebelumnya nggak dibungkus
+  /// Expanded, jadi kalau lebar layar sempit dan teksnya panjang, Row
+  /// (badge + judul + tombol "+ Baru") jadi lebih lebar dari layar ->
+  /// overflow. Sekarang blok judul dibungkus Expanded (otomatis ellipsis
+  /// kalau kepanjangan), dan khusus mobile tombolnya diringkas jadi
+  /// icon-only (bulat) biar nggak makan tempat.
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n, bool isMobile) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: Icon(
-                    Icons.people_alt_rounded,
-                    color: AppTheme.primaryColor,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.customersTitle,
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      l10n.customersSubtitle,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w400,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-        ElevatedButton.icon(
-          onPressed: () => _openCreateCustomer(context),
-          icon: const Icon(Icons.person_add_outlined, size: 18),
-          label: Text(
-            l10n.newCustomerButton,
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(13),
           ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryColor,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.lg,
-              vertical: AppTheme.md,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-            ),
+          child: Icon(
+            Icons.people_alt_rounded,
+            color: AppTheme.primaryColor,
+            size: 22,
           ),
         ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.customersTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                l10n.customersSubtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w400,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppTheme.md),
+        if (isMobile)
+          _CompactAddButton(onTap: () => _openCreateCustomer(context))
+        else
+          ElevatedButton.icon(
+            onPressed: () => _openCreateCustomer(context),
+            icon: const Icon(Icons.person_add_outlined, size: 18),
+            label: Text(
+              l10n.newCustomerButton,
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.lg,
+                vertical: AppTheme.md,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -554,6 +561,31 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
 // ============================================
 // HELPER WIDGETS
 // ============================================
+
+/// Tombol "+ Baru" versi ringkas (icon-only, bulat) khusus mobile,
+/// biar header nggak overflow saat layar sempit.
+class _CompactAddButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _CompactAddButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppTheme.primaryColor,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        onTap: onTap,
+        child: const SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(Icons.person_add_outlined, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+}
 
 /// Stat Box Widget
 class _StatBox extends StatelessWidget {
