@@ -508,4 +508,212 @@ class AppLocalizationsEn extends AppLocalizations {
   String saveChangesError(String error) {
     return 'Failed to save changes: $error';
   }
+
+  @override
+  String get customersTitle => 'Customers';
+
+  @override
+  String get customersSubtitle => 'Manage your laundry customer data';
+
+  @override
+  String get newCustomerButton => 'New';
+
+  @override
+  String get searchCustomerHint => 'Search by name or phone number...';
+
+  @override
+  String get customerActiveLabel => 'Active';
+
+  @override
+  String get customerInactiveLabel => 'Inactive';
+
+  @override
+  String get totalCustomersLabel => 'Total Customers';
+
+  @override
+  String get totalTransactionsLabel => 'Total Transactions';
+
+  @override
+  String get emptyCustomersTitle => 'No customers yet';
+
+  @override
+  String get emptyCustomersSubtitle => 'Add a new customer to get started';
+
+  @override
+  String get addCustomerButton => 'Add Customer';
+
+  @override
+  String ordersCountLabel(int count) {
+    return '$count orders';
+  }
+
+  @override
+  String get neverOrderedLabel => 'Never ordered';
+
+  @override
+  String get justNowLabel => 'Just now';
+
+  @override
+  String hoursAgoLabel(int hours) {
+    return '${hours}h ago';
+  }
+
+  @override
+  String daysAgoLabel(int days) {
+    return '${days}d ago';
+  }
+
+  @override
+  String get editCustomerComingSoon =>
+      'Navigate to Edit Customer will be added';
+
+  @override
+  String get editCustomerMenuItem => 'Edit Customer';
+
+  @override
+  String get deleteCustomerMenuItem => 'Delete Customer';
+
+  @override
+  String get deleteCustomerConfirmTitle => 'Delete Customer?';
+
+  @override
+  String deleteCustomerConfirmContent(String name) {
+    return 'Customer data \"$name\" will be permanently deleted. This action cannot be undone.';
+  }
+
+  @override
+  String get deleteButton => 'Delete';
+
+  @override
+  String get deleteCustomerSuccessTesting =>
+      'Customer deleted successfully (Testing mode)';
+
+  @override
+  String get customerDetailTitle => 'Customer Detail';
+
+  @override
+  String joinedSinceLabel(String date) {
+    return 'Joined since $date';
+  }
+
+  @override
+  String get activeCustomerLabel => 'Active Customer';
+
+  @override
+  String get callButton => 'Call';
+
+  @override
+  String get openingPhoneApp => 'Opening phone app...';
+
+  @override
+  String get whatsappButton => 'WhatsApp';
+
+  @override
+  String get openingWhatsapp => 'Opening WhatsApp...';
+
+  @override
+  String get totalOrdersLabel => 'Total Orders';
+
+  @override
+  String get totalSpentLabel => 'Total Spent';
+
+  @override
+  String get contactInfoTitle => 'Contact Information';
+
+  @override
+  String get phoneLabel => 'Phone';
+
+  @override
+  String get addressLabel => 'Address';
+
+  @override
+  String get orderHistoryTitle => 'Order History';
+
+  @override
+  String get viewAllOrdersComingSoon =>
+      'Navigate to full order history will be added';
+
+  @override
+  String get noOrderHistoryLabel => 'No order history yet';
+
+  @override
+  String get orderStatusPending => 'Pending';
+
+  @override
+  String get orderStatusProcessing => 'Processing';
+
+  @override
+  String get orderStatusCompleted => 'Completed';
+
+  @override
+  String get orderStatusCancelled => 'Cancelled';
+
+  @override
+  String orderItemCountLabel(int count) {
+    return '· $count items';
+  }
+
+  @override
+  String get newCustomerHeaderTitle => 'New Customer';
+
+  @override
+  String get newCustomerHeaderSubtitle =>
+      'Complete the customer data to add them to the system';
+
+  @override
+  String get customerNameHint => 'Enter customer name';
+
+  @override
+  String get customerNameEmptyError => 'Customer name cannot be empty';
+
+  @override
+  String get phoneNumberLabel => 'Phone Number';
+
+  @override
+  String get phoneNumberHint => 'Example: 081234567890';
+
+  @override
+  String get phoneNumberEmptyError => 'Phone number cannot be empty';
+
+  @override
+  String get phoneNumberInvalidError => 'Invalid phone number format';
+
+  @override
+  String get optionalFieldSuffix => ' (Optional)';
+
+  @override
+  String get customerEmailHint => 'Enter customer email';
+
+  @override
+  String get emailInvalidError => 'Invalid email format';
+
+  @override
+  String get customerAddressHint => 'Enter customer address';
+
+  @override
+  String get notesLabel => 'Notes';
+
+  @override
+  String get notesHint => 'Special notes for this customer';
+
+  @override
+  String get saveCustomerButton => 'Save Customer';
+
+  @override
+  String get addCustomerSuccessTesting => 'Customer added successfully!';
+
+  @override
+  String errorWithMessage(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String addCustomerError(String error) {
+    return 'Failed to add customer: $error';
+  }
+
+  @override
+  String loadCustomersError(Object error) {
+    return 'Failed to load customers: $error';
+  }
 }

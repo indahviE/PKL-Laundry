@@ -997,6 +997,378 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Gagal menyimpan perubahan: {error}'**
   String saveChangesError(String error);
+
+  /// No description provided for @customersTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan'**
+  String get customersTitle;
+
+  /// No description provided for @customersSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola data pelanggan laundry Anda'**
+  String get customersSubtitle;
+
+  /// No description provided for @newCustomerButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Baru'**
+  String get newCustomerButton;
+
+  /// No description provided for @searchCustomerHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari nama atau nomor telepon...'**
+  String get searchCustomerHint;
+
+  /// No description provided for @customerActiveLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktif'**
+  String get customerActiveLabel;
+
+  /// No description provided for @customerInactiveLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak Aktif'**
+  String get customerInactiveLabel;
+
+  /// No description provided for @totalCustomersLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total Pelanggan'**
+  String get totalCustomersLabel;
+
+  /// No description provided for @totalTransactionsLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total Transaksi'**
+  String get totalTransactionsLabel;
+
+  /// No description provided for @emptyCustomersTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada pelanggan'**
+  String get emptyCustomersTitle;
+
+  /// No description provided for @emptyCustomersSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambahkan pelanggan baru untuk memulai'**
+  String get emptyCustomersSubtitle;
+
+  /// No description provided for @addCustomerButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah Pelanggan'**
+  String get addCustomerButton;
+
+  /// No description provided for @ordersCountLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} pesanan'**
+  String ordersCountLabel(int count);
+
+  /// No description provided for @neverOrderedLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum pernah order'**
+  String get neverOrderedLabel;
+
+  /// No description provided for @justNowLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Baru saja'**
+  String get justNowLabel;
+
+  /// No description provided for @hoursAgoLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'{hours} jam lalu'**
+  String hoursAgoLabel(int hours);
+
+  /// No description provided for @daysAgoLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'{days} hari lalu'**
+  String daysAgoLabel(int days);
+
+  /// No description provided for @editCustomerComingSoon.
+  ///
+  /// In id, this message translates to:
+  /// **'Navigasi ke Edit Pelanggan akan ditambahkan'**
+  String get editCustomerComingSoon;
+
+  /// No description provided for @editCustomerMenuItem.
+  ///
+  /// In id, this message translates to:
+  /// **'Edit Pelanggan'**
+  String get editCustomerMenuItem;
+
+  /// No description provided for @deleteCustomerMenuItem.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus Pelanggan'**
+  String get deleteCustomerMenuItem;
+
+  /// No description provided for @deleteCustomerConfirmTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus Pelanggan?'**
+  String get deleteCustomerConfirmTitle;
+
+  /// No description provided for @deleteCustomerConfirmContent.
+  ///
+  /// In id, this message translates to:
+  /// **'Data pelanggan \"{name}\" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.'**
+  String deleteCustomerConfirmContent(String name);
+
+  /// No description provided for @deleteButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus'**
+  String get deleteButton;
+
+  /// No description provided for @deleteCustomerSuccessTesting.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan berhasil dihapus (Testing mode)'**
+  String get deleteCustomerSuccessTesting;
+
+  /// No description provided for @customerDetailTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail Pelanggan'**
+  String get customerDetailTitle;
+
+  /// No description provided for @joinedSinceLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Bergabung sejak {date}'**
+  String joinedSinceLabel(String date);
+
+  /// No description provided for @activeCustomerLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan Aktif'**
+  String get activeCustomerLabel;
+
+  /// No description provided for @callButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Telepon'**
+  String get callButton;
+
+  /// No description provided for @openingPhoneApp.
+  ///
+  /// In id, this message translates to:
+  /// **'Membuka aplikasi telepon...'**
+  String get openingPhoneApp;
+
+  /// No description provided for @whatsappButton.
+  ///
+  /// In id, this message translates to:
+  /// **'WhatsApp'**
+  String get whatsappButton;
+
+  /// No description provided for @openingWhatsapp.
+  ///
+  /// In id, this message translates to:
+  /// **'Membuka WhatsApp...'**
+  String get openingWhatsapp;
+
+  /// No description provided for @totalOrdersLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total Pesanan'**
+  String get totalOrdersLabel;
+
+  /// No description provided for @totalSpentLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total Belanja'**
+  String get totalSpentLabel;
+
+  /// No description provided for @contactInfoTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Informasi Kontak'**
+  String get contactInfoTitle;
+
+  /// No description provided for @phoneLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Telepon'**
+  String get phoneLabel;
+
+  /// No description provided for @addressLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat'**
+  String get addressLabel;
+
+  /// No description provided for @orderHistoryTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat Pesanan'**
+  String get orderHistoryTitle;
+
+  /// No description provided for @viewAllOrdersComingSoon.
+  ///
+  /// In id, this message translates to:
+  /// **'Navigasi ke semua riwayat pesanan akan ditambahkan'**
+  String get viewAllOrdersComingSoon;
+
+  /// No description provided for @noOrderHistoryLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada riwayat pesanan'**
+  String get noOrderHistoryLabel;
+
+  /// No description provided for @orderStatusPending.
+  ///
+  /// In id, this message translates to:
+  /// **'Menunggu'**
+  String get orderStatusPending;
+
+  /// No description provided for @orderStatusProcessing.
+  ///
+  /// In id, this message translates to:
+  /// **'Diproses'**
+  String get orderStatusProcessing;
+
+  /// No description provided for @orderStatusCompleted.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai'**
+  String get orderStatusCompleted;
+
+  /// No description provided for @orderStatusCancelled.
+  ///
+  /// In id, this message translates to:
+  /// **'Dibatalkan'**
+  String get orderStatusCancelled;
+
+  /// No description provided for @orderItemCountLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'· {count} item'**
+  String orderItemCountLabel(int count);
+
+  /// No description provided for @newCustomerHeaderTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan Baru'**
+  String get newCustomerHeaderTitle;
+
+  /// No description provided for @newCustomerHeaderSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Lengkapi data pelanggan untuk menambahkannya ke sistem'**
+  String get newCustomerHeaderSubtitle;
+
+  /// No description provided for @customerNameHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan nama pelanggan'**
+  String get customerNameHint;
+
+  /// No description provided for @customerNameEmptyError.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama pelanggan tidak boleh kosong'**
+  String get customerNameEmptyError;
+
+  /// No description provided for @phoneNumberLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'No. Telepon'**
+  String get phoneNumberLabel;
+
+  /// No description provided for @phoneNumberHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: 081234567890'**
+  String get phoneNumberHint;
+
+  /// No description provided for @phoneNumberEmptyError.
+  ///
+  /// In id, this message translates to:
+  /// **'No. telepon tidak boleh kosong'**
+  String get phoneNumberEmptyError;
+
+  /// No description provided for @phoneNumberInvalidError.
+  ///
+  /// In id, this message translates to:
+  /// **'Format no. telepon tidak valid'**
+  String get phoneNumberInvalidError;
+
+  /// No description provided for @optionalFieldSuffix.
+  ///
+  /// In id, this message translates to:
+  /// **' (Opsional)'**
+  String get optionalFieldSuffix;
+
+  /// No description provided for @customerEmailHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan email pelanggan'**
+  String get customerEmailHint;
+
+  /// No description provided for @emailInvalidError.
+  ///
+  /// In id, this message translates to:
+  /// **'Format email tidak valid'**
+  String get emailInvalidError;
+
+  /// No description provided for @customerAddressHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan alamat pelanggan'**
+  String get customerAddressHint;
+
+  /// No description provided for @notesLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan'**
+  String get notesLabel;
+
+  /// No description provided for @notesHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan khusus untuk pelanggan ini'**
+  String get notesHint;
+
+  /// No description provided for @saveCustomerButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan Pelanggan'**
+  String get saveCustomerButton;
+
+  /// No description provided for @addCustomerSuccessTesting.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan berhasil ditambahkan!'**
+  String get addCustomerSuccessTesting;
+
+  /// No description provided for @errorWithMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'Error: {error}'**
+  String errorWithMessage(String error);
+
+  /// No description provided for @addCustomerError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menambahkan pelanggan: {error}'**
+  String addCustomerError(String error);
+
+  /// No description provided for @loadCustomersError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memuat data pelanggan: {error}'**
+  String loadCustomersError(Object error);
 }
 
 class _AppLocalizationsDelegate

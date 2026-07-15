@@ -509,4 +509,212 @@ class AppLocalizationsId extends AppLocalizations {
   String saveChangesError(String error) {
     return 'Gagal menyimpan perubahan: $error';
   }
+
+  @override
+  String get customersTitle => 'Pelanggan';
+
+  @override
+  String get customersSubtitle => 'Kelola data pelanggan laundry Anda';
+
+  @override
+  String get newCustomerButton => 'Baru';
+
+  @override
+  String get searchCustomerHint => 'Cari nama atau nomor telepon...';
+
+  @override
+  String get customerActiveLabel => 'Aktif';
+
+  @override
+  String get customerInactiveLabel => 'Tidak Aktif';
+
+  @override
+  String get totalCustomersLabel => 'Total Pelanggan';
+
+  @override
+  String get totalTransactionsLabel => 'Total Transaksi';
+
+  @override
+  String get emptyCustomersTitle => 'Tidak ada pelanggan';
+
+  @override
+  String get emptyCustomersSubtitle => 'Tambahkan pelanggan baru untuk memulai';
+
+  @override
+  String get addCustomerButton => 'Tambah Pelanggan';
+
+  @override
+  String ordersCountLabel(int count) {
+    return '$count pesanan';
+  }
+
+  @override
+  String get neverOrderedLabel => 'Belum pernah order';
+
+  @override
+  String get justNowLabel => 'Baru saja';
+
+  @override
+  String hoursAgoLabel(int hours) {
+    return '$hours jam lalu';
+  }
+
+  @override
+  String daysAgoLabel(int days) {
+    return '$days hari lalu';
+  }
+
+  @override
+  String get editCustomerComingSoon =>
+      'Navigasi ke Edit Pelanggan akan ditambahkan';
+
+  @override
+  String get editCustomerMenuItem => 'Edit Pelanggan';
+
+  @override
+  String get deleteCustomerMenuItem => 'Hapus Pelanggan';
+
+  @override
+  String get deleteCustomerConfirmTitle => 'Hapus Pelanggan?';
+
+  @override
+  String deleteCustomerConfirmContent(String name) {
+    return 'Data pelanggan \"$name\" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.';
+  }
+
+  @override
+  String get deleteButton => 'Hapus';
+
+  @override
+  String get deleteCustomerSuccessTesting =>
+      'Pelanggan berhasil dihapus (Testing mode)';
+
+  @override
+  String get customerDetailTitle => 'Detail Pelanggan';
+
+  @override
+  String joinedSinceLabel(String date) {
+    return 'Bergabung sejak $date';
+  }
+
+  @override
+  String get activeCustomerLabel => 'Pelanggan Aktif';
+
+  @override
+  String get callButton => 'Telepon';
+
+  @override
+  String get openingPhoneApp => 'Membuka aplikasi telepon...';
+
+  @override
+  String get whatsappButton => 'WhatsApp';
+
+  @override
+  String get openingWhatsapp => 'Membuka WhatsApp...';
+
+  @override
+  String get totalOrdersLabel => 'Total Pesanan';
+
+  @override
+  String get totalSpentLabel => 'Total Belanja';
+
+  @override
+  String get contactInfoTitle => 'Informasi Kontak';
+
+  @override
+  String get phoneLabel => 'Telepon';
+
+  @override
+  String get addressLabel => 'Alamat';
+
+  @override
+  String get orderHistoryTitle => 'Riwayat Pesanan';
+
+  @override
+  String get viewAllOrdersComingSoon =>
+      'Navigasi ke semua riwayat pesanan akan ditambahkan';
+
+  @override
+  String get noOrderHistoryLabel => 'Belum ada riwayat pesanan';
+
+  @override
+  String get orderStatusPending => 'Menunggu';
+
+  @override
+  String get orderStatusProcessing => 'Diproses';
+
+  @override
+  String get orderStatusCompleted => 'Selesai';
+
+  @override
+  String get orderStatusCancelled => 'Dibatalkan';
+
+  @override
+  String orderItemCountLabel(int count) {
+    return '· $count item';
+  }
+
+  @override
+  String get newCustomerHeaderTitle => 'Pelanggan Baru';
+
+  @override
+  String get newCustomerHeaderSubtitle =>
+      'Lengkapi data pelanggan untuk menambahkannya ke sistem';
+
+  @override
+  String get customerNameHint => 'Masukkan nama pelanggan';
+
+  @override
+  String get customerNameEmptyError => 'Nama pelanggan tidak boleh kosong';
+
+  @override
+  String get phoneNumberLabel => 'No. Telepon';
+
+  @override
+  String get phoneNumberHint => 'Contoh: 081234567890';
+
+  @override
+  String get phoneNumberEmptyError => 'No. telepon tidak boleh kosong';
+
+  @override
+  String get phoneNumberInvalidError => 'Format no. telepon tidak valid';
+
+  @override
+  String get optionalFieldSuffix => ' (Opsional)';
+
+  @override
+  String get customerEmailHint => 'Masukkan email pelanggan';
+
+  @override
+  String get emailInvalidError => 'Format email tidak valid';
+
+  @override
+  String get customerAddressHint => 'Masukkan alamat pelanggan';
+
+  @override
+  String get notesLabel => 'Catatan';
+
+  @override
+  String get notesHint => 'Catatan khusus untuk pelanggan ini';
+
+  @override
+  String get saveCustomerButton => 'Simpan Pelanggan';
+
+  @override
+  String get addCustomerSuccessTesting => 'Pelanggan berhasil ditambahkan!';
+
+  @override
+  String errorWithMessage(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String addCustomerError(String error) {
+    return 'Gagal menambahkan pelanggan: $error';
+  }
+
+  @override
+  String loadCustomersError(Object error) {
+    return 'Gagal memuat data pelanggan: $error';
+  }
 }

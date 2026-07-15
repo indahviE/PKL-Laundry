@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/common/app_input.dart';
 
 /// Create Customer Screen
@@ -45,8 +48,16 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
     super.dispose();
   }
 
-  /// Handle save customer
-  Future<void> _handleSaveCustomer() async {
+  /// Generate customer_code berikutnya, format CUST001, CUST002, dst
+  /// berdasarkan jumlah customer yang sudah ada.
+  Future<String> _generateCustomerCode(CollectionReference customersRef) async {
+    final countSnapshot = await customersRef.count().get();
+    final nextNumber = (countSnapshot.count ?? 0) + 1;
+    return 'CUST${nextNumber.toString().padLeft(3, '0')}';
+  }
+
+  /// Handle save customer -> tulis ke Firestore: users/{uid}/customers
+  Future<void> _handleSaveCustomer(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -54,25 +65,57 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await Future.delayed(const Duration(seconds: 2));
-      // TODO: Save customer ke backend (Firestore)
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw l10n.sessionNotFoundError;
+      }
+
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+      // Ambil company_id dari subcollection users/{uid}/companies
+      final companiesSnapshot = await userDocRef.collection('companies').limit(1).get();
+      if (companiesSnapshot.docs.isEmpty) {
+        throw l10n.companyNotSetupError;
+      }
+      final companyId = companiesSnapshot.docs.first.id;
+
+      final customersRef = userDocRef.collection('customers');
+      final customerCode = await _generateCustomerCode(customersRef);
+
+      await customersRef.add({
+        'full_name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'email': _emailController.text.trim(),
+        'address': _addressController.text.trim(),
+        'notes': _notesController.text.trim(),
+        'company_id': companyId,
+        'customer_code': customerCode,
+        'membership_type': 'reguler',
+        'is_active': true,
+        'total_orders': 0,
+        'total_spent': 0,
+        'created_at': FieldValue.serverTimestamp(),
+        'updated_at': FieldValue.serverTimestamp(),
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pelanggan berhasil ditambahkan! (Testing mode)'),
-            backgroundColor: Color(0xFF51CF66),
+          SnackBar(
+            content: Text(l10n.addCustomerSuccessTesting),
+            backgroundColor: const Color(0xFF51CF66),
           ),
         );
         Navigator.pop(context, true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.addCustomerError(e.toString())),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -80,6 +123,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
@@ -101,13 +145,13 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTopBar(context),
+                        _buildTopBar(context, l10n),
                         const SizedBox(height: AppTheme.xl),
-                        _buildHeader(context),
+                        _buildHeader(context, l10n),
                         const SizedBox(height: AppTheme.xxl),
-                        _buildForm(context),
+                        _buildForm(context, l10n),
                         const SizedBox(height: AppTheme.xxl),
-                        _buildSaveButton(context),
+                        _buildSaveButton(context, l10n),
                         const SizedBox(height: AppTheme.lg),
                       ],
                     ),
@@ -122,7 +166,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
   }
 
   /// Build top bar (back button + title)
-  Widget _buildTopBar(BuildContext context) {
+  Widget _buildTopBar(BuildContext context, AppLocalizations l10n) {
     return Row(
       children: [
         InkWell(
@@ -147,7 +191,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
         ),
         const SizedBox(width: 14),
         Text(
-          'Tambah Pelanggan',
+          l10n.addCustomerButton,
           style: GoogleFonts.poppins(
             fontSize: 17,
             fontWeight: FontWeight.w600,
@@ -159,7 +203,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
   }
 
   /// Build Header
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -177,7 +221,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
         ),
         const SizedBox(height: AppTheme.xl),
         Text(
-          'Pelanggan Baru',
+          l10n.newCustomerHeaderTitle,
           style: GoogleFonts.poppins(
             fontSize: 21,
             fontWeight: FontWeight.w700,
@@ -186,7 +230,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
         ),
         const SizedBox(height: AppTheme.sm),
         Text(
-          'Lengkapi data pelanggan untuk menambahkannya ke sistem',
+          l10n.newCustomerHeaderSubtitle,
           style: GoogleFonts.poppins(
             fontSize: 13,
             color: AppTheme.textSecondary,
@@ -197,7 +241,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
   }
 
   /// Build Form
-  Widget _buildForm(BuildContext context) {
+  Widget _buildForm(BuildContext context, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
@@ -217,13 +261,13 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
           children: [
             // Nama Lengkap
             AppInput(
-              label: 'Nama Lengkap *',
+              label: '${l10n.fullNameLabel} *',
               controller: _nameController,
-              hintText: 'Masukkan nama pelanggan',
+              hintText: l10n.customerNameHint,
               prefixIcon: Icons.person_outline,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Nama pelanggan tidak boleh kosong';
+                  return l10n.customerNameEmptyError;
                 }
                 return null;
               },
@@ -233,17 +277,17 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
 
             // No. Telepon
             AppInput(
-              label: 'No. Telepon *',
+              label: '${l10n.phoneNumberLabel} *',
               controller: _phoneController,
-              hintText: 'Contoh: 081234567890',
+              hintText: l10n.phoneNumberHint,
               prefixIcon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'No. telepon tidak boleh kosong';
+                  return l10n.phoneNumberEmptyError;
                 }
                 if (!RegExp(r'^[0-9]{9,14}$').hasMatch(value.trim())) {
-                  return 'Format no. telepon tidak valid';
+                  return l10n.phoneNumberInvalidError;
                 }
                 return null;
               },
@@ -253,16 +297,16 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
 
             // Email (opsional)
             AppInput(
-              label: 'Email (Opsional)',
+              label: '${l10n.emailLabel}${l10n.optionalFieldSuffix}',
               controller: _emailController,
-              hintText: 'Masukkan email pelanggan',
+              hintText: l10n.customerEmailHint,
               prefixIcon: Icons.mail_outline_rounded,
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) return null;
                 if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
                     .hasMatch(value.trim())) {
-                  return 'Format email tidak valid';
+                  return l10n.emailInvalidError;
                 }
                 return null;
               },
@@ -272,9 +316,9 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
 
             // Alamat (opsional)
             AppInput(
-              label: 'Alamat (Opsional)',
+              label: '${l10n.addressLabel}${l10n.optionalFieldSuffix}',
               controller: _addressController,
-              hintText: 'Masukkan alamat pelanggan',
+              hintText: l10n.customerAddressHint,
               prefixIcon: Icons.location_on_outlined,
               maxLines: 2,
             ),
@@ -283,9 +327,9 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
 
             // Catatan (opsional)
             AppInput(
-              label: 'Catatan (Opsional)',
+              label: '${l10n.notesLabel}${l10n.optionalFieldSuffix}',
               controller: _notesController,
-              hintText: 'Catatan khusus untuk pelanggan ini',
+              hintText: l10n.notesHint,
               prefixIcon: Icons.note_outlined,
               maxLines: 3,
             ),
@@ -296,12 +340,12 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
   }
 
   /// Build Save Button
-  Widget _buildSaveButton(BuildContext context) {
+  Widget _buildSaveButton(BuildContext context, AppLocalizations l10n) {
     return SizedBox(
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: !_isLoading ? _handleSaveCustomer : null,
+        onPressed: !_isLoading ? () => _handleSaveCustomer(l10n) : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primaryColor,
           foregroundColor: Colors.white,
@@ -326,13 +370,13 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
                   ),
                   const SizedBox(width: AppTheme.md),
                   Text(
-                    'Sedang Menyimpan...',
+                    l10n.savingButtonLabel,
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                   ),
                 ],
               )
             : Text(
-                'Simpan Pelanggan',
+                l10n.saveCustomerButton,
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,

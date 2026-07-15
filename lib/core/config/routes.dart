@@ -102,13 +102,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         return isAuthRoute ? null : '/login';
       }
 
-      // Email belum diverifikasi -> paksa ke verify-email.
-      if (!user.emailVerified) {
+      // Ambil profil sekali di awal, dipakai buat cek status verifikasi
+      // (dari Firestore, bukan user.emailVerified bawaan FirebaseAuth yang
+      // selalu false untuk akun phone-only) dan progres onboarding.
+      final profile = await authRepo.getUserProfile();
+      final emailVerified = profile?['emailVerified'] == true;
+
+      if (!emailVerified) {
         return location == '/verify-email' ? null : '/verify-email';
       }
 
-      // Cek progress onboarding step by step (profile -> company -> plan -> payment).
-      final profile = await authRepo.getUserProfile();
       final profileCompleted = profile?['profileCompleted'] == true;
       final companyCompleted = profile?['companyCompleted'] == true;
       final planChosen = profile?['planChosen'] == true;
