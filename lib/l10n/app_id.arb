@@ -255,5 +255,110 @@
     "placeholders": {
       "error": { "type": "String" }
     }
-  }
+  },
+
+  "customersTitle": "Pelanggan",
+  "customersSubtitle": "Kelola data pelanggan laundry Anda",
+  "newCustomerButton": "Baru",
+  "searchCustomerHint": "Cari nama atau nomor telepon...",
+  "customerActiveLabel": "Aktif",
+  "customerInactiveLabel": "Tidak Aktif",
+  "totalCustomersLabel": "Total Pelanggan",
+  "totalTransactionsLabel": "Total Transaksi",
+  "emptyCustomersTitle": "Tidak ada pelanggan",
+  "emptyCustomersSubtitle": "Tambahkan pelanggan baru untuk memulai",
+  "addCustomerButton": "Tambah Pelanggan",
+  "ordersCountLabel": "{count} pesanan",
+  "@ordersCountLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "neverOrderedLabel": "Belum pernah order",
+  "justNowLabel": "Baru saja",
+  "hoursAgoLabel": "{hours} jam lalu",
+  "@hoursAgoLabel": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "daysAgoLabel": "{days} hari lalu",
+  "@daysAgoLabel": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+
+  "editCustomerComingSoon": "Navigasi ke Edit Pelanggan akan ditambahkan",
+  "editCustomerMenuItem": "Edit Pelanggan",
+  "deleteCustomerMenuItem": "Hapus Pelanggan",
+  "deleteCustomerConfirmTitle": "Hapus Pelanggan?",
+  "deleteCustomerConfirmContent": "Data pelanggan \"{name}\" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.",
+  "@deleteCustomerConfirmContent": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "deleteButton": "Hapus",
+  "deleteCustomerSuccessTesting": "Pelanggan berhasil dihapus (Testing mode)",
+  "customerDetailTitle": "Detail Pelanggan",
+  "joinedSinceLabel": "Bergabung sejak {date}",
+  "@joinedSinceLabel": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "activeCustomerLabel": "Pelanggan Aktif",
+  "callButton": "Telepon",
+  "openingPhoneApp": "Membuka aplikasi telepon...",
+  "whatsappButton": "WhatsApp",
+  "openingWhatsapp": "Membuka WhatsApp...",
+  "totalOrdersLabel": "Total Pesanan",
+  "totalSpentLabel": "Total Belanja",
+  "contactInfoTitle": "Informasi Kontak",
+  "phoneLabel": "Telepon",
+  "addressLabel": "Alamat",
+  "orderHistoryTitle": "Riwayat Pesanan",
+  "viewAllOrdersComingSoon": "Navigasi ke semua riwayat pesanan akan ditambahkan",
+  "noOrderHistoryLabel": "Belum ada riwayat pesanan",
+  "orderStatusPending": "Menunggu",
+  "orderStatusProcessing": "Diproses",
+  "orderStatusCompleted": "Selesai",
+  "orderStatusCancelled": "Dibatalkan",
+  "orderItemCountLabel": "· {count} item",
+  "@orderItemCountLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "newCustomerHeaderTitle": "Pelanggan Baru",
+  "newCustomerHeaderSubtitle": "Lengkapi data pelanggan untuk menambahkannya ke sistem",
+  "customerNameHint": "Masukkan nama pelanggan",
+  "customerNameEmptyError": "Nama pelanggan tidak boleh kosong",
+  "phoneNumberLabel": "No. Telepon",
+  "phoneNumberHint": "Contoh: 081234567890",
+  "phoneNumberEmptyError": "No. telepon tidak boleh kosong",
+  "phoneNumberInvalidError": "Format no. telepon tidak valid",
+  "optionalFieldSuffix": " (Opsional)",
+  "customerEmailHint": "Masukkan email pelanggan",
+  "emailInvalidError": "Format email tidak valid",
+  "customerAddressHint": "Masukkan alamat pelanggan",
+  "notesLabel": "Catatan",
+  "notesHint": "Catatan khusus untuk pelanggan ini",
+  "saveCustomerButton": "Simpan Pelanggan",
+  "addCustomerSuccessTesting": "Pelanggan berhasil ditambahkan!",
+  "errorWithMessage": "Error: {error}",
+  "@errorWithMessage": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "addCustomerError": "Gagal menambahkan pelanggan: {error}",
+  "@addCustomerError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "loadCustomersError": "Gagal memuat data pelanggan: {error}"
 }

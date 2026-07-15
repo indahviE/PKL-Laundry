@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
-import 'create_customer_screen.dart';
+import '../../l10n/app_localizations.dart';
+import '../customers/create_customer_screen.dart';
 
 /// Customer Model
 class CustomerItem {
@@ -27,6 +31,31 @@ class CustomerItem {
     this.lastOrderDate,
     required this.isActive,
   });
+
+  /// Mapping dari dokumen Firestore users/{uid}/customers/{customerId}
+  /// sesuai skema di PRD (bagian 3.3.1 Manajemen Pelanggan)
+  factory CustomerItem.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+
+    DateTime? _toDate(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      return null;
+    }
+
+    return CustomerItem(
+      id: doc.id,
+      name: (data['full_name'] ?? '') as String,
+      phone: (data['phone'] ?? '') as String,
+      email: (data['email'] ?? '') as String,
+      totalOrders: (data['total_orders'] ?? 0) is int
+          ? data['total_orders'] as int
+          : ((data['total_orders'] ?? 0) as num).toInt(),
+      totalSpent: ((data['total_spent'] ?? 0) as num).toDouble(),
+      joinDate: _toDate(data['created_at']) ?? DateTime.now(),
+      lastOrderDate: _toDate(data['last_order_date']),
+      isActive: (data['is_active'] ?? true) as bool,
+    );
+  }
 }
 
 /// Customers List Screen
@@ -43,93 +72,64 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
 
   // State
   String _selectedFilter = 'all'; // all, active, inactive
-  late List<CustomerItem> _allCustomers;
-  late List<CustomerItem> _filteredCustomers;
+  List<CustomerItem> _allCustomers = [];
+  List<CustomerItem> _filteredCustomers = [];
+
+  bool _isLoading = true;
+  String? _errorMessage;
+  StreamSubscription<QuerySnapshot>? _customersSubscription;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
-    _initializeSampleCustomers();
-    _filteredCustomers = _allCustomers;
+    _listenToCustomers();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _customersSubscription?.cancel();
     super.dispose();
   }
 
-  /// Initialize sample customers
-  void _initializeSampleCustomers() {
-    _allCustomers = [
-      CustomerItem(
-        id: '1',
-        name: 'Budi Santoso',
-        phone: '081234567890',
-        email: 'budi.santoso@email.com',
-        totalOrders: 24,
-        totalSpent: 3600000,
-        joinDate: DateTime.now().subtract(const Duration(days: 210)),
-        lastOrderDate: DateTime.now().subtract(const Duration(hours: 5)),
-        isActive: true,
-      ),
-      CustomerItem(
-        id: '2',
-        name: 'Siti Nurhaliza',
-        phone: '082345678901',
-        email: 'siti.nurhaliza@email.com',
-        totalOrders: 15,
-        totalSpent: 1350000,
-        joinDate: DateTime.now().subtract(const Duration(days: 130)),
-        lastOrderDate: DateTime.now().subtract(const Duration(days: 1)),
-        isActive: true,
-      ),
-      CustomerItem(
-        id: '3',
-        name: 'Ahmad Wijaya',
-        phone: '083456789012',
-        email: 'ahmad.wijaya@email.com',
-        totalOrders: 8,
-        totalSpent: 1760000,
-        joinDate: DateTime.now().subtract(const Duration(days: 95)),
-        lastOrderDate: DateTime.now(),
-        isActive: true,
-      ),
-      CustomerItem(
-        id: '4',
-        name: 'Rina Gunawan',
-        phone: '084567890123',
-        email: 'rina.gunawan@email.com',
-        totalOrders: 32,
-        totalSpent: 5600000,
-        joinDate: DateTime.now().subtract(const Duration(days: 400)),
-        lastOrderDate: DateTime.now().subtract(const Duration(days: 2)),
-        isActive: true,
-      ),
-      CustomerItem(
-        id: '5',
-        name: 'Doni Hermawan',
-        phone: '085678901234',
-        email: 'doni.hermawan@email.com',
-        totalOrders: 3,
-        totalSpent: 960000,
-        joinDate: DateTime.now().subtract(const Duration(days: 60)),
-        lastOrderDate: DateTime.now().subtract(const Duration(days: 45)),
-        isActive: false,
-      ),
-      CustomerItem(
-        id: '6',
-        name: 'Eka Putri',
-        phone: '086789012345',
-        email: 'eka.putri@email.com',
-        totalOrders: 1,
-        totalSpent: 110000,
-        joinDate: DateTime.now().subtract(const Duration(days: 20)),
-        lastOrderDate: DateTime.now().subtract(const Duration(days: 20)),
-        isActive: false,
-      ),
-    ];
+  /// Subscribe realtime ke users/{uid}/customers di Firestore.
+  /// Begitu CreateCustomerScreen nulis dokumen baru, list ini
+  /// otomatis ke-update tanpa perlu manual refresh.
+  void _listenToCustomers() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Sesi tidak ditemukan, silakan login ulang.';
+      });
+      return;
+    }
+
+    final customersRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('customers')
+        .orderBy('created_at', descending: true);
+
+    _customersSubscription?.cancel();
+    _customersSubscription = customersRef.snapshots().listen(
+      (snapshot) {
+        _allCustomers =
+            snapshot.docs.map((doc) => CustomerItem.fromFirestore(doc)).toList();
+        setState(() {
+          _isLoading = false;
+          _errorMessage = null;
+        });
+        _applyFiltersAndSearch();
+      },
+      onError: (error) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = error.toString();
+        });
+      },
+    );
   }
 
   /// Filter dan search customers
@@ -152,22 +152,20 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   }
 
   /// Format relative last order date
-  String _formatLastOrder(DateTime? date) {
-    if (date == null) return 'Belum pernah order';
+  String _formatLastOrder(AppLocalizations l10n, DateTime? date) {
+    if (date == null) return l10n.neverOrderedLabel;
     final diff = DateTime.now().difference(date);
-    if (diff.inHours < 1) return 'Baru saja';
-    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
-    if (diff.inDays < 30) return '${diff.inDays} hari lalu';
+    if (diff.inHours < 1) return l10n.justNowLabel;
+    if (diff.inHours < 24) return l10n.hoursAgoLabel(diff.inHours);
+    if (diff.inDays < 30) return l10n.daysAgoLabel(diff.inDays);
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  /// Buka Create Customer screen, refresh list kalau berhasil disimpan
+  /// Buka Create Customer screen. List sudah realtime lewat
+  /// snapshots(), jadi begitu dokumen baru tersimpan, dia
+  /// otomatis muncul di sini tanpa perlu logic refresh manual.
   Future<void> _openCreateCustomer(BuildContext context) async {
-    final result = await context.push<bool>('/customers/create');
-    if (result == true && mounted) {
-      // TODO: refresh dari Firestore begitu backend-nya siap
-      _applyFiltersAndSearch();
-    }
+    await context.push<bool>('/customers/create');
   }
 
   /// Get initials for avatar
@@ -181,6 +179,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
@@ -202,17 +201,22 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildHeader(context),
+                        _buildHeader(context, l10n),
                         const SizedBox(height: 22),
-                        _buildSearchBar(context),
+                        _buildSearchBar(context, l10n),
                         const SizedBox(height: AppTheme.lg),
-                        _buildFilterButtons(context),
+                        _buildFilterButtons(context, l10n),
                         const SizedBox(height: AppTheme.xl),
-                        _buildStatsSummary(context, isMobile),
+                        _buildStatsSummary(context, l10n, isMobile),
                         const SizedBox(height: AppTheme.xl),
-                        _filteredCustomers.isEmpty
-                            ? _buildEmptyState(context)
-                            : _buildCustomersList(context, isMobile),
+                        if (_isLoading)
+                          _buildLoadingState(context)
+                        else if (_errorMessage != null)
+                          _buildErrorState(context, l10n)
+                        else if (_filteredCustomers.isEmpty)
+                          _buildEmptyState(context, l10n)
+                        else
+                          _buildCustomersList(context, l10n, isMobile),
                         const SizedBox(height: AppTheme.lg),
                       ],
                     ),
@@ -227,7 +231,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   }
 
   /// Build header (solid, no gradient)
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,7 +259,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pelanggan',
+                      l10n.customersTitle,
                       style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -264,7 +268,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Kelola data pelanggan laundry Anda',
+                      l10n.customersSubtitle,
                       style: GoogleFonts.poppins(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w400,
@@ -281,7 +285,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
           onPressed: () => _openCreateCustomer(context),
           icon: const Icon(Icons.person_add_outlined, size: 18),
           label: Text(
-            'Baru',
+            l10n.newCustomerButton,
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
           ),
           style: ElevatedButton.styleFrom(
@@ -302,7 +306,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   }
 
   /// Build search bar
-  Widget _buildSearchBar(BuildContext context) {
+  Widget _buildSearchBar(BuildContext context, AppLocalizations l10n) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
@@ -320,7 +324,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
         onChanged: (value) => _applyFiltersAndSearch(),
         style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
         decoration: InputDecoration(
-          hintText: 'Cari nama atau nomor telepon...',
+          hintText: l10n.searchCustomerHint,
           hintStyle: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textTertiary),
           prefixIcon: Icon(Icons.search, color: AppTheme.textTertiary),
           border: OutlineInputBorder(
@@ -347,11 +351,11 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   }
 
   /// Build filter buttons
-  Widget _buildFilterButtons(BuildContext context) {
+  Widget _buildFilterButtons(BuildContext context, AppLocalizations l10n) {
     final filters = [
-      ('all', 'Semua', Icons.people_outline),
-      ('active', 'Aktif', Icons.check_circle_outline),
-      ('inactive', 'Tidak Aktif', Icons.pause_circle_outline),
+      ('all', l10n.filterAll, Icons.people_outline),
+      ('active', l10n.customerActiveLabel, Icons.check_circle_outline),
+      ('inactive', l10n.customerInactiveLabel, Icons.pause_circle_outline),
     ];
 
     return SingleChildScrollView(
@@ -400,7 +404,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   }
 
   /// Build stats summary
-  Widget _buildStatsSummary(BuildContext context, bool isMobile) {
+  Widget _buildStatsSummary(BuildContext context, AppLocalizations l10n, bool isMobile) {
     final totalCustomers = _filteredCustomers.length;
     final totalSpent = _filteredCustomers.fold<double>(
       0,
@@ -411,7 +415,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
       children: [
         Expanded(
           child: _StatBox(
-            title: 'Total Pelanggan',
+            title: l10n.totalCustomersLabel,
             value: '$totalCustomers',
             icon: Icons.people_outline,
             color: AppTheme.primaryColor,
@@ -420,7 +424,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
         const SizedBox(width: AppTheme.lg),
         Expanded(
           child: _StatBox(
-            title: 'Total Transaksi',
+            title: l10n.totalTransactionsLabel,
             value: _formatCurrency(totalSpent),
             icon: Icons.payments_outlined,
             color: const Color(0xFF51CF66),
@@ -430,8 +434,43 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
     );
   }
 
+  /// Build loading state
+  Widget _buildLoadingState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
+        child: CircularProgressIndicator(color: AppTheme.primaryColor),
+      ),
+    );
+  }
+
+  /// Build error state
+  Widget _buildErrorState(BuildContext context, AppLocalizations l10n) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline_rounded, size: 40, color: AppTheme.errorColor),
+            const SizedBox(height: AppTheme.md),
+            Text(
+              _errorMessage ?? '',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: AppTheme.lg),
+            TextButton(
+              onPressed: _listenToCustomers,
+              child: Text('Coba lagi', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Build empty state
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
@@ -452,7 +491,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
-              'Tidak ada pelanggan',
+              l10n.emptyCustomersTitle,
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -461,7 +500,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
             ),
             const SizedBox(height: AppTheme.sm),
             Text(
-              'Tambahkan pelanggan baru untuk memulai',
+              l10n.emptyCustomersSubtitle,
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 color: AppTheme.textSecondary,
@@ -471,7 +510,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
             ElevatedButton.icon(
               onPressed: () => _openCreateCustomer(context),
               icon: const Icon(Icons.person_add_outlined, size: 18),
-              label: Text('Tambah Pelanggan', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              label: Text(l10n.addCustomerButton, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
@@ -489,7 +528,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   }
 
   /// Build customers list
-  Widget _buildCustomersList(BuildContext context, bool isMobile) {
+  Widget _buildCustomersList(BuildContext context, AppLocalizations l10n, bool isMobile) {
     return Column(
       children: List.generate(
         _filteredCustomers.length,
@@ -497,9 +536,10 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
           children: [
             _CustomerCard(
               customer: _filteredCustomers[index],
+              l10n: l10n,
               initials: _getInitials(_filteredCustomers[index].name),
               formattedSpent: _formatCurrency(_filteredCustomers[index].totalSpent),
-              formattedLastOrder: _formatLastOrder(_filteredCustomers[index].lastOrderDate),
+              formattedLastOrder: _formatLastOrder(l10n, _filteredCustomers[index].lastOrderDate),
               onTap: () => context.push('/customers/${_filteredCustomers[index].id}'),
             ),
             if (index < _filteredCustomers.length - 1)
@@ -585,6 +625,7 @@ class _StatBox extends StatelessWidget {
 /// Customer Card Widget
 class _CustomerCard extends StatelessWidget {
   final CustomerItem customer;
+  final AppLocalizations l10n;
   final String initials;
   final String formattedSpent;
   final String formattedLastOrder;
@@ -592,6 +633,7 @@ class _CustomerCard extends StatelessWidget {
 
   const _CustomerCard({
     required this.customer,
+    required this.l10n,
     required this.initials,
     required this.formattedSpent,
     required this.formattedLastOrder,
@@ -669,7 +711,7 @@ class _CustomerCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Text(
-                    customer.isActive ? 'Aktif' : 'Tidak Aktif',
+                    customer.isActive ? l10n.customerActiveLabel : l10n.customerInactiveLabel,
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -694,7 +736,7 @@ class _CustomerCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '${customer.totalOrders} pesanan',
+                      l10n.ordersCountLabel(customer.totalOrders),
                       style: GoogleFonts.poppins(
                         fontSize: 11.5,
                         color: AppTheme.textTertiary,

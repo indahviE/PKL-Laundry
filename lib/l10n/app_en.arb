@@ -255,5 +255,110 @@
     "placeholders": {
       "error": { "type": "String" }
     }
-  }
+  },
+
+  "customersTitle": "Customers",
+  "customersSubtitle": "Manage your laundry customer data",
+  "newCustomerButton": "New",
+  "searchCustomerHint": "Search by name or phone number...",
+  "customerActiveLabel": "Active",
+  "customerInactiveLabel": "Inactive",
+  "totalCustomersLabel": "Total Customers",
+  "totalTransactionsLabel": "Total Transactions",
+  "emptyCustomersTitle": "No customers yet",
+  "emptyCustomersSubtitle": "Add a new customer to get started",
+  "addCustomerButton": "Add Customer",
+  "ordersCountLabel": "{count} orders",
+  "@ordersCountLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "neverOrderedLabel": "Never ordered",
+  "justNowLabel": "Just now",
+  "hoursAgoLabel": "{hours}h ago",
+  "@hoursAgoLabel": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "daysAgoLabel": "{days}d ago",
+  "@daysAgoLabel": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+
+  "editCustomerComingSoon": "Navigate to Edit Customer will be added",
+  "editCustomerMenuItem": "Edit Customer",
+  "deleteCustomerMenuItem": "Delete Customer",
+  "deleteCustomerConfirmTitle": "Delete Customer?",
+  "deleteCustomerConfirmContent": "Customer data \"{name}\" will be permanently deleted. This action cannot be undone.",
+  "@deleteCustomerConfirmContent": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "deleteButton": "Delete",
+  "deleteCustomerSuccessTesting": "Customer deleted successfully (Testing mode)",
+  "customerDetailTitle": "Customer Detail",
+  "joinedSinceLabel": "Joined since {date}",
+  "@joinedSinceLabel": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "activeCustomerLabel": "Active Customer",
+  "callButton": "Call",
+  "openingPhoneApp": "Opening phone app...",
+  "whatsappButton": "WhatsApp",
+  "openingWhatsapp": "Opening WhatsApp...",
+  "totalOrdersLabel": "Total Orders",
+  "totalSpentLabel": "Total Spent",
+  "contactInfoTitle": "Contact Information",
+  "phoneLabel": "Phone",
+  "addressLabel": "Address",
+  "orderHistoryTitle": "Order History",
+  "viewAllOrdersComingSoon": "Navigate to full order history will be added",
+  "noOrderHistoryLabel": "No order history yet",
+  "orderStatusPending": "Pending",
+  "orderStatusProcessing": "Processing",
+  "orderStatusCompleted": "Completed",
+  "orderStatusCancelled": "Cancelled",
+  "orderItemCountLabel": "· {count} items",
+  "@orderItemCountLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "newCustomerHeaderTitle": "New Customer",
+  "newCustomerHeaderSubtitle": "Complete the customer data to add them to the system",
+  "customerNameHint": "Enter customer name",
+  "customerNameEmptyError": "Customer name cannot be empty",
+  "phoneNumberLabel": "Phone Number",
+  "phoneNumberHint": "Example: 081234567890",
+  "phoneNumberEmptyError": "Phone number cannot be empty",
+  "phoneNumberInvalidError": "Invalid phone number format",
+  "optionalFieldSuffix": " (Optional)",
+  "customerEmailHint": "Enter customer email",
+  "emailInvalidError": "Invalid email format",
+  "customerAddressHint": "Enter customer address",
+  "notesLabel": "Notes",
+  "notesHint": "Special notes for this customer",
+  "saveCustomerButton": "Save Customer",
+  "addCustomerSuccessTesting": "Customer added successfully!",
+  "errorWithMessage": "Error: {error}",
+  "@errorWithMessage": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "addCustomerError": "Failed to add customer: {error}",
+  "@addCustomerError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "loadCustomersError": "Failed to load customers: {error}"
 }

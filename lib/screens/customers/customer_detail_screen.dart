@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/themes/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Model riwayat pesanan singkat untuk ditampilkan di detail pelanggan
 class _OrderHistoryItem {
@@ -19,67 +24,124 @@ class _OrderHistoryItem {
   });
 }
 
+/// Model data pelanggan untuk halaman detail, di-fetch dari
+/// users/{uid}/customers/{customerId}
+class _CustomerDetailData {
+  final String name;
+  final String phone;
+  final String email;
+  final String address;
+  final bool isActive;
+  final DateTime joinDate;
+  final int totalOrders;
+  final double totalSpent;
+
+  _CustomerDetailData({
+    required this.name,
+    required this.phone,
+    required this.email,
+    required this.address,
+    required this.isActive,
+    required this.joinDate,
+    required this.totalOrders,
+    required this.totalSpent,
+  });
+
+  factory _CustomerDetailData.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    final createdAt = data['created_at'];
+    return _CustomerDetailData(
+      name: (data['full_name'] ?? '') as String,
+      phone: (data['phone'] ?? '') as String,
+      email: (data['email'] ?? '') as String,
+      address: (data['address'] ?? '') as String,
+      isActive: (data['is_active'] ?? true) as bool,
+      joinDate: createdAt is Timestamp ? createdAt.toDate() : DateTime.now(),
+      totalOrders: (data['total_orders'] ?? 0) is int
+          ? data['total_orders'] as int
+          : ((data['total_orders'] ?? 0) as num).toInt(),
+      totalSpent: ((data['total_spent'] ?? 0) as num).toDouble(),
+    );
+  }
+}
+
 /// Customer Detail Screen
-/// Menerima [customerId] dari route (mis. '/customers/:customerId').
-/// Data di bawah ini masih dummy — ganti dengan fetch Firestore
-/// berdasarkan customerId begitu backend-nya siap.
-class CustomerDetailScreen extends StatelessWidget {
+/// Menerima [customerId] dari route (mis. '/customers/:customerId')
+/// lalu fetch datanya dari Firestore: users/{uid}/customers/{customerId}
+class CustomerDetailScreen extends StatefulWidget {
   final String customerId;
 
   const CustomerDetailScreen({Key? key, required this.customerId}) : super(key: key);
 
-  // ============================================
-  // DUMMY DATA (ganti dengan fetch Firestore nanti)
-  // ============================================
-  String get _name => 'Budi Santoso';
-  String get _phone => '081234567890';
-  String get _email => 'budi.santoso@email.com';
-  String get _address => 'Jl. Merdeka No. 45, Bandung';
-  bool get _isActive => true;
-  DateTime get _joinDate => DateTime.now().subtract(const Duration(days: 210));
-  int get _totalOrders => 24;
-  double get _totalSpent => 3600000;
+  @override
+  State<CustomerDetailScreen> createState() => _CustomerDetailScreenState();
+}
 
-  List<_OrderHistoryItem> get _orderHistory => [
-        _OrderHistoryItem(
-          id: '#ORD-12345',
-          status: 'processing',
-          amount: 150000,
-          itemCount: 5,
-          date: DateTime.now().subtract(const Duration(hours: 5)),
-        ),
-        _OrderHistoryItem(
-          id: '#ORD-12290',
-          status: 'completed',
-          amount: 120000,
-          itemCount: 4,
-          date: DateTime.now().subtract(const Duration(days: 6)),
-        ),
-        _OrderHistoryItem(
-          id: '#ORD-12180',
-          status: 'completed',
-          amount: 200000,
-          itemCount: 7,
-          date: DateTime.now().subtract(const Duration(days: 15)),
-        ),
-      ];
+class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
+  _CustomerDetailData? _customer;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  // Riwayat pesanan masih dummy — ganti dengan query ke
+  // users/{uid}/orders (where customer_id == widget.customerId)
+  // begitu backend order-nya siap.
+  final List<_OrderHistoryItem> _orderHistory = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCustomer();
+  }
+
+  Future<void> _fetchCustomer() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw 'Sesi tidak ditemukan, silakan login ulang.';
+      }
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('customers')
+          .doc(widget.customerId)
+          .get();
+
+      if (!doc.exists) {
+        throw 'Data pelanggan tidak ditemukan.';
+      }
+
+      setState(() {
+        _customer = _CustomerDetailData.fromFirestore(doc);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   String _formatCurrency(double amount) {
     return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
   }
 
-  String _formatJoinDate(DateTime date) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  /// Format tanggal gabung pakai locale aktif (id/en) lewat intl
+  String _formatJoinDate(BuildContext context, DateTime date) {
+    final locale = Localizations.localeOf(context).languageCode;
+    return DateFormat('d MMM yyyy', locale).format(date);
   }
 
-  String _formatOrderDate(DateTime date) {
+  String _formatOrderDate(AppLocalizations l10n, DateTime date) {
     final diff = DateTime.now().difference(date);
-    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
-    if (diff.inDays < 7) return '${diff.inDays} hari lalu';
+    if (diff.inHours < 24) return l10n.hoursAgoLabel(diff.inHours);
+    if (diff.inDays < 7) return l10n.daysAgoLabel(diff.inDays);
     return '${date.day}/${date.month}/${date.year}';
   }
 
@@ -98,16 +160,16 @@ class CustomerDetailScreen extends StatelessWidget {
     }
   }
 
-  String _getStatusLabel(String status) {
+  String _getStatusLabel(AppLocalizations l10n, String status) {
     switch (status) {
       case 'pending':
-        return 'Menunggu';
+        return l10n.orderStatusPending;
       case 'processing':
-        return 'Diproses';
+        return l10n.orderStatusProcessing;
       case 'completed':
-        return 'Selesai';
+        return l10n.orderStatusCompleted;
       case 'cancelled':
-        return 'Dibatalkan';
+        return l10n.orderStatusCancelled;
       default:
         return status;
     }
@@ -121,8 +183,37 @@ class CustomerDetailScreen extends StatelessWidget {
     return name.isNotEmpty ? name[0].toUpperCase() : '?';
   }
 
+  /// Normalize nomor telepon Indonesia ke format internasional tanpa
+  /// simbol, mis. "081234567890" atau "0812-3456-7890" -> "6281234567890"
+  String _normalizePhone(String phone) {
+    var digits = phone.replaceAll(RegExp(r'[^0-9+]'), '');
+    digits = digits.replaceAll('+', '');
+    if (digits.startsWith('0')) {
+      digits = '62${digits.substring(1)}';
+    } else if (!digits.startsWith('62')) {
+      digits = '62$digits';
+    }
+    return digits;
+  }
+
+  Future<void> _openWhatsapp(BuildContext context, String phone, String customerName) async {
+    final normalized = _normalizePhone(phone);
+    final message = 'Halo $customerName, ini Mintwash 😊 . '
+        'Cucian kamu sudah selesai dan kering nih, '
+        'Mau diantar ke alamat atau mau diambil sendiri ya?';
+
+    final uri = Uri.https('wa.me', '/$normalized', {'text': message});
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak bisa membuka WhatsApp')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
@@ -144,19 +235,25 @@ class CustomerDetailScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTopBar(context),
+                        _buildTopBar(context, l10n),
                         const SizedBox(height: AppTheme.xl),
-                        _buildProfileCard(context),
-                        const SizedBox(height: AppTheme.xl),
-                        _buildQuickActions(context),
-                        const SizedBox(height: AppTheme.xl),
-                        _buildStatsRow(context, isMobile),
-                        const SizedBox(height: AppTheme.xl),
-                        _buildContactInfo(context),
-                        const SizedBox(height: AppTheme.xl),
-                        _buildOrderHistoryHeader(context),
-                        const SizedBox(height: AppTheme.lg),
-                        _buildOrderHistoryList(context),
+                        if (_isLoading)
+                          _buildLoadingState(context)
+                        else if (_errorMessage != null)
+                          _buildErrorState(context, l10n)
+                        else if (_customer != null) ...[
+                          _buildProfileCard(context, l10n, _customer!),
+                          const SizedBox(height: AppTheme.xl),
+                          _buildQuickActions(context, l10n, _customer!),
+                          const SizedBox(height: AppTheme.xl),
+                          _buildStatsRow(context, l10n, isMobile, _customer!),
+                          const SizedBox(height: AppTheme.xl),
+                          _buildContactInfo(context, l10n, _customer!),
+                          const SizedBox(height: AppTheme.xl),
+                          _buildOrderHistoryHeader(context, l10n),
+                          const SizedBox(height: AppTheme.lg),
+                          _buildOrderHistoryList(context, l10n),
+                        ],
                         const SizedBox(height: AppTheme.lg),
                       ],
                     ),
@@ -170,8 +267,41 @@ class CustomerDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildLoadingState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
+        child: CircularProgressIndicator(color: AppTheme.primaryColor),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, AppLocalizations l10n) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline_rounded, size: 40, color: AppTheme.errorColor),
+            const SizedBox(height: AppTheme.md),
+            Text(
+              _errorMessage ?? '',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: AppTheme.lg),
+            TextButton(
+              onPressed: _fetchCustomer,
+              child: Text('Coba lagi', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Build top bar (back button + title + menu)
-  Widget _buildTopBar(BuildContext context) {
+  Widget _buildTopBar(BuildContext context, AppLocalizations l10n) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -199,7 +329,7 @@ class CustomerDetailScreen extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             Text(
-              'Detail Pelanggan',
+              l10n.customerDetailTitle,
               style: GoogleFonts.poppins(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
@@ -208,86 +338,106 @@ class CustomerDetailScreen extends StatelessWidget {
             ),
           ],
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: AppTheme.cardColor,
-            borderRadius: BorderRadius.circular(11),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert, color: AppTheme.textPrimary),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        if (_customer != null)
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.cardColor,
+              borderRadius: BorderRadius.circular(11),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-            onSelected: (value) {
-              if (value == 'edit') {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Navigasi ke Edit Pelanggan akan ditambahkan')),
-                );
-              } else if (value == 'delete') {
-                _showDeleteConfirmation(context);
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_outlined, size: 18, color: AppTheme.textPrimary),
-                    const SizedBox(width: 10),
-                    Text('Edit Pelanggan', style: GoogleFonts.poppins(fontSize: 13.5)),
-                  ],
-                ),
+            child: PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert, color: AppTheme.textPrimary),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
               ),
-              PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                    const SizedBox(width: 10),
-                    Text('Hapus Pelanggan',
-                        style: GoogleFonts.poppins(color: Colors.red, fontSize: 13.5)),
-                  ],
+              onSelected: (value) {
+                if (value == 'edit') {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.editCustomerComingSoon)),
+                  );
+                } else if (value == 'delete') {
+                  _showDeleteConfirmation(context, l10n);
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_outlined, size: 18, color: AppTheme.textPrimary),
+                      const SizedBox(width: 10),
+                      Text(l10n.editCustomerMenuItem, style: GoogleFonts.poppins(fontSize: 13.5)),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                      const SizedBox(width: 10),
+                      Text(l10n.deleteCustomerMenuItem,
+                          style: GoogleFonts.poppins(color: Colors.red, fontSize: 13.5)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context) {
+  void _showDeleteConfirmation(BuildContext context, AppLocalizations l10n) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: Text('Hapus Pelanggan?', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: Text(l10n.deleteCustomerConfirmTitle, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         content: Text(
-          'Data pelanggan "$_name" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.',
+          l10n.deleteCustomerConfirmContent(_customer?.name ?? ''),
           style: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 13.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Batal',
+            child: Text(l10n.cancel,
                 style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Pelanggan berhasil dihapus (Testing mode)')),
-              );
+              try {
+                final user = FirebaseAuth.instance.currentUser;
+                if (user != null) {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .collection('customers')
+                      .doc(widget.customerId)
+                      .delete();
+                }
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.deleteCustomerSuccessTesting)),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.errorColor),
+                  );
+                }
+              }
             },
-            child: Text('Hapus',
+            child: Text(l10n.deleteButton,
                 style: GoogleFonts.poppins(color: Colors.red, fontWeight: FontWeight.w600)),
           ),
         ],
@@ -296,7 +446,7 @@ class CustomerDetailScreen extends StatelessWidget {
   }
 
   /// Build profile card
-  Widget _buildProfileCard(BuildContext context) {
+  Widget _buildProfileCard(BuildContext context, AppLocalizations l10n, _CustomerDetailData customer) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppTheme.xl),
@@ -317,7 +467,7 @@ class CustomerDetailScreen extends StatelessWidget {
             radius: 36,
             backgroundColor: AppTheme.primaryColor.withOpacity(0.12),
             child: Text(
-              _getInitials(_name),
+              _getInitials(customer.name),
               style: GoogleFonts.poppins(
                 color: AppTheme.primaryColor,
                 fontWeight: FontWeight.w700,
@@ -327,7 +477,7 @@ class CustomerDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppTheme.md),
           Text(
-            _name,
+            customer.name,
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -336,22 +486,22 @@ class CustomerDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Bergabung sejak ${_formatJoinDate(_joinDate)}',
+            l10n.joinedSinceLabel(_formatJoinDate(context, customer.joinDate)),
             style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textTertiary),
           ),
           const SizedBox(height: AppTheme.md),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 6),
             decoration: BoxDecoration(
-              color: (_isActive ? const Color(0xFF51CF66) : Colors.grey).withOpacity(0.12),
+              color: (customer.isActive ? const Color(0xFF51CF66) : Colors.grey).withOpacity(0.12),
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             ),
             child: Text(
-              _isActive ? 'Pelanggan Aktif' : 'Tidak Aktif',
+              customer.isActive ? l10n.activeCustomerLabel : l10n.customerInactiveLabel,
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: _isActive ? const Color(0xFF51CF66) : Colors.grey.shade600,
+                color: customer.isActive ? const Color(0xFF51CF66) : Colors.grey.shade600,
               ),
             ),
           ),
@@ -360,59 +510,34 @@ class CustomerDetailScreen extends StatelessWidget {
     );
   }
 
-  /// Build quick contact actions (telepon & WhatsApp)
-  Widget _buildQuickActions(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Membuka aplikasi telepon...')),
-              );
-            },
-            icon: const Icon(Icons.call_outlined, size: 18),
-            label: Text('Telepon', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5)),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
-              foregroundColor: AppTheme.primaryColor,
-              side: BorderSide(color: AppTheme.primaryColor),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-            ),
-          ),
+  /// Build quick contact action (WhatsApp)
+  Widget _buildQuickActions(BuildContext context, AppLocalizations l10n, _CustomerDetailData customer) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => _openWhatsapp(context, customer.phone, customer.name),
+        icon: const Icon(Icons.chat_outlined, size: 18),
+        label: Text(l10n.whatsappButton, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF51CF66),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
         ),
-        const SizedBox(width: AppTheme.md),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Membuka WhatsApp...')),
-              );
-            },
-            icon: const Icon(Icons.chat_outlined, size: 18),
-            label: Text('WhatsApp', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF51CF66),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   /// Build stats row
-  Widget _buildStatsRow(BuildContext context, bool isMobile) {
+  Widget _buildStatsRow(BuildContext context, AppLocalizations l10n, bool isMobile, _CustomerDetailData customer) {
     return Row(
       children: [
         Expanded(
           child: _StatTile(
             icon: Icons.receipt_long_outlined,
-            label: 'Total Pesanan',
-            value: '$_totalOrders',
+            label: l10n.totalOrdersLabel,
+            value: '${customer.totalOrders}',
             color: AppTheme.primaryColor,
           ),
         ),
@@ -420,8 +545,8 @@ class CustomerDetailScreen extends StatelessWidget {
         Expanded(
           child: _StatTile(
             icon: Icons.payments_outlined,
-            label: 'Total Belanja',
-            value: _formatCurrency(_totalSpent),
+            label: l10n.totalSpentLabel,
+            value: _formatCurrency(customer.totalSpent),
             color: const Color(0xFF51CF66),
           ),
         ),
@@ -430,7 +555,7 @@ class CustomerDetailScreen extends StatelessWidget {
   }
 
   /// Build contact info section
-  Widget _buildContactInfo(BuildContext context) {
+  Widget _buildContactInfo(BuildContext context, AppLocalizations l10n, _CustomerDetailData customer) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppTheme.lg),
@@ -449,7 +574,7 @@ class CustomerDetailScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Informasi Kontak',
+            l10n.contactInfoTitle,
             style: GoogleFonts.poppins(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -457,22 +582,22 @@ class CustomerDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppTheme.lg),
-          _ContactRow(icon: Icons.phone_outlined, label: 'Telepon', value: _phone),
+          _ContactRow(icon: Icons.phone_outlined, label: l10n.phoneLabel, value: customer.phone),
           const SizedBox(height: AppTheme.md),
-          _ContactRow(icon: Icons.mail_outline_rounded, label: 'Email', value: _email),
+          _ContactRow(icon: Icons.mail_outline_rounded, label: l10n.emailLabel, value: customer.email),
           const SizedBox(height: AppTheme.md),
-          _ContactRow(icon: Icons.location_on_outlined, label: 'Alamat', value: _address),
+          _ContactRow(icon: Icons.location_on_outlined, label: l10n.addressLabel, value: customer.address),
         ],
       ),
     );
   }
 
-  Widget _buildOrderHistoryHeader(BuildContext context) {
+  Widget _buildOrderHistoryHeader(BuildContext context, AppLocalizations l10n) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Riwayat Pesanan',
+          l10n.orderHistoryTitle,
           style: GoogleFonts.poppins(
             fontSize: 15,
             fontWeight: FontWeight.w600,
@@ -482,11 +607,11 @@ class CustomerDetailScreen extends StatelessWidget {
         TextButton(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Navigasi ke semua riwayat pesanan akan ditambahkan')),
+              SnackBar(content: Text(l10n.viewAllOrdersComingSoon)),
             );
           },
           child: Text(
-            'Lihat Semua',
+            l10n.viewAllLabel,
             style: GoogleFonts.poppins(color: AppTheme.primaryColor, fontWeight: FontWeight.w600, fontSize: 13),
           ),
         ),
@@ -494,13 +619,13 @@ class CustomerDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOrderHistoryList(BuildContext context) {
+  Widget _buildOrderHistoryList(BuildContext context, AppLocalizations l10n) {
     if (_orderHistory.isEmpty) {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: AppTheme.xl),
         alignment: Alignment.center,
         child: Text(
-          'Belum ada riwayat pesanan',
+          l10n.noOrderHistoryLabel,
           style: GoogleFonts.poppins(color: AppTheme.textTertiary),
         ),
       );
@@ -536,14 +661,14 @@ class CustomerDetailScreen extends StatelessWidget {
                                 fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.textPrimary)),
                         const SizedBox(width: 6),
                         Text(
-                          '· ${order.itemCount} item',
+                          l10n.orderItemCountLabel(order.itemCount),
                           style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textTertiary),
                         ),
                       ],
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      _formatOrderDate(order.date),
+                      _formatOrderDate(l10n, order.date),
                       style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textTertiary),
                     ),
                   ],
@@ -556,7 +681,7 @@ class CustomerDetailScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  _getStatusLabel(order.status),
+                  _getStatusLabel(l10n, order.status),
                   style: GoogleFonts.poppins(fontSize: 10.5, fontWeight: FontWeight.w700, color: statusColor),
                 ),
               ),
