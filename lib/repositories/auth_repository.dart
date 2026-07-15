@@ -1,19 +1,22 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(
     FirebaseAuth.instance,
-    FirebaseFirestore.instance, 
+    FirebaseFirestore.instance,
+    GoogleSignIn(),
   );
 });
 
 class AuthRepository {
   final FirebaseAuth _auth;
-  final FirebaseFirestore _db; 
+  final FirebaseFirestore _db;
+  final GoogleSignIn _googleSignIn;
 
-  AuthRepository(this._auth, this._db);
+  AuthRepository(this._auth, this._db, this._googleSignIn);
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
@@ -30,7 +33,7 @@ class AuthRepository {
     required String password,
     required String name,
     required String phone,
-    String role = 'owner', 
+    String role = 'owner',
   }) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
@@ -46,7 +49,7 @@ class AuthRepository {
           'name': name,
           'email': email,
           'phone': phone,
-          'role': role, 
+          'role': role,
           'emailVerified': false,
           'createdAt': FieldValue.serverTimestamp(),
         });
@@ -70,6 +73,60 @@ class AuthRepository {
       return await _auth.signInWithEmailAndPassword(email: email, password: password);
     } on FirebaseAuthException catch (e) {
       throw Exception(e.message ?? 'Email atau password salah.');
+    }
+  }
+
+  /// Login/register otomatis pakai akun Google.
+  ///
+  /// Return `null` (BUKAN throw) kalau user menutup/cancel popup pilih
+  /// akun — itu bukan error, jadi UI tidak perlu menampilkan dialog error
+  /// untuk kasus ini. Exception hanya dilempar untuk kegagalan yang
+  /// sebenarnya (network, akun disabled, dst).
+  ///
+  /// Kalau ini pertama kalinya user tsb sign in (dicek lewat
+  /// `additionalUserInfo.isNewUser`), dokumen users/{uid} dibuat dengan
+  /// schema yang SAMA dengan `registerWithEmailAndPassword` (uid, name,
+  /// email, phone, role, emailVerified, createdAt) supaya redirect logic
+  /// di routes.dart (cek profileCompleted/companyCompleted/dst) tetap
+  /// konsisten untuk user yang masuk lewat Google.
+  ///
+  /// Email dari akun Google sudah pasti terverifikasi oleh Google sendiri,
+  /// jadi `emailVerified` langsung diset true dan step /verify-email
+  /// otomatis ke-skip oleh redirect logic (asal routes.dart membaca field
+  /// ini, bukan cuma `user.emailVerified` dari Firebase Auth).
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        // User menutup/cancel popup pilih akun — bukan error.
+        return null;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+      final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+
+      if (user != null && isNewUser) {
+        await _db.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'name': user.displayName ?? '',
+          'email': user.email ?? '',
+          'phone': user.phoneNumber ?? '',
+          'role': 'owner',
+          'emailVerified': true,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      return userCredential;
+    } on FirebaseAuthException catch (e) {
+      throw Exception(e.message ?? 'Gagal login dengan Google.');
     }
   }
 
@@ -289,7 +346,12 @@ class AuthRepository {
     return query.docs.isNotEmpty;
   }
 
+  /// Sign out dari Firebase Auth SEKALIGUS dari sesi Google (kalau user
+  /// login lewat Google). Kalau cuma _auth.signOut() tanpa ini, Google
+  /// Sign-In popup kadang langsung auto-pilih akun yang sama tanpa nanya
+  /// lagi saat user coba login ulang.
   Future<void> signOut() async {
+    await _googleSignIn.signOut();
     await _auth.signOut();
   }
 

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/themes/app_theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../repositories/auth_repository.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input.dart';
 
@@ -22,6 +23,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   late TextEditingController _passwordController;
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
+
+  // State loading terpisah untuk Google Sign-In, supaya tombol Email
+  // dan tombol Google tidak saling mengunci satu sama lain.
+  bool _isGoogleLoading = false;
 
   @override
   void initState() {
@@ -61,6 +66,111 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       _showErrorDialog("Terjadi kesalahan sistem: $e");
     }
+  }
+
+  /// Login/register otomatis pakai akun Google lewat AuthRepository.
+  /// Beda jalur dari _handleLogin (yang lewat loginProvider) karena
+  /// signInWithGoogle() sudah handle create Firestore doc untuk user
+  /// baru sekaligus di dalam repository-nya.
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isGoogleLoading = true);
+
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final result = await authRepo.signInWithGoogle();
+
+      // result == null berarti user menutup/cancel popup pilih akun.
+      // Ini bukan error, jadi tidak perlu munculkan dialog apa pun.
+      if (result == null) return;
+
+      if (mounted) {
+        context.go('/dashboard');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showGoogleErrorDialog(e.toString().replaceAll('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }
+
+  /// Dialog khusus kegagalan Google Sign-In — dibedakan dari
+  /// _showErrorDialog biasa (yang dipakai login email/password) supaya
+  /// tampilannya lebih ramah: ada ikon di lingkaran berwarna, dan tombol
+  /// aksi langsung "Coba Lagi" biar user tidak perlu buka menu lagi.
+  void _showGoogleErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppTheme.errorColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error_outline_rounded,
+                  color: AppTheme.errorColor,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Login Google Gagal',
+                style: GoogleFonts.poppins(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 13.5,
+                  color: AppTheme.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Mengerti',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _handleAuthError(String errorCode) {
@@ -124,25 +234,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 800;
 
-            // Mobile: 1 kolom, header brand + form
+            // Mobile: 1 kolom, header brand + form.
+            // Card form di-center VERTIKAL di sisa ruang layar (bukan
+            // cuma nempel di bawah header) lewat pola ConstrainedBox
+            // (minHeight) + IntrinsicHeight + Expanded + Center. Kalau
+            // layar HP-nya tinggi, card jadi di tengah, bukan mepet atas.
+            // Kalau konten kepanjangan (mis. keyboard muncul), tetap bisa
+            // di-scroll normal karena masih dibungkus SingleChildScrollView.
             if (isMobile) {
-              return SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildMobileBrandHeader(),
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 440),
-                          child: _buildLoginCard(isLoading, isMobile),
+              return LayoutBuilder(
+                builder: (context, outerConstraints) {
+                  return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minHeight: outerConstraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildMobileBrandHeader(),
+                            Expanded(
+                              child: Center(
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(20, 28, 20, 24),
+                                  child: ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 440),
+                                    child: _buildLoginCard(isLoading, isMobile),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               );
             }
 
@@ -201,7 +331,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 _buildLogoBadge(size: 88, iconSize: 44),
                 const SizedBox(height: 40),
                 Text(
-                  'NetWash',
+                  'Netwash',
                   style: GoogleFonts.poppins(
                     fontSize: 42,
                     fontWeight: FontWeight.w700,
@@ -275,60 +405,69 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // ringkas dengan logo & nama brand
   // ==========================================================
   Widget _buildMobileBrandHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
-      decoration: const BoxDecoration(
-        gradient: AppTheme.brandGradient,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
-        ),
+  return Container(
+    width: double.infinity,
+    decoration: const BoxDecoration(
+      gradient: AppTheme.brandGradient,
+      borderRadius: BorderRadius.only(
+        bottomLeft: Radius.circular(32),
+        bottomRight: Radius.circular(32),
       ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
-              child: CustomPaint(painter: _LaundryPatternPainter()),
+    ),
+    // Kita gunakan Stack hanya untuk background, lalu gunakan Column
+    // di atasnya untuk konten agar mudah di-center.
+    child: Stack(
+      children: [
+        // Background dekoratif
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(32),
+              bottomRight: Radius.circular(32),
+            ),
+            child: CustomPaint(painter: _LaundryPatternPainter()),
+          ),
+        ),
+        // Konten utama: di-center di sini
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Agar Column tidak melebar ke bawah
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center, // Horizontal center
+              children: [
+                _buildLogoBadge(size: 68, iconSize: 34),
+                const SizedBox(height: 18),
+                Text(
+                  'NetWash',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Kelola perusahaan & karyawan laundry Anda',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white.withOpacity(0.9),
+                    height: 1.5,
+                  ),
+                ),
+              ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _buildLogoBadge(size: 68, iconSize: 34),
-              const SizedBox(height: 18),
-              Text(
-                'NetWash',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Kelola perusahaan & karyawan laundry Anda',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white.withOpacity(0.9),
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   /// Badge logo putih membulat berbayang — dipakai di mobile & desktop
   Widget _buildLogoBadge({required double size, required double iconSize}) {
@@ -563,24 +702,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           const SizedBox(height: 24),
 
           // Social Login
-          Row(
-            children: [
-              Expanded(
-                child: _buildSocialButton(
-                  icon: Icons.g_mobiledata,
-                  label: 'Google',
-                  onPressed: isLoading ? null : _handleGoogleLogin,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildSocialButton(
-                  icon: Icons.phone_outlined,
-                  label: 'WhatsApp',
-                  onPressed: isLoading ? null : _handlePhoneLogin,
-                ),
-              ),
-            ],
+          _buildSocialButton(
+            icon: Icons.g_mobiledata,
+            label: _isGoogleLoading ? 'Memproses...' : 'Masuk dengan Google',
+            isLoadingButton: _isGoogleLoading,
+            onPressed: (isLoading || _isGoogleLoading)
+                ? null
+                : _handleGoogleLogin,
           ),
 
           const SizedBox(height: 24),
@@ -625,10 +753,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     required IconData icon,
     required String label,
     required VoidCallback? onPressed,
+    bool isLoadingButton = false,
   }) {
     return OutlinedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 18),
+      icon: isLoadingButton
+          ? SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppTheme.primaryColor,
+              ),
+            )
+          : Icon(icon, size: 18),
       label: Text(
         label,
         style: GoogleFonts.poppins(
@@ -647,26 +785,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         splashFactory: NoSplash.splashFactory,
-      ),
-    );
-  }
-
-  void _handleGoogleLogin() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Google login akan diimplement segera'),
-        backgroundColor: AppTheme.primaryColor,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _handlePhoneLogin() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('WhatsApp login akan diimplement segera'),
-        backgroundColor: AppTheme.primaryColor,
-        duration: Duration(seconds: 2),
       ),
     );
   }

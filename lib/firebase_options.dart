@@ -56,22 +56,24 @@ class DefaultFirebaseOptions {
     projectId: 'netwash-id',
     storageBucket: 'netwash-id.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAMp3PJNC2EnzJzYDk3u_gSU5DZTADBN8k',
     appId: '1:397480771765:ios:c4d1135a8d9b8f6f4d3efc',
     messagingSenderId: '397480771765',
     projectId: 'netwash-id',
     storageBucket: 'netwash-id.firebasestorage.app',
+    androidClientId: '397480771765-mjkcg7r81ot650k6dtqnuvifjhvrofqu.apps.googleusercontent.com',
+    iosClientId: '397480771765-c48mulrbrb40mmoqjacnt0cm1ii74aet.apps.googleusercontent.com',
     iosBundleId: 'com.netwash.pklLaundry',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyAMp3PJNC2EnzJzYDk3u_gSU5DZTADBN8k',
     appId: '1:397480771765:ios:c4d1135a8d9b8f6f4d3efc',
     messagingSenderId: '397480771765',
     projectId: 'netwash-id',
     storageBucket: 'netwash-id.firebasestorage.app',
+    androidClientId: '397480771765-mjkcg7r81ot650k6dtqnuvifjhvrofqu.apps.googleusercontent.com',
+    iosClientId: '397480771765-c48mulrbrb40mmoqjacnt0cm1ii74aet.apps.googleusercontent.com',
     iosBundleId: 'com.netwash.pklLaundry',
   );
 

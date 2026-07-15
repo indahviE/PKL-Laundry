@@ -39,6 +39,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _showConfirmPassword = false;
   String? _errorMessage;
 
+  // State loading terpisah untuk daftar via Google, supaya tombol form
+  // email dan tombol Google tidak saling mengunci satu sama lain.
+  bool _isGoogleLoading = false;
+
   /// Register publik ini untuk Pemilik Usaha (Owner) yang mendaftarkan
   /// bisnis laundry-nya sebagai tenant baru di platform NetWash.
   /// Karyawan nantinya ditambahkan oleh Owner sendiri dari dashboard,
@@ -150,6 +154,125 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
+  /// Daftar/masuk pakai akun Google. Berbeda dari _handleRegister:
+  /// - Tidak butuh form (nama & email diambil langsung dari akun Google).
+  /// - Email dari Google sudah terverifikasi, jadi step /verify-email
+  ///   di-skip — cukup arahkan ke '/dashboard' dan biarkan redirect
+  ///   GoRouter yang menentukan step onboarding selanjutnya (Setup
+  ///   Profile/Perusahaan/dst) berdasarkan flag di Firestore.
+  /// - Kalau akun Google itu ternyata sudah pernah dipakai login
+  ///   sebelumnya (bukan user baru), ini otomatis jadi "login", bukan
+  ///   duplikat akun — sesuai perilaku signInWithGoogle() di repository.
+  Future<void> _handleGoogleRegister() async {
+    setState(() {
+      _isGoogleLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final router = GoRouter.of(context);
+      final authRepo = ref.read(authRepositoryProvider);
+
+      final result = await authRepo.signInWithGoogle();
+
+      // result == null berarti user menutup/cancel popup pilih akun.
+      // Bukan error, jadi tidak perlu munculkan dialog apa pun.
+      if (result == null) return;
+
+      if (mounted) {
+        router.go('/dashboard');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showGoogleErrorDialog(e.toString().replaceAll('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isGoogleLoading = false);
+      }
+    }
+  }
+
+  /// Dialog khusus kegagalan Google Sign-In — tampilan lebih rapi (ikon
+  /// di lingkaran berwarna + tombol aksi) dibanding banner error inline
+  /// yang dipakai untuk kegagalan form email/password, karena kegagalan
+  /// Google biasanya butuh perhatian user (mis. coba akun lain) bukan
+  /// sekadar info kecil di atas form.
+  void _showGoogleErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppTheme.errorColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error_outline_rounded,
+                  color: AppTheme.errorColor,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Daftar dengan Google Gagal',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 13.5,
+                  color: AppTheme.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Mengerti',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Kembali ke halaman login
   void _handleBackToLogin() {
     context.go('/login');
@@ -164,25 +287,42 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 800;
 
-            // Mobile: header brand gradient + card form
+            // Mobile: header brand gradient + card form.
+            // Sama seperti LoginScreen, card di-center vertikal di sisa
+            // ruang layar (bukan cuma nempel di bawah header) supaya
+            // tidak terlihat "menggantung" di atas pada layar HP tinggi.
             if (isMobile) {
-              return SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildMobileBrandHeader(),
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 440),
-                          child: _buildRegisterCard(isMobile),
+              return LayoutBuilder(
+                builder: (context, outerConstraints) {
+                  return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minHeight: outerConstraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildMobileBrandHeader(),
+                            Expanded(
+                              child: Center(
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(20, 28, 20, 24),
+                                  child: ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 440),
+                                    child: _buildRegisterCard(isMobile),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               );
             }
 
@@ -493,6 +633,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           _buildTermsCheckbox(),
           SizedBox(height: isMobile ? 24 : 28),
           _buildRegisterButton(),
+          SizedBox(height: isMobile ? 24 : 28),
+          _buildOrDivider(),
+          SizedBox(height: isMobile ? 24 : 28),
+          _buildGoogleButton(),
           SizedBox(height: isMobile ? 20 : 24),
           _buildLoginLink(),
         ],
@@ -698,7 +842,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: !_isLoading ? _handleRegister : null,
+        onPressed: (!_isLoading && !_isGoogleLoading) ? _handleRegister : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primaryColor,
           disabledBackgroundColor: AppTheme.primaryColor.withOpacity(0.5),
@@ -741,6 +885,88 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
+  Widget _buildOrDivider() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.borderColor.withOpacity(0),
+                  AppTheme.borderColor,
+                ],
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'atau',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textTertiary,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.borderColor,
+                  AppTheme.borderColor.withOpacity(0),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Tombol "Daftar dengan Google" — full-width, beda dari LoginScreen yang
+  /// setengah lebar (berdampingan dengan WhatsApp), karena di sini belum
+  /// ada opsi WhatsApp untuk register.
+  Widget _buildGoogleButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: (!_isLoading && !_isGoogleLoading) ? _handleGoogleRegister : null,
+        icon: _isGoogleLoading
+            ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppTheme.primaryColor,
+                ),
+              )
+            : const Icon(Icons.g_mobiledata, size: 22),
+        label: Text(
+          _isGoogleLoading ? 'Memproses...' : 'Daftar dengan Google',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppTheme.primaryColor,
+          side: BorderSide(color: AppTheme.borderColor, width: 1.2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          ),
+          splashFactory: NoSplash.splashFactory,
+        ),
+      ),
+    );
+  }
+
   Widget _buildLoginLink() {
     return Center(
       child: Wrap(
@@ -754,7 +980,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
           ),
           TextButton(
-            onPressed: !_isLoading ? _handleBackToLogin : null,
+            onPressed: (!_isLoading && !_isGoogleLoading) ? _handleBackToLogin : null,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
               splashFactory: NoSplash.splashFactory,
