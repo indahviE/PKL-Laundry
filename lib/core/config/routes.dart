@@ -267,6 +267,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
 // ==================== ORDERS ====================
       GoRoute(
+        path: '/create-order',
+        name: 'create-order',
+        builder: (context, state) => const CreateOrderScreen(),
+      ),
+      GoRoute(
         path: '/orders/create',
         name: 'orders-create',
         builder: (context, state) => const CreateOrderScreen(), 
