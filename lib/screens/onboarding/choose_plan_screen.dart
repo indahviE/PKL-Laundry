@@ -27,13 +27,24 @@ class PricingPlan {
   });
 }
 
-/// Choose Plan Screen — Step 5 dari onboarding.
-/// Sesuai PRD section 5.1 User Flow, Step 5: Pilih Paket.
-/// Alur: Setup Perusahaan → [halaman ini] → Pembayaran (Stripe) → Dashboard.
-/// Desain disamakan dengan screen onboarding lain (tanpa AppBar biru
-/// bawaan, warna & font konsisten AppTheme + GoogleFonts.poppins).
+/// Choose Plan Screen — Step 5 dari onboarding, DAN juga dipakai ulang
+/// buat flow "Upgrade Paket" dari Settings > Subscription.
+///
+/// isUpgrade = false (default): mode onboarding normal.
+///   Alur: Setup Perusahaan → [halaman ini] → Pembayaran (Stripe) → Dashboard.
+/// isUpgrade = true: dipanggil dari SubscriptionScreen ketika user yang
+///   SUDAH aktif langganan mau ganti/upgrade paket.
+///   - Step indicator onboarding disembunyikan (bukan bagian onboarding lagi)
+///   - Header & tombol pilih paket teksnya disesuaikan
+///   - Tombol back balik ke /settings/subscription, bukan /setup-company
+///   - Flag isUpgrade diteruskan ke halaman /payment lewat extra
 class ChoosePlanScreen extends ConsumerStatefulWidget {
-  const ChoosePlanScreen({Key? key}) : super(key: key);
+  final bool isUpgrade;
+
+  const ChoosePlanScreen({
+    Key? key,
+    this.isUpgrade = false,
+  }) : super(key: key);
 
   @override
   ConsumerState<ChoosePlanScreen> createState() => _ChoosePlanScreenState();
@@ -44,6 +55,13 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   bool _isYearly = false;
   String? _selectedPlan;
 
+  // Nama paket yang SEDANG aktif dipakai user (cuma relevan pas
+  // widget.isUpgrade == true). Dipakai buat nge-disable card paket yang
+  // sama supaya user nggak bisa "upgrade" ke paket yang sama persis
+  // dengan yang udah dia pakai sekarang.
+  String? _currentPlanName;
+  bool _loadingCurrentPlan = false;
+
   // Pricing plans
   late final List<PricingPlan> _plans;
 
@@ -51,6 +69,27 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   void initState() {
     super.initState();
     _initializePlans();
+    if (widget.isUpgrade) {
+      _loadCurrentPlan();
+    }
+  }
+
+  Future<void> _loadCurrentPlan() async {
+    setState(() => _loadingCurrentPlan = true);
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final profile = await authRepo.getUserProfile();
+      final subscriptionField = profile?['subscription'] as Map<String, dynamic>?;
+      if (mounted) {
+        setState(() {
+          _currentPlanName = subscriptionField?['plan'] as String?;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loadingCurrentPlan = false);
+      }
+    }
   }
 
   /// Initialize pricing plans
@@ -123,6 +162,11 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   /// terpisah lewat AuthRepository.hasActiveSubscription() /
   /// watchActiveSubscription(), bukan lewat flag ini.
   /// Sesuai PRD Step 5 → Step 6: Pilih Paket → lanjut ke Pembayaran.
+  ///
+  /// Kalau widget.isUpgrade true, savePlanChoice tetap dipanggil (biar
+  /// planChosen konsisten), tapi flag isUpgrade ikut diteruskan ke
+  /// /payment supaya PaymentScreen tau ini proration/upgrade, bukan
+  /// pembayaran pertama kali.
   Future<void> _handleSelectPlan(PricingPlan plan) async {
     if (_isNavigating) return;
 
@@ -138,6 +182,17 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
         isYearly: _isYearly,
       );
 
+      // WAJIB: companyId ini yang bakal disertakan di metadata Stripe
+      // Checkout Session, supaya webhook tahu company mana yang harus
+      // ditulis di dokumen subscription. Tanpa ini, pembayaran tetap
+      // sukses di Stripe tapi webhook gagal mengaktifkan limit paket baru.
+      final companyId = await authRepo.getPrimaryCompanyId();
+      if (companyId == null) {
+        throw Exception(
+          'Data perusahaan belum ditemukan. Selesaikan setup perusahaan terlebih dahulu.',
+        );
+      }
+
       if (!mounted) return;
       context.push(
         '/payment',
@@ -145,6 +200,8 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
           'planName': plan.name,
           'isYearly': _isYearly,
           'price': _getDisplayPrice(plan),
+          'isUpgrade': widget.isUpgrade,
+          'companyId': companyId,
         },
       );
     } catch (e) {
@@ -171,6 +228,8 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   void _handleBack() {
     if (context.canPop()) {
       context.pop();
+    } else if (widget.isUpgrade) {
+      context.go('/settings/subscription');
     } else {
       context.go('/setup-company');
     }
@@ -212,8 +271,10 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
                 children: [
                   _buildTopRow(),
                   const SizedBox(height: 20),
-                  _buildStepIndicator(),
-                  const SizedBox(height: 28),
+                  if (!widget.isUpgrade) ...[
+                    _buildStepIndicator(),
+                    const SizedBox(height: 28),
+                  ],
                   _buildHeader(),
                   const SizedBox(height: 28),
                   Center(child: _buildPeriodToggle()),
@@ -255,6 +316,7 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   }
 
   /// Step indicator — 7 langkah sesuai PRD. Posisi saat ini: 5.
+  /// Cuma dipanggil kalau bukan mode upgrade (lihat build()).
   Widget _buildStepIndicator() {
     const totalSteps = 7;
     const currentStep = 5;
@@ -293,7 +355,9 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          'Pilih Paket yang Sesuai',
+          widget.isUpgrade
+              ? 'Upgrade Paket Anda'
+              : 'Pilih Paket yang Sesuai',
           textAlign: TextAlign.center,
           style: GoogleFonts.poppins(
             fontSize: 24,
@@ -303,7 +367,9 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Setiap paket dirancang untuk memenuhi kebutuhan bisnis laundry Anda',
+          widget.isUpgrade
+              ? 'Pilih paket baru — perhitungan proration akan ditampilkan sebelum Anda konfirmasi'
+              : 'Setiap paket dirancang untuk memenuhi kebutuhan bisnis laundry Anda',
           textAlign: TextAlign.center,
           style: GoogleFonts.poppins(
             fontSize: 13.5,
@@ -411,6 +477,8 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
               period: _isYearly ? 'tahun' : 'bulan',
               isSelected: _selectedPlan == _plans[index].name,
               isLoading: _isNavigating && _selectedPlan == _plans[index].name,
+              isUpgrade: widget.isUpgrade,
+              isCurrentPlan: widget.isUpgrade && _currentPlanName == _plans[index].name,
               formatCurrency: _formatCurrency,
               onSelect: () => _handleSelectPlan(_plans[index]),
             ),
@@ -436,6 +504,8 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
                 isSelected: _selectedPlan == _plans[index].name,
                 isLoading:
                     _isNavigating && _selectedPlan == _plans[index].name,
+                isUpgrade: widget.isUpgrade,
+                isCurrentPlan: widget.isUpgrade && _currentPlanName == _plans[index].name,
                 formatCurrency: _formatCurrency,
                 onSelect: () => _handleSelectPlan(_plans[index]),
               ),
@@ -467,12 +537,13 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
               'Ya, Anda dapat meningkatkan, menurunkan, atau membatalkan paket kapan saja dari dashboard pengaturan.',
         ),
         const SizedBox(height: 12),
-        _FAQItem(
-          question: 'Apakah ada uji coba gratis?',
-          answer:
-              'Ya, Anda mendapatkan akses 14 hari gratis untuk semua paket sebelum pembayaran pertama.',
-        ),
-        const SizedBox(height: 12),
+        if (!widget.isUpgrade)
+          _FAQItem(
+            question: 'Apakah ada uji coba gratis?',
+            answer:
+                'Ya, Anda mendapatkan akses 14 hari gratis untuk semua paket sebelum pembayaran pertama.',
+          ),
+        if (!widget.isUpgrade) const SizedBox(height: 12),
         _FAQItem(
           question: 'Bagaimana dengan dukungan pelanggan?',
           answer:
@@ -494,6 +565,8 @@ class _PricingCard extends StatelessWidget {
   final String period;
   final bool isSelected;
   final bool isLoading;
+  final bool isUpgrade;
+  final bool isCurrentPlan;
   final String Function(double) formatCurrency;
   final VoidCallback onSelect;
 
@@ -503,6 +576,8 @@ class _PricingCard extends StatelessWidget {
     required this.period,
     required this.isSelected,
     this.isLoading = false,
+    this.isUpgrade = false,
+    this.isCurrentPlan = false,
     required this.formatCurrency,
     required this.onSelect,
   });
@@ -558,7 +633,26 @@ class _PricingCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (plan.isPopular)
+              if (isCurrentPlan)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'Paket Saat Ini',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                )
+              else if (plan.isPopular)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -629,12 +723,16 @@ class _PricingCard extends StatelessWidget {
             width: double.infinity,
             height: 46,
             child: ElevatedButton(
-              onPressed: !isLoading ? onSelect : null,
+              onPressed: (!isLoading && !isCurrentPlan) ? onSelect : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    isSelected ? plan.color : AppTheme.backgroundColor,
-                foregroundColor:
-                    isSelected ? Colors.white : AppTheme.textPrimary,
+                backgroundColor: isCurrentPlan
+                    ? AppTheme.borderColor
+                    : (isSelected ? plan.color : AppTheme.backgroundColor),
+                foregroundColor: isCurrentPlan
+                    ? AppTheme.textSecondary
+                    : (isSelected ? Colors.white : AppTheme.textPrimary),
+                disabledBackgroundColor: AppTheme.borderColor,
+                disabledForegroundColor: AppTheme.textSecondary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -652,7 +750,11 @@ class _PricingCard extends StatelessWidget {
                       ),
                     )
                   : Text(
-                      isSelected ? 'Paket Dipilih' : 'Pilih Paket',
+                      isCurrentPlan
+                          ? 'Paket Saat Ini'
+                          : (isSelected
+                              ? 'Paket Dipilih'
+                              : (isUpgrade ? 'Upgrade ke Paket Ini' : 'Pilih Paket')),
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,

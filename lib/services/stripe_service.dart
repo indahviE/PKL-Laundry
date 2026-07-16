@@ -41,11 +41,19 @@ class StripeService {
   /// `uid` user yang sedang login diselipkan sebagai `client_reference_id`
   /// di Stripe Checkout Session, supaya nanti Cloud Function/webhook tahu
   /// dokumen `subscriptions` ini harus ditulis ke user mana.
+  ///
+  /// `companyId` WAJIB disertakan (diteruskan ke metadata Stripe Checkout
+  /// Session). Tanpa ini, webhook (`stripe-webhook.js`) tidak tahu
+  /// dokumen subscription baru ini milik company yang mana, sehingga
+  /// `company_id` di Firestore kosong dan
+  /// `SubscriptionRepository.streamActiveSubscription(companyId)` selalu
+  /// gagal menemukan subscription aktif walau pembayaran sukses.
   Future<StripeCheckoutSession> createCheckoutSession({
     required String planName,
     required bool isYearly,
     required String successUrl,
     required String cancelUrl,
+    required String companyId,
   }) async {
     final planId = planIdByName[planName];
     if (planId == null) {
@@ -66,6 +74,7 @@ class StripeService {
           'successUrl': successUrl,
           'cancelUrl': cancelUrl,
           'uid': uid,
+          'companyId': companyId,
         }),
       );
 
