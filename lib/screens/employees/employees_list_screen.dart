@@ -73,6 +73,20 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
+      // CTA "Karyawan Baru" dipindah ke FAB, sama persis polanya dengan
+      // LaundriesListScreen ("Cabang Baru") biar konsisten se-app —
+      // sebelumnya ini tombol ElevatedButton biasa di pojok kanan header.
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/employees/create'),
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 2,
+        icon: const Icon(Icons.person_add_alt_1_outlined, size: 20),
+        label: Text(
+          'Karyawan Baru',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
+        ),
+      ),
       body: SafeArea(
         child: employeesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -121,6 +135,9 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
                     employees.isEmpty
                         ? _buildEmptyState()
                         : _buildEmployeesList(employees),
+                    // Spacer biar list terakhir gak ketutupan FAB, sama
+                    // kayak yang dipakai di LaundriesListScreen.
+                    const SizedBox(height: 88),
                   ],
                 ),
               ),
@@ -132,67 +149,60 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
   }
 
   /// Header: tombol back (conditional, hanya muncul kalau screen ini bisa
-  /// di-pop) + icon + judul, dan CTA "Baru" di kanan.
+  /// di-pop) + icon + judul. CTA "Baru" sekarang di FAB (lihat build()),
+  /// jadi header ini murni informasional, sama pola dengan
+  /// LaundriesListScreen.
   Widget _buildHeader(BuildContext context) {
     final canGoBack = context.canPop();
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            if (canGoBack) ...[
-              InkWell(
-                onTap: () => context.pop(),
-                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppTheme.cardColor,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.06),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 20),
-                ),
-              ),
-              const SizedBox(width: AppTheme.md),
-            ],
-            Container(
-              width: 44,
-              height: 44,
+        if (canGoBack) ...[
+          InkWell(
+            onTap: () => context.pop(),
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            child: Container(
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(13),
+                color: AppTheme.cardColor,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: Icon(Icons.badge_outlined, color: AppTheme.primaryColor, size: 22),
+              child: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 20),
             ),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Karyawan',
-                    style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                Text('Kelola staf dan hak akses cabang',
-                    style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
-              ],
-            ),
-          ],
+          ),
+          const SizedBox(width: AppTheme.md),
+        ],
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: Icon(Icons.badge_outlined, color: AppTheme.primaryColor, size: 22),
         ),
-        ElevatedButton.icon(
-          onPressed: () => context.push('/employees/create'),
-          icon: const Icon(Icons.add, size: 18),
-          label: const Text('Baru'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryColor,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Karyawan',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+              Text('Kelola staf dan hak akses cabang',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+            ],
           ),
         ),
       ],
@@ -236,6 +246,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
             selected: isSelected,
             onSelected: (val) => setState(() => _selectedFilter = f.$1),
             avatar: Icon(f.$3, size: 16, color: isSelected ? Colors.white : AppTheme.primaryColor),
+            showCheckmark: false,
             selectedColor: AppTheme.primaryColor,
             labelStyle: GoogleFonts.poppins(color: isSelected ? Colors.white : AppTheme.textSecondary, fontSize: 12),
           ),
