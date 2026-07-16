@@ -622,10 +622,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get contactInfoTitle => 'Informasi Kontak';
 
   @override
-  String get phoneLabel => 'Telepon';
+  String get phoneLabel => 'Nomor Telepon';
 
   @override
-  String get addressLabel => 'Alamat';
+  String get addressLabel => 'Alamat Lengkap';
 
   @override
   String get orderHistoryTitle => 'Riwayat Pesanan';
@@ -717,4 +717,336 @@ class AppLocalizationsId extends AppLocalizations {
   String loadCustomersError(Object error) {
     return 'Gagal memuat data pelanggan: $error';
   }
+
+  @override
+  String get laundriesTitle => 'Cabang';
+
+  @override
+  String get laundriesSubtitle => 'Kelola cabang laundry Anda';
+
+  @override
+  String get searchLaundryHint => 'Cari nama, kode, atau kota cabang...';
+
+  @override
+  String get filterAllLaundries => 'Semua';
+
+  @override
+  String get filterActiveLaundries => 'Aktif';
+
+  @override
+  String get filterInactiveLaundries => 'Tidak Aktif';
+
+  @override
+  String get totalLaundriesLabel => 'Total Cabang';
+
+  @override
+  String get activeLaundriesLabel => 'Cabang Aktif';
+
+  @override
+  String get emptyLaundriesTitle => 'Belum ada cabang';
+
+  @override
+  String get emptyLaundriesSubtitle => 'Tambahkan cabang baru untuk memulai';
+
+  @override
+  String get newBranchButton => 'Cabang Baru';
+
+  @override
+  String get addBranchButton => 'Tambah Cabang';
+
+  @override
+  String get loadLaundriesError => 'Gagal memuat data cabang';
+
+  @override
+  String get addBranchTitle => 'Tambah Cabang Baru';
+
+  @override
+  String get editBranchTitle => 'Edit Data Cabang';
+
+  @override
+  String get addBranchInfo =>
+      'Sistem akan memvalidasi limitasi kuota cabang sesuai paket langganan Anda secara otomatis sebelum menyimpan data.';
+
+  @override
+  String get editBranchInfo =>
+      'Perubahan akan langsung tersimpan ke data cabang ini. Kuota paket langganan tidak berlaku untuk pengeditan.';
+
+  @override
+  String get ownerCompanyLabel => 'Perusahaan Pemilik Cabang';
+
+  @override
+  String get registerCompanyFirst => '+ Daftarkan Perusahaan Terlebih Dahulu';
+
+  @override
+  String get branchNameLabel => 'Nama Cabang';
+
+  @override
+  String get branchCodeLabel => 'Kode Cabang';
+
+  @override
+  String get cityLabel => 'Kota';
+
+  @override
+  String get provinceLabel => 'Provinsi';
+
+  @override
+  String get emailOptionalLabel => 'Email Cabang (Opsional)';
+
+  @override
+  String get managerOptionalLabel => 'Manajer Cabang (Opsional)';
+
+  @override
+  String get noEmployeeDataInfo =>
+      'Belum ada data karyawan. Manajer bisa ditugaskan belakangan.';
+
+  @override
+  String get dailyCapacityLabel => 'Kapasitas Harian (Jumlah Order)';
+
+  @override
+  String get mapLocationLabel => 'Titik Lokasi Peta (Opsional)';
+
+  @override
+  String get operatingHoursLabel => 'Jam Operasional';
+
+  @override
+  String get useSameHoursLabel => 'Gunakan jam yang sama untuk semua hari';
+
+  @override
+  String get everyDayLabel => 'Setiap Hari';
+
+  @override
+  String get activeStatusLabel => 'Status Cabang Aktif';
+
+  @override
+  String get saveBranchButton => 'Simpan Data Cabang';
+
+  @override
+  String get updateBranchButton => 'Simpan Perubahan';
+
+  @override
+  String get branchNameEmpty => 'Nama cabang tidak boleh kosong';
+
+  @override
+  String get branchCodeEmpty => 'Kode cabang tidak boleh kosong';
+
+  @override
+  String get addressEmpty => 'Alamat wajib diisi';
+
+  @override
+  String get fieldRequired => 'Wajib diisi';
+
+  @override
+  String get phoneEmpty => 'Nomor telepon wajib diisi';
+
+  @override
+  String get capacityEmpty => 'Kapasitas wajib diisi';
+
+  @override
+  String get quotaReachedTitle => 'Batas Kuota Tercapai';
+
+  @override
+  String get quotaReachedContent =>
+      'Jumlah cabang Anda telah mencapai batas maksimal paket langganan saat ini.';
+
+  @override
+  String get upgradePlanButton => 'Upgrade Paket';
+
+  @override
+  String get branchAddSuccess => 'Cabang laundry berhasil ditambahkan!';
+
+  @override
+  String get branchUpdateSuccess => 'Perubahan cabang berhasil disimpan!';
+
+  @override
+  String get deleteBranchTitle => 'Hapus Cabang?';
+
+  @override
+  String deleteBranchConfirm(Object name) {
+    return 'Cabang \"$name\" akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.';
+  }
+
+  @override
+  String get contactInfoSection => 'Informasi Kontak';
+
+  @override
+  String get capacityLocationSection => 'Kapasitas & Lokasi';
+
+  @override
+  String get createdLabel => 'Dibuat';
+
+  @override
+  String get updatedLabel => 'Diperbarui';
+
+  @override
+  String get todayLabel => 'Hari ini';
+
+  @override
+  String get monday => 'Senin';
+
+  @override
+  String get tuesday => 'Selasa';
+
+  @override
+  String get wednesday => 'Rabu';
+
+  @override
+  String get thursday => 'Kamis';
+
+  @override
+  String get friday => 'Jumat';
+
+  @override
+  String get saturday => 'Sabtu';
+
+  @override
+  String get sunday => 'Minggu';
+
+  @override
+  String cardCapacityLabel(Object capacity) {
+    return 'Kapasitas $capacity';
+  }
+
+  @override
+  String get selectCompanyHint => 'Pilih perusahaan';
+
+  @override
+  String get branchNameHint => 'Contoh: Cabang Merdeka';
+
+  @override
+  String get branchCodeHint => 'Contoh: JKT001';
+
+  @override
+  String get addressHint => 'Contoh: Jl. Merdeka No. 123';
+
+  @override
+  String get cityHint => 'Jakarta';
+
+  @override
+  String get provinceHint => 'DKI Jakarta';
+
+  @override
+  String get branchPhoneLabel => 'Nomor Telepon Cabang';
+
+  @override
+  String get branchPhoneHint => 'Contoh: +6281234567890';
+
+  @override
+  String get branchEmailHint => 'Contoh: cabang@laundry.com';
+
+  @override
+  String get selectManagerHint => 'Pilih manajer cabang';
+
+  @override
+  String get capacityHint => 'Contoh: 100';
+
+  @override
+  String get latitudeHint => 'Latitude';
+
+  @override
+  String get longitudeHint => 'Longitude';
+
+  @override
+  String get companyRequiredValidator => 'Perusahaan wajib dipilih';
+
+  @override
+  String get defaultCompanyName => 'Perusahaan Tanpa Nama';
+
+  @override
+  String get defaultEmployeeName => 'Karyawan';
+
+  @override
+  String get branchDataNotFoundError => 'Data cabang tidak ditemukan.';
+
+  @override
+  String loadBranchDataError(String error) {
+    return 'Gagal memuat data cabang: $error';
+  }
+
+  @override
+  String get companyNotSelectedWarning =>
+      'Perusahaan belum dipilih atau belum dibuat!';
+
+  @override
+  String get userSessionExpiredError => 'Sesi user berakhir.';
+
+  @override
+  String saveBranchError(String error) {
+    return 'Gagal menyimpan data cabang: $error';
+  }
+
+  @override
+  String get branchDetailTitle => 'Detail Cabang';
+
+  @override
+  String deleteBranchConfirmDetail(String name, String code) {
+    return 'Cabang \"$name\" ($code) akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.';
+  }
+
+  @override
+  String branchDeleteSuccess(String name) {
+    return 'Cabang \"$name\" berhasil dihapus.';
+  }
+
+  @override
+  String deleteBranchError(String error) {
+    return 'Gagal menghapus cabang: $error';
+  }
+
+  @override
+  String get addressShortLabel => 'Alamat';
+
+  @override
+  String get phoneShortLabel => 'Telepon';
+
+  @override
+  String get capacityShortLabel => 'Kapasitas';
+
+  @override
+  String get coordinatesLabel => 'Koordinat';
+
+  @override
+  String get notSetLabel => 'Belum diatur';
+
+  @override
+  String get branchNotFoundTitle => 'Cabang tidak ditemukan';
+
+  @override
+  String get branchNotFoundSubtitle =>
+      'Cabang mungkin sudah dihapus atau id tidak valid';
+
+  @override
+  String get monthJan => 'Jan';
+
+  @override
+  String get monthFeb => 'Feb';
+
+  @override
+  String get monthMar => 'Mar';
+
+  @override
+  String get monthApr => 'Apr';
+
+  @override
+  String get monthMay => 'Mei';
+
+  @override
+  String get monthJun => 'Jun';
+
+  @override
+  String get monthJul => 'Jul';
+
+  @override
+  String get monthAug => 'Agu';
+
+  @override
+  String get monthSep => 'Sep';
+
+  @override
+  String get monthOct => 'Okt';
+
+  @override
+  String get monthNov => 'Nov';
+
+  @override
+  String get monthDec => 'Des';
 }

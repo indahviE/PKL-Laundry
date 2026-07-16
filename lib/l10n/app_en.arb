@@ -216,7 +216,7 @@
   "deleteServiceError": "Failed to delete service: {error}",
   "@deleteServiceError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "name": { "type": "String" }
     }
   },
   "durationInHours": "{hours} hrs",
@@ -360,5 +360,154 @@
       "error": { "type": "String" }
     }
   },
-  "loadCustomersError": "Failed to load customers: {error}"
+  "loadCustomersError": "Failed to load customers: {error}",
+
+  "laundriesTitle": "Branches",
+  "laundriesSubtitle": "Manage your laundry branches",
+  "searchLaundryHint": "Search by branch name, code, or city...",
+  "filterAllLaundries": "All",
+  "filterActiveLaundries": "Active",
+  "filterInactiveLaundries": "Inactive",
+  "totalLaundriesLabel": "Total Branches",
+  "activeLaundriesLabel": "Active Branches",
+  "emptyLaundriesTitle": "No branches yet",
+  "emptyLaundriesSubtitle": "Add a new branch to get started",
+  "newBranchButton": "New Branch",
+  "addBranchButton": "Add Branch",
+  "loadLaundriesError": "Failed to load branch data",
+
+  "addBranchTitle": "Add New Branch",
+  "editBranchTitle": "Edit Branch Data",
+  "addBranchInfo": "The system will automatically validate branch quota limits according to your subscription plan.",
+  "editBranchInfo": "Changes will be saved directly. Subscription limits do not apply to editing existing branches.",
+  "ownerCompanyLabel": "Owner Company",
+  "registerCompanyFirst": "+ Register Company First",
+  "branchNameLabel": "Branch Name",
+  "branchCodeLabel": "Branch Code",
+  "addressLabel": "Full Address",
+  "cityLabel": "City",
+  "provinceLabel": "Province",
+  "phoneLabel": "Phone Number",
+  "emailOptionalLabel": "Branch Email (Optional)",
+  "managerOptionalLabel": "Branch Manager (Optional)",
+  "noEmployeeDataInfo": "No employee data yet. Manager can be assigned later.",
+  "dailyCapacityLabel": "Daily Capacity (Orders Count)",
+  "mapLocationLabel": "Map Location Point (Optional)",
+  "operatingHoursLabel": "Operating Hours",
+  "useSameHoursLabel": "Use same hours for all days",
+  "everyDayLabel": "Every Day",
+  "activeStatusLabel": "Active Branch Status",
+  "saveBranchButton": "Save Branch Data",
+  "updateBranchButton": "Save Changes",
+  "branchNameEmpty": "Branch name cannot be empty",
+  "branchCodeEmpty": "Branch code cannot be empty",
+  "addressEmpty": "Address is required",
+  "fieldRequired": "Required",
+  "phoneEmpty": "Phone number is required",
+  "capacityEmpty": "Capacity is required",
+  "quotaReachedTitle": "Quota Limit Reached",
+  "quotaReachedContent": "You have reached the maximum branch limit for your current subscription plan.",
+  "upgradePlanButton": "Upgrade Plan",
+  "branchAddSuccess": "Laundry branch added successfully!",
+  "branchUpdateSuccess": "Branch changes saved successfully!",
+  "deleteBranchTitle": "Delete Branch?",
+  "deleteBranchConfirm": "Branch \"{name}\" will be permanently deleted. This action cannot be undone.",
+  "contactInfoSection": "Contact Information",
+  "capacityLocationSection": "Capacity & Location",
+  "createdLabel": "Created",
+  "updatedLabel": "Updated",
+  "todayLabel": "Today",
+  "monday": "Monday",
+  "tuesday": "Tuesday",
+  "wednesday": "Wednesday",
+  "thursday": "Thursday",
+  "friday": "Friday",
+  "saturday": "Saturday",
+  "sunday": "Sunday",
+
+  "cardCapacityLabel": "Capacity {capacity}",
+  "@cardCapacityLabel": {
+    "placeholders": {
+      "capacity": { "type": "Object" }
+    }
+  },
+
+  "selectCompanyHint": "Select company",
+  "branchNameHint": "e.g. Merdeka Branch",
+  "branchCodeHint": "e.g. JKT001",
+  "addressHint": "e.g. Jl. Merdeka No. 123",
+  "cityHint": "Jakarta",
+  "provinceHint": "DKI Jakarta",
+  "branchPhoneLabel": "Branch Phone Number",
+  "branchPhoneHint": "e.g. +6281234567890",
+  "branchEmailHint": "e.g. branch@laundry.com",
+  "selectManagerHint": "Select branch manager",
+  "capacityHint": "e.g. 100",
+  "latitudeHint": "Latitude",
+  "longitudeHint": "Longitude",
+  "companyRequiredValidator": "Company must be selected",
+  "defaultCompanyName": "Unnamed Company",
+  "defaultEmployeeName": "Employee",
+  "branchDataNotFoundError": "Branch data not found.",
+  "loadBranchDataError": "Failed to load branch data: {error}",
+  "@loadBranchDataError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "companyNotSelectedWarning": "Company not selected or not created yet!",
+  "userSessionExpiredError": "User session expired.",
+  "saveBranchError": "Failed to save branch data: {error}",
+  "@saveBranchError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "branchDetailTitle": "Branch Detail",
+  "deleteBranchConfirmDetail": "Branch \"{name}\" ({code}) will be permanently deleted. This action cannot be undone.",
+  "@deleteBranchConfirmDetail": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "code": { "type": "String" }
+    }
+  },
+  "branchDeleteSuccess": "Branch \"{name}\" deleted successfully.",
+  "@branchDeleteSuccess": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "deleteBranchError": "Failed to delete branch: {error}",
+  "@deleteBranchError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "toggleStatusError": "Failed to change status: {error}",
+  "@toggleStatusError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "addressShortLabel": "Address",
+  "phoneShortLabel": "Phone",
+  "capacityShortLabel": "Capacity",
+  "coordinatesLabel": "Coordinates",
+  "notSetLabel": "Not set",
+  "branchNotFoundTitle": "Branch not found",
+  "branchNotFoundSubtitle": "The branch may have been deleted or the id is invalid",
+
+  "monthJan": "Jan",
+  "monthFeb": "Feb",
+  "monthMar": "Mar",
+  "monthApr": "Apr",
+  "monthMay": "May",
+  "monthJun": "Jun",
+  "monthJul": "Jul",
+  "monthAug": "Aug",
+  "monthSep": "Sep",
+  "monthOct": "Oct",
+  "monthNov": "Nov",
+  "monthDec": "Dec"
 }
