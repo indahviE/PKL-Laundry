@@ -66,6 +66,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   String? _servicesError;
   String? _selectedCustomerId;
   String? _selectedPaymentMethod = 'cash';
+
+  // Cara baju MASUK ke laundry: 'walk_in' (pelanggan taruh sendiri ke
+  // counter) atau 'pickup' (dijemput driver ke lokasi pelanggan).
+  String _selectedOrderType = 'walk_in';
+
+  // Cara baju KELUAR dari laundry: 'self_pickup' (pelanggan ambil sendiri
+  // ke counter) atau 'delivery' (diantar driver ke lokasi pelanggan).
+  // Dua field ini yang dibaca PickupDeliveryScreen buat nentuin order mana
+  // yang perlu masuk antrean jemput/antar.
+  String _selectedDeliveryType = 'self_pickup';
+
   List<OrderItemForm> _orderItems = [];
   List<_CustomerOption> _customers = [];
 
@@ -79,6 +90,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     {'id': 'cash', 'label': 'Tunai', 'icon': Icons.payments_outlined},
     {'id': 'transfer', 'label': 'Transfer Bank', 'icon': Icons.account_balance_outlined},
     {'id': 'credit', 'label': 'Kredit', 'icon': Icons.credit_card_outlined},
+  ];
+
+  late final List<Map<String, dynamic>> _orderTypes = [
+    {'id': 'walk_in', 'label': 'Antar Sendiri', 'icon': Icons.storefront_outlined},
+    {'id': 'pickup', 'label': 'Dijemput', 'icon': Icons.call_received_rounded},
+  ];
+
+  late final List<Map<String, dynamic>> _deliveryTypes = [
+    {'id': 'self_pickup', 'label': 'Ambil Sendiri', 'icon': Icons.storefront_outlined},
+    {'id': 'delivery', 'label': 'Diantar', 'icon': Icons.call_made_rounded},
   ];
 
   @override
@@ -390,11 +411,20 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           }
         ],
         'order_date': FieldValue.serverTimestamp(),
+        // pickup_date sengaja dibiarkan null di sini walau order_type-nya
+        // 'pickup' - baru diisi PickupDeliveryScreen begitu driver beneran
+        // jemput baju (lewat markPickedUp()), bukan pas order dibuat.
+        'pickup_date': null,
         'actual_completion': null,
+        'delivery_date': null,
         'payment_status': 'pending',
         'payment_method': _selectedPaymentMethod,
         'paid_amount': 0.0,
         'notes': _notesController.text.trim(),
+        // Dua field ini yang dibaca PickupDeliveryScreen buat nentuin
+        // order mana yang perlu masuk antrean jemput/antar.
+        'order_type': _selectedOrderType,
+        'delivery_type': _selectedDeliveryType,
         'created_at': FieldValue.serverTimestamp(),
         'updated_at': FieldValue.serverTimestamp(),
       });
@@ -635,6 +665,26 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
             const SizedBox(height: AppTheme.lg),
 
+            // Cara baju masuk (walk-in / dijemput)
+            _buildToggleGroup(
+              label: 'Baju Masuk *',
+              options: _orderTypes,
+              selectedId: _selectedOrderType,
+              onSelected: (id) => setState(() => _selectedOrderType = id),
+            ),
+
+            const SizedBox(height: AppTheme.lg),
+
+            // Cara baju keluar (ambil sendiri / diantar)
+            _buildToggleGroup(
+              label: 'Baju Keluar *',
+              options: _deliveryTypes,
+              selectedId: _selectedDeliveryType,
+              onSelected: (id) => setState(() => _selectedDeliveryType = id),
+            ),
+
+            const SizedBox(height: AppTheme.lg),
+
             // Payment Method
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -713,6 +763,75 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  /// Toggle 2 opsi generik (dipakai buat Baju Masuk & Baju Keluar) - gaya
+  /// tombolnya sengaja disamain dengan Metode Pembayaran biar konsisten.
+  Widget _buildToggleGroup({
+    required String label,
+    required List<Map<String, dynamic>> options,
+    required String selectedId,
+    required ValueChanged<String> onSelected,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+        ),
+        const SizedBox(height: AppTheme.md),
+        Row(
+          children: List.generate(options.length, (index) {
+            final option = options[index];
+            final isSelected = selectedId == option['id'];
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: index < options.length - 1 ? AppTheme.sm : 0),
+                child: InkWell(
+                  onTap: () => onSelected(option['id'] as String),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: AppTheme.md, horizontal: AppTheme.sm),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : AppTheme.backgroundColor,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                      border: Border.all(
+                        color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          option['icon'],
+                          size: 18,
+                          color: isSelected ? AppTheme.primaryColor : AppTheme.textTertiary,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            option['label'],
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 

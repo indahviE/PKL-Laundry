@@ -110,6 +110,22 @@ class OrderRepository {
         .map((snapshot) => snapshot.docs.map((doc) => Order.fromJson(doc.data(), doc.id)).toList());
   }
 
+  /// Semua order yang relevan buat layar Antar Jemput: order yang
+  /// order_type-nya "pickup" (perlu dijemput) dan/atau delivery_type-nya
+  /// "delivery" (perlu diantar). Order yang full walk-in + self-pickup
+  /// sengaja TIDAK ikut di sini karena tidak butuh driver sama sekali -
+  /// tapi tetap bisa dilihat lewat getAllOrders() / filter "Ambil sendiri"
+  /// di UI kalau perlu ditampilkan sebagai info.
+  ///
+  /// Filter dilakukan di client, bukan di query Firestore, karena Firestore
+  /// tidak mendukung OR di dua field berbeda tanpa index komposit khusus -
+  /// untuk skala data order 1 laundry ini masih aman dilakukan di client.
+  Stream<List<Order>> getLogisticsOrders() {
+    return getAllOrders().map(
+      (orders) => orders.where((o) => o.needsPickup || o.needsDelivery).toList(),
+    );
+  }
+
   /// FIX: previously wrote `updated_at` as an ISO string
   /// (`DateTime.now().toIso8601String()`), inconsistent with every other
   /// write path which now stores a raw DateTime (-> Firestore Timestamp).
@@ -145,6 +161,25 @@ class OrderRepository {
     await _ordersRef.doc(orderId).update({
       'payment_status': newStatus.name,
       'paid_amount': order.paidAmount + additionalPaidAmount,
+      'updated_at': DateTime.now(),
+    });
+  }
+
+  /// Tandai baju sudah dijemput driver dari lokasi pelanggan.
+  /// Hanya mengisi `pickup_date`, tidak menyentuh `status` proses cucian.
+  Future<void> markPickedUp(String orderId, {String? driverNote}) async {
+    await _ordersRef.doc(orderId).update({
+      'pickup_date': DateTime.now(),
+      'updated_at': DateTime.now(),
+    });
+  }
+
+  /// Tandai baju sudah diantar sampai ke pelanggan.
+  /// Hanya mengisi `delivery_date`, tidak menyentuh `status` proses cucian
+  /// (status "completed" tetap diubah lewat updateOrderStatus terpisah).
+  Future<void> markDelivered(String orderId, {String? driverNote}) async {
+    await _ordersRef.doc(orderId).update({
+      'delivery_date': DateTime.now(),
       'updated_at': DateTime.now(),
     });
   }

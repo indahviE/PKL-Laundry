@@ -1,5 +1,5 @@
 import 'base_model.dart';
- 
+
 enum OrderStatus {
   pending,
   confirmed,
@@ -12,45 +12,108 @@ enum OrderStatus {
   completed,
   cancelled,
 }
- 
+
 enum PaymentStatus {
   pending,
   partial,
   paid,
   refunded,
 }
- 
+
 enum PaymentMethod {
   cash,
   card,
   transfer,
   ewallet,
 }
- 
+
 enum PriorityLevel {
   low,
   normal,
   high,
   urgent,
 }
- 
+
+/// Cara baju MASUK ke laundry.
+/// walkIn  -> pelanggan datang & taruh baju sendiri ke counter
+/// pickup  -> baju dijemput oleh kurir/driver ke lokasi pelanggan
+enum OrderType {
+  walkIn,
+  pickup,
+}
+
+/// Cara baju KELUAR dari laundry.
+/// selfPickup -> pelanggan ambil sendiri ke counter
+/// delivery   -> diantar oleh kurir/driver ke lokasi pelanggan
+enum DeliveryType {
+  selfPickup,
+  delivery,
+}
+
+/// Firestore nyimpen orderType/deliveryType pake snake_case
+/// ('walk_in', 'self_pickup') sesuai yang ditulis CreateOrderScreen,
+/// SEDANGKAN enum.name Dart hasilnya camelCase ('walkIn', 'selfPickup').
+/// Dua helper ini yang jadi jembatan eksplisit antara keduanya, supaya
+/// tidak diam-diam salah baca / nyasar ke default value.
+String _orderTypeToFirestore(OrderType type) {
+  switch (type) {
+    case OrderType.walkIn:
+      return 'walk_in';
+    case OrderType.pickup:
+      return 'pickup';
+  }
+}
+
+OrderType _orderTypeFromFirestore(dynamic value) {
+  switch (value) {
+    case 'pickup':
+      return OrderType.pickup;
+    case 'walk_in':
+      return OrderType.walkIn;
+    default:
+      // Dokumen lama / value tak dikenal -> default aman: walk-in.
+      return OrderType.walkIn;
+  }
+}
+
+String _deliveryTypeToFirestore(DeliveryType type) {
+  switch (type) {
+    case DeliveryType.selfPickup:
+      return 'self_pickup';
+    case DeliveryType.delivery:
+      return 'delivery';
+  }
+}
+
+DeliveryType _deliveryTypeFromFirestore(dynamic value) {
+  switch (value) {
+    case 'delivery':
+      return DeliveryType.delivery;
+    case 'self_pickup':
+      return DeliveryType.selfPickup;
+    default:
+      // Dokumen lama / value tak dikenal -> default aman: self-pickup.
+      return DeliveryType.selfPickup;
+  }
+}
+
 class StatusHistory {
   final OrderStatus status;
   final DateTime timestamp;
   final String? note;
- 
+
   StatusHistory({
     required this.status,
     required this.timestamp,
     this.note,
   });
- 
+
   Map<String, dynamic> toJson() => {
     'status': status.name,
     'timestamp': timestamp,
     'note': note,
   };
- 
+
   factory StatusHistory.fromJson(Map<String, dynamic> json) {
     return StatusHistory(
       status: OrderStatus.values.firstWhere(
@@ -62,7 +125,7 @@ class StatusHistory {
     );
   }
 }
- 
+
 class OrderItem {
   final String serviceTypeId;
   final String serviceName;
@@ -71,7 +134,7 @@ class OrderItem {
   final double pricePerUnit;
   final double totalPrice;
   final String? notes;
- 
+
   OrderItem({
     required this.serviceTypeId,
     required this.serviceName,
@@ -81,7 +144,7 @@ class OrderItem {
     required this.totalPrice,
     this.notes,
   });
- 
+
   Map<String, dynamic> toJson() => {
     'service_type_id': serviceTypeId,
     'service_name': serviceName,
@@ -91,7 +154,7 @@ class OrderItem {
     'total_price': totalPrice,
     'notes': notes,
   };
- 
+
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
       serviceTypeId: json['service_type_id'] ?? '',
@@ -104,11 +167,17 @@ class OrderItem {
     );
   }
 }
- 
+
 class Order extends BaseModel {
   final String companyId;
   final String laundryId;
   final String customerId;
+  /// Denormalized dari customers/{customerId} - field ini yang beneran
+  /// ditulis oleh CreateOrderScreen ('customer_name', 'customer_phone'),
+  /// disimpan di sini juga supaya layar lain (mis. Antar Jemput) tidak perlu
+  /// fetch ulang ke koleksi customers hanya buat nampilin nama & telepon.
+  final String? customerName;
+  final String? customerPhone;
   final String? employeeId;
   final String orderNumber;
   final List<OrderItem> items;
@@ -131,7 +200,14 @@ class Order extends BaseModel {
   final String? notes;
   final String? specialInstructions;
   final PriorityLevel priorityLevel;
- 
+
+  /// Cara baju masuk. Default walkIn supaya dokumen lama (belum punya
+  /// field ini) tetap kebaca aman lewat fromJson.
+  final OrderType orderType;
+
+  /// Cara baju keluar. Default selfPickup dengan alasan yang sama.
+  final DeliveryType deliveryType;
+
   Order({
     required super.id,
     required super.createdAt,
@@ -139,6 +215,8 @@ class Order extends BaseModel {
     required this.companyId,
     required this.laundryId,
     required this.customerId,
+    this.customerName,
+    this.customerPhone,
     this.employeeId,
     required this.orderNumber,
     required this.items,
@@ -161,8 +239,20 @@ class Order extends BaseModel {
     this.notes,
     this.specialInstructions,
     required this.priorityLevel,
+    this.orderType = OrderType.walkIn,
+    this.deliveryType = DeliveryType.selfPickup,
   });
- 
+
+  /// True kalau order ini butuh driver buat jemput baju ke lokasi pelanggan.
+  bool get needsPickup => orderType == OrderType.pickup;
+
+  /// True kalau order ini butuh driver buat nganterin baju ke pelanggan.
+  bool get needsDelivery => deliveryType == DeliveryType.delivery;
+
+  /// True kalau dari awal sampai akhir pelanggan yang urus sendiri
+  /// (datang ke counter & ambil ke counter) -> tidak perlu driver sama sekali.
+  bool get isFullySelfService => !needsPickup && !needsDelivery;
+
   Order copyWith({
     String? id,
     DateTime? createdAt,
@@ -170,6 +260,8 @@ class Order extends BaseModel {
     String? companyId,
     String? laundryId,
     String? customerId,
+    String? customerName,
+    String? customerPhone,
     String? employeeId,
     String? orderNumber,
     List<OrderItem>? items,
@@ -192,6 +284,8 @@ class Order extends BaseModel {
     String? notes,
     String? specialInstructions,
     PriorityLevel? priorityLevel,
+    OrderType? orderType,
+    DeliveryType? deliveryType,
   }) {
     return Order(
       id: id ?? this.id,
@@ -200,6 +294,8 @@ class Order extends BaseModel {
       companyId: companyId ?? this.companyId,
       laundryId: laundryId ?? this.laundryId,
       customerId: customerId ?? this.customerId,
+      customerName: customerName ?? this.customerName,
+      customerPhone: customerPhone ?? this.customerPhone,
       employeeId: employeeId ?? this.employeeId,
       orderNumber: orderNumber ?? this.orderNumber,
       items: items ?? this.items,
@@ -222,15 +318,19 @@ class Order extends BaseModel {
       notes: notes ?? this.notes,
       specialInstructions: specialInstructions ?? this.specialInstructions,
       priorityLevel: priorityLevel ?? this.priorityLevel,
+      orderType: orderType ?? this.orderType,
+      deliveryType: deliveryType ?? this.deliveryType,
     );
   }
- 
+
   @override
   Map<String, dynamic> toJson() {
     return {
       'company_id': companyId,
       'laundry_id': laundryId,
       'customer_id': customerId,
+      'customer_name': customerName,
+      'customer_phone': customerPhone,
       'employee_id': employeeId,
       'order_number': orderNumber,
       'items': items.map((e) => e.toJson()).toList(),
@@ -253,11 +353,15 @@ class Order extends BaseModel {
       'notes': notes,
       'special_instructions': specialInstructions,
       'priority_level': priorityLevel.name,
+      // Ditulis snake_case supaya konsisten dengan yang ditulis
+      // CreateOrderScreen langsung ke Firestore ('walk_in', 'self_pickup').
+      'order_type': _orderTypeToFirestore(orderType),
+      'delivery_type': _deliveryTypeToFirestore(deliveryType),
       'created_at': createdAt,
       'updated_at': updatedAt,
     };
   }
- 
+
   factory Order.fromJson(Map<String, dynamic> json, String documentId) {
     return Order(
       id: documentId,
@@ -266,6 +370,8 @@ class Order extends BaseModel {
       companyId: json['company_id'] ?? '',
       laundryId: json['laundry_id'] ?? '',
       customerId: json['customer_id'] ?? '',
+      customerName: json['customer_name'],
+      customerPhone: json['customer_phone'],
       employeeId: json['employee_id'],
       orderNumber: json['order_number'] ?? '',
       items: (json['items'] as List?)?.map((e) => OrderItem.fromJson(e)).toList() ?? [],
@@ -299,6 +405,14 @@ class Order extends BaseModel {
         (e) => e.name == json['priority_level'],
         orElse: () => PriorityLevel.normal,
       ),
+      // FIX: sebelumnya dibandingkan pakai enum.name (camelCase: 'walkIn',
+      // 'selfPickup') padahal CreateOrderScreen nulis snake_case ke
+      // Firestore ('walk_in', 'self_pickup') -> gak pernah match, selalu
+      // jatuh ke orElse. Kebetulan "aman" untuk walk-in/self-pickup karena
+      // orElse-nya kebetulan sama, tapi rapuh. Sekarang eksplisit lewat
+      // helper _orderTypeFromFirestore / _deliveryTypeFromFirestore.
+      orderType: _orderTypeFromFirestore(json['order_type']),
+      deliveryType: _deliveryTypeFromFirestore(json['delivery_type']),
     );
   }
 }

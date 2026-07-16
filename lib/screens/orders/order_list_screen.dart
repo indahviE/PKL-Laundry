@@ -16,6 +16,8 @@ class OrderItem {
   final int itemCount;
   final DateTime date;
   final String customerPhone;
+  final String orderType; // 'walk_in' / 'pickup' -> cara baju MASUK
+  final String deliveryType; // 'self_pickup' / 'delivery' -> cara baju KELUAR
 
   OrderItem({
     required this.id,
@@ -26,6 +28,8 @@ class OrderItem {
     required this.itemCount,
     required this.date,
     required this.customerPhone,
+    required this.orderType,
+    required this.deliveryType,
   });
 
   /// Mapping dari dokumen Firestore users/{uid}/orders/{orderId}
@@ -45,8 +49,23 @@ class OrderItem {
           : ((data['total_items'] ?? 0) as num).toInt(),
       date: orderDate is Timestamp ? orderDate.toDate() : DateTime.now(),
       customerPhone: (data['customer_phone'] ?? '') as String,
+      orderType: (data['order_type'] ?? 'walk_in') as String,
+      deliveryType: (data['delivery_type'] ?? 'self_pickup') as String,
     );
   }
+
+  // Helper buat pill "baju masuk" & "baju keluar" - style disamain
+  // dengan _OrderLogisticsCard di PickupDeliveryScreen biar konsisten.
+  bool get isPickup => orderType == 'pickup';
+  bool get isDelivery => deliveryType == 'delivery';
+
+  String get orderTypeLabel => isPickup ? 'Dijemput' : 'Walk-in';
+  IconData get orderTypeIcon => isPickup ? Icons.call_received_rounded : Icons.storefront_outlined;
+  Color get orderTypeColor => isPickup ? const Color(0xFFB197FC) : AppTheme.textTertiary;
+
+  String get deliveryTypeLabel => isDelivery ? 'Diantar' : 'Ambil Sendiri';
+  IconData get deliveryTypeIcon => isDelivery ? Icons.call_made_rounded : Icons.storefront_outlined;
+  Color get deliveryTypeColor => isDelivery ? AppTheme.primaryColor : const Color(0xFF51CF66);
 }
 
 /// Orders List Screen
@@ -660,7 +679,37 @@ class _StatBox extends StatelessWidget {
   }
 }
 
-/// Order Card Widget — sama persis gayanya dengan CustomerCard
+/// Pill kecil buat nunjukkin 1 atribut order (cara baju masuk / keluar).
+/// Style disamain persis dengan _Pill di PickupDeliveryScreen supaya
+/// konsisten secara visual di kedua layar.
+class _Pill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _Pill({required this.icon, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 4),
+      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: GoogleFonts.poppins(fontSize: 10.5, fontWeight: FontWeight.w700, color: color)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Order Card Widget — sama persis gayanya dengan CustomerCard.
+/// Sekarang ada tambahan 2 pill (baju masuk & baju keluar) yang
+/// dibaca langsung dari order.orderType / order.deliveryType, yang
+/// udah ditentuin pas order dibuat di CreateOrderScreen.
 class _OrderCard extends StatelessWidget {
   final OrderItem order;
   final Color statusColor;
@@ -702,27 +751,32 @@ class _OrderCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      order.orderNumber,
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: AppTheme.textPrimary,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        order.orderNumber,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: AppTheme.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      order.customerName,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12.5,
-                        color: AppTheme.textSecondary,
+                      const SizedBox(height: 2),
+                      Text(
+                        order.customerName,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12.5,
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: AppTheme.sm),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppTheme.md,
@@ -743,7 +797,19 @@ class _OrderCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppTheme.lg),
+            const SizedBox(height: AppTheme.sm),
+            // Pill "baju masuk" (walk-in/dijemput) & "baju keluar"
+            // (ambil sendiri/diantar) - dibungkus Wrap biar otomatis
+            // pindah baris di layar sempit.
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _Pill(icon: order.orderTypeIcon, label: order.orderTypeLabel, color: order.orderTypeColor),
+                _Pill(icon: order.deliveryTypeIcon, label: order.deliveryTypeLabel, color: order.deliveryTypeColor),
+              ],
+            ),
+            const SizedBox(height: AppTheme.md),
             Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
             const SizedBox(height: AppTheme.md),
             Row(
