@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/themes/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/service.dart';
 import '../../providers/auth_provider.dart';
 import '../../repositories/service_repository.dart';
@@ -47,6 +48,8 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
   }
 
   void _handleSubmit() async {
+    final l10n = AppLocalizations.of(context)!;
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -60,7 +63,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
       if (userId.isEmpty) {
-        throw Exception('Sesi pengguna tidak ditemukan. Silakan login kembali.');
+        throw Exception(l10n.sessionNotFoundError);
       }
 
       // Sesuai blueprint: setiap dokumen di users/{user_id}/service_types/
@@ -76,9 +79,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
           .get();
 
       if (companySnapshot.docs.isEmpty) {
-        throw Exception(
-          'Perusahaan belum dibuat. Selesaikan proses onboarding (setup perusahaan) terlebih dahulu.',
-        );
+        throw Exception(l10n.companyNotSetupError);
       }
 
       final companyId = companySnapshot.docs.first.id;
@@ -105,9 +106,9 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Layanan berhasil ditambahkan!'),
-            backgroundColor: Color(0xFF51CF66),
+          SnackBar(
+            content: Text(l10n.addServiceSuccess),
+            backgroundColor: const Color(0xFF51CF66),
           ),
         );
         context.pop();
@@ -116,7 +117,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menambahkan layanan: $e'),
+            content: Text(l10n.addServiceError(e.toString())),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -177,6 +178,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
 
   /// Build top bar (back button + title)
   Widget _buildTopBar(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         InkWell(
@@ -201,7 +203,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
         ),
         const SizedBox(width: 14),
         Text(
-          'Tambah Layanan',
+          l10n.createServiceAppBarTitle,
           style: GoogleFonts.poppins(
             fontSize: 17,
             fontWeight: FontWeight.w600,
@@ -214,6 +216,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
 
   /// Build Header
   Widget _buildHeader(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -231,7 +234,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
         ),
         const SizedBox(height: AppTheme.xl),
         Text(
-          'Layanan Baru',
+          l10n.createServiceSectionTitle,
           style: GoogleFonts.poppins(
             fontSize: 21,
             fontWeight: FontWeight.w700,
@@ -240,7 +243,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
         ),
         const SizedBox(height: AppTheme.sm),
         Text(
-          'Lengkapi detail jenis layanan laundry yang kamu sediakan',
+          l10n.createServiceSectionSubtitle,
           style: GoogleFonts.poppins(
             fontSize: 13,
             color: AppTheme.textSecondary,
@@ -252,6 +255,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
 
   /// Build Form
   Widget _buildForm(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
@@ -269,21 +273,21 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
         children: [
           // Nama Layanan
           AppInput(
-            label: 'Nama Layanan *',
+            label: '${l10n.serviceNameLabel} *',
             controller: _nameController,
-            hintText: 'Contoh: Cuci Kering Setrika Reguler',
+            hintText: l10n.serviceNameHint,
             prefixIcon: Icons.label_outline_rounded,
             validator: (val) =>
-                val == null || val.trim().isEmpty ? 'Nama layanan tidak boleh kosong' : null,
+                val == null || val.trim().isEmpty ? l10n.serviceNameError : null,
           ),
 
           const SizedBox(height: AppTheme.lg),
 
           // Deskripsi (opsional)
           AppInput(
-            label: 'Deskripsi (Opsional)',
+            label: l10n.serviceDescriptionLabel,
             controller: _descriptionController,
-            hintText: 'Contoh: Proses cuci, pengeringan mesin, dan setrika rapi.',
+            hintText: l10n.serviceDescriptionHint,
             prefixIcon: Icons.notes_rounded,
             maxLines: 3,
           ),
@@ -294,7 +298,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Metode Perhitungan Harga',
+              l10n.pricingMethodLabel,
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -307,7 +311,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
             children: [
               Expanded(
                 child: _buildPricingTypeChip(
-                  label: 'Per Kilogram (Kg)',
+                  label: l10n.pricingTypeKgFull,
                   isSelected: _selectedPricingType == PricingType.perKg,
                   onTap: () => setState(() => _selectedPricingType = PricingType.perKg),
                 ),
@@ -315,7 +319,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
               const SizedBox(width: AppTheme.md),
               Expanded(
                 child: _buildPricingTypeChip(
-                  label: 'Per Satuan Item',
+                  label: l10n.pricingTypeItemFull,
                   isSelected: _selectedPricingType == PricingType.perItem,
                   onTap: () => setState(() => _selectedPricingType = PricingType.perItem),
                 ),
@@ -328,15 +332,15 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
           // Harga
           AppInput(
             label: _selectedPricingType == PricingType.perKg
-                ? 'Harga per Kg (Rp) *'
-                : 'Harga per Item (Rp) *',
+                ? '${l10n.pricePerKgLabel} *'
+                : '${l10n.pricePerItemLabel} *',
             controller: _priceController,
-            hintText: 'Contoh: 10000',
+            hintText: l10n.priceHint,
             prefixIcon: Icons.payments_outlined,
             keyboardType: TextInputType.number,
             validator: (val) {
-              if (val == null || val.trim().isEmpty) return 'Harga tidak boleh kosong';
-              if (double.tryParse(val.trim()) == null) return 'Masukkan angka yang valid';
+              if (val == null || val.trim().isEmpty) return l10n.priceEmptyError;
+              if (double.tryParse(val.trim()) == null) return l10n.priceInvalidError;
               return null;
             },
           ),
@@ -345,16 +349,16 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
 
           // Estimasi Waktu Pengerjaan
           AppInput(
-            label: 'Estimasi Waktu Pengerjaan (Jam) *',
+            label: '${l10n.durationLabelFull} *',
             controller: _durationController,
-            hintText: 'Contoh: 24',
+            hintText: l10n.durationHint,
             prefixIcon: Icons.timelapse_rounded,
             keyboardType: TextInputType.number,
             validator: (val) {
               if (val == null || val.trim().isEmpty) {
-                return 'Estimasi durasi pengerjaan tidak boleh kosong';
+                return l10n.durationEmptyErrorFull;
               }
-              if (int.tryParse(val.trim()) == null) return 'Masukkan angka bulat jam yang valid';
+              if (int.tryParse(val.trim()) == null) return l10n.durationInvalidErrorFull;
               return null;
             },
           ),
@@ -402,6 +406,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
 
   /// Build Save Button
   Widget _buildSaveButton(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SizedBox(
       width: double.infinity,
       height: 52,
@@ -431,13 +436,13 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
                   ),
                   const SizedBox(width: AppTheme.md),
                   Text(
-                    'Sedang Menyimpan...',
+                    l10n.savingButtonLabel,
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                   ),
                 ],
               )
             : Text(
-                'Simpan Layanan',
+                l10n.saveServiceButton,
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
