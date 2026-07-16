@@ -1199,13 +1199,13 @@ abstract class AppLocalizations {
   /// No description provided for @phoneLabel.
   ///
   /// In id, this message translates to:
-  /// **'Telepon'**
+  /// **'Nomor Telepon'**
   String get phoneLabel;
 
   /// No description provided for @addressLabel.
   ///
   /// In id, this message translates to:
-  /// **'Alamat'**
+  /// **'Alamat Lengkap'**
   String get addressLabel;
 
   /// No description provided for @orderHistoryTitle.
@@ -1369,6 +1369,630 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Gagal memuat data pelanggan: {error}'**
   String loadCustomersError(Object error);
+
+  /// No description provided for @laundriesTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang'**
+  String get laundriesTitle;
+
+  /// No description provided for @laundriesSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola cabang laundry Anda'**
+  String get laundriesSubtitle;
+
+  /// No description provided for @searchLaundryHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari nama, kode, atau kota cabang...'**
+  String get searchLaundryHint;
+
+  /// No description provided for @filterAllLaundries.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua'**
+  String get filterAllLaundries;
+
+  /// No description provided for @filterActiveLaundries.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktif'**
+  String get filterActiveLaundries;
+
+  /// No description provided for @filterInactiveLaundries.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak Aktif'**
+  String get filterInactiveLaundries;
+
+  /// No description provided for @totalLaundriesLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total Cabang'**
+  String get totalLaundriesLabel;
+
+  /// No description provided for @activeLaundriesLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang Aktif'**
+  String get activeLaundriesLabel;
+
+  /// No description provided for @emptyLaundriesTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada cabang'**
+  String get emptyLaundriesTitle;
+
+  /// No description provided for @emptyLaundriesSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambahkan cabang baru untuk memulai'**
+  String get emptyLaundriesSubtitle;
+
+  /// No description provided for @newBranchButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang Baru'**
+  String get newBranchButton;
+
+  /// No description provided for @addBranchButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah Cabang'**
+  String get addBranchButton;
+
+  /// No description provided for @loadLaundriesError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memuat data cabang'**
+  String get loadLaundriesError;
+
+  /// No description provided for @addBranchTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah Cabang Baru'**
+  String get addBranchTitle;
+
+  /// No description provided for @editBranchTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Edit Data Cabang'**
+  String get editBranchTitle;
+
+  /// No description provided for @addBranchInfo.
+  ///
+  /// In id, this message translates to:
+  /// **'Sistem akan memvalidasi limitasi kuota cabang sesuai paket langganan Anda secara otomatis sebelum menyimpan data.'**
+  String get addBranchInfo;
+
+  /// No description provided for @editBranchInfo.
+  ///
+  /// In id, this message translates to:
+  /// **'Perubahan akan langsung tersimpan ke data cabang ini. Kuota paket langganan tidak berlaku untuk pengeditan.'**
+  String get editBranchInfo;
+
+  /// No description provided for @ownerCompanyLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Perusahaan Pemilik Cabang'**
+  String get ownerCompanyLabel;
+
+  /// No description provided for @registerCompanyFirst.
+  ///
+  /// In id, this message translates to:
+  /// **'+ Daftarkan Perusahaan Terlebih Dahulu'**
+  String get registerCompanyFirst;
+
+  /// No description provided for @branchNameLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama Cabang'**
+  String get branchNameLabel;
+
+  /// No description provided for @branchCodeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kode Cabang'**
+  String get branchCodeLabel;
+
+  /// No description provided for @cityLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kota'**
+  String get cityLabel;
+
+  /// No description provided for @provinceLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Provinsi'**
+  String get provinceLabel;
+
+  /// No description provided for @emailOptionalLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Email Cabang (Opsional)'**
+  String get emailOptionalLabel;
+
+  /// No description provided for @managerOptionalLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Manajer Cabang (Opsional)'**
+  String get managerOptionalLabel;
+
+  /// No description provided for @noEmployeeDataInfo.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada data karyawan. Manajer bisa ditugaskan belakangan.'**
+  String get noEmployeeDataInfo;
+
+  /// No description provided for @dailyCapacityLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kapasitas Harian (Jumlah Order)'**
+  String get dailyCapacityLabel;
+
+  /// No description provided for @mapLocationLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Titik Lokasi Peta (Opsional)'**
+  String get mapLocationLabel;
+
+  /// No description provided for @operatingHoursLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam Operasional'**
+  String get operatingHoursLabel;
+
+  /// No description provided for @useSameHoursLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Gunakan jam yang sama untuk semua hari'**
+  String get useSameHoursLabel;
+
+  /// No description provided for @everyDayLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Setiap Hari'**
+  String get everyDayLabel;
+
+  /// No description provided for @activeStatusLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Status Cabang Aktif'**
+  String get activeStatusLabel;
+
+  /// No description provided for @saveBranchButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan Data Cabang'**
+  String get saveBranchButton;
+
+  /// No description provided for @updateBranchButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan Perubahan'**
+  String get updateBranchButton;
+
+  /// No description provided for @branchNameEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama cabang tidak boleh kosong'**
+  String get branchNameEmpty;
+
+  /// No description provided for @branchCodeEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Kode cabang tidak boleh kosong'**
+  String get branchCodeEmpty;
+
+  /// No description provided for @addressEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat wajib diisi'**
+  String get addressEmpty;
+
+  /// No description provided for @fieldRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Wajib diisi'**
+  String get fieldRequired;
+
+  /// No description provided for @phoneEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Nomor telepon wajib diisi'**
+  String get phoneEmpty;
+
+  /// No description provided for @capacityEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Kapasitas wajib diisi'**
+  String get capacityEmpty;
+
+  /// No description provided for @quotaReachedTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Batas Kuota Tercapai'**
+  String get quotaReachedTitle;
+
+  /// No description provided for @quotaReachedContent.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah cabang Anda telah mencapai batas maksimal paket langganan saat ini.'**
+  String get quotaReachedContent;
+
+  /// No description provided for @upgradePlanButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Upgrade Paket'**
+  String get upgradePlanButton;
+
+  /// No description provided for @branchAddSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang laundry berhasil ditambahkan!'**
+  String get branchAddSuccess;
+
+  /// No description provided for @branchUpdateSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Perubahan cabang berhasil disimpan!'**
+  String get branchUpdateSuccess;
+
+  /// No description provided for @deleteBranchTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus Cabang?'**
+  String get deleteBranchTitle;
+
+  /// No description provided for @deleteBranchConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang \"{name}\" akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.'**
+  String deleteBranchConfirm(Object name);
+
+  /// No description provided for @contactInfoSection.
+  ///
+  /// In id, this message translates to:
+  /// **'Informasi Kontak'**
+  String get contactInfoSection;
+
+  /// No description provided for @capacityLocationSection.
+  ///
+  /// In id, this message translates to:
+  /// **'Kapasitas & Lokasi'**
+  String get capacityLocationSection;
+
+  /// No description provided for @createdLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Dibuat'**
+  String get createdLabel;
+
+  /// No description provided for @updatedLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Diperbarui'**
+  String get updatedLabel;
+
+  /// No description provided for @todayLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari ini'**
+  String get todayLabel;
+
+  /// No description provided for @monday.
+  ///
+  /// In id, this message translates to:
+  /// **'Senin'**
+  String get monday;
+
+  /// No description provided for @tuesday.
+  ///
+  /// In id, this message translates to:
+  /// **'Selasa'**
+  String get tuesday;
+
+  /// No description provided for @wednesday.
+  ///
+  /// In id, this message translates to:
+  /// **'Rabu'**
+  String get wednesday;
+
+  /// No description provided for @thursday.
+  ///
+  /// In id, this message translates to:
+  /// **'Kamis'**
+  String get thursday;
+
+  /// No description provided for @friday.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumat'**
+  String get friday;
+
+  /// No description provided for @saturday.
+  ///
+  /// In id, this message translates to:
+  /// **'Sabtu'**
+  String get saturday;
+
+  /// No description provided for @sunday.
+  ///
+  /// In id, this message translates to:
+  /// **'Minggu'**
+  String get sunday;
+
+  /// No description provided for @cardCapacityLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kapasitas {capacity}'**
+  String cardCapacityLabel(Object capacity);
+
+  /// No description provided for @selectCompanyHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih perusahaan'**
+  String get selectCompanyHint;
+
+  /// No description provided for @branchNameHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: Cabang Merdeka'**
+  String get branchNameHint;
+
+  /// No description provided for @branchCodeHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: JKT001'**
+  String get branchCodeHint;
+
+  /// No description provided for @addressHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: Jl. Merdeka No. 123'**
+  String get addressHint;
+
+  /// No description provided for @cityHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Jakarta'**
+  String get cityHint;
+
+  /// No description provided for @provinceHint.
+  ///
+  /// In id, this message translates to:
+  /// **'DKI Jakarta'**
+  String get provinceHint;
+
+  /// No description provided for @branchPhoneLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Nomor Telepon Cabang'**
+  String get branchPhoneLabel;
+
+  /// No description provided for @branchPhoneHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: +6281234567890'**
+  String get branchPhoneHint;
+
+  /// No description provided for @branchEmailHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: cabang@laundry.com'**
+  String get branchEmailHint;
+
+  /// No description provided for @selectManagerHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih manajer cabang'**
+  String get selectManagerHint;
+
+  /// No description provided for @capacityHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: 100'**
+  String get capacityHint;
+
+  /// No description provided for @latitudeHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Latitude'**
+  String get latitudeHint;
+
+  /// No description provided for @longitudeHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Longitude'**
+  String get longitudeHint;
+
+  /// No description provided for @companyRequiredValidator.
+  ///
+  /// In id, this message translates to:
+  /// **'Perusahaan wajib dipilih'**
+  String get companyRequiredValidator;
+
+  /// No description provided for @defaultCompanyName.
+  ///
+  /// In id, this message translates to:
+  /// **'Perusahaan Tanpa Nama'**
+  String get defaultCompanyName;
+
+  /// No description provided for @defaultEmployeeName.
+  ///
+  /// In id, this message translates to:
+  /// **'Karyawan'**
+  String get defaultEmployeeName;
+
+  /// No description provided for @branchDataNotFoundError.
+  ///
+  /// In id, this message translates to:
+  /// **'Data cabang tidak ditemukan.'**
+  String get branchDataNotFoundError;
+
+  /// No description provided for @loadBranchDataError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memuat data cabang: {error}'**
+  String loadBranchDataError(String error);
+
+  /// No description provided for @companyNotSelectedWarning.
+  ///
+  /// In id, this message translates to:
+  /// **'Perusahaan belum dipilih atau belum dibuat!'**
+  String get companyNotSelectedWarning;
+
+  /// No description provided for @userSessionExpiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Sesi user berakhir.'**
+  String get userSessionExpiredError;
+
+  /// No description provided for @saveBranchError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menyimpan data cabang: {error}'**
+  String saveBranchError(String error);
+
+  /// No description provided for @branchDetailTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail Cabang'**
+  String get branchDetailTitle;
+
+  /// No description provided for @deleteBranchConfirmDetail.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang \"{name}\" ({code}) akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.'**
+  String deleteBranchConfirmDetail(String name, String code);
+
+  /// No description provided for @branchDeleteSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang \"{name}\" berhasil dihapus.'**
+  String branchDeleteSuccess(String name);
+
+  /// No description provided for @deleteBranchError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menghapus cabang: {error}'**
+  String deleteBranchError(String error);
+
+  /// No description provided for @addressShortLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat'**
+  String get addressShortLabel;
+
+  /// No description provided for @phoneShortLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Telepon'**
+  String get phoneShortLabel;
+
+  /// No description provided for @capacityShortLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kapasitas'**
+  String get capacityShortLabel;
+
+  /// No description provided for @coordinatesLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Koordinat'**
+  String get coordinatesLabel;
+
+  /// No description provided for @notSetLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum diatur'**
+  String get notSetLabel;
+
+  /// No description provided for @branchNotFoundTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang tidak ditemukan'**
+  String get branchNotFoundTitle;
+
+  /// No description provided for @branchNotFoundSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang mungkin sudah dihapus atau id tidak valid'**
+  String get branchNotFoundSubtitle;
+
+  /// No description provided for @monthJan.
+  ///
+  /// In id, this message translates to:
+  /// **'Jan'**
+  String get monthJan;
+
+  /// No description provided for @monthFeb.
+  ///
+  /// In id, this message translates to:
+  /// **'Feb'**
+  String get monthFeb;
+
+  /// No description provided for @monthMar.
+  ///
+  /// In id, this message translates to:
+  /// **'Mar'**
+  String get monthMar;
+
+  /// No description provided for @monthApr.
+  ///
+  /// In id, this message translates to:
+  /// **'Apr'**
+  String get monthApr;
+
+  /// No description provided for @monthMay.
+  ///
+  /// In id, this message translates to:
+  /// **'Mei'**
+  String get monthMay;
+
+  /// No description provided for @monthJun.
+  ///
+  /// In id, this message translates to:
+  /// **'Jun'**
+  String get monthJun;
+
+  /// No description provided for @monthJul.
+  ///
+  /// In id, this message translates to:
+  /// **'Jul'**
+  String get monthJul;
+
+  /// No description provided for @monthAug.
+  ///
+  /// In id, this message translates to:
+  /// **'Agu'**
+  String get monthAug;
+
+  /// No description provided for @monthSep.
+  ///
+  /// In id, this message translates to:
+  /// **'Sep'**
+  String get monthSep;
+
+  /// No description provided for @monthOct.
+  ///
+  /// In id, this message translates to:
+  /// **'Okt'**
+  String get monthOct;
+
+  /// No description provided for @monthNov.
+  ///
+  /// In id, this message translates to:
+  /// **'Nov'**
+  String get monthNov;
+
+  /// No description provided for @monthDec.
+  ///
+  /// In id, this message translates to:
+  /// **'Des'**
+  String get monthDec;
 }
 
 class _AppLocalizationsDelegate

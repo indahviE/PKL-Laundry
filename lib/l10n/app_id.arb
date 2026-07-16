@@ -360,5 +360,154 @@
       "error": { "type": "String" }
     }
   },
-  "loadCustomersError": "Gagal memuat data pelanggan: {error}"
+  "loadCustomersError": "Gagal memuat data pelanggan: {error}",
+
+  "laundriesTitle": "Cabang",
+  "laundriesSubtitle": "Kelola cabang laundry Anda",
+  "searchLaundryHint": "Cari nama, kode, atau kota cabang...",
+  "filterAllLaundries": "Semua",
+  "filterActiveLaundries": "Aktif",
+  "filterInactiveLaundries": "Tidak Aktif",
+  "totalLaundriesLabel": "Total Cabang",
+  "activeLaundriesLabel": "Cabang Aktif",
+  "emptyLaundriesTitle": "Belum ada cabang",
+  "emptyLaundriesSubtitle": "Tambahkan cabang baru untuk memulai",
+  "newBranchButton": "Cabang Baru",
+  "addBranchButton": "Tambah Cabang",
+  "loadLaundriesError": "Gagal memuat data cabang",
+
+  "addBranchTitle": "Tambah Cabang Baru",
+  "editBranchTitle": "Edit Data Cabang",
+  "addBranchInfo": "Sistem akan memvalidasi limitasi kuota cabang sesuai paket langganan Anda secara otomatis sebelum menyimpan data.",
+  "editBranchInfo": "Perubahan akan langsung tersimpan ke data cabang ini. Kuota paket langganan tidak berlaku untuk pengeditan.",
+  "ownerCompanyLabel": "Perusahaan Pemilik Cabang",
+  "registerCompanyFirst": "+ Daftarkan Perusahaan Terlebih Dahulu",
+  "branchNameLabel": "Nama Cabang",
+  "branchCodeLabel": "Kode Cabang",
+  "addressLabel": "Alamat Lengkap",
+  "cityLabel": "Kota",
+  "provinceLabel": "Provinsi",
+  "phoneLabel": "Nomor Telepon",
+  "emailOptionalLabel": "Email Cabang (Opsional)",
+  "managerOptionalLabel": "Manajer Cabang (Opsional)",
+  "noEmployeeDataInfo": "Belum ada data karyawan. Manajer bisa ditugaskan belakangan.",
+  "dailyCapacityLabel": "Kapasitas Harian (Jumlah Order)",
+  "mapLocationLabel": "Titik Lokasi Peta (Opsional)",
+  "operatingHoursLabel": "Jam Operasional",
+  "useSameHoursLabel": "Gunakan jam yang sama untuk semua hari",
+  "everyDayLabel": "Setiap Hari",
+  "activeStatusLabel": "Status Cabang Aktif",
+  "saveBranchButton": "Simpan Data Cabang",
+  "updateBranchButton": "Simpan Perubahan",
+  "branchNameEmpty": "Nama cabang tidak boleh kosong",
+  "branchCodeEmpty": "Kode cabang tidak boleh kosong",
+  "addressEmpty": "Alamat wajib diisi",
+  "fieldRequired": "Wajib diisi",
+  "phoneEmpty": "Nomor telepon wajib diisi",
+  "capacityEmpty": "Kapasitas wajib diisi",
+  "quotaReachedTitle": "Batas Kuota Tercapai",
+  "quotaReachedContent": "Jumlah cabang Anda telah mencapai batas maksimal paket langganan saat ini.",
+  "upgradePlanButton": "Upgrade Paket",
+  "branchAddSuccess": "Cabang laundry berhasil ditambahkan!",
+  "branchUpdateSuccess": "Perubahan cabang berhasil disimpan!",
+  "deleteBranchTitle": "Hapus Cabang?",
+  "deleteBranchConfirm": "Cabang \"{name}\" akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+  "contactInfoSection": "Informasi Kontak",
+  "capacityLocationSection": "Kapasitas & Lokasi",
+  "createdLabel": "Dibuat",
+  "updatedLabel": "Diperbarui",
+  "todayLabel": "Hari ini",
+  "monday": "Senin",
+  "tuesday": "Selasa",
+  "wednesday": "Rabu",
+  "thursday": "Kamis",
+  "friday": "Jumat",
+  "saturday": "Sabtu",
+  "sunday": "Minggu",
+
+  "cardCapacityLabel": "Kapasitas {capacity}",
+  "@cardCapacityLabel": {
+    "placeholders": {
+      "capacity": { "type": "Object" }
+    }
+  },
+
+  "selectCompanyHint": "Pilih perusahaan",
+  "branchNameHint": "Contoh: Cabang Merdeka",
+  "branchCodeHint": "Contoh: JKT001",
+  "addressHint": "Contoh: Jl. Merdeka No. 123",
+  "cityHint": "Jakarta",
+  "provinceHint": "DKI Jakarta",
+  "branchPhoneLabel": "Nomor Telepon Cabang",
+  "branchPhoneHint": "Contoh: +6281234567890",
+  "branchEmailHint": "Contoh: cabang@laundry.com",
+  "selectManagerHint": "Pilih manajer cabang",
+  "capacityHint": "Contoh: 100",
+  "latitudeHint": "Latitude",
+  "longitudeHint": "Longitude",
+  "companyRequiredValidator": "Perusahaan wajib dipilih",
+  "defaultCompanyName": "Perusahaan Tanpa Nama",
+  "defaultEmployeeName": "Karyawan",
+  "branchDataNotFoundError": "Data cabang tidak ditemukan.",
+  "loadBranchDataError": "Gagal memuat data cabang: {error}",
+  "@loadBranchDataError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "companyNotSelectedWarning": "Perusahaan belum dipilih atau belum dibuat!",
+  "userSessionExpiredError": "Sesi user berakhir.",
+  "saveBranchError": "Gagal menyimpan data cabang: {error}",
+  "@saveBranchError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "branchDetailTitle": "Detail Cabang",
+  "deleteBranchConfirmDetail": "Cabang \"{name}\" ({code}) akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+  "@deleteBranchConfirmDetail": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "code": { "type": "String" }
+    }
+  },
+  "branchDeleteSuccess": "Cabang \"{name}\" berhasil dihapus.",
+  "@branchDeleteSuccess": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "deleteBranchError": "Gagal menghapus cabang: {error}",
+  "@deleteBranchError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "toggleStatusError": "Gagal mengubah status: {error}",
+  "@toggleStatusError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "addressShortLabel": "Alamat",
+  "phoneShortLabel": "Telepon",
+  "capacityShortLabel": "Kapasitas",
+  "coordinatesLabel": "Koordinat",
+  "notSetLabel": "Belum diatur",
+  "branchNotFoundTitle": "Cabang tidak ditemukan",
+  "branchNotFoundSubtitle": "Cabang mungkin sudah dihapus atau id tidak valid",
+
+  "monthJan": "Jan",
+  "monthFeb": "Feb",
+  "monthMar": "Mar",
+  "monthApr": "Apr",
+  "monthMay": "Mei",
+  "monthJun": "Jun",
+  "monthJul": "Jul",
+  "monthAug": "Agu",
+  "monthSep": "Sep",
+  "monthOct": "Okt",
+  "monthNov": "Nov",
+  "monthDec": "Des"
 }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
 import '../../models/laundry.dart';
 import '../../repositories/laundry_repository.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Laundries (Cabang) List Screen
 class LaundriesListScreen extends ConsumerStatefulWidget {
@@ -61,6 +62,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
   @override
   Widget build(BuildContext context) {
     final laundriesAsync = ref.watch(laundriesStreamProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -71,7 +73,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
         elevation: 2,
         icon: const Icon(Icons.add_business_outlined, size: 20),
         label: Text(
-          'Cabang Baru',
+          l10n.newBranchButton,
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
         ),
       ),
@@ -140,6 +142,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
   /// supaya tidak nongol kosong saat screen ini jadi tab utama tanpa history.
   Widget _buildHeader(BuildContext context) {
     final canGoBack = context.canPop();
+    final l10n = AppLocalizations.of(context)!;
 
     return Row(
       children: [
@@ -184,7 +187,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Cabang',
+              l10n.laundriesTitle,
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -193,7 +196,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
             ),
             const SizedBox(height: 2),
             Text(
-              'Kelola cabang laundry Anda',
+              l10n.laundriesSubtitle,
               style: GoogleFonts.poppins(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w400,
@@ -208,6 +211,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
 
   /// Build search bar
   Widget _buildSearchBar(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
@@ -224,7 +228,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
         controller: _searchController,
         style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
         decoration: InputDecoration(
-          hintText: 'Cari nama, kode, atau kota cabang...',
+          hintText: l10n.searchLaundryHint,
           hintStyle: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textTertiary),
           prefixIcon: Icon(Icons.search, color: AppTheme.textTertiary),
           border: OutlineInputBorder(
@@ -252,10 +256,11 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
 
   /// Build filter buttons
   Widget _buildFilterButtons(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final filters = [
-      ('all', 'Semua', Icons.apartment_outlined),
-      ('active', 'Aktif', Icons.check_circle_outline),
-      ('inactive', 'Tidak Aktif', Icons.pause_circle_outline),
+      ('all', l10n.filterAllLaundries, Icons.apartment_outlined),
+      ('active', l10n.filterActiveLaundries, Icons.check_circle_outline),
+      ('inactive', l10n.filterInactiveLaundries, Icons.pause_circle_outline),
     ];
 
     return SingleChildScrollView(
@@ -304,6 +309,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
 
   /// Build stats summary
   Widget _buildStatsSummary(BuildContext context, List<Laundry> laundries) {
+    final l10n = AppLocalizations.of(context)!;
     final totalLaundries = laundries.length;
     final activeLaundries = laundries.where((l) => l.isActive).length;
 
@@ -311,7 +317,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
       children: [
         Expanded(
           child: _StatBox(
-            title: 'Total Cabang',
+            title: l10n.totalLaundriesLabel,
             value: '$totalLaundries',
             icon: Icons.apartment_outlined,
             color: AppTheme.primaryColor,
@@ -320,7 +326,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
         const SizedBox(width: AppTheme.lg),
         Expanded(
           child: _StatBox(
-            title: 'Cabang Aktif',
+            title: l10n.activeLaundriesLabel,
             value: '$activeLaundries',
             icon: Icons.check_circle_outline,
             color: const Color(0xFF51CF66),
@@ -332,6 +338,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
 
   /// Build empty state
   Widget _buildEmptyState(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
@@ -352,7 +359,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
-              'Belum ada cabang',
+              l10n.emptyLaundriesTitle,
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -361,7 +368,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
             ),
             const SizedBox(height: AppTheme.sm),
             Text(
-              'Tambahkan cabang baru untuk memulai',
+              l10n.emptyLaundriesSubtitle,
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 color: AppTheme.textSecondary,
@@ -371,7 +378,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
             ElevatedButton.icon(
               onPressed: () => _openCreateLaundry(context),
               icon: const Icon(Icons.add_business_outlined, size: 18),
-              label: Text('Tambah Cabang', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              label: Text(l10n.addBranchButton, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
@@ -390,6 +397,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
 
   /// Build error state
   Widget _buildErrorState(BuildContext context, Object error) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
@@ -410,7 +418,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
-              'Gagal memuat data cabang',
+              l10n.loadLaundriesError,
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -534,6 +542,7 @@ class _LaundryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -620,7 +629,7 @@ class _LaundryCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Text(
-                    laundry.isActive ? 'Aktif' : 'Tidak Aktif',
+                    laundry.isActive ? l10n.filterActiveLaundries : l10n.filterInactiveLaundries,
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -662,7 +671,7 @@ class _LaundryCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Kapasitas ${laundry.capacity}',
+                      l10n.cardCapacityLabel(laundry.capacity),
                       style: GoogleFonts.poppins(
                         fontSize: 11.5,
                         color: AppTheme.textTertiary,

@@ -621,10 +621,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contactInfoTitle => 'Contact Information';
 
   @override
-  String get phoneLabel => 'Phone';
+  String get phoneLabel => 'Phone Number';
 
   @override
-  String get addressLabel => 'Address';
+  String get addressLabel => 'Full Address';
 
   @override
   String get orderHistoryTitle => 'Order History';
@@ -716,4 +716,336 @@ class AppLocalizationsEn extends AppLocalizations {
   String loadCustomersError(Object error) {
     return 'Failed to load customers: $error';
   }
+
+  @override
+  String get laundriesTitle => 'Branches';
+
+  @override
+  String get laundriesSubtitle => 'Manage your laundry branches';
+
+  @override
+  String get searchLaundryHint => 'Search by branch name, code, or city...';
+
+  @override
+  String get filterAllLaundries => 'All';
+
+  @override
+  String get filterActiveLaundries => 'Active';
+
+  @override
+  String get filterInactiveLaundries => 'Inactive';
+
+  @override
+  String get totalLaundriesLabel => 'Total Branches';
+
+  @override
+  String get activeLaundriesLabel => 'Active Branches';
+
+  @override
+  String get emptyLaundriesTitle => 'No branches yet';
+
+  @override
+  String get emptyLaundriesSubtitle => 'Add a new branch to get started';
+
+  @override
+  String get newBranchButton => 'New Branch';
+
+  @override
+  String get addBranchButton => 'Add Branch';
+
+  @override
+  String get loadLaundriesError => 'Failed to load branch data';
+
+  @override
+  String get addBranchTitle => 'Add New Branch';
+
+  @override
+  String get editBranchTitle => 'Edit Branch Data';
+
+  @override
+  String get addBranchInfo =>
+      'The system will automatically validate branch quota limits according to your subscription plan.';
+
+  @override
+  String get editBranchInfo =>
+      'Changes will be saved directly. Subscription limits do not apply to editing existing branches.';
+
+  @override
+  String get ownerCompanyLabel => 'Owner Company';
+
+  @override
+  String get registerCompanyFirst => '+ Register Company First';
+
+  @override
+  String get branchNameLabel => 'Branch Name';
+
+  @override
+  String get branchCodeLabel => 'Branch Code';
+
+  @override
+  String get cityLabel => 'City';
+
+  @override
+  String get provinceLabel => 'Province';
+
+  @override
+  String get emailOptionalLabel => 'Branch Email (Optional)';
+
+  @override
+  String get managerOptionalLabel => 'Branch Manager (Optional)';
+
+  @override
+  String get noEmployeeDataInfo =>
+      'No employee data yet. Manager can be assigned later.';
+
+  @override
+  String get dailyCapacityLabel => 'Daily Capacity (Orders Count)';
+
+  @override
+  String get mapLocationLabel => 'Map Location Point (Optional)';
+
+  @override
+  String get operatingHoursLabel => 'Operating Hours';
+
+  @override
+  String get useSameHoursLabel => 'Use same hours for all days';
+
+  @override
+  String get everyDayLabel => 'Every Day';
+
+  @override
+  String get activeStatusLabel => 'Active Branch Status';
+
+  @override
+  String get saveBranchButton => 'Save Branch Data';
+
+  @override
+  String get updateBranchButton => 'Save Changes';
+
+  @override
+  String get branchNameEmpty => 'Branch name cannot be empty';
+
+  @override
+  String get branchCodeEmpty => 'Branch code cannot be empty';
+
+  @override
+  String get addressEmpty => 'Address is required';
+
+  @override
+  String get fieldRequired => 'Required';
+
+  @override
+  String get phoneEmpty => 'Phone number is required';
+
+  @override
+  String get capacityEmpty => 'Capacity is required';
+
+  @override
+  String get quotaReachedTitle => 'Quota Limit Reached';
+
+  @override
+  String get quotaReachedContent =>
+      'You have reached the maximum branch limit for your current subscription plan.';
+
+  @override
+  String get upgradePlanButton => 'Upgrade Plan';
+
+  @override
+  String get branchAddSuccess => 'Laundry branch added successfully!';
+
+  @override
+  String get branchUpdateSuccess => 'Branch changes saved successfully!';
+
+  @override
+  String get deleteBranchTitle => 'Delete Branch?';
+
+  @override
+  String deleteBranchConfirm(Object name) {
+    return 'Branch \"$name\" will be permanently deleted. This action cannot be undone.';
+  }
+
+  @override
+  String get contactInfoSection => 'Contact Information';
+
+  @override
+  String get capacityLocationSection => 'Capacity & Location';
+
+  @override
+  String get createdLabel => 'Created';
+
+  @override
+  String get updatedLabel => 'Updated';
+
+  @override
+  String get todayLabel => 'Today';
+
+  @override
+  String get monday => 'Monday';
+
+  @override
+  String get tuesday => 'Tuesday';
+
+  @override
+  String get wednesday => 'Wednesday';
+
+  @override
+  String get thursday => 'Thursday';
+
+  @override
+  String get friday => 'Friday';
+
+  @override
+  String get saturday => 'Saturday';
+
+  @override
+  String get sunday => 'Sunday';
+
+  @override
+  String cardCapacityLabel(Object capacity) {
+    return 'Capacity $capacity';
+  }
+
+  @override
+  String get selectCompanyHint => 'Select company';
+
+  @override
+  String get branchNameHint => 'e.g. Merdeka Branch';
+
+  @override
+  String get branchCodeHint => 'e.g. JKT001';
+
+  @override
+  String get addressHint => 'e.g. Jl. Merdeka No. 123';
+
+  @override
+  String get cityHint => 'Jakarta';
+
+  @override
+  String get provinceHint => 'DKI Jakarta';
+
+  @override
+  String get branchPhoneLabel => 'Branch Phone Number';
+
+  @override
+  String get branchPhoneHint => 'e.g. +6281234567890';
+
+  @override
+  String get branchEmailHint => 'e.g. branch@laundry.com';
+
+  @override
+  String get selectManagerHint => 'Select branch manager';
+
+  @override
+  String get capacityHint => 'e.g. 100';
+
+  @override
+  String get latitudeHint => 'Latitude';
+
+  @override
+  String get longitudeHint => 'Longitude';
+
+  @override
+  String get companyRequiredValidator => 'Company must be selected';
+
+  @override
+  String get defaultCompanyName => 'Unnamed Company';
+
+  @override
+  String get defaultEmployeeName => 'Employee';
+
+  @override
+  String get branchDataNotFoundError => 'Branch data not found.';
+
+  @override
+  String loadBranchDataError(String error) {
+    return 'Failed to load branch data: $error';
+  }
+
+  @override
+  String get companyNotSelectedWarning =>
+      'Company not selected or not created yet!';
+
+  @override
+  String get userSessionExpiredError => 'User session expired.';
+
+  @override
+  String saveBranchError(String error) {
+    return 'Failed to save branch data: $error';
+  }
+
+  @override
+  String get branchDetailTitle => 'Branch Detail';
+
+  @override
+  String deleteBranchConfirmDetail(String name, String code) {
+    return 'Branch \"$name\" ($code) will be permanently deleted. This action cannot be undone.';
+  }
+
+  @override
+  String branchDeleteSuccess(String name) {
+    return 'Branch \"$name\" deleted successfully.';
+  }
+
+  @override
+  String deleteBranchError(String error) {
+    return 'Failed to delete branch: $error';
+  }
+
+  @override
+  String get addressShortLabel => 'Address';
+
+  @override
+  String get phoneShortLabel => 'Phone';
+
+  @override
+  String get capacityShortLabel => 'Capacity';
+
+  @override
+  String get coordinatesLabel => 'Coordinates';
+
+  @override
+  String get notSetLabel => 'Not set';
+
+  @override
+  String get branchNotFoundTitle => 'Branch not found';
+
+  @override
+  String get branchNotFoundSubtitle =>
+      'The branch may have been deleted or the id is invalid';
+
+  @override
+  String get monthJan => 'Jan';
+
+  @override
+  String get monthFeb => 'Feb';
+
+  @override
+  String get monthMar => 'Mar';
+
+  @override
+  String get monthApr => 'Apr';
+
+  @override
+  String get monthMay => 'May';
+
+  @override
+  String get monthJun => 'Jun';
+
+  @override
+  String get monthJul => 'Jul';
+
+  @override
+  String get monthAug => 'Aug';
+
+  @override
+  String get monthSep => 'Sep';
+
+  @override
+  String get monthOct => 'Oct';
+
+  @override
+  String get monthNov => 'Nov';
+
+  @override
+  String get monthDec => 'Dec';
 }

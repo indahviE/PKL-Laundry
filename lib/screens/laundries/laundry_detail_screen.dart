@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
 import '../../models/laundry.dart';
 import '../../repositories/laundry_repository.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Laundry (Cabang) Detail Screen
 class LaundryDetailScreen extends ConsumerWidget {
@@ -12,15 +13,16 @@ class LaundryDetailScreen extends ConsumerWidget {
 
   const LaundryDetailScreen({Key? key, required this.laundryId}) : super(key: key);
 
-  static const List<String> _dayLabels = [
-    'Senin',
-    'Selasa',
-    'Rabu',
-    'Kamis',
-    'Jumat',
-    'Sabtu',
-    'Minggu',
-  ];
+  /// Mengembalikan daftar label hari (Senin..Minggu) sesuai locale aktif.
+  List<String> _dayLabels(AppLocalizations l10n) => [
+        l10n.monday,
+        l10n.tuesday,
+        l10n.wednesday,
+        l10n.thursday,
+        l10n.friday,
+        l10n.saturday,
+        l10n.sunday,
+      ];
 
   List<DayHours> _dayHoursList(OperatingHours hours) => [
         hours.monday,
@@ -33,26 +35,27 @@ class LaundryDetailScreen extends ConsumerWidget {
       ];
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref, Laundry laundry) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
         title: Text(
-          'Hapus Cabang?',
+          l10n.deleteBranchTitle,
           style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16),
         ),
         content: Text(
-          'Cabang "${laundry.name}" (${laundry.code}) akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.',
+          l10n.deleteBranchConfirmDetail(laundry.name, laundry.code),
           style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
+            child: Text(l10n.cancel, style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Hapus', style: GoogleFonts.poppins(color: Colors.redAccent, fontWeight: FontWeight.w600)),
+            child: Text(l10n.deleteButton, style: GoogleFonts.poppins(color: Colors.redAccent, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -65,13 +68,13 @@ class LaundryDetailScreen extends ConsumerWidget {
       if (context.mounted) {
         context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cabang "${laundry.name}" berhasil dihapus.')),
+          SnackBar(content: Text(l10n.branchDeleteSuccess(laundry.name))),
         );
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menghapus cabang: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text(l10n.deleteBranchError(e.toString())), backgroundColor: Colors.redAccent),
         );
       }
     }
@@ -86,16 +89,16 @@ class LaundryDetailScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal mengubah status: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text(AppLocalizations.of(context)!.toggleStatusError(e.toString())), backgroundColor: Colors.redAccent),
         );
       }
     }
   }
 
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+  String _formatDate(AppLocalizations l10n, DateTime date) {
+    final months = [
+      l10n.monthJan, l10n.monthFeb, l10n.monthMar, l10n.monthApr, l10n.monthMay, l10n.monthJun,
+      l10n.monthJul, l10n.monthAug, l10n.monthSep, l10n.monthOct, l10n.monthNov, l10n.monthDec,
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -103,6 +106,7 @@ class LaundryDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final laundryAsync = ref.watch(laundryByIdProvider(laundryId));
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -125,22 +129,22 @@ class LaundryDetailScreen extends ConsumerWidget {
                     child: laundryAsync.when(
                       data: (laundry) {
                         if (laundry == null) {
-                          return _buildNotFound(context);
+                          return _buildNotFound(context, l10n);
                         }
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildTopBar(context, ref, laundry),
+                            _buildTopBar(context, ref, laundry, l10n),
                             const SizedBox(height: AppTheme.lg),
-                            _buildProfileCard(context, ref, laundry),
+                            _buildProfileCard(context, ref, laundry, l10n),
                             const SizedBox(height: AppTheme.lg),
-                            _buildContactCard(context, laundry),
+                            _buildContactCard(context, laundry, l10n),
                             const SizedBox(height: AppTheme.lg),
-                            _buildOperatingHoursCard(context, laundry),
+                            _buildOperatingHoursCard(context, laundry, l10n),
                             const SizedBox(height: AppTheme.lg),
-                            _buildCapacityLocationCard(context, laundry),
+                            _buildCapacityLocationCard(context, laundry, l10n),
                             const SizedBox(height: AppTheme.lg),
-                            _buildMetaCard(context, laundry),
+                            _buildMetaCard(context, laundry, l10n),
                           ],
                         );
                       },
@@ -148,7 +152,7 @@ class LaundryDetailScreen extends ConsumerWidget {
                         padding: EdgeInsets.symmetric(vertical: 120),
                         child: Center(child: CircularProgressIndicator()),
                       ),
-                      error: (error, stack) => _buildErrorState(context, error),
+                      error: (error, stack) => _buildErrorState(context, error, l10n),
                     ),
                   ),
                 ),
@@ -161,7 +165,7 @@ class LaundryDetailScreen extends ConsumerWidget {
   }
 
   /// Top bar: tombol back + judul + aksi edit + aksi hapus
-  Widget _buildTopBar(BuildContext context, WidgetRef ref, Laundry laundry) {
+  Widget _buildTopBar(BuildContext context, WidgetRef ref, Laundry laundry, AppLocalizations l10n) {
     return Row(
       children: [
         InkWell(
@@ -187,7 +191,7 @@ class LaundryDetailScreen extends ConsumerWidget {
         const SizedBox(width: AppTheme.md),
         Expanded(
           child: Text(
-            'Detail Cabang',
+            l10n.branchDetailTitle,
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -228,7 +232,7 @@ class LaundryDetailScreen extends ConsumerWidget {
   }
 
   /// Kartu profil utama: icon, nama, kode, badge status (bisa di-tap untuk toggle)
-  Widget _buildProfileCard(BuildContext context, WidgetRef ref, Laundry laundry) {
+  Widget _buildProfileCard(BuildContext context, WidgetRef ref, Laundry laundry, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
@@ -296,7 +300,7 @@ class LaundryDetailScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(AppTheme.radiusMd),
               ),
               child: Text(
-                laundry.isActive ? 'Aktif' : 'Tidak Aktif',
+                laundry.isActive ? l10n.filterActiveLaundries : l10n.filterInactiveLaundries,
                 style: GoogleFonts.poppins(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -311,7 +315,7 @@ class LaundryDetailScreen extends ConsumerWidget {
   }
 
   /// Kartu kontak: alamat, telepon, email
-  Widget _buildContactCard(BuildContext context, Laundry laundry) {
+  Widget _buildContactCard(BuildContext context, Laundry laundry, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
@@ -328,25 +332,26 @@ class LaundryDetailScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Informasi Kontak'),
+          _sectionTitle(l10n.contactInfoSection),
           const SizedBox(height: AppTheme.md),
           _infoRow(
             Icons.location_on_outlined,
-            'Alamat',
+            l10n.addressShortLabel,
             [laundry.address, laundry.city, laundry.province].where((s) => s.isNotEmpty).join(', '),
           ),
           const SizedBox(height: AppTheme.md),
-          _infoRow(Icons.phone_outlined, 'Telepon', laundry.phone.isNotEmpty ? laundry.phone : '-'),
+          _infoRow(Icons.phone_outlined, l10n.phoneShortLabel, laundry.phone.isNotEmpty ? laundry.phone : '-'),
           const SizedBox(height: AppTheme.md),
-          _infoRow(Icons.email_outlined, 'Email', laundry.email.isNotEmpty ? laundry.email : '-'),
+          _infoRow(Icons.email_outlined, l10n.emailLabel, laundry.email.isNotEmpty ? laundry.email : '-'),
         ],
       ),
     );
   }
 
   /// Kartu jam operasional per hari
-  Widget _buildOperatingHoursCard(BuildContext context, Laundry laundry) {
+  Widget _buildOperatingHoursCard(BuildContext context, Laundry laundry, AppLocalizations l10n) {
     final dayHours = _dayHoursList(laundry.operatingHours);
+    final dayLabels = _dayLabels(l10n);
     final todayIndex = DateTime.now().weekday - 1; // 0 = Senin
 
     return Container(
@@ -365,7 +370,7 @@ class LaundryDetailScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Jam Operasional'),
+          _sectionTitle(l10n.operatingHoursLabel),
           const SizedBox(height: AppTheme.md),
           ...List.generate(7, (i) {
             final isToday = i == todayIndex;
@@ -376,7 +381,7 @@ class LaundryDetailScreen extends ConsumerWidget {
                   SizedBox(
                     width: 72,
                     child: Text(
-                      _dayLabels[i],
+                      dayLabels[i],
                       style: GoogleFonts.poppins(
                         fontSize: 12.5,
                         fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
@@ -402,7 +407,7 @@ class LaundryDetailScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        'Hari ini',
+                        l10n.todayLabel,
                         style: GoogleFonts.poppins(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -420,7 +425,7 @@ class LaundryDetailScreen extends ConsumerWidget {
   }
 
   /// Kartu kapasitas & lokasi
-  Widget _buildCapacityLocationCard(BuildContext context, Laundry laundry) {
+  Widget _buildCapacityLocationCard(BuildContext context, Laundry laundry, AppLocalizations l10n) {
     final hasLocation = laundry.location.lat != 0.0 || laundry.location.lng != 0.0;
 
     return Container(
@@ -439,16 +444,16 @@ class LaundryDetailScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Kapasitas & Lokasi'),
+          _sectionTitle(l10n.capacityLocationSection),
           const SizedBox(height: AppTheme.md),
-          _infoRow(Icons.inventory_2_outlined, 'Kapasitas', '${laundry.capacity}'),
+          _infoRow(Icons.inventory_2_outlined, l10n.capacityShortLabel, '${laundry.capacity}'),
           const SizedBox(height: AppTheme.md),
           _infoRow(
             Icons.map_outlined,
-            'Koordinat',
+            l10n.coordinatesLabel,
             hasLocation
                 ? '${laundry.location.lat.toStringAsFixed(6)}, ${laundry.location.lng.toStringAsFixed(6)}'
-                : 'Belum diatur',
+                : l10n.notSetLabel,
           ),
         ],
       ),
@@ -456,7 +461,7 @@ class LaundryDetailScreen extends ConsumerWidget {
   }
 
   /// Kartu metadata: dibuat & diperbarui
-  Widget _buildMetaCard(BuildContext context, Laundry laundry) {
+  Widget _buildMetaCard(BuildContext context, Laundry laundry, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
@@ -473,11 +478,11 @@ class LaundryDetailScreen extends ConsumerWidget {
       child: Row(
         children: [
           Expanded(
-            child: _metaItem('Dibuat', _formatDate(laundry.createdAt)),
+            child: _metaItem(l10n.createdLabel, _formatDate(l10n, laundry.createdAt)),
           ),
           Container(width: 1, height: 32, color: AppTheme.borderColor.withOpacity(0.6)),
           Expanded(
-            child: _metaItem('Diperbarui', _formatDate(laundry.updatedAt)),
+            child: _metaItem(l10n.updatedLabel, _formatDate(l10n, laundry.updatedAt)),
           ),
         ],
       ),
@@ -557,7 +562,7 @@ class LaundryDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotFound(BuildContext context) {
+  Widget _buildNotFound(BuildContext context, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 100),
       child: Center(
@@ -578,7 +583,7 @@ class LaundryDetailScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
-              'Cabang tidak ditemukan',
+              l10n.branchNotFoundTitle,
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -587,7 +592,7 @@ class LaundryDetailScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppTheme.sm),
             Text(
-              'Cabang mungkin sudah dihapus atau id tidak valid',
+              l10n.branchNotFoundSubtitle,
               style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
             ),
           ],
@@ -596,7 +601,7 @@ class LaundryDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, Object error) {
+  Widget _buildErrorState(BuildContext context, Object error, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 100),
       child: Center(
@@ -613,7 +618,7 @@ class LaundryDetailScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
-              'Gagal memuat data cabang',
+              l10n.loadLaundriesError,
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

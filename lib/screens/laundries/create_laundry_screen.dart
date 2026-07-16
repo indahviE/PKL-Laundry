@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Create / Edit Laundry (Cabang) Screen - NetWash
 /// Skema data & feature gating mengikuti Blueprint §3.2.3 (Manajemen Cabang)
@@ -55,16 +56,38 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
   List<Map<String, dynamic>> _employeesList = [];
 
   // Hari operasional sesuai skema operating_hours (§3.2.3): key harus persis
-  // "monday".."sunday" agar konsisten dengan blueprint.
+  // "monday".."sunday" agar konsisten dengan blueprint. Label ditampilkan
+  // sesuai bahasa aktif lewat _dayLabel().
   final List<Map<String, String>> _days = const [
-    {'key': 'monday', 'label': 'Senin'},
-    {'key': 'tuesday', 'label': 'Selasa'},
-    {'key': 'wednesday', 'label': 'Rabu'},
-    {'key': 'thursday', 'label': 'Kamis'},
-    {'key': 'friday', 'label': 'Jumat'},
-    {'key': 'saturday', 'label': 'Sabtu'},
-    {'key': 'sunday', 'label': 'Minggu'},
+    {'key': 'monday'},
+    {'key': 'tuesday'},
+    {'key': 'wednesday'},
+    {'key': 'thursday'},
+    {'key': 'friday'},
+    {'key': 'saturday'},
+    {'key': 'sunday'},
   ];
+
+  /// Mengembalikan label hari sesuai locale aktif berdasarkan key hari.
+  String _dayLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'monday':
+        return l10n.monday;
+      case 'tuesday':
+        return l10n.tuesday;
+      case 'wednesday':
+        return l10n.wednesday;
+      case 'thursday':
+        return l10n.thursday;
+      case 'friday':
+        return l10n.friday;
+      case 'saturday':
+        return l10n.saturday;
+      case 'sunday':
+      default:
+        return l10n.sunday;
+    }
+  }
 
   // Default jam operasional per hari
   late Map<String, Map<String, String>> _operatingHours;
@@ -123,7 +146,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       if (data == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Data cabang tidak ditemukan.'), backgroundColor: Colors.redAccent),
+            SnackBar(content: Text(AppLocalizations.of(context)!.branchDataNotFoundError), backgroundColor: Colors.redAccent),
           );
           context.pop();
         }
@@ -176,7 +199,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat data cabang: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text(AppLocalizations.of(context)!.loadBranchDataError(e.toString())), backgroundColor: Colors.redAccent),
         );
       }
     } finally {
@@ -242,7 +265,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       setState(() {
         _companiesList = companySnap.docs.map((doc) => {
           'id': doc.id,
-          'name': doc.data()['name'] ?? 'Perusahaan Tanpa Nama',
+          'name': doc.data()['name'] ?? AppLocalizations.of(context)!.defaultCompanyName,
         }).toList();
 
         // Di mode create, auto-pilih perusahaan pertama sebagai default.
@@ -276,7 +299,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
           'id': doc.id,
           'name': (doc.data()['full_name'] as String?)?.isNotEmpty == true
               ? doc.data()['full_name']
-              : (doc.data()['employee_code'] ?? 'Karyawan'),
+              : (doc.data()['employee_code'] ?? AppLocalizations.of(context)!.defaultEmployeeName),
         }).toList();
       });
     } catch (e) {
@@ -352,7 +375,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCompanyId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perusahaan belum dipilih atau belum dibuat!'), backgroundColor: Colors.orangeAccent),
+        SnackBar(content: Text(AppLocalizations.of(context)!.companyNotSelectedWarning), backgroundColor: Colors.orangeAccent),
       );
       return;
     }
@@ -361,7 +384,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception("Sesi user berakhir.");
+      if (user == null) throw Exception(AppLocalizations.of(context)!.userSessionExpiredError);
 
       final currentUserId = user.uid;
 
@@ -373,24 +396,27 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
           if (mounted) {
             showDialog(
               context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Batas Kuota Tercapai'),
-                content: const Text('Jumlah cabang Anda telah mencapai batas maksimal kuota paket langganan saat ini. Silakan upgrade paket.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => ctx.pop(),
-                    child: const Text('Batal', style: TextStyle(color: Colors.grey)),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: textBlue),
-                    onPressed: () {
-                      ctx.pop();
-                      context.push('/settings/subscription');
-                    },
-                    child: const Text('Upgrade Paket', style: TextStyle(color: Colors.white)),
-                  ),
-                ],
-              ),
+              builder: (ctx) {
+                final dialogL10n = AppLocalizations.of(ctx)!;
+                return AlertDialog(
+                  title: Text(dialogL10n.quotaReachedTitle),
+                  content: Text(dialogL10n.quotaReachedContent),
+                  actions: [
+                    TextButton(
+                      onPressed: () => ctx.pop(),
+                      child: Text(dialogL10n.cancel, style: const TextStyle(color: Colors.grey)),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: textBlue),
+                      onPressed: () {
+                        ctx.pop();
+                        context.push('/settings/subscription');
+                      },
+                      child: Text(dialogL10n.upgradePlanButton, style: const TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                );
+              },
             );
             setState(() => _isLoading = false);
           }
@@ -461,9 +487,10 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       }
 
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isEditMode ? 'Perubahan cabang berhasil disimpan!' : 'Cabang laundry berhasil ditambahkan!'),
+            content: Text(isEditMode ? l10n.branchUpdateSuccess : l10n.branchAddSuccess),
             backgroundColor: const Color(0xFF27AE60),
           ),
         );
@@ -472,7 +499,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menyimpan data cabang: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text(AppLocalizations.of(context)!.saveBranchError(e.toString())), backgroundColor: Colors.redAccent),
         );
       }
     } finally {
@@ -482,11 +509,12 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FB),
       appBar: AppBar(
         title: Text(
-          isEditMode ? 'Edit Data Cabang' : 'Tambah Cabang Baru',
+          isEditMode ? l10n.editBranchTitle : l10n.addBranchTitle,
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 16),
         ),
         backgroundColor: Colors.white,
@@ -523,9 +551,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                             const SizedBox(width: AppTheme.md),
                             Expanded(
                               child: Text(
-                                isEditMode
-                                    ? 'Perubahan akan langsung tersimpan ke data cabang ini. Kuota paket langganan tidak berlaku untuk pengeditan.'
-                                    : 'Sistem akan memvalidasi limitasi kuota cabang sesuai paket langganan Anda secara otomatis sebelum menyimpan data.',
+                                isEditMode ? l10n.editBranchInfo : l10n.addBranchInfo,
                                 style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.3),
                               ),
                             ),
@@ -534,12 +560,12 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                       ),
                       const SizedBox(height: AppTheme.xl),
 
-                      _sectionLabel('Perusahaan Pemilik Cabang'),
+                      _sectionLabel(l10n.ownerCompanyLabel),
                       const SizedBox(height: 6),
                       _companiesList.isEmpty
                           ? TextButton(
                               onPressed: () => context.push('/companies/create'),
-                              child: const Text('+ Daftarkan Perusahaan Terlebih Dahulu', style: TextStyle(color: textBlue, fontSize: 13)),
+                              child: Text(l10n.registerCompanyFirst, style: const TextStyle(color: textBlue, fontSize: 13)),
                             )
                           : DropdownButtonFormField<String>(
                               value: _companiesList.any((c) => c['id'] == _selectedCompanyId) ? _selectedCompanyId : null,
@@ -550,38 +576,38 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                                 );
                               }).toList(),
                               onChanged: (val) => setState(() => _selectedCompanyId = val),
-                              decoration: _buildInputDecoration('Pilih perusahaan', Icons.apartment_outlined),
-                              validator: (v) => v == null ? 'Perusahaan wajib dipilih' : null,
+                              decoration: _buildInputDecoration(l10n.selectCompanyHint, Icons.apartment_outlined),
+                              validator: (v) => v == null ? l10n.companyRequiredValidator : null,
                             ),
                       const SizedBox(height: AppTheme.lg),
 
-                      _sectionLabel('Nama Cabang'),
+                      _sectionLabel(l10n.branchNameLabel),
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _nameController,
                         textCapitalization: TextCapitalization.words,
-                        decoration: _buildInputDecoration('Contoh: Cabang Merdeka', Icons.storefront_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Nama cabang tidak boleh kosong' : null,
+                        decoration: _buildInputDecoration(l10n.branchNameHint, Icons.storefront_outlined),
+                        validator: (v) => v == null || v.trim().isEmpty ? l10n.branchNameEmpty : null,
                       ),
                       const SizedBox(height: AppTheme.lg),
 
-                      _sectionLabel('Kode Cabang'),
+                      _sectionLabel(l10n.branchCodeLabel),
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _codeController,
                         textCapitalization: TextCapitalization.characters,
-                        decoration: _buildInputDecoration('Contoh: JKT001', Icons.qr_code_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Kode cabang tidak boleh kosong' : null,
+                        decoration: _buildInputDecoration(l10n.branchCodeHint, Icons.qr_code_outlined),
+                        validator: (v) => v == null || v.trim().isEmpty ? l10n.branchCodeEmpty : null,
                       ),
                       const SizedBox(height: AppTheme.lg),
 
-                      _sectionLabel('Alamat Lengkap'),
+                      _sectionLabel(l10n.addressLabel),
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _addressController,
                         maxLines: 2,
-                        decoration: _buildInputDecoration('Contoh: Jl. Merdeka No. 123', Icons.location_on_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Alamat wajib diisi' : null,
+                        decoration: _buildInputDecoration(l10n.addressHint, Icons.location_on_outlined),
+                        validator: (v) => v == null || v.trim().isEmpty ? l10n.addressEmpty : null,
                       ),
                       const SizedBox(height: AppTheme.lg),
 
@@ -591,13 +617,13 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _sectionLabel('Kota'),
+                                _sectionLabel(l10n.cityLabel),
                                 const SizedBox(height: 6),
                                 TextFormField(
                                   controller: _cityController,
                                   textCapitalization: TextCapitalization.words,
-                                  decoration: _buildInputDecoration('Jakarta', Icons.location_city_outlined),
-                                  validator: (v) => v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+                                  decoration: _buildInputDecoration(l10n.cityHint, Icons.location_city_outlined),
+                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.fieldRequired : null,
                                 ),
                               ],
                             ),
@@ -607,13 +633,13 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _sectionLabel('Provinsi'),
+                                _sectionLabel(l10n.provinceLabel),
                                 const SizedBox(height: 6),
                                 TextFormField(
                                   controller: _provinceController,
                                   textCapitalization: TextCapitalization.words,
-                                  decoration: _buildInputDecoration('DKI Jakarta', Icons.map_outlined),
-                                  validator: (v) => v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+                                  decoration: _buildInputDecoration(l10n.provinceHint, Icons.map_outlined),
+                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.fieldRequired : null,
                                 ),
                               ],
                             ),
@@ -622,26 +648,26 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                       ),
                       const SizedBox(height: AppTheme.lg),
 
-                      _sectionLabel('Nomor Telepon Cabang'),
+                      _sectionLabel(l10n.branchPhoneLabel),
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
-                        decoration: _buildInputDecoration('Contoh: +6281234567890', Icons.phone_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Nomor telepon wajib diisi' : null,
+                        decoration: _buildInputDecoration(l10n.branchPhoneHint, Icons.phone_outlined),
+                        validator: (v) => v == null || v.trim().isEmpty ? l10n.phoneEmpty : null,
                       ),
                       const SizedBox(height: AppTheme.lg),
 
-                      _sectionLabel('Email Cabang (Opsional)'),
+                      _sectionLabel(l10n.emailOptionalLabel),
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        decoration: _buildInputDecoration('Contoh: cabang@laundry.com', Icons.email_outlined),
+                        decoration: _buildInputDecoration(l10n.branchEmailHint, Icons.email_outlined),
                       ),
                       const SizedBox(height: AppTheme.lg),
 
-                      _sectionLabel('Manajer Cabang (Opsional)'),
+                      _sectionLabel(l10n.managerOptionalLabel),
                       const SizedBox(height: 6),
                       _employeesList.isEmpty
                           ? Container(
@@ -652,7 +678,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                                 border: Border.all(color: Colors.grey.shade200),
                               ),
                               child: Text(
-                                'Belum ada data karyawan. Manajer bisa ditugaskan belakangan setelah karyawan ditambahkan.',
+                                l10n.noEmployeeDataInfo,
                                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                               ),
                             )
@@ -665,21 +691,21 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                                 );
                               }).toList(),
                               onChanged: (val) => setState(() => _selectedManagerId = val),
-                              decoration: _buildInputDecoration('Pilih manajer cabang', Icons.badge_outlined),
+                              decoration: _buildInputDecoration(l10n.selectManagerHint, Icons.badge_outlined),
                             ),
                       const SizedBox(height: AppTheme.lg),
 
-                      _sectionLabel('Kapasitas Harian (Jumlah Order)'),
+                      _sectionLabel(l10n.dailyCapacityLabel),
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _capacityController,
                         keyboardType: TextInputType.number,
-                        decoration: _buildInputDecoration('Contoh: 100', Icons.local_shipping_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Kapasitas wajib diisi' : null,
+                        decoration: _buildInputDecoration(l10n.capacityHint, Icons.local_shipping_outlined),
+                        validator: (v) => v == null || v.trim().isEmpty ? l10n.capacityEmpty : null,
                       ),
                       const SizedBox(height: AppTheme.lg),
 
-                      _sectionLabel('Titik Lokasi Peta (Opsional)'),
+                      _sectionLabel(l10n.mapLocationLabel),
                       const SizedBox(height: 6),
                       Row(
                         children: [
@@ -687,7 +713,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                             child: TextFormField(
                               controller: _latController,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                              decoration: _buildInputDecoration('Latitude', Icons.my_location_outlined),
+                              decoration: _buildInputDecoration(l10n.latitudeHint, Icons.my_location_outlined),
                             ),
                           ),
                           const SizedBox(width: AppTheme.md),
@@ -695,14 +721,14 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                             child: TextFormField(
                               controller: _lngController,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                              decoration: _buildInputDecoration('Longitude', Icons.my_location_outlined),
+                              decoration: _buildInputDecoration(l10n.longitudeHint, Icons.my_location_outlined),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: AppTheme.lg),
 
-                      _sectionLabel('Jam Operasional'),
+                      _sectionLabel(l10n.operatingHoursLabel),
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 4),
@@ -714,8 +740,8 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Expanded(
-                              child: Text('Gunakan jam yang sama untuk semua hari', style: TextStyle(fontSize: 13)),
+                            Expanded(
+                              child: Text(l10n.useSameHoursLabel, style: const TextStyle(fontSize: 13)),
                             ),
                             Switch.adaptive(
                               value: _useSameHoursForAllDays,
@@ -729,7 +755,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
 
                       _useSameHoursForAllDays
                           ? _buildHourPickerRow(
-                              label: 'Setiap Hari',
+                              label: l10n.everyDayLabel,
                               openValue: _uniformOpen,
                               closeValue: _uniformClose,
                               onOpenTap: () => _pickTime(
@@ -747,7 +773,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 8.0),
                                   child: _buildHourPickerRow(
-                                    label: d['label']!,
+                                    label: _dayLabel(l10n, key),
                                     openValue: _operatingHours[key]!['open']!,
                                     closeValue: _operatingHours[key]!['close']!,
                                     onOpenTap: () => _pickTime(
@@ -774,7 +800,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Status Cabang Aktif', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                            Text(l10n.activeStatusLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
                             Switch.adaptive(
                               value: _isActive,
                               activeColor: textBlue,
@@ -797,7 +823,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                             elevation: 0,
                           ),
                           child: Text(
-                            isEditMode ? 'Simpan Perubahan' : 'Simpan Data Cabang',
+                            isEditMode ? l10n.updateBranchButton : l10n.saveBranchButton,
                             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                         ),
