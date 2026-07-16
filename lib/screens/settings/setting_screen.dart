@@ -206,17 +206,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     String? photoUrl,
     bool isMobile,
   ) {
-    final horizontalPadding = isMobile ? 20.0 : 28.0;
-    final avatarSize = isMobile ? 68.0 : 76.0;
-    final cornerRadius = isMobile ? 26.0 : 32.0;
+    final horizontalPadding = isMobile ? 18.0 : 24.0;
+    final avatarSize = isMobile ? 58.0 : 64.0;
+    final cornerRadius = isMobile ? 20.0 : 26.0;
 
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
         horizontalPadding,
-        isMobile ? 20 : 26,
+        isMobile ? 16 : 20,
         horizontalPadding,
-        isMobile ? 28 : 34,
+        isMobile ? 20 : 24,
       ),
       decoration: BoxDecoration(
         gradient: AppTheme.brandGradient,
@@ -227,29 +227,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.settings_rounded, color: Colors.white, size: 17),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                t.settingsTitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ],
+          Text(
+            t.settingsTitle,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withOpacity(0.85),
+              letterSpacing: 0.3,
+            ),
           ),
-          SizedBox(height: isMobile ? 18 : 22),
+          SizedBox(height: isMobile ? 12 : 16),
           Container(
             width: avatarSize,
             height: avatarSize,
@@ -260,8 +247,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.15),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
+                  blurRadius: 16,
+                  offset: const Offset(0, 5),
                 ),
               ],
               image: (photoUrl != null && photoUrl.isNotEmpty)
@@ -282,14 +269,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   )
                 : null,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             name,
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.poppins(
-              fontSize: 16.5,
+              fontSize: 15.5,
               fontWeight: FontWeight.w600,
               color: Colors.white,
             ),
@@ -302,15 +289,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.poppins(
-                fontSize: 12.5,
+                fontSize: 12,
                 fontWeight: FontWeight.w400,
                 color: Colors.white.withOpacity(0.85),
               ),
             ),
           ],
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.18),
               borderRadius: BorderRadius.circular(20),
@@ -318,7 +305,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Text(
               t.roleOwner,
               style: GoogleFonts.poppins(
-                fontSize: 11.5,
+                fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: Colors.white,
               ),

@@ -167,27 +167,35 @@ class _NavItemButton extends StatelessWidget {
 }
 
 /// Predefined bottom navigation items untuk NetWash
+///
+/// Icon-nya sekarang satu keluarga penuh: outlined (thin line) buat
+/// state nonaktif -> rounded (solid, sudut lembut) buat state aktif.
+/// Sebelumnya campur aduk (outlined vs default/sharp), jadi kerasa kurang
+/// rapi. Orders dipakein `receipt_long` (bukan `receipt` polos) biar
+/// kesannya kayak struk pesanan yang lebih detail/mewah, dan Customers
+/// dipakein `people_alt` biar konsisten sama icon yang sama persis di
+/// header CustomersListScreen.
 class NetWashBottomNavItems {
   static const List<BottomNavItem> items = [
     BottomNavItem(
       label: 'Dashboard',
-      icon: Icons.dashboard_outlined,
-      activeIcon: Icons.dashboard,
+      icon: Icons.space_dashboard_outlined,
+      activeIcon: Icons.space_dashboard_rounded,
     ),
     BottomNavItem(
       label: 'Orders',
-      icon: Icons.receipt_outlined,
-      activeIcon: Icons.receipt,
+      icon: Icons.receipt_long_outlined,
+      activeIcon: Icons.receipt_long_rounded,
     ),
     BottomNavItem(
       label: 'Customers',
-      icon: Icons.people_outlined,
-      activeIcon: Icons.people,
+      icon: Icons.people_alt_outlined,
+      activeIcon: Icons.people_alt_rounded,
     ),
     BottomNavItem(
       label: 'Settings',
       icon: Icons.settings_outlined,
-      activeIcon: Icons.settings,
+      activeIcon: Icons.settings_rounded,
     ),
   ];
 }
