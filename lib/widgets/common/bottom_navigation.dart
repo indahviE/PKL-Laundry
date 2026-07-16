@@ -14,7 +14,14 @@ class BottomNavItem {
   });
 }
 
-/// Custom Bottom Navigation Bar
+/// Custom Bottom Navigation Bar — NetWash
+///
+/// Didesain ulang jadi floating pill bar: mengambang dengan jarak dari tepi
+/// layar (bukan nempel penuh), sudut membulat besar (radiusXl, senada
+/// dengan card lain di app), dan indikator biru lembut yang meluncur
+/// (AnimatedPositioned) mengikuti tab aktif — bukan cuma ganti warna icon
+/// statis. Icon aktif membesar dikit + label jadi bold, semuanya animasi
+/// halus 260ms supaya kerasa "hidup" tanpa berlebihan.
 class CustomBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -35,72 +42,124 @@ class CustomBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor ?? Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(
-              items.length,
-              (index) => _buildNavItem(
-                context,
-                items[index],
-                index,
-                index == currentIndex,
-              ),
+    final itemActiveColor = activeColor ?? AppTheme.primaryColor;
+    final itemInactiveColor = inactiveColor ?? AppTheme.gray500;
+    final barColor = backgroundColor ?? Colors.white;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset > 0 ? bottomInset - 4 : 12),
+      child: Container(
+        height: 66,
+        decoration: BoxDecoration(
+          color: barColor,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl + 4),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.16),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
             ),
-          ),
+          ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = constraints.maxWidth / items.length;
+            return Stack(
+              children: [
+                // Pil indikator biru lembut yang meluncur di belakang tab aktif
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 260),
+                  curve: Curves.easeOutCubic,
+                  left: itemWidth * currentIndex,
+                  top: 8,
+                  bottom: 8,
+                  width: itemWidth,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: itemActiveColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: List.generate(
+                    items.length,
+                    (index) => Expanded(
+                      child: _NavItemButton(
+                        item: items[index],
+                        isActive: index == currentIndex,
+                        activeColor: itemActiveColor,
+                        inactiveColor: itemInactiveColor,
+                        onTap: () => onTap(index),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
+}
 
-  Widget _buildNavItem(
-    BuildContext context,
-    BottomNavItem item,
-    int index,
-    bool isActive,
-  ) {
-    final itemActiveColor = activeColor ?? AppTheme.primaryColor;
-    final itemInactiveColor = inactiveColor ?? AppTheme.gray500;
+class _NavItemButton extends StatelessWidget {
+  final BottomNavItem item;
+  final bool isActive;
+  final Color activeColor;
+  final Color inactiveColor;
+  final VoidCallback onTap;
 
-    return GestureDetector(
-      onTap: () => onTap(index),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Icon
-            Icon(
-              isActive ? (item.activeIcon ?? item.icon) : item.icon,
-              color: isActive ? itemActiveColor : itemInactiveColor,
-              size: 24,
-            ),
+  const _NavItemButton({
+    required this.item,
+    required this.isActive,
+    required this.activeColor,
+    required this.inactiveColor,
+    required this.onTap,
+  });
 
-            const SizedBox(height: AppTheme.xs),
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? activeColor : inactiveColor;
 
-            // Label
-            Text(
-              item.label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isActive ? itemActiveColor : itemInactiveColor,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                  ),
-            ),
-          ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedScale(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutBack,
+                scale: isActive ? 1.12 : 1.0,
+                child: Icon(
+                  isActive ? (item.activeIcon ?? item.icon) : item.icon,
+                  color: color,
+                  size: 23,
+                ),
+              ),
+              const SizedBox(height: 4),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 260),
+                style: TextStyle(
+                  fontSize: isActive ? 11.5 : 11,
+                  color: color,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  letterSpacing: -0.1,
+                ),
+                child: Text(item.label),
+              ),
+            ],
+          ),
         ),
       ),
     );

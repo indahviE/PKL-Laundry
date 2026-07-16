@@ -50,7 +50,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildHeader(context, t, displayName, user?.email, photoUrl),
+                      _buildHeader(
+                        context,
+                        t,
+                        displayName,
+                        user?.email,
+                        photoUrl,
+                        isMobile,
+                      ),
                       Padding(
                         padding: EdgeInsets.fromLTRB(
                           isMobile ? 16 : 24,
@@ -184,41 +191,68 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // ==========================================================
   // HEADER
   // ==========================================================
+  // Dirapikan: sebelumnya padding horizontal fixed 24 di semua ukuran
+  // layar (nggak ngikutin `isMobile` kayak konten di bawahnya yang
+  // 16/24), radius sudut 32 dan avatar 76px juga kebesaran buat layar
+  // sempit -> keliatan "meleber"/terlalu lebar dibanding body di
+  // bawahnya. Sekarang padding, radius, avatar, dan spacing semua
+  // responsif + judul dikasih icon badge kecil (senada sama pola header
+  // di Dashboard/Orders/Customers) biar lebih proporsional dan rapi.
   Widget _buildHeader(
     BuildContext context,
     AppLocalizations t,
     String name,
     String? email,
     String? photoUrl,
+    bool isMobile,
   ) {
+    final horizontalPadding = isMobile ? 20.0 : 28.0;
+    final avatarSize = isMobile ? 68.0 : 76.0;
+    final cornerRadius = isMobile ? 26.0 : 32.0;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 36),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        isMobile ? 20 : 26,
+        horizontalPadding,
+        isMobile ? 28 : 34,
+      ),
+      decoration: BoxDecoration(
         gradient: AppTheme.brandGradient,
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
+          bottomLeft: Radius.circular(cornerRadius),
+          bottomRight: Radius.circular(cornerRadius),
         ),
       ),
       child: Column(
         children: [
           Row(
             children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.settings_rounded, color: Colors.white, size: 17),
+              ),
+              const SizedBox(width: 10),
               Text(
                 t.settingsTitle,
                 style: GoogleFonts.poppins(
-                  fontSize: 20,
+                  fontSize: 17,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: isMobile ? 18 : 22),
           Container(
-            width: 76,
-            height: 76,
+            width: avatarSize,
+            height: avatarSize,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: Colors.white,
@@ -226,8 +260,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.15),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
                 ),
               ],
               image: (photoUrl != null && photoUrl.isNotEmpty)
@@ -241,18 +275,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ? Text(
                     name.isNotEmpty ? name[0].toUpperCase() : '?',
                     style: GoogleFonts.poppins(
-                      fontSize: 30,
+                      fontSize: avatarSize * 0.38,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.primaryColor,
                     ),
                   )
                 : null,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Text(
             name,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.poppins(
-              fontSize: 18,
+              fontSize: 16.5,
               fontWeight: FontWeight.w600,
               color: Colors.white,
             ),
@@ -261,8 +298,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 2),
             Text(
               email,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.poppins(
-                fontSize: 13,
+                fontSize: 12.5,
                 fontWeight: FontWeight.w400,
                 color: Colors.white.withOpacity(0.85),
               ),
@@ -278,7 +318,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Text(
               t.roleOwner,
               style: GoogleFonts.poppins(
-                fontSize: 12,
+                fontSize: 11.5,
                 fontWeight: FontWeight.w500,
                 color: Colors.white,
               ),

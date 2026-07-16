@@ -4,14 +4,21 @@ import 'package:go_router/go_router.dart';
 import '../../widgets/common/bottom_navigation.dart';
 
 /// Main Screen - Layout utama setelah login (Wadah / Shell Navigasi)
+///
+/// Dulu widget ini menerima `child` biasa dari ShellRoute, yang artinya
+/// GoRouter MEMBANGUN ULANG halaman dari nol setiap kali pindah tab
+/// (termasuk re-connect semua StreamBuilder ke Firestore -> kerasa lag).
+///
+/// Sekarang pakai `StatefulNavigationShell` dari StatefulShellRoute.indexedStack:
+/// ke-4 tab (Dashboard/Orders/Customers/Settings) tetap hidup di background
+/// lewat IndexedStack, jadi pindah tab tinggal ganti visibility, instan,
+/// dan state/stream Firestore-nya nggak connect ulang tiap kali diklik.
 class MainScreen extends StatefulWidget {
-  /// child di sini diisi otomatis oleh GoRouter (ShellRoute)
-  /// berupa halaman aktif saat ini (Dashboard, Orders, dll.)
-  final Widget child;
+  final StatefulNavigationShell navigationShell;
 
   const MainScreen({
     Key? key,
-    required this.child,
+    required this.navigationShell,
   }) : super(key: key);
 
   @override
@@ -21,40 +28,25 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   DateTime? _lastBackPress;
 
-  /// Menentukan indeks tab bawah aktif berdasarkan path rute saat ini
-  int _calculateSelectedIndex(BuildContext context) {
-    final String location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/orders')) return 1;
-    if (location.startsWith('/customers')) return 2;
-    if (location.startsWith('/settings')) return 3;
-    return 0; // Default ke Dashboard ('/dashboard')
-  }
-
-  /// Fungsi untuk berpindah rute saat tab bawah diklik
-  void _onItemTapped(int index, BuildContext context) {
+  /// Fungsi untuk berpindah tab saat bottom nav diklik.
+  /// `initialLocation: true` kalau tab yang sama diklik lagi -> reset ke
+  /// root branch itu (misal lagi di /orders/123, klik tab Orders lagi
+  /// balik ke /orders). Kalau ganti ke branch lain, state branch tsb
+  /// tetap dipertahankan (nggak reload).
+  void _onItemTapped(int index) {
     HapticFeedback.selectionClick();
-    switch (index) {
-      case 0:
-        context.go('/dashboard');
-        break;
-      case 1:
-        context.go('/orders');
-        break;
-      case 2:
-        context.go('/customers');
-        break;
-      case 3:
-        context.go('/settings');
-        break;
-    }
+    widget.navigationShell.goBranch(
+      index,
+      initialLocation: index == widget.navigationShell.currentIndex,
+    );
   }
 
   /// Konfirmasi keluar aplikasi: tekan back dua kali dalam 2 detik.
-  /// Hanya berlaku ketika berada di tab Dashboard (halaman utama).
+  /// Hanya berlaku ketika berada di tab Dashboard (branch index 0).
   Future<bool> _onWillPop(BuildContext context) async {
-    final isAtRoot = _calculateSelectedIndex(context) == 0;
+    final isAtRoot = widget.navigationShell.currentIndex == 0;
     if (!isAtRoot) {
-      context.go('/dashboard');
+      widget.navigationShell.goBranch(0);
       return false;
     }
 
@@ -94,31 +86,14 @@ class _MainScreenState extends State<MainScreen> {
           // penuh), extendBody:true akan membuat konten paling bawah tergambar di
           // belakang nav bar sehingga terlihat seperti "tidak bisa discroll sampai habis".
           extendBody: false,
-          // Body langsung menampilkan halaman aktif yang dikirim oleh GoRouter,
-          // dibungkus AnimatedSwitcher agar transisi antar tab terasa halus.
-          body: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.02),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
-              ),
-            ),
-            child: KeyedSubtree(
-              key: ValueKey(_calculateSelectedIndex(context)),
-              child: widget.child,
-            ),
-          ),
+          // navigationShell sendiri sudah berupa IndexedStack dari ke-4 branch,
+          // jadi tinggal ditaruh langsung sebagai body -- nggak perlu
+          // AnimatedSwitcher/KeyedSubtree lagi karena bukan rebuild dari nol.
+          body: widget.navigationShell,
           bottomNavigationBar: CustomBottomNavigation(
-            currentIndex: _calculateSelectedIndex(context),
+            currentIndex: widget.navigationShell.currentIndex,
             items: NetWashBottomNavItems.items,
-            onTap: (index) => _onItemTapped(index, context),
+            onTap: _onItemTapped,
           ),
         ),
       ),

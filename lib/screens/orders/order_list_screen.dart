@@ -206,7 +206,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildHeader(context),
+                        _buildHeader(context, isMobile),
                         const SizedBox(height: 22),
                         _buildSearchBar(context),
                         const SizedBox(height: AppTheme.lg),
@@ -236,76 +236,81 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
   }
 
   /// Build header (solid, no gradient) — sama gayanya dengan CustomersListScreen
-  Widget _buildHeader(BuildContext context) {
+  ///
+  /// FIX overflow mobile: judul + subtitle sekarang dibungkus Expanded
+  /// (sebelumnya nggak, jadi Row badge+judul+tombol "Baru" bisa lebih
+  /// lebar dari layar HP -> overflow). Khusus mobile tombolnya diringkas
+  /// jadi icon-only bulat, persis pola yang dipakai di CustomersListScreen.
+  Widget _buildHeader(BuildContext context, bool isMobile) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: Icon(
-                    Icons.receipt_long_rounded,
-                    color: AppTheme.primaryColor,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pesanan',
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Kelola semua pesanan laundry Anda',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w400,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-        ElevatedButton.icon(
-          onPressed: () => _openCreateOrder(context),
-          icon: const Icon(Icons.add, size: 18),
-          label: Text(
-            'Baru',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(13),
           ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryColor,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.lg,
-              vertical: AppTheme.md,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-            ),
+          child: Icon(
+            Icons.receipt_long_rounded,
+            color: AppTheme.primaryColor,
+            size: 22,
           ),
         ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pesanan',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Kelola semua pesanan laundry Anda',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w400,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppTheme.md),
+        if (isMobile)
+          _CompactAddButton(onTap: () => _openCreateOrder(context))
+        else
+          ElevatedButton.icon(
+            onPressed: () => _openCreateOrder(context),
+            icon: const Icon(Icons.note_add_outlined, size: 18),
+            label: Text(
+              'Baru',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.lg,
+                vertical: AppTheme.md,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -516,7 +521,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
             const SizedBox(height: AppTheme.xl),
             ElevatedButton.icon(
               onPressed: () => _openCreateOrder(context),
-              icon: const Icon(Icons.add, size: 18),
+              icon: const Icon(Icons.note_add_outlined, size: 18),
               label: Text('Buat Pesanan', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
@@ -561,6 +566,32 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
 // ============================================
 // HELPER WIDGETS
 // ============================================
+
+/// Tombol "Baru" versi ringkas (icon-only, bulat) khusus mobile,
+/// biar header nggak overflow saat layar sempit — sama pola dengan
+/// _CompactAddButton di CustomersListScreen.
+class _CompactAddButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _CompactAddButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppTheme.primaryColor,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        onTap: onTap,
+        child: const SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(Icons.note_add_outlined, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+}
 
 /// Stat Box Widget — sama persis gayanya dengan CustomersListScreen
 class _StatBox extends StatelessWidget {

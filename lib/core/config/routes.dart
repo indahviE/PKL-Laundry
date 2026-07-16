@@ -84,10 +84,17 @@ const Map<String, String> _legacyRouteAliases = {
   '/create-employee': '/employees/create',
 };
 
+/// GlobalKey khusus untuk root ShellRoute (StatefulShellRoute) supaya
+/// state tiap branch (Dashboard/Orders/Customers/Settings) tetap
+/// dipertahankan oleh GoRouter selama app hidup.
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authRepo = ref.watch(authRepositoryProvider);
 
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: '/login',
     refreshListenable: GoRouterRefreshStream(authRepo.authStateChanges),
     redirect: (context, state) async {
@@ -353,34 +360,60 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // ==================== SHELL (Bottom Navigation) ====================
-      ShellRoute(
-        builder: (context, state, child) => MainScreen(child: child),
-        routes: [
-          GoRoute(
-            path: '/dashboard',
-            name: 'dashboard',
-            builder: (context, state) => const DashboardScreen(),
+      // Diganti dari ShellRoute biasa ke StatefulShellRoute.indexedStack.
+      // Alasan: dengan ShellRoute biasa, tiap pindah tab GoRouter membangun
+      // ULANG halaman dari nol (semua StreamBuilder Firestore connect
+      // ulang -> kerasa lag/lama tiap klik bottom nav). Dengan
+      // indexedStack, ke-4 tab (Dashboard/Orders/Customers/Settings)
+      // dipertahankan hidup di background lewat IndexedStack, jadi pindah
+      // tab instan dan stream Firestore-nya nggak connect ulang.
+      //
+      // Catatan: sebelumnya ada GoRoute duplikat path '/employees' di
+      // dalam shell (builder: PlaceholderScreen) yang bentrok dengan
+      // '/employees' asli di luar shell (EmployeesListScreen). Employees
+      // memang bukan tab bottom nav (cuma diakses lewat Quick Action), jadi
+      // route duplikat itu dihapus di sini.
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainScreen(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            navigatorKey: _shellNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/dashboard',
+                name: 'dashboard',
+                builder: (context, state) => const DashboardScreen(),
+              ),
+            ],
           ),
-         GoRoute(
-            path: '/orders',
-            name: 'orders',
-            builder: (context, state) => const OrdersListScreen(), 
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/orders',
+                name: 'orders',
+                builder: (context, state) => const OrdersListScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/customers',
-            name: 'customers',
-            builder: (context, state) => const CustomersListScreen(), 
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/customers',
+                name: 'customers',
+                builder: (context, state) => const CustomersListScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/employees',
-            name: 'employees',
-            builder: (context, state) =>
-                const PlaceholderScreen(title: 'Employees List Screen'),
-          ),
-          GoRoute(
-            path: '/settings',
-            name: 'settings',
-            builder: (context, state) => const SettingsScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/settings',
+                name: 'settings',
+                builder: (context, state) => const SettingsScreen(),
+              ),
+            ],
           ),
         ],
       ),

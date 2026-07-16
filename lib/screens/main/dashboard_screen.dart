@@ -17,11 +17,17 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  static const Color primaryBlue = Color(0xFF8ED8F5); // Biru cerah sesuai logo NetWash
-  static const Color lightBlue = Color(0xFFB3E5FC); // Tint lebih muda untuk aksen ringan
-  static const Color deepBlue = Color(0xFF4FC3F7); // Biru logo pekat untuk gradient
-  static const Color textBlue = Color(0xFF0288D1); // Gelap untuk teks di atas putih
-  static const Color bgColor = Color(0xFFF5F8FB);
+  // Warna sekarang mengikuti AppTheme supaya tema dashboard
+  // konsisten dengan halaman lain (mis. OrdersListScreen).
+  static Color get primaryBlue => AppTheme.primaryColor;
+  static Color get deepBlue => AppTheme.primaryColor.withOpacity(0.85);
+  static Color get textBlue => AppTheme.primaryColor;
+  static Color get bgColor => AppTheme.backgroundColor;
+  static Color get cardColor => AppTheme.cardColor;
+  static Color get textPrimary => AppTheme.textPrimary;
+  static Color get textSecondary => AppTheme.textSecondary;
+  static Color get textTertiary => AppTheme.textTertiary;
+  static Color get borderColor => AppTheme.borderColor;
 
   int _filterIndex = 0;
 
@@ -31,15 +37,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Mengambil uid user yang sedang login dari Firebase Auth
   final String _currentUserId = FirebaseAuth.instance.currentUser?.uid ?? "placeholder_uid";
 
-  /// Mapping indeks filter ke status database NetWash asli
+  /// Mapping indeks filter ke status yang SAMA seperti OrdersListScreen
+  /// (all, pending, processing, completed, cancelled).
   List<String>? _getStatusFilter(int index) {
     switch (index) {
-      case 1: // Diproses
-        return ['pending', 'confirmed', 'in_progress', 'washing', 'drying', 'ironing', 'quality_check'];
-      case 2: // Siap Diambil
-        return ['ready'];
+      case 1: // Menunggu
+        return ['pending'];
+      case 2: // Diproses
+        return ['processing'];
       case 3: // Selesai
         return ['completed'];
+      case 4: // Dibatalkan
+        return ['cancelled'];
       default: // Semua
         return null;
     }
@@ -56,7 +65,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: bgColor,
       body: DefaultTextStyle.merge(
-        // Menerapkan font Plus Jakarta Sans ke seluruh teks di dalam dashboard ini
+        // Menerapkan font Poppins ke seluruh teks di dalam dashboard ini,
+        // sama seperti font yang dipakai di OrdersListScreen.
         style: GoogleFonts.poppins(),
         child: Center(
           child: ConstrainedBox(
@@ -123,7 +133,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           isMobile ? AppTheme.lg : AppTheme.xxl,
           80,
         ),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [deepBlue, primaryBlue],
             begin: Alignment.topLeft,
@@ -165,7 +175,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         'asset/icon/Netwash_Logo.png',
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
+                          return Icon(
                             Icons.local_laundry_service_rounded,
                             color: textBlue,
                             size: 20,
@@ -236,8 +246,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 final data = doc.data() as Map<String, dynamic>;
                 String status = data['status'] ?? 'pending';
 
-                // Menghitung pesanan yang belum selesai
-                if (['pending', 'confirmed', 'in_progress', 'washing', 'drying', 'ironing', 'quality_check', 'ready'].contains(status)) {
+                // Menghitung pesanan yang belum selesai/dibatalkan
+                if (['pending', 'processing'].contains(status)) {
                   activeOrders++;
                 }
 
@@ -255,7 +265,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             return Container(
               padding: const EdgeInsets.all(AppTheme.lg),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                 boxShadow: [
                   BoxShadow(
@@ -273,33 +283,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Text(
                           t.revenueThisMonthLabel,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                          style: TextStyle(fontSize: 12, color: textSecondary, fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           'Rp ${totalRevenueThisMonth.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: Colors.black87,
+                            color: textPrimary,
                             letterSpacing: -0.3,
                            ),
                         ),
                         const SizedBox(height: 6),
-                        Text(t.autoSyncLabel, style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+                        Text(t.autoSyncLabel, style: TextStyle(fontSize: 11, color: textTertiary)),
                       ],
                     ),
                   ),
-                  Container(width: 1, height: 50, color: Colors.grey.shade200),
+                  Container(width: 1, height: 50, color: borderColor),
                   const SizedBox(width: AppTheme.lg),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('$totalCustomers', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textBlue)),
-                      Text(t.customersLabel, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                      Text('$totalCustomers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textBlue)),
+                      Text(t.customersLabel, style: TextStyle(fontSize: 11, color: textSecondary)),
                       const SizedBox(height: 10),
-                      Text('$activeOrders', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textBlue)),
-                      Text(t.activeOrdersLabel, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                      Text('$activeOrders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textBlue)),
+                      Text(t.activeOrdersLabel, style: TextStyle(fontSize: 11, color: textSecondary)),
                     ],
                   ),
                 ],
@@ -373,9 +383,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 return Container(
                   padding: const EdgeInsets.all(AppTheme.lg),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: cardColor,
                     borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: borderColor),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +398,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               color: primaryBlue.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                             ),
-                            child: const Icon(Icons.rocket_launch_rounded, color: textBlue, size: 18),
+                            child: Icon(Icons.rocket_launch_rounded, color: textBlue, size: 18),
                           ),
                           const SizedBox(width: AppTheme.md),
                           Expanded(
@@ -397,19 +407,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               children: [
                                 Text(
                                   t.completeBranchSetupTitle,
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87),
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textPrimary),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   t.setupStepsProgress(done, steps.length),
-                                  style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500),
+                                  style: TextStyle(fontSize: 11.5, color: textSecondary),
                                 ),
                               ],
                             ),
                           ),
                           IconButton(
                             icon: const Icon(Icons.close_rounded, size: 18),
-                            color: Colors.grey.shade400,
+                            color: textTertiary,
                             onPressed: () => setState(() => _setupDismissed = true),
                           ),
                         ],
@@ -420,8 +430,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: LinearProgressIndicator(
                           value: progress,
                           minHeight: 6,
-                          backgroundColor: Colors.grey.shade100,
-                          valueColor: const AlwaysStoppedAnimation(primaryBlue),
+                          backgroundColor: borderColor,
+                          valueColor: AlwaysStoppedAnimation(primaryBlue),
                         ),
                       ),
                       const SizedBox(height: AppTheme.lg),
@@ -438,13 +448,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Container(
                                   width: 30, height: 30,
                                   decoration: BoxDecoration(
-                                    color: step.completed ? const Color(0xFF27AE60).withOpacity(0.12) : Colors.grey.shade100,
+                                    color: step.completed ? const Color(0xFF27AE60).withOpacity(0.12) : borderColor.withOpacity(0.4),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
                                     step.completed ? Icons.check_rounded : step.icon,
                                     size: 16,
-                                    color: step.completed ? const Color(0xFF27AE60) : Colors.grey.shade500,
+                                    color: step.completed ? const Color(0xFF27AE60) : textTertiary,
                                   ),
                                 ),
                                 const SizedBox(width: AppTheme.md),
@@ -457,16 +467,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
-                                          color: step.completed ? Colors.grey.shade400 : Colors.black87,
+                                          color: step.completed ? textTertiary : textPrimary,
                                           decoration: step.completed ? TextDecoration.lineThrough : null,
                                         ),
                                       ),
-                                      Text(step.subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                                      Text(step.subtitle, style: TextStyle(fontSize: 11, color: textSecondary)),
                                     ],
                                   ),
                                 ),
                                 if (!step.completed)
-                                  Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey.shade400),
+                                  Icon(Icons.chevron_right_rounded, size: 20, color: textTertiary),
                               ],
                             ),
                           ),
@@ -484,18 +494,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ============================================
-  // QUICK ACTIONS + FEATURE GATING INTEGRATION
+  // QUICK ACTIONS
   // ============================================
+  // Catatan: "Pesanan Baru" dan "Karyawan Baru" sudah dihapus dari sini
+  // sesuai permintaan (tetap bisa dibuat lewat menu Kelola Karyawan /
+  // tombol "Baru" di halaman Pesanan).
   Widget _buildQuickActions(BuildContext context, AppLocalizations t) {
     final actions = [
-      (Icons.add_circle_outline_rounded, t.newOrderAction, primaryBlue, '/create-order', 'orders', 500),
-      (Icons.person_add_alt_1_rounded, t.newEmployeeAction, deepBlue, '/create-employee', 'employees', 5),
       (Icons.storefront_outlined, 'Kelola\nCabang', const Color(0xFF00A896), '/laundries', '', 0),
       (Icons.badge_outlined, 'Kelola\nKaryawan', deepBlue, '/employees', '', 0),
       (Icons.local_laundry_service_outlined, t.manageServicesAction, const Color(0xFF9C27B0), '/services', '', 0),
       (Icons.local_shipping_outlined, t.pickupDeliveryAction, const Color(0xFF27AE60), '/antar-jemput', '', 0),
       (Icons.bar_chart_rounded, t.reportAction, const Color(0xFFE67E22), '/laporan', '', 0),
-      (Icons.settings_outlined, t.settingsAction, Colors.grey.shade700, '/settings', '', 0),
+      (Icons.settings_outlined, t.settingsAction, textSecondary, '/settings', '', 0),
     ];
 
     return SizedBox(
@@ -546,7 +557,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.black87, height: 1.15),
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textPrimary, height: 1.15),
                   ),
                 ],
               ),
@@ -555,8 +566,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
       ),
     );
-
-    
   }
 
   // ============================================
@@ -595,9 +604,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return Container(
           padding: const EdgeInsets.all(AppTheme.lg),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: cardColor,
             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: borderColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -605,14 +614,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(t.weeklyRevenueTitle, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87)),
+                  Text(t.weeklyRevenueTitle, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textPrimary)),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: primaryBlue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(t.sevenDaysLabel, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textBlue)),
+                    child: Text(t.sevenDaysLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textBlue)),
                   ),
                 ],
               ),
@@ -638,7 +647,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Text(days[i], style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500)),
+                            Text(days[i], style: TextStyle(fontSize: 10.5, color: textSecondary)),
                           ],
                         ),
                       ),
@@ -660,10 +669,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(t.mainOrdersTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+        Text(t.mainOrdersTitle, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
         TextButton(
           onPressed: () => context.push('/orders'),
-          child: Text(t.viewAllLabel, style: const TextStyle(color: textBlue, fontWeight: FontWeight.w600, fontSize: 12.5)),
+          child: Text(t.viewAllLabel, style: TextStyle(color: textBlue, fontWeight: FontWeight.w600, fontSize: 12.5)),
         ),
       ],
     );
@@ -672,32 +681,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ============================================
   // FILTER CHIPS
   // ============================================
+  // Disamakan persis dengan filter di OrdersListScreen:
+  // Semua, Menunggu, Diproses, Selesai, Dibatalkan.
   Widget _buildFilterChips(BuildContext context, AppLocalizations t) {
-    final filters = [t.filterAll, t.filterProcessing, t.filterReady, t.filterCompleted];
+    final filters = [
+      ('Semua', Icons.all_inbox_outlined),
+      ('Menunggu', Icons.schedule_outlined),
+      ('Diproses', Icons.local_laundry_service_outlined),
+      ('Selesai', Icons.check_circle_outline),
+      ('Dibatalkan', Icons.cancel_outlined),
+    ];
 
-    return SizedBox(
-      height: 34,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppTheme.sm),
-        itemBuilder: (context, i) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: List.generate(filters.length, (i) {
           final selected = i == _filterIndex;
-          return ChoiceChip(
-            label: Text(filters[i]),
-            selected: selected,
-            onSelected: (_) => setState(() => _filterIndex = i),
-            labelStyle: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : Colors.grey.shade700,
+          return Padding(
+            padding: EdgeInsets.only(right: i < filters.length - 1 ? AppTheme.md : 0),
+            child: FilterChip(
+              selected: selected,
+              onSelected: (_) => setState(() => _filterIndex = i),
+              showCheckmark: false,
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(filters[i].$2, size: 16),
+                  const SizedBox(width: AppTheme.sm),
+                  Text(filters[i].$1),
+                ],
+              ),
+              backgroundColor: cardColor,
+              selectedColor: primaryBlue.withOpacity(0.12),
+              side: BorderSide(
+                color: selected ? primaryBlue.withOpacity(0.4) : borderColor,
+              ),
+              labelStyle: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: selected ? textBlue : textSecondary,
+              ),
             ),
-            selectedColor: textBlue,
-            backgroundColor: Colors.grey.shade100,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-            showCheckmark: false,
           );
-        },
+        }),
       ),
     );
   }
@@ -745,24 +771,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final status = data['status'] ?? 'pending';
             final isLast = i == docs.length - 1;
 
+            // Warna & label status disamakan persis dengan OrdersListScreen
+            // (_getStatusColor / _getStatusLabel).
             Color statusColor;
             String statusLabel;
             switch (status) {
-              case 'ready':
-                statusColor = const Color(0xFF27AE60);
-                statusLabel = t.filterReady;
+              case 'pending':
+                statusColor = Colors.orange;
+                statusLabel = 'Menunggu';
+                break;
+              case 'processing':
+                statusColor = primaryBlue;
+                statusLabel = 'Diproses';
                 break;
               case 'completed':
-                statusColor = Colors.blue;
-                statusLabel = t.filterCompleted;
+                statusColor = const Color(0xFF51CF66);
+                statusLabel = 'Selesai';
                 break;
               case 'cancelled':
-                statusColor = const Color(0xFFE74C3C);
-                statusLabel = t.statusCancelled;
+                statusColor = Colors.red;
+                statusLabel = 'Dibatalkan';
                 break;
               default:
-                statusColor = const Color(0xFFE67E22);
-                statusLabel = t.statusProcessing;
+                statusColor = textTertiary;
+                statusLabel = status;
             }
 
             return IntrinsicHeight(
@@ -782,7 +814,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       if (!isLast)
                         Expanded(
-                          child: Container(width: 2, color: Colors.grey.shade200, margin: const EdgeInsets.symmetric(vertical: 4)),
+                          child: Container(width: 2, color: borderColor, margin: const EdgeInsets.symmetric(vertical: 4)),
                         ),
                     ],
                   ),
@@ -792,9 +824,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       margin: EdgeInsets.only(bottom: isLast ? 0 : AppTheme.lg),
                       padding: const EdgeInsets.all(AppTheme.md),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: cardColor,
                         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.all(color: borderColor),
                       ),
                       child: Row(
                         children: [
@@ -804,13 +836,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    Text(customerName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black87)),
+                                    Text(customerName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary)),
                                     const SizedBox(width: 6),
-                                    Text(id, style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+                                    Text(id, style: TextStyle(fontSize: 11, color: textTertiary)),
                                   ],
                                 ),
                                 const SizedBox(height: 3),
-                                Text(detail, style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
+                                Text(detail, style: TextStyle(fontSize: 11.5, color: textSecondary)),
                               ],
                             ),
                           ),
