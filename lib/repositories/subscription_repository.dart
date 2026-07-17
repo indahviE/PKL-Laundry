@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/subscription.dart';
 import '../providers/auth_provider.dart';
+
 class SubscriptionRepository {
   final FirebaseFirestore _firestore;
   final String userId;
@@ -11,13 +12,7 @@ class SubscriptionRepository {
   CollectionReference<Map<String, dynamic>> get _subscriptionsRef =>
       _firestore.collection('users').doc(userId).collection('subscriptions');
 
-  /// Creates a new subscription record. FIX: previously this used
-  /// `companyId` as the document ID and always overwrote it via
-  /// SetOptions(merge: true), which means upgrading/downgrading a plan
-  /// silently destroyed the history of the *previous* plan. Blueprint's
-  /// schema (§3.6.2) uses an independent, auto-generated
-  /// `{subscription_id}` per subscription event, same as Stripe does with
-  /// each `customer.subscription.*` webhook.
+  /// Membuat data subscription baru
   Future<Subscription> createSubscription(Subscription subscription) async {
     final docRef = _subscriptionsRef.doc();
     final now = DateTime.now();
@@ -44,35 +39,48 @@ class SubscriptionRepository {
     return newSubscription;
   }
 
-  /// The plan actually in force right now for a company: the most recent
-  /// subscription with status `active` or `trialing`. Feature-gating
-  /// (§3.6.3) should read from this, not from an arbitrary/oldest record.
+  /// FIX: Melakukan filter dan sorting di memori Dart (client-side) 
+  /// untuk menghindari error "Composite Index Required" dari Firestore!
   Stream<Subscription?> streamActiveSubscription(String companyId) {
     return _subscriptionsRef
         .where('company_id', isEqualTo: companyId)
-        .where('status', whereIn: ['active', 'trialing'])
-        .orderBy('created_at', descending: true)
-        .limit(1)
         .snapshots()
         .map((snapshot) {
       if (snapshot.docs.isEmpty) return null;
-      final doc = snapshot.docs.first;
-      return Subscription.fromJson(doc.data(), doc.id);
+
+      // 1. Filter data berstatus 'active' atau 'trialing' di memori
+      final activeSubs = snapshot.docs
+          .map((doc) => Subscription.fromJson(doc.data(), doc.id))
+          .where((sub) => sub.status == 'active' || sub.status == 'trialing')
+          .toList();
+
+      if (activeSubs.isEmpty) return null;
+
+      // 2. Urutkan berdasarkan tanggal dibuat secara descending (paling baru di awal)
+      activeSubs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      // 3. Ambil satu subscription teraktif yang paling baru
+      return activeSubs.first;
     });
   }
 
+  /// FIX: Pengurutan riwayat di memori untuk menghindari index crash
   Stream<List<Subscription>> streamSubscriptionHistory(String companyId) {
     return _subscriptionsRef
         .where('company_id', isEqualTo: companyId)
-        .orderBy('created_at', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => Subscription.fromJson(doc.data(), doc.id)).toList());
+        .map((snapshot) {
+      final list = snapshot.docs
+          .map((doc) => Subscription.fromJson(doc.data(), doc.id))
+          .toList();
+      
+      // Urutkan berdasarkan tanggal dibuat descending
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
+    });
   }
 
-  /// Used by the Stripe webhook handler / admin flows to reflect status
-  /// changes (past_due, canceled, etc). Client apps should treat this
-  /// collection as read-mostly per Security Rules (§4.5) - writes are
-  /// expected to come from the Cloud Function using the Admin SDK.
+  /// Update status subscription
   Future<void> updateSubscriptionStatus(
     String subscriptionId,
     String newStatus, {
