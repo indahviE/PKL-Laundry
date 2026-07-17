@@ -62,6 +62,25 @@ dev_dependencies:
   build_runner: ^2.4.0
   freezed: ^3.2.5
   json_serializable: ^6.7.0
+  flutter_native_splash: ^2.4.8
+
+flutter_native_splash:
+  color: "#FFFFFF"          # warna background splash
+  image: asset/splash/splash.png
+
+  # opsional, kalau mau splash beda buat dark mode
+  color_dark: "#121212"
+  image_dark: asset/splash/splash.png
+
+  android_12:
+    image: asset/splash/splash.png
+    color: "#FFFFFF"
+    color_dark: "#121212"
+    # icon_background_color: "#FFFFFF"  # kalau logo kamu punya padding sendiri
+
+  android: true
+  ios: true
+  web: false
 
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -74,4 +93,4 @@ flutter:
   generate: true
   assets:
     - asset/icon/
-    - asset/illustration/
+    - asset/splash/
