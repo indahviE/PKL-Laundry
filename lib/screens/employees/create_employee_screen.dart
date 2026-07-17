@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
+import '../../repositories/subscription_repository.dart';
 
 /// Create / Edit Employee Screen - NetWash
 /// Dilengkapi dengan Feature Gating kuota karyawan berdasarkan paket langganan aktif.
@@ -11,16 +13,16 @@ import '../../core/themes/app_theme.dart';
 /// Sekarang mendukung mode edit: kirim `employeeId` untuk membuka layar ini
 /// dalam mode edit (data existing akan di-load & disimpan lewat update),
 /// sama seperti pola CreateLaundryScreen yang dipakai `/laundries/:id/edit`.
-class CreateEmployeeScreen extends StatefulWidget {
+class CreateEmployeeScreen extends ConsumerStatefulWidget {
   final String? employeeId;
 
   const CreateEmployeeScreen({Key? key, this.employeeId}) : super(key: key);
 
   @override
-  State<CreateEmployeeScreen> createState() => _CreateEmployeeScreenState();
+  ConsumerState<CreateEmployeeScreen> createState() => _CreateEmployeeScreenState();
 }
 
-class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
+class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Definisi Warna di tingkat State agar bisa diakses oleh semua fungsi dan widget
@@ -179,34 +181,30 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
   /// FEATURE GATING: Validasi sisa kuota karyawan berdasarkan plan aktif.
   /// Hanya relevan saat menambah karyawan baru - saat edit, jumlah karyawan
   /// tidak bertambah sehingga pengecekan kuota dilewati.
-  Future<bool> _checkEmployeeLimit(String userId) async {
-    final firestore = FirebaseFirestore.instance;
+  ///
+  /// FIX: sebelumnya query manual `.where('status','active').limit(1)`
+  /// tanpa sorting bisa mengambil dokumen subscription yang SALAH kalau ada
+  /// lebih dari satu dokumen berstatus 'active' untuk company yang sama
+  /// (mis. sisa dokumen lama yang belum di-nonaktifkan saat upgrade paket).
+  /// Sekarang pakai SubscriptionRepository.streamActiveSubscription(), yang
+  /// sudah mengurutkan berdasarkan createdAt descending dan selalu memilih
+  /// dokumen aktif/trialing yang PALING BARU.
+  Future<bool> _checkEmployeeLimit(String userId, String companyId) async {
+    final subscriptionRepo = ref.read(subscriptionRepositoryProvider);
+    final activeSubscription =
+        await subscriptionRepo.streamActiveSubscription(companyId).first;
 
-    // 1. Ambil subscription aktif
-    final subSnap = await firestore
-        .collection('users')
-        .doc(userId)
-        .collection('subscriptions')
-        .where('status', isEqualTo: 'active')
-        .limit(1)
-        .get();
-
-    if (subSnap.docs.isEmpty) {
+    if (activeSubscription == null) {
       // Jika tidak ada data langganan, default kembali ke batasan Starter (maks 5)
       final currentCount = await _getCurrentEmployeeCount(userId);
       return currentCount < 5;
     }
 
-    final subData = subSnap.docs.first.data();
-
     // Sesuai Blueprint §3.6.3 (SubscriptionService.canAddEmployee):
-    // batas kuota dibaca langsung dari field `limits.max_employees`
-    // pada dokumen subscription, BUKAN hardcode per plan_id.
+    // batas kuota dibaca langsung dari `limits.max_employees` pada
+    // dokumen subscription, BUKAN hardcode per plan_id.
     // Nilai -1 pada limits berarti unlimited (khusus paket Enterprise).
-    final Map<String, dynamic> limits =
-        (subData['limits'] as Map<String, dynamic>?) ?? const {'max_employees': 5};
-    final int maxEmployees = (limits['max_employees'] as num?)?.toInt() ?? 5;
-
+    final int maxEmployees = activeSubscription.limits.maxEmployees;
     if (maxEmployees == -1) return true; // Unlimited
 
     final currentCount = await _getCurrentEmployeeCount(userId);
@@ -244,9 +242,32 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
 
       final currentUserId = user.uid;
 
+      // Ambil company_id dari CABANG yang dipilih (relasi laundries.company_id
+      // sesuai Blueprint §3.2.3), bukan mengambil perusahaan pertama secara acak.
+      // Ini harus dilakukan SEBELUM pengecekan kuota, karena kuota sekarang
+      // dibaca per-company lewat SubscriptionRepository (lihat _checkEmployeeLimit).
+      final selectedLaundry = _laundriesList.firstWhere(
+        (l) => l['id'] == _selectedLaundryId,
+        orElse: () => {},
+      );
+      final String? companyIdRef = selectedLaundry['company_id'] as String?;
+
+      if (companyIdRef == null || companyIdRef.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cabang terpilih belum terhubung dengan data perusahaan. Periksa kembali data cabang.'),
+              backgroundColor: Colors.orangeAccent,
+            ),
+          );
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
+
       // Pengecekan limitasi paket hanya berlaku saat menambah karyawan baru
       if (!_isEditMode) {
-        final isQuotaAvailable = await _checkEmployeeLimit(currentUserId);
+        final isQuotaAvailable = await _checkEmployeeLimit(currentUserId, companyIdRef);
         if (!isQuotaAvailable) {
           if (mounted) {
             showDialog(
@@ -274,27 +295,6 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
           setState(() => _isLoading = false);
           return;
         }
-      }
-
-      // Ambil company_id dari CABANG yang dipilih (relasi laundries.company_id
-      // sesuai Blueprint §3.2.3), bukan mengambil perusahaan pertama secara acak.
-      final selectedLaundry = _laundriesList.firstWhere(
-        (l) => l['id'] == _selectedLaundryId,
-        orElse: () => {},
-      );
-      final String? companyIdRef = selectedLaundry['company_id'] as String?;
-
-      if (companyIdRef == null || companyIdRef.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Cabang terpilih belum terhubung dengan data perusahaan. Periksa kembali data cabang.'),
-              backgroundColor: Colors.orangeAccent,
-            ),
-          );
-          setState(() => _isLoading = false);
-        }
-        return;
       }
 
       final employeesRef = FirebaseFirestore.instance
