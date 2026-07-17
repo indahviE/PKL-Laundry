@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
-import '../../repositories/subscription_repository.dart';
 
 /// Create / Edit Laundry (Cabang) Screen - NetWash
 /// Skema data & feature gating mengikuti Blueprint §3.2.3 (Manajemen Cabang)
@@ -16,24 +14,20 @@ import '../../repositories/subscription_repository.dart';
 /// - laundryId == null  -> mode CREATE (form kosong, quota dicek sebelum simpan)
 /// - laundryId != null  -> mode EDIT (data existing di-load & di-prefill,
 ///   quota TIDAK dicek ulang karena tidak menambah cabang baru)
-<<<<<<< HEAD
 ///
 /// Styling disamakan dengan LaundriesListScreen: memakai AppTheme design
 /// system (warna, radius, spacing, Poppins) alih-alih warna hardcoded lokal,
 /// serta header custom (icon box + back button) & max-width layout yang sama.
 class CreateLaundryScreen extends StatefulWidget {
-=======
-class CreateLaundryScreen extends ConsumerStatefulWidget {
->>>>>>> 70c299ac81e39152423610697ef184586c74190c
   final String? laundryId;
 
   const CreateLaundryScreen({Key? key, this.laundryId}) : super(key: key);
 
   @override
-  ConsumerState<CreateLaundryScreen> createState() => _CreateLaundryScreenState();
+  State<CreateLaundryScreen> createState() => _CreateLaundryScreenState();
 }
 
-class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
+class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
   final _formKey = GlobalKey<FormState>();
 
   bool get isEditMode => widget.laundryId != null;
@@ -318,26 +312,28 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
   /// Persis mengikuti SubscriptionService.canAddLaundry (Blueprint §3.6.3):
   /// baca `limits.max_laundries` dari dokumen subscription, -1 = unlimited.
   /// HANYA dipanggil di mode CREATE — edit tidak menambah jumlah cabang.
-  ///
-  /// FIX: sebelumnya query manual `.where('status','active').limit(1)`
-  /// tanpa sorting bisa mengambil dokumen subscription yang SALAH kalau ada
-  /// lebih dari satu dokumen berstatus 'active' untuk company yang sama
-  /// (mis. sisa dokumen lama yang belum di-nonaktifkan saat upgrade paket).
-  /// Sekarang pakai SubscriptionRepository.streamActiveSubscription(), yang
-  /// sudah mengurutkan berdasarkan createdAt descending dan selalu memilih
-  /// dokumen aktif/trialing yang PALING BARU.
-  Future<bool> _checkLaundryLimit(String userId, String companyId) async {
-    final subscriptionRepo = ref.read(subscriptionRepositoryProvider);
-    final activeSubscription =
-        await subscriptionRepo.streamActiveSubscription(companyId).first;
+  Future<bool> _checkLaundryLimit(String userId) async {
+    final firestore = FirebaseFirestore.instance;
 
-    if (activeSubscription == null) {
+    final subSnap = await firestore
+        .collection('users')
+        .doc(userId)
+        .collection('subscriptions')
+        .where('status', isEqualTo: 'active')
+        .limit(1)
+        .get();
+
+    if (subSnap.docs.isEmpty) {
       // Tidak ada langganan aktif → default ke batasan Starter (maks 1 cabang)
       final currentCount = await _getCurrentLaundryCount(userId);
       return currentCount < 1;
     }
 
-    final int maxLaundries = activeSubscription.limits.maxLaundries;
+    final subData = subSnap.docs.first.data();
+    final Map<String, dynamic> limits =
+        (subData['limits'] as Map<String, dynamic>?) ?? const {'max_laundries': 1};
+    final int maxLaundries = (limits['max_laundries'] as num?)?.toInt() ?? 1;
+
     if (maxLaundries == -1) return true; // Unlimited
 
     final currentCount = await _getCurrentLaundryCount(userId);
@@ -405,8 +401,7 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
       // Pengecekan kuota (Blueprint §3.6.3) hanya relevan saat menambah
       // cabang baru. Saat edit, jumlah cabang tidak bertambah jadi dilewati.
       if (!isEditMode) {
-        final isQuotaAvailable =
-            await _checkLaundryLimit(currentUserId, _selectedCompanyId!);
+        final isQuotaAvailable = await _checkLaundryLimit(currentUserId);
         if (!isQuotaAvailable) {
           if (mounted) {
             _showQuotaReachedDialog();

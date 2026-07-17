@@ -476,26 +476,30 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                order.orderNumber,
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  order.orderNumber,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppTheme.sm),
-              Text(
-                _formatDate(order.orderDate),
-                style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
-              ),
-            ],
+                const SizedBox(height: AppTheme.sm),
+                Text(
+                  _formatDate(order.orderDate),
+                  style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: AppTheme.sm),
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppTheme.lg,
@@ -593,6 +597,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   /// Build order items
+  ///
+  /// FIX (overflow di mobile): nama item sekarang dibatasi maxLines: 2 +
+  /// ellipsis, dan harga di kanan dibungkus supaya nggak pernah mepet ke
+  /// tepi layar. Juga fix logic: harga yang ditampilkan sekarang total
+  /// per baris (price_per_unit * quantity), bukan cuma harga satuan.
   Widget _buildOrderItems(BuildContext context, _OrderDetailData order) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -624,6 +633,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               order.items.length,
               (index) {
                 final item = order.items[index];
+                final lineTotal = item.price * item.quantity;
                 return Column(
                   children: [
                     Padding(
@@ -637,6 +647,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               children: [
                                 Text(
                                   item.name,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.poppins(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
@@ -656,7 +668,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           ),
                           const SizedBox(width: AppTheme.sm),
                           Text(
-                            _formatCurrency(item.price),
+                            _formatCurrency(lineTotal),
+                            textAlign: TextAlign.right,
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.w700,
                               fontSize: 13.5,
