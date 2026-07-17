@@ -218,7 +218,6 @@ class AuthRepository {
   Future<String?> getPrimaryCompanyId() async {
     final user = _auth.currentUser;
     if (user == null) return null;
-
     final snapshot = await _db
         .collection('users')
         .doc(user.uid)
@@ -228,6 +227,39 @@ class AuthRepository {
 
     if (snapshot.docs.isEmpty) return null;
     return snapshot.docs.first.id;
+  }
+
+  /// Hitung jumlah cabang (laundries) milik user saat ini, dari
+  /// `users/{uid}/laundries/`. Dipakai ChoosePlanScreen buat validasi
+  /// downgrade: kalau target paket punya `max_laundries` lebih kecil
+  /// dari angka ini, downgrade harus diblokir (lihat 3.6.3
+  /// Feature Gating di PRD — `canAddLaundry`).
+  Future<int> getLaundryCount() async {
+    final user = _auth.currentUser;
+    if (user == null) return 0;
+
+    final snapshot = await _db
+        .collection('users')
+        .doc(user.uid)
+        .collection('laundries')
+        .get();
+    return snapshot.docs.length;
+  }
+
+  /// Hitung jumlah karyawan (employees) milik user saat ini, dari
+  /// `users/{uid}/employees/`. Dipakai ChoosePlanScreen buat validasi
+  /// downgrade: kalau target paket punya `max_employees` lebih kecil
+  /// dari angka ini, downgrade harus diblokir.
+  Future<int> getEmployeeCount() async {
+    final user = _auth.currentUser;
+    if (user == null) return 0;
+
+    final snapshot = await _db
+        .collection('users')
+        .doc(user.uid)
+        .collection('employees')
+        .get();
+    return snapshot.docs.length;
   }
 
   /// Simpan data perusahaan & tandai step ini selesai.
@@ -339,9 +371,27 @@ class AuthRepository {
   /// `checkout.session.completed`), BUKAN oleh client. Dipakai
   /// PaymentScreen untuk mendeteksi pembayaran sukses tanpa bergantung
   /// pada user kembali ke app dari browser Stripe Checkout.
+  ///
+  /// Cuma balikin bool. Kalau butuh detail dokumennya (mis. tanggal
+  /// perpanjangan), pakai `watchActiveSubscriptionData()` di bawah.
   Stream<bool> watchActiveSubscription() {
+    return watchActiveSubscriptionData().map((data) => data != null);
+  }
+
+  /// Stream real-time dokumen subscription yang aktif (`status ==
+  /// 'active'`) di `users/{uid}/subscriptions/`, null kalau nggak ada
+  /// dokumen aktif.
+  ///
+  /// Field tanggal di dokumen ini pakai snake_case sesuai skema PRD
+  /// (bagian 3.6.2 & Cloud Function `stripeWebhook`): `current_period_start`
+  /// dan `current_period_end` (Timestamp), ditulis oleh
+  /// `handleSuccessfulPayment` / `handleSubscriptionUpdate` di Cloud
+  /// Function. Kedua field ini yang dipakai SubscriptionScreen buat
+  /// nampilin rentang tanggal langganan (mis. "17 Jul 2026 - 17 Agu
+  /// 2026").
+  Stream<Map<String, dynamic>?> watchActiveSubscriptionData() {
     final user = _auth.currentUser;
-    if (user == null) return Stream.value(false);
+    if (user == null) return Stream.value(null);
 
     return _db
         .collection('users')
@@ -350,7 +400,8 @@ class AuthRepository {
         .where('status', isEqualTo: 'active')
         .limit(1)
         .snapshots()
-        .map((snapshot) => snapshot.docs.isNotEmpty);
+        .map((snapshot) =>
+            snapshot.docs.isNotEmpty ? snapshot.docs.first.data() : null);
   }
 
   /// Versi one-shot dari `watchActiveSubscription()`, dipakai oleh
