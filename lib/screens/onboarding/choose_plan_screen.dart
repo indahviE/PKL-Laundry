@@ -16,6 +16,13 @@ class PricingPlan {
   final bool isPopular;
   final Color color;
 
+  /// Limit numerik sesuai `limits.max_laundries` / `limits.max_employees`
+  /// di skema `subscriptions` (PRD 3.6.2). -1 artinya unlimited. Dipakai
+  /// buat validasi downgrade — lihat `_planBlockReason` di
+  /// _ChoosePlanScreenState.
+  final int maxLaundries;
+  final int maxEmployees;
+
   PricingPlan({
     required this.name,
     required this.description,
@@ -24,6 +31,8 @@ class PricingPlan {
     required this.features,
     required this.isPopular,
     required this.color,
+    required this.maxLaundries,
+    required this.maxEmployees,
   });
 }
 
@@ -38,6 +47,15 @@ class PricingPlan {
 ///   - Header & tombol pilih paket teksnya disesuaikan
 ///   - Tombol back balik ke /settings/subscription, bukan /setup-company
 ///   - Flag isUpgrade diteruskan ke halaman /payment lewat extra
+///
+/// Harga & limit paket di bawah ini WAJIB sinkron dengan tabel 3.6.1
+/// "Paket Berlangganan (Pre-defined)" di PRD (netwash.md):
+///   Starter:      Rp99.000/bln   · Rp990.000/thn   · 1 cabang · 5 karyawan · 500 order/bln
+///   Professional: Rp199.000/bln  · Rp1.990.000/thn · 5 cabang · 25 karyawan · 2.000 order/bln
+///   Enterprise:   Rp399.000/bln  · Rp3.990.000/thn · Unlimited cabang · Unlimited karyawan · Unlimited order/bln
+/// Kalau harga di PRD berubah, update juga `subscription_plans` di
+/// Firestore (dibaca `createCheckoutSession` lewat `stripe_price_id`)
+/// supaya harga yang ditampilkan di sini match dengan yang ditagih Stripe.
 class ChoosePlanScreen extends ConsumerStatefulWidget {
   final bool isUpgrade;
 
@@ -62,6 +80,14 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   String? _currentPlanName;
   bool _loadingCurrentPlan = false;
 
+  // Jumlah cabang & karyawan AKTUAL milik user (cuma relevan pas
+  // widget.isUpgrade == true). Dipakai buat memblokir user pindah ke
+  // paket yang limitnya lebih kecil dari data yang udah dia punya —
+  // mis. user di Enterprise (unlimited) sudah punya 8 cabang, nggak
+  // boleh pindah ke Starter yang cuma boleh 1 cabang.
+  int _currentLaundryCount = 0;
+  int _currentEmployeeCount = 0;
+
   // Pricing plans
   late final List<PricingPlan> _plans;
 
@@ -71,6 +97,7 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
     _initializePlans();
     if (widget.isUpgrade) {
       _loadCurrentPlan();
+      _loadUsageCounts();
     }
   }
 
@@ -92,7 +119,48 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
     }
   }
 
-  /// Initialize pricing plans
+  Future<void> _loadUsageCounts() async {
+    final authRepo = ref.read(authRepositoryProvider);
+    final results = await Future.wait([
+      authRepo.getLaundryCount(),
+      authRepo.getEmployeeCount(),
+    ]);
+    if (mounted) {
+      setState(() {
+        _currentLaundryCount = results[0];
+        _currentEmployeeCount = results[1];
+      });
+    }
+  }
+
+  /// Null kalau `plan` aman dipilih. Kalau tidak, balikin pesan yang
+  /// jelasin field mana yang kelebihan (dipakai buat badge & tooltip di
+  /// kartu paket, dan buat validasi terakhir sebelum _handleSelectPlan
+  /// lanjut ke pembayaran).
+  String? _planBlockReason(PricingPlan plan) {
+    if (!widget.isUpgrade) return null;
+
+    final overLaundries = plan.maxLaundries != -1 &&
+        _currentLaundryCount > plan.maxLaundries;
+    final overEmployees = plan.maxEmployees != -1 &&
+        _currentEmployeeCount > plan.maxEmployees;
+
+    if (!overLaundries && !overEmployees) return null;
+
+    final parts = <String>[];
+    if (overLaundries) {
+      parts.add('$_currentLaundryCount cabang (maks ${plan.maxLaundries})');
+    }
+    if (overEmployees) {
+      parts.add('$_currentEmployeeCount karyawan (maks ${plan.maxEmployees})');
+    }
+    return 'Data Anda saat ini punya ${parts.join(' & ')}. '
+        'Kurangi datanya dulu sebelum pindah ke paket ini.';
+  }
+
+  /// Initialize pricing plans.
+  /// Angka harga & limit di sini disamain persis sama tabel 3.6.1 PRD —
+  /// lihat catatan di atas class.
   void _initializePlans() {
     _plans = [
       PricingPlan(
@@ -100,9 +168,12 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
         description: 'Untuk bisnis laundry kecil',
         monthlyPrice: 99000,
         yearlyPrice: 990000,
+        maxLaundries: 1,
+        maxEmployees: 5,
         features: [
           '1 Cabang',
-          'Hingga 10 Karyawan',
+          'Hingga 5 Karyawan',
+          'Maksimal 500 Order/Bulan',
           'Dashboard Dasar',
           'Manajemen Pesanan',
           'Customer Management',
@@ -114,11 +185,14 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
       PricingPlan(
         name: 'Professional',
         description: 'Untuk bisnis laundry berkembang',
-        monthlyPrice: 299000,
-        yearlyPrice: 2990000,
+        monthlyPrice: 199000,
+        yearlyPrice: 1990000,
+        maxLaundries: 5,
+        maxEmployees: 25,
         features: [
           'Hingga 5 Cabang',
-          'Hingga 50 Karyawan',
+          'Hingga 25 Karyawan',
+          'Maksimal 2.000 Order/Bulan',
           'Advanced Analytics',
           'Manajemen Pesanan Lanjutan',
           'Customer Loyalty Program',
@@ -132,11 +206,14 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
       PricingPlan(
         name: 'Enterprise',
         description: 'Untuk bisnis laundry besar',
-        monthlyPrice: 999000,
-        yearlyPrice: 9990000,
+        monthlyPrice: 399000,
+        yearlyPrice: 3990000,
+        maxLaundries: -1,
+        maxEmployees: -1,
         features: [
           'Unlimited Cabang',
           'Unlimited Karyawan',
+          'Unlimited Order/Bulan',
           'Full Analytics & Reporting',
           'Custom Workflow',
           'Advanced Security',
@@ -169,6 +246,22 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   /// pembayaran pertama kali.
   Future<void> _handleSelectPlan(PricingPlan plan) async {
     if (_isNavigating) return;
+
+    // Jaga-jaga: harusnya tombol udah disabled di _PricingCard kalau
+    // plan ini diblokir usage, tapi dicek ulang di sini juga.
+    final blockReason = _planBlockReason(plan);
+    if (blockReason != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            blockReason,
+            style: GoogleFonts.poppins(fontSize: 13),
+          ),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _selectedPlan = plan.name;
@@ -479,6 +572,7 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
               isLoading: _isNavigating && _selectedPlan == _plans[index].name,
               isUpgrade: widget.isUpgrade,
               isCurrentPlan: widget.isUpgrade && _currentPlanName == _plans[index].name,
+              blockReason: _planBlockReason(_plans[index]),
               formatCurrency: _formatCurrency,
               onSelect: () => _handleSelectPlan(_plans[index]),
             ),
@@ -506,6 +600,7 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
                     _isNavigating && _selectedPlan == _plans[index].name,
                 isUpgrade: widget.isUpgrade,
                 isCurrentPlan: widget.isUpgrade && _currentPlanName == _plans[index].name,
+                blockReason: _planBlockReason(_plans[index]),
                 formatCurrency: _formatCurrency,
                 onSelect: () => _handleSelectPlan(_plans[index]),
               ),
@@ -567,6 +662,7 @@ class _PricingCard extends StatelessWidget {
   final bool isLoading;
   final bool isUpgrade;
   final bool isCurrentPlan;
+  final String? blockReason;
   final String Function(double) formatCurrency;
   final VoidCallback onSelect;
 
@@ -578,12 +674,15 @@ class _PricingCard extends StatelessWidget {
     this.isLoading = false,
     this.isUpgrade = false,
     this.isCurrentPlan = false,
+    this.blockReason,
     required this.formatCurrency,
     required this.onSelect,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isBlocked = blockReason != null;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -652,6 +751,25 @@ class _PricingCard extends StatelessWidget {
                     ),
                   ),
                 )
+              else if (isBlocked)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'Melebihi Limit',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.red,
+                    ),
+                  ),
+                )
               else if (plan.isPopular)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -695,6 +813,24 @@ class _PricingCard extends StatelessWidget {
               ],
             ),
           ),
+          if (isBlocked) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                blockReason!,
+                style: GoogleFonts.poppins(
+                  fontSize: 11.5,
+                  color: Colors.red[700],
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 18),
           ...List.generate(
             plan.features.length,
@@ -723,7 +859,8 @@ class _PricingCard extends StatelessWidget {
             width: double.infinity,
             height: 46,
             child: ElevatedButton(
-              onPressed: (!isLoading && !isCurrentPlan) ? onSelect : null,
+              onPressed:
+                  (!isLoading && !isCurrentPlan && !isBlocked) ? onSelect : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: isCurrentPlan
                     ? AppTheme.borderColor
@@ -752,9 +889,13 @@ class _PricingCard extends StatelessWidget {
                   : Text(
                       isCurrentPlan
                           ? 'Paket Saat Ini'
-                          : (isSelected
-                              ? 'Paket Dipilih'
-                              : (isUpgrade ? 'Upgrade ke Paket Ini' : 'Pilih Paket')),
+                          : (isBlocked
+                              ? 'Kurangi Data Dulu'
+                              : (isSelected
+                                  ? 'Paket Dipilih'
+                                  : (isUpgrade
+                                      ? 'Upgrade ke Paket Ini'
+                                      : 'Pilih Paket'))),
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
