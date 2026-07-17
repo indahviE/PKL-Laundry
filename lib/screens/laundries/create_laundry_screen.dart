@@ -16,7 +16,15 @@ import '../../repositories/subscription_repository.dart';
 /// - laundryId == null  -> mode CREATE (form kosong, quota dicek sebelum simpan)
 /// - laundryId != null  -> mode EDIT (data existing di-load & di-prefill,
 ///   quota TIDAK dicek ulang karena tidak menambah cabang baru)
+<<<<<<< HEAD
+///
+/// Styling disamakan dengan LaundriesListScreen: memakai AppTheme design
+/// system (warna, radius, spacing, Poppins) alih-alih warna hardcoded lokal,
+/// serta header custom (icon box + back button) & max-width layout yang sama.
+class CreateLaundryScreen extends StatefulWidget {
+=======
 class CreateLaundryScreen extends ConsumerStatefulWidget {
+>>>>>>> 70c299ac81e39152423610697ef184586c74190c
   final String? laundryId;
 
   const CreateLaundryScreen({Key? key, this.laundryId}) : super(key: key);
@@ -27,9 +35,6 @@ class CreateLaundryScreen extends ConsumerStatefulWidget {
 
 class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  static const Color textBlue = Color(0xFF0288D1);
-  static const Color primaryBlue = Color(0xFF8ED8F5);
 
   bool get isEditMode => widget.laundryId != null;
 
@@ -361,7 +366,16 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
       minute: int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0,
     );
 
-    final picked = await showTimePicker(context: context, initialTime: initial);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initial,
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: Theme.of(ctx).colorScheme.copyWith(primary: AppTheme.primaryColor),
+        ),
+        child: child!,
+      ),
+    );
     if (picked != null) {
       final h = picked.hour.toString().padLeft(2, '0');
       final m = picked.minute.toString().padLeft(2, '0');
@@ -395,30 +409,7 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
             await _checkLaundryLimit(currentUserId, _selectedCompanyId!);
         if (!isQuotaAvailable) {
           if (mounted) {
-            showDialog(
-              context: context,
-              builder: (ctx) {
-                final dialogL10n = AppLocalizations.of(ctx)!;
-                return AlertDialog(
-                  title: Text(dialogL10n.quotaReachedTitle),
-                  content: Text(dialogL10n.quotaReachedContent),
-                  actions: [
-                    TextButton(
-                      onPressed: () => ctx.pop(),
-                      child: Text(dialogL10n.cancel, style: const TextStyle(color: Colors.grey)),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: textBlue),
-                      onPressed: () {
-                        ctx.pop();
-                        context.push('/settings/subscription');
-                      },
-                      child: Text(dialogL10n.upgradePlanButton, style: const TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                );
-              },
-            );
+            _showQuotaReachedDialog();
             setState(() => _isLoading = false);
           }
           return;
@@ -492,7 +483,7 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(isEditMode ? l10n.branchUpdateSuccess : l10n.branchAddSuccess),
-            backgroundColor: const Color(0xFF27AE60),
+            backgroundColor: const Color(0xFF51CF66),
           ),
         );
         context.pop();
@@ -508,337 +499,550 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
     }
   }
 
+  /// Dialog "kuota cabang habis". Direstyle mengikuti AppTheme (Poppins,
+  /// radius, warna primary) supaya konsisten dengan tampilan card & tombol
+  /// di layar lain, bukan AlertDialog default yang polos.
+  void _showQuotaReachedDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final dialogL10n = AppLocalizations.of(ctx)!;
+        return Dialog(
+          backgroundColor: AppTheme.cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(Icons.workspace_premium_outlined, color: AppTheme.primaryColor, size: 26),
+                ),
+                const SizedBox(height: AppTheme.lg),
+                Text(
+                  dialogL10n.quotaReachedTitle,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: AppTheme.sm),
+                Text(
+                  dialogL10n.quotaReachedContent,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: AppTheme.xl),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => ctx.pop(),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                        ),
+                        child: Text(
+                          dialogL10n.cancel,
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textSecondary, fontSize: 13),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.md),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                        ),
+                        onPressed: () {
+                          ctx.pop();
+                          context.push('/settings/subscription');
+                        },
+                        child: Text(
+                          dialogL10n.upgradePlanButton,
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FB),
-      appBar: AppBar(
-        title: Text(
-          isEditMode ? l10n.editBranchTitle : l10n.addBranchTitle,
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 16),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 20),
-          onPressed: () => context.pop(),
-        ),
-      ),
-      body: DefaultTextStyle.merge(
-        style: GoogleFonts.plusJakartaSans(),
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
         child: (_isLoading || _isLoadingInitialData)
-            ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(textBlue)))
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(AppTheme.lg),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppTheme.md),
-                        decoration: BoxDecoration(
-                          color: primaryBlue.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              isEditMode ? Icons.edit_outlined : Icons.storefront_outlined,
-                              color: textBlue,
-                              size: 20,
-                            ),
-                            const SizedBox(width: AppTheme.md),
-                            Expanded(
-                              child: Text(
-                                isEditMode ? l10n.editBranchInfo : l10n.addBranchInfo,
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.3),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.xl),
-
-                      _sectionLabel(l10n.ownerCompanyLabel),
-                      const SizedBox(height: 6),
-                      _companiesList.isEmpty
-                          ? TextButton(
-                              onPressed: () => context.push('/companies/create'),
-                              child: Text(l10n.registerCompanyFirst, style: const TextStyle(color: textBlue, fontSize: 13)),
-                            )
-                          : DropdownButtonFormField<String>(
-                              value: _companiesList.any((c) => c['id'] == _selectedCompanyId) ? _selectedCompanyId : null,
-                              items: _companiesList.map((c) {
-                                return DropdownMenuItem<String>(
-                                  value: c['id'],
-                                  child: Text(c['name'], style: const TextStyle(fontSize: 13)),
-                                );
-                              }).toList(),
-                              onChanged: (val) => setState(() => _selectedCompanyId = val),
-                              decoration: _buildInputDecoration(l10n.selectCompanyHint, Icons.apartment_outlined),
-                              validator: (v) => v == null ? l10n.companyRequiredValidator : null,
-                            ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      _sectionLabel(l10n.branchNameLabel),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _nameController,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: _buildInputDecoration(l10n.branchNameHint, Icons.storefront_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? l10n.branchNameEmpty : null,
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      _sectionLabel(l10n.branchCodeLabel),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _codeController,
-                        textCapitalization: TextCapitalization.characters,
-                        decoration: _buildInputDecoration(l10n.branchCodeHint, Icons.qr_code_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? l10n.branchCodeEmpty : null,
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      _sectionLabel(l10n.addressLabel),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _addressController,
-                        maxLines: 2,
-                        decoration: _buildInputDecoration(l10n.addressHint, Icons.location_on_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? l10n.addressEmpty : null,
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      Row(
-                        children: [
-                          Expanded(
+            ? Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
+                ),
+              )
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 800;
+                  return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            isMobile ? 16 : 24,
+                            isMobile ? 16 : 24,
+                            isMobile ? 16 : 24,
+                            32,
+                          ),
+                          child: Form(
+                            key: _formKey,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _sectionLabel(l10n.cityLabel),
-                                const SizedBox(height: 6),
+                                _buildHeader(context, l10n),
+                                const SizedBox(height: 22),
+                                _buildInfoBanner(l10n),
+                                const SizedBox(height: AppTheme.xl),
+
+                                _sectionLabel(l10n.ownerCompanyLabel),
+                                const SizedBox(height: 8),
+                                _companiesList.isEmpty
+                                    ? TextButton(
+                                        onPressed: () => context.push('/companies/create'),
+                                        child: Text(
+                                          l10n.registerCompanyFirst,
+                                          style: GoogleFonts.poppins(color: AppTheme.primaryColor, fontSize: 13, fontWeight: FontWeight.w600),
+                                        ),
+                                      )
+                                    : DropdownButtonFormField<String>(
+                                        value: _companiesList.any((c) => c['id'] == _selectedCompanyId) ? _selectedCompanyId : null,
+                                        items: _companiesList.map((c) {
+                                          return DropdownMenuItem<String>(
+                                            value: c['id'],
+                                            child: Text(c['name'], style: GoogleFonts.poppins(fontSize: 13)),
+                                          );
+                                        }).toList(),
+                                        onChanged: (val) => setState(() => _selectedCompanyId = val),
+                                        decoration: _buildInputDecoration(l10n.selectCompanyHint, Icons.apartment_outlined),
+                                        validator: (v) => v == null ? l10n.companyRequiredValidator : null,
+                                      ),
+                                const SizedBox(height: AppTheme.lg),
+
+                                _sectionLabel(l10n.branchNameLabel),
+                                const SizedBox(height: 8),
                                 TextFormField(
-                                  controller: _cityController,
+                                  controller: _nameController,
                                   textCapitalization: TextCapitalization.words,
-                                  decoration: _buildInputDecoration(l10n.cityHint, Icons.location_city_outlined),
-                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.fieldRequired : null,
+                                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                                  decoration: _buildInputDecoration(l10n.branchNameHint, Icons.storefront_outlined),
+                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.branchNameEmpty : null,
                                 ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: AppTheme.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _sectionLabel(l10n.provinceLabel),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: AppTheme.lg),
+
+                                _sectionLabel(l10n.branchCodeLabel),
+                                const SizedBox(height: 8),
                                 TextFormField(
-                                  controller: _provinceController,
-                                  textCapitalization: TextCapitalization.words,
-                                  decoration: _buildInputDecoration(l10n.provinceHint, Icons.map_outlined),
-                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.fieldRequired : null,
+                                  controller: _codeController,
+                                  textCapitalization: TextCapitalization.characters,
+                                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                                  decoration: _buildInputDecoration(l10n.branchCodeHint, Icons.qr_code_outlined),
+                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.branchCodeEmpty : null,
                                 ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppTheme.lg),
+                                const SizedBox(height: AppTheme.lg),
 
-                      _sectionLabel(l10n.branchPhoneLabel),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: _buildInputDecoration(l10n.branchPhoneHint, Icons.phone_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? l10n.phoneEmpty : null,
-                      ),
-                      const SizedBox(height: AppTheme.lg),
+                                _sectionLabel(l10n.addressLabel),
+                                const SizedBox(height: 8),
+                                TextFormField(
+                                  controller: _addressController,
+                                  maxLines: 2,
+                                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                                  decoration: _buildInputDecoration(l10n.addressHint, Icons.location_on_outlined),
+                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.addressEmpty : null,
+                                ),
+                                const SizedBox(height: AppTheme.lg),
 
-                      _sectionLabel(l10n.emailOptionalLabel),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: _buildInputDecoration(l10n.branchEmailHint, Icons.email_outlined),
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      _sectionLabel(l10n.managerOptionalLabel),
-                      const SizedBox(height: 6),
-                      _employeesList.isEmpty
-                          ? Container(
-                              padding: const EdgeInsets.all(AppTheme.md),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                                border: Border.all(color: Colors.grey.shade200),
-                              ),
-                              child: Text(
-                                l10n.noEmployeeDataInfo,
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                              ),
-                            )
-                          : DropdownButtonFormField<String>(
-                              value: _employeesList.any((e) => e['id'] == _selectedManagerId) ? _selectedManagerId : null,
-                              items: _employeesList.map((e) {
-                                return DropdownMenuItem<String>(
-                                  value: e['id'],
-                                  child: Text(e['name'], style: const TextStyle(fontSize: 13)),
-                                );
-                              }).toList(),
-                              onChanged: (val) => setState(() => _selectedManagerId = val),
-                              decoration: _buildInputDecoration(l10n.selectManagerHint, Icons.badge_outlined),
-                            ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      _sectionLabel(l10n.dailyCapacityLabel),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _capacityController,
-                        keyboardType: TextInputType.number,
-                        decoration: _buildInputDecoration(l10n.capacityHint, Icons.local_shipping_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? l10n.capacityEmpty : null,
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      _sectionLabel(l10n.mapLocationLabel),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _latController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                              decoration: _buildInputDecoration(l10n.latitudeHint, Icons.my_location_outlined),
-                            ),
-                          ),
-                          const SizedBox(width: AppTheme.md),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _lngController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                              decoration: _buildInputDecoration(l10n.longitudeHint, Icons.my_location_outlined),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      _sectionLabel(l10n.operatingHoursLabel),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(l10n.useSameHoursLabel, style: const TextStyle(fontSize: 13)),
-                            ),
-                            Switch.adaptive(
-                              value: _useSameHoursForAllDays,
-                              activeColor: textBlue,
-                              onChanged: (v) => setState(() => _useSameHoursForAllDays = v),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.md),
-
-                      _useSameHoursForAllDays
-                          ? _buildHourPickerRow(
-                              label: l10n.everyDayLabel,
-                              openValue: _uniformOpen,
-                              closeValue: _uniformClose,
-                              onOpenTap: () => _pickTime(
-                                initialValue: _uniformOpen,
-                                onPicked: (v) => setState(() => _uniformOpen = v),
-                              ),
-                              onCloseTap: () => _pickTime(
-                                initialValue: _uniformClose,
-                                onPicked: (v) => setState(() => _uniformClose = v),
-                              ),
-                            )
-                          : Column(
-                              children: _days.map((d) {
-                                final key = d['key']!;
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: _buildHourPickerRow(
-                                    label: _dayLabel(l10n, key),
-                                    openValue: _operatingHours[key]!['open']!,
-                                    closeValue: _operatingHours[key]!['close']!,
-                                    onOpenTap: () => _pickTime(
-                                      initialValue: _operatingHours[key]!['open']!,
-                                      onPicked: (v) => setState(() => _operatingHours[key]!['open'] = v),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          _sectionLabel(l10n.cityLabel),
+                                          const SizedBox(height: 8),
+                                          TextFormField(
+                                            controller: _cityController,
+                                            textCapitalization: TextCapitalization.words,
+                                            style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                                            decoration: _buildInputDecoration(l10n.cityHint, Icons.location_city_outlined),
+                                            validator: (v) => v == null || v.trim().isEmpty ? l10n.fieldRequired : null,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    onCloseTap: () => _pickTime(
-                                      initialValue: _operatingHours[key]!['close']!,
-                                      onPicked: (v) => setState(() => _operatingHours[key]!['close'] = v),
+                                    const SizedBox(width: AppTheme.md),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          _sectionLabel(l10n.provinceLabel),
+                                          const SizedBox(height: 8),
+                                          TextFormField(
+                                            controller: _provinceController,
+                                            textCapitalization: TextCapitalization.words,
+                                            style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                                            decoration: _buildInputDecoration(l10n.provinceHint, Icons.map_outlined),
+                                            validator: (v) => v == null || v.trim().isEmpty ? l10n.fieldRequired : null,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: AppTheme.lg),
+
+                                _sectionLabel(l10n.branchPhoneLabel),
+                                const SizedBox(height: 8),
+                                TextFormField(
+                                  controller: _phoneController,
+                                  keyboardType: TextInputType.phone,
+                                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                                  decoration: _buildInputDecoration(l10n.branchPhoneHint, Icons.phone_outlined),
+                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.phoneEmpty : null,
+                                ),
+                                const SizedBox(height: AppTheme.lg),
+
+                                _sectionLabel(l10n.emailOptionalLabel),
+                                const SizedBox(height: 8),
+                                TextFormField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                                  decoration: _buildInputDecoration(l10n.branchEmailHint, Icons.email_outlined),
+                                ),
+                                const SizedBox(height: AppTheme.lg),
+
+                                _sectionLabel(l10n.managerOptionalLabel),
+                                const SizedBox(height: 8),
+                                _employeesList.isEmpty
+                                    ? Container(
+                                        padding: const EdgeInsets.all(AppTheme.md),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.cardColor,
+                                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                          border: Border.all(color: AppTheme.borderColor),
+                                        ),
+                                        child: Text(
+                                          l10n.noEmployeeDataInfo,
+                                          style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                                        ),
+                                      )
+                                    : DropdownButtonFormField<String>(
+                                        value: _employeesList.any((e) => e['id'] == _selectedManagerId) ? _selectedManagerId : null,
+                                        items: _employeesList.map((e) {
+                                          return DropdownMenuItem<String>(
+                                            value: e['id'],
+                                            child: Text(e['name'], style: GoogleFonts.poppins(fontSize: 13)),
+                                          );
+                                        }).toList(),
+                                        onChanged: (val) => setState(() => _selectedManagerId = val),
+                                        decoration: _buildInputDecoration(l10n.selectManagerHint, Icons.badge_outlined),
+                                      ),
+                                const SizedBox(height: AppTheme.lg),
+
+                                _sectionLabel(l10n.dailyCapacityLabel),
+                                const SizedBox(height: 8),
+                                TextFormField(
+                                  controller: _capacityController,
+                                  keyboardType: TextInputType.number,
+                                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                                  decoration: _buildInputDecoration(l10n.capacityHint, Icons.local_shipping_outlined),
+                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.capacityEmpty : null,
+                                ),
+                                const SizedBox(height: AppTheme.lg),
+
+                                _sectionLabel(l10n.mapLocationLabel),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _latController,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                                        style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                                        decoration: _buildInputDecoration(l10n.latitudeHint, Icons.my_location_outlined),
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppTheme.md),
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _lngController,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                                        style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                                        decoration: _buildInputDecoration(l10n.longitudeHint, Icons.my_location_outlined),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: AppTheme.lg),
+
+                                _sectionLabel(l10n.operatingHoursLabel),
+                                const SizedBox(height: 10),
+                                _buildToggleCard(
+                                  label: l10n.useSameHoursLabel,
+                                  value: _useSameHoursForAllDays,
+                                  onChanged: (v) => setState(() => _useSameHoursForAllDays = v),
+                                ),
+                                const SizedBox(height: AppTheme.md),
+
+                                _useSameHoursForAllDays
+                                    ? _buildHourPickerRow(
+                                        label: l10n.everyDayLabel,
+                                        openValue: _uniformOpen,
+                                        closeValue: _uniformClose,
+                                        onOpenTap: () => _pickTime(
+                                          initialValue: _uniformOpen,
+                                          onPicked: (v) => setState(() => _uniformOpen = v),
+                                        ),
+                                        onCloseTap: () => _pickTime(
+                                          initialValue: _uniformClose,
+                                          onPicked: (v) => setState(() => _uniformClose = v),
+                                        ),
+                                      )
+                                    : Column(
+                                        children: _days.map((d) {
+                                          final key = d['key']!;
+                                          return Padding(
+                                            padding: const EdgeInsets.only(bottom: 8.0),
+                                            child: _buildHourPickerRow(
+                                              label: _dayLabel(l10n, key),
+                                              openValue: _operatingHours[key]!['open']!,
+                                              closeValue: _operatingHours[key]!['close']!,
+                                              onOpenTap: () => _pickTime(
+                                                initialValue: _operatingHours[key]!['open']!,
+                                                onPicked: (v) => setState(() => _operatingHours[key]!['open'] = v),
+                                              ),
+                                              onCloseTap: () => _pickTime(
+                                                initialValue: _operatingHours[key]!['close']!,
+                                                onPicked: (v) => setState(() => _operatingHours[key]!['close'] = v),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                const SizedBox(height: AppTheme.lg),
+
+                                _buildToggleCard(
+                                  label: l10n.activeStatusLabel,
+                                  value: _isActive,
+                                  boldLabel: true,
+                                  onChanged: (v) => setState(() => _isActive = v),
+                                ),
+                                const SizedBox(height: AppTheme.xxl),
+
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 50,
+                                  child: ElevatedButton(
+                                    onPressed: _saveLaundry,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.primaryColor,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                                    ),
+                                    child: Text(
+                                      isEditMode ? l10n.updateBranchButton : l10n.saveBranchButton,
+                                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
                                     ),
                                   ),
-                                );
-                              }).toList(),
+                                ),
+                              ],
                             ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(l10n.activeStatusLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                            Switch.adaptive(
-                              value: _isActive,
-                              activeColor: textBlue,
-                              onChanged: (val) => setState(() => _isActive = val),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.xxl),
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: _saveLaundry,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: textBlue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-                            elevation: 0,
-                          ),
-                          child: Text(
-                            isEditMode ? l10n.updateBranchButton : l10n.saveBranchButton,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
       ),
     );
   }
 
+  /// Header custom (icon box + judul + tombol back), mengikuti pola persis
+  /// di LaundriesListScreen._buildHeader agar kedua layar terasa satu tema.
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
+    final canGoBack = context.canPop();
+
+    return Row(
+      children: [
+        if (canGoBack) ...[
+          InkWell(
+            onTap: () => context.pop(),
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.cardColor,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 20),
+            ),
+          ),
+          const SizedBox(width: AppTheme.md),
+        ],
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: Icon(
+            isEditMode ? Icons.edit_outlined : Icons.storefront_rounded,
+            color: AppTheme.primaryColor,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isEditMode ? l10n.editBranchTitle : l10n.addBranchTitle,
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                isEditMode ? l10n.editBranchInfo : l10n.addBranchInfo,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w400,
+                  color: AppTheme.textSecondary,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Banner info kecil di bawah header, memakai kartu AppTheme (bukan lagi
+  /// warna biru lokal) supaya senada dengan card lain di layar list.
+  Widget _buildInfoBanner(AppLocalizations l10n) {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.md),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isEditMode ? Icons.edit_outlined : Icons.storefront_outlined,
+            color: AppTheme.primaryColor,
+            size: 20,
+          ),
+          const SizedBox(width: AppTheme.md),
+          Expanded(
+            child: Text(
+              isEditMode ? l10n.editBranchInfo : l10n.addBranchInfo,
+              style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary, height: 1.3),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _sectionLabel(String text) {
-    return Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87));
+    return Text(
+      text,
+      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+    );
+  }
+
+  /// Card toggle (switch) bergaya sama dengan card lain (shadow tipis,
+  /// radius AppTheme), dipakai untuk "jam sama tiap hari" & "status aktif".
+  Widget _buildToggleCard({
+    required String label,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    bool boldLabel = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: boldLabel ? FontWeight.w600 : FontWeight.w400,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            activeColor: AppTheme.primaryColor,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildHourPickerRow({
@@ -850,12 +1054,15 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
   }) {
     return Row(
       children: [
-        SizedBox(width: 64, child: Text(label, style: const TextStyle(fontSize: 12, color: Colors.black87))),
+        SizedBox(
+          width: 64,
+          child: Text(label, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textPrimary)),
+        ),
         const SizedBox(width: 8.0),
         Expanded(child: _timeChip(openValue, onOpenTap)),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 6),
-          child: Text('—', style: TextStyle(color: Colors.grey)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Text('—', style: GoogleFonts.poppins(color: AppTheme.textTertiary)),
         ),
         Expanded(child: _timeChip(closeValue, onCloseTap)),
       ],
@@ -869,16 +1076,16 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardColor,
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: AppTheme.borderColor),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.access_time, color: Colors.grey, size: 16),
+            Icon(Icons.access_time, color: AppTheme.textTertiary, size: 16),
             const SizedBox(width: 6),
-            Text(value, style: const TextStyle(fontSize: 12)),
+            Text(value, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textPrimary)),
           ],
         ),
       ),
@@ -888,15 +1095,27 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
   InputDecoration _buildInputDecoration(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
-      prefixIcon: Icon(icon, color: Colors.grey, size: 20),
+      hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
+      prefixIcon: Icon(icon, color: AppTheme.textTertiary, size: 20),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: AppTheme.cardColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 14),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd), borderSide: BorderSide(color: Colors.grey.shade200)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd), borderSide: BorderSide(color: Colors.grey.shade200)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd), borderSide: const BorderSide(color: textBlue, width: 1.5)),
-      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd), borderSide: const BorderSide(color: Colors.redAccent)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        borderSide: BorderSide(color: AppTheme.borderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        borderSide: BorderSide(color: AppTheme.borderColor),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        borderSide: const BorderSide(color: Colors.redAccent),
+      ),
     );
   }
 }
