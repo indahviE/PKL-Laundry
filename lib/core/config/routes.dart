@@ -67,7 +67,7 @@ import '../../screens/services/services_list_screen.dart';
 import '../../screens/services/create_service_screen.dart';
 // import '../../screens/reports/reports_screen.dart';
 // import '../../screens/reports/report_detail_screen.dart';
-// import '../../screens/settings/subscription_screen.dart';
+import '../../screens/settings/subscription_screen.dart';
 
 const _authRoutes = ['/login', '/register', '/forgot-password'];
 
@@ -91,7 +91,15 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final goRouterProvider = Provider<GoRouter>((ref) {
-  final authRepo = ref.watch(authRepositoryProvider);
+  // Pakai ref.read, BUKAN ref.watch: GoRouter di bawah ini sudah
+  // dengarin perubahan auth lewat `refreshListenable:
+  // GoRouterRefreshStream(...)` sendiri. Kalau pakai ref.watch, provider
+  // ini (dan makanya GoRouter-nya) dibikin ULANG tiap authRepo berubah,
+  // padahal navigatorKey (_rootNavigatorKey/_shellNavigatorKey) di
+  // bawah itu variabel global yang sama terus -> GoRouter versi baru
+  // nyoba attach ke Navigator pakai key yang sama dengan versi lama yang
+  // belum sempat dibuang -> "A GlobalKey was used multiple times".
+  final authRepo = ref.read(authRepositoryProvider);
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -141,7 +149,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         return location == '/payment' ? null : '/payment';
       }
 
-      if (isAuthRoute || _onboardingRoutes.contains(location)) {
+      // Kecualikan flow upgrade: /choose-plan dan /payment memang
+      // sengaja diakses ULANG oleh user yang SUDAH fully onboarded,
+      // lewat SubscriptionScreen -> context.push(..., extra:
+      // {'isUpgrade': true}). Tanpa pengecualian ini, redirect di atas
+      // bakal langsung nendang mereka balik ke /dashboard begitu
+      // /choose-plan match (karena route itu ada di _onboardingRoutes),
+      // padahal /dashboard sendiri lagi aktif di layar -> dua navigasi
+      // rebutan di frame yang sama -> race condition GlobalKey/Navigator
+      // ("keyReservation.contains(key) is not true").
+      final extra = state.extra;
+      final isUpgradeFlow = extra is Map && extra['isUpgrade'] == true;
+      final isUpgradeRoute =
+          isUpgradeFlow && (location == '/choose-plan' || location == '/payment');
+
+      if (!isUpgradeRoute && (isAuthRoute || _onboardingRoutes.contains(location))) {
         return '/dashboard';
       }
 
@@ -185,20 +207,35 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/choose-plan',
         name: 'choose-plan',
-        builder: (context, state) => const ChoosePlanScreen(),
+        // Baca flag isUpgrade dari extra (dikirim SubscriptionScreen saat
+        // user yang sudah aktif mau ganti paket). Kalau diakses tanpa
+        // extra (mis. langsung dari flow onboarding lewat redirect),
+        // isUpgrade default false.
+        builder: (context, state) {
+          final extra = state.extra;
+          final isUpgrade = extra is Map ? (extra['isUpgrade'] as bool? ?? false) : false;
+          return ChoosePlanScreen(isUpgrade: isUpgrade);
+        },
       ),
       GoRoute(
         path: '/payment',
         name: 'payment',
         builder: (context, state) {
-          // extra dikirim dari ChoosePlanScreen; kalau kosong (mis. refresh
-          // langsung di /payment), lempar balik ke choose-plan.
           final extra = state.extra as Map<String, dynamic>?;
           if (extra == null) return const ChoosePlanScreen();
+          final companyId = extra['companyId'] as String?;
+          if (companyId == null) {
+            // companyId wajib ada supaya webhook Stripe bisa menulis
+            // company_id yang benar ke dokumen subscription. Kalau kosong,
+            // balikin ke choose-plan daripada bikin runtime error.
+            return const ChoosePlanScreen();
+          }
           return PaymentScreen(
             planName: extra['planName'] as String,
             isYearly: extra['isYearly'] as bool,
             price: extra['price'] as double,
+            isUpgrade: extra['isUpgrade'] as bool? ?? false,
+            companyId: companyId,
           );
         },
       ),
@@ -354,9 +391,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings/subscription',
         name: 'settings-subscription',
-        // Dirujuk dialog "Batas Kuota Tercapai" di Create Employee/Laundry.
-        builder: (context, state) =>
-            const PlaceholderScreen(title: 'Upgrade Paket Langganan'),
+        // Dirujuk dialog "Batas Kuota Tercapai" di Create Employee/Laundry,
+        // dan dari menu Settings. TIDAK terdaftar di _onboardingRoutes, jadi
+        // aman diakses user yang sudah fully onboarded (tidak ke-redirect
+        // paksa ke /dashboard).
+        //
+        // Nampilin dulu plan aktif user (SubscriptionScreen). Dari situ
+        // ada tombol "Upgrade Paket" yang baru masuk ke /choose-plan
+        // dengan extra isUpgrade: true.
+        builder: (context, state) => const SubscriptionScreen(),
       ),
 
       // ==================== SHELL (Bottom Navigation) ====================

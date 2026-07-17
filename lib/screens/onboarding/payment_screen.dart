@@ -15,32 +15,26 @@ import '../../services/stripe_service.dart';
 /// Alur: Pilih Paket → [halaman ini] → Stripe Checkout (browser) →
 /// Stripe Webhook menulis subscription aktif → Dashboard.
 ///
-/// Desain konsisten dengan screen onboarding lain (card putih, step
-/// indicator, GoogleFonts.poppins, AppTheme).
-///
-/// PENTING soal alur async: setelah user menekan "Lanjutkan ke
-/// Pembayaran", kita:
-///   1) panggil Cloud Function createCheckoutSession → dapat URL Stripe
-///      Checkout hosted page
-///   2) buka URL itu di browser eksternal (bukan WebView) — ini mengikuti
-///      rekomendasi Stripe untuk Checkout hosted page
-///   3) SEGERA mulai mendengarkan `watchActiveSubscription()` dari
-///      Firestore, karena status pembayaran final ditulis oleh
-///      `stripeWebhook` secara independen dari sesi browser user.
-///      Begitu dokumen subscription berstatus 'active' muncul, kita
-///      otomatis lanjut ke /dashboard — user tidak perlu manual kembali
-///      ke app dan klik apa pun.
+/// Juga dipakai untuk alur UPGRADE PAKET (dibuka dari ChoosePlanScreen
+/// mode isUpgrade), dibedakan lewat flag [isUpgrade] supaya navigasi back
+/// dan tampilan step indicator menyesuaikan konteks.
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({
     Key? key,
     required this.planName,
     required this.isYearly,
     required this.price,
+    required this.companyId,
+    this.isUpgrade = false,
   }) : super(key: key);
 
   final String planName;
   final bool isYearly;
   final double price;
+  final bool isUpgrade;
+  // WAJIB diteruskan supaya Stripe Checkout Session (dan webhook-nya)
+  // tahu subscription baru ini milik company yang mana.
+  final String companyId;
 
   @override
   ConsumerState<PaymentScreen> createState() => _PaymentScreenState();
@@ -72,16 +66,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     });
 
     try {
-      // TODO: ganti dengan domain production kamu. URL ini cuma untuk
-      // menentukan halaman apa yang dilihat user setelah checkout di
-      // browser — status pembayaran sesungguhnya tetap ditentukan lewat
-      // webhook + Firestore listener di bawah, jadi URL placeholder ini
-      // aman dipakai sementara backend belum live.
       final session = await _stripeService.createCheckoutSession(
         planName: widget.planName,
         isYearly: widget.isYearly,
         successUrl: 'https://netwash-stripe-backend.vercel.app/payment-success.html',
         cancelUrl: 'https://netwash.app/payment/cancel',
+        companyId: widget.companyId,
       );
 
       final uri = Uri.parse(session.url);
@@ -110,10 +100,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   }
 
   /// Dengarkan Firestore sampai Stripe webhook menuliskan subscription
-  /// dengan status 'active', lalu lanjut ke dashboard.
-  /// (planChosen sudah disimpan lebih awal di ChoosePlanScreen — lihat
-  /// komentar di ChoosePlanScreen._handleSelectPlan — jadi di sini kita
-  /// cuma perlu nunggu konfirmasi pembayarannya.)
+  /// dengan status 'active', lalu lanjut. Kalau isUpgrade, redirect balik
+  /// ke dashboard juga (bukan halaman lain) — user upgrade tetap owner
+  /// yang sudah settle onboarding-nya.
   void _listenForActiveSubscription() {
     final authRepo = ref.read(authRepositoryProvider);
     _subscriptionListener?.cancel();
@@ -122,7 +111,6 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     ) {
       if (!isActive || !mounted) return;
 
-      // Tampilkan popup singkat dulu sebelum pindah ke dashboard.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -131,7 +119,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Pembayaran berhasil! Mengarahkan ke dashboard...',
+                  widget.isUpgrade
+                      ? 'Paket berhasil diperbarui! Mengarahkan ke dashboard...'
+                      : 'Pembayaran berhasil! Mengarahkan ke dashboard...',
                   style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
                 ),
               ),
@@ -155,7 +145,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     if (context.canPop()) {
       context.pop();
     } else {
-      context.go('/choose-plan');
+      context.go(widget.isUpgrade ? '/settings/subscription' : '/choose-plan');
     }
   }
 
@@ -199,8 +189,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         children: [
           _buildTopRow(),
           const SizedBox(height: 20),
-          _buildStepIndicator(),
-          const SizedBox(height: 24),
+          if (!widget.isUpgrade) ...[
+            _buildStepIndicator(),
+            const SizedBox(height: 24),
+          ],
           _buildHeader(),
           const SizedBox(height: 28),
           if (_errorMessage != null) ...[
@@ -241,6 +233,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   }
 
   /// Step indicator — 7 langkah sesuai PRD. Posisi saat ini: 6.
+  /// Hanya dirender saat mode onboarding (bukan upgrade).
   Widget _buildStepIndicator() {
     const totalSteps = 7;
     const currentStep = 6;
@@ -303,7 +296,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Selesaikan pembayaran untuk mengaktifkan paket Anda',
+          widget.isUpgrade
+              ? 'Selesaikan pembayaran untuk mengaktifkan paket baru Anda'
+              : 'Selesaikan pembayaran untuk mengaktifkan paket Anda',
           textAlign: TextAlign.center,
           style: GoogleFonts.poppins(
             fontSize: 13.5,

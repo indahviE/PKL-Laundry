@@ -205,6 +205,31 @@ class AuthRepository {
     return doc.data();
   }
 
+  /// Ambil ID company milik user, dari subcollection
+  /// `users/{uid}/companies/` (BUKAN dari field `users/{uid}.company`,
+  /// karena field itu cuma snapshot data tanpa ID — lihat saveCompanyData()
+  /// di bawah). Dipakai buat menyertakan `companyId` ke metadata Stripe
+  /// Checkout Session, supaya webhook bisa menulis `company_id` yang benar
+  /// ke dokumen subscription (dibutuhkan oleh
+  /// SubscriptionRepository.streamActiveSubscription()).
+  ///
+  /// Asumsi saat ini: satu user cuma punya satu company (sesuai
+  /// saveCompanyData() yang juga cuma menjaga satu dokumen company).
+  Future<String?> getPrimaryCompanyId() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+
+    final snapshot = await _db
+        .collection('users')
+        .doc(user.uid)
+        .collection('companies')
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) return null;
+    return snapshot.docs.first.id;
+  }
+
   /// Simpan data perusahaan & tandai step ini selesai.
   /// Sesuai PRD Step 4: Setup Perusahaan.
   ///

@@ -1,5 +1,9 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../core/themes/app_theme.dart';
 
 /// Model breakdown pendapatan per jenis layanan
@@ -28,6 +32,7 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   int _selectedPeriod = 2; // 0: Hari Ini, 1: Minggu Ini, 2: Bulan Ini, 3: Tahun Ini
   final List<String> _periods = ['Hari Ini', 'Minggu Ini', 'Bulan Ini', 'Tahun Ini'];
+  bool _isExporting = false;
 
   // ============================================
   // DUMMY DATA (ganti dengan fetch Firestore nanti)
@@ -59,6 +64,176 @@ class _ReportsScreenState extends State<ReportsScreen> {
       return 'Rp ${(amount / 1000000).toStringAsFixed(1)}jt';
     }
     return _formatCurrency(amount);
+  }
+
+  // Tema warna PDF — biru langit cerah, senada dengan tema aplikasi
+  static const PdfColor _pdfPrimary = PdfColor.fromInt(0xFF38BDF8); // sky blue cerah
+  static const PdfColor _pdfPrimaryDark = PdfColor.fromInt(0xFF0284C7); // untuk teks/judul biar tetap kebaca
+  static const PdfColor _pdfPrimaryTint = PdfColor.fromInt(0xFFE0F2FE); // background header tabel
+  static const PdfColor _pdfBorderLight = PdfColor.fromInt(0xFFBAE6FD); // border tabel, biru muda
+
+  /// Generate & bagikan/print laporan sebagai PDF
+  Future<void> _exportToPdf(BuildContext context) async {
+    setState(() => _isExporting = true);
+
+    try {
+      final doc = pw.Document();
+      final periodLabel = _periods[_selectedPeriod];
+      final now = DateTime.now();
+      final generatedAt = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} '
+          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+      final maxRevenue = _serviceBreakdown.map((s) => s.revenue).reduce((a, b) => a > b ? a : b);
+
+      doc.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          header: (context) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'Laporan Bisnis Laundry',
+                style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: _pdfPrimaryDark),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'Periode: $periodLabel   |   Dibuat: $generatedAt',
+                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+              ),
+              pw.SizedBox(height: 12),
+              pw.Divider(color: _pdfPrimary, thickness: 1.2),
+            ],
+          ),
+          build: (context) => [
+            // Ringkasan KPI utama
+            pw.Text('Ringkasan', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: _pdfPrimaryDark)),
+            pw.SizedBox(height: 8),
+            pw.Table(
+              border: pw.TableBorder.all(color: _pdfBorderLight),
+              children: [
+                _pdfTableRow(['Total Pendapatan', _formatCurrency(_totalRevenue)]),
+                _pdfTableRow(['Total Pesanan', '$_totalOrders']),
+                _pdfTableRow(['Pelanggan Baru', '$_newCustomers']),
+                _pdfTableRow(['Rata-rata Order', _formatCurrency(_avgOrderValue)]),
+                _pdfTableRow(['Pertumbuhan', '+$_growthRate% dari periode sebelumnya']),
+                _pdfTableRow(['Completion Rate', '$_completionRate%']),
+                _pdfTableRow(['Customer Rating', '$_customerRating/5.0']),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+
+            // Tren mingguan
+            pw.Text('Tren Pendapatan (7 hari terakhir)', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: _pdfPrimaryDark)),
+            pw.SizedBox(height: 8),
+            pw.Table(
+              border: pw.TableBorder.all(color: _pdfBorderLight),
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: _pdfPrimaryTint),
+                  children: _weeklyDays
+                      .map((d) => pw.Padding(
+                            padding: const pw.EdgeInsets.all(6),
+                            child: pw.Text(d, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                          ))
+                      .toList(),
+                ),
+                pw.TableRow(
+                  children: _weeklyValues
+                      .map((v) => pw.Padding(
+                            padding: const pw.EdgeInsets.all(6),
+                            child: pw.Text('${(v * 100).toStringAsFixed(0)}%', style: const pw.TextStyle(fontSize: 10)),
+                          ))
+                      .toList(),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+
+            // Breakdown per layanan
+            pw.Text('Pendapatan per Layanan', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: _pdfPrimaryDark)),
+            pw.SizedBox(height: 8),
+            pw.Table(
+              border: pw.TableBorder.all(color: _pdfBorderLight),
+              columnWidths: const {
+                0: pw.FlexColumnWidth(2.5),
+                1: pw.FlexColumnWidth(1.5),
+                2: pw.FlexColumnWidth(2),
+                3: pw.FlexColumnWidth(1.5),
+              },
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: _pdfPrimaryTint),
+                  children: [
+                    _pdfCell('Layanan', bold: true),
+                    _pdfCell('Pesanan', bold: true),
+                    _pdfCell('Pendapatan', bold: true),
+                    _pdfCell('Persentase', bold: true),
+                  ],
+                ),
+                ..._serviceBreakdown.map((service) {
+                  final percentage = (service.revenue / maxRevenue * 100).toStringAsFixed(0);
+                  return pw.TableRow(
+                    children: [
+                      _pdfCell(service.name),
+                      _pdfCell('${service.orderCount}'),
+                      _pdfCell(_formatCurrency(service.revenue)),
+                      _pdfCell('$percentage%'),
+                    ],
+                  );
+                }),
+              ],
+            ),
+          ],
+          footer: (context) => pw.Align(
+            alignment: pw.Alignment.centerRight,
+            child: pw.Text(
+              'Halaman ${context.pageNumber} dari ${context.pagesCount}',
+              style: const pw.TextStyle(fontSize: 9, color: _pdfPrimaryDark),
+            ),
+          ),
+        ),
+      );
+
+      final Uint8List bytes = await doc.save();
+      final fileName = 'laporan_${periodLabel.toLowerCase().replaceAll(' ', '_')}_${now.millisecondsSinceEpoch}.pdf';
+
+      // Menampilkan preview + opsi share/print/save menggunakan package printing
+      await Printing.sharePdf(bytes: bytes, filename: fileName);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal membuat PDF: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  pw.TableRow _pdfTableRow(List<String> cells) {
+    return pw.TableRow(
+      children: [
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(6),
+          child: pw.Text(cells[0], style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(6),
+          child: pw.Text(cells[1], style: const pw.TextStyle(fontSize: 10)),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _pdfCell(String text, {bool bold = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(6),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(fontSize: 10, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal),
+      ),
+    );
   }
 
   @override
@@ -157,14 +332,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ],
         ),
         OutlinedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Export laporan akan ditambahkan')),
-            );
-          },
-          icon: const Icon(Icons.file_download_outlined, size: 18),
+          onPressed: _isExporting ? null : () => _exportToPdf(context),
+          icon: _isExporting
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
+                )
+              : const Icon(Icons.file_download_outlined, size: 18),
           label: Text(
-            'Export',
+            _isExporting ? 'Membuat PDF...' : 'Export',
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
           ),
           style: OutlinedButton.styleFrom(
