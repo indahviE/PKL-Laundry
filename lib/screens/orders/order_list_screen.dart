@@ -212,7 +212,6 @@ void _applyFiltersAndSearch() {
   String _getStatusLabel(String status, AppLocalizations t) {
     switch (status) {
       case 'pending':
-<<<<<<< Updated upstream
         return 'Menunggu';
       case 'confirmed':
         return 'Dikonfirmasi';
@@ -228,11 +227,6 @@ void _applyFiltersAndSearch() {
         return 'Cek Kualitas';
       case 'ready':
         return 'Siap Diambil';
-=======
-        return t.orderWaitingStatus;
-      case 'processing':
-        return t.orderProcessingStatus;
->>>>>>> Stashed changes
       case 'completed':
         return t.orderCompletedStatus;
       case 'cancelled':
@@ -433,7 +427,6 @@ void _applyFiltersAndSearch() {
 
   /// Build filter buttons
   Widget _buildFilterButtons(BuildContext context) {
-<<<<<<< Updated upstream
   final filters = [
     ('all', 'Semua', Icons.all_inbox_outlined),
     ('pending', 'Menunggu', Icons.schedule_outlined),
@@ -442,16 +435,6 @@ void _applyFiltersAndSearch() {
     ('completed', 'Selesai', Icons.check_circle_outline),
     ('cancelled', 'Dibatalkan', Icons.cancel_outlined),
   ];
-=======
-    final t = AppLocalizations.of(context)!;
-    final filters = [
-      ('all', 'Semua', Icons.all_inbox_outlined),
-      ('pending', t.orderWaitingStatus, Icons.schedule_outlined),
-      ('processing', t.orderProcessingStatus, Icons.local_laundry_service_outlined),
-      ('completed', t.orderCompletedStatus, Icons.check_circle_outline),
-      ('cancelled', t.orderCancelledStatus, Icons.cancel_outlined),
-    ];
->>>>>>> Stashed changes
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,

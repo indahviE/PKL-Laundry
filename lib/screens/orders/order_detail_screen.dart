@@ -1,4 +1,9 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:gal/gal.dart';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart';
@@ -46,10 +51,9 @@ class _StatusHistoryEntry {
 /// Model data order lengkap untuk halaman detail, di-fetch dari
 /// users/{uid}/orders/{orderId}
 ///
-/// UPDATED: nambah 3 field pembayaran (paymentStatus, paymentMethodRaw,
-/// paidAmount) yang sebelumnya tidak dibaca/ditampilkan sama sekali di
-/// layar ini, walaupun datanya sudah ada di dokumen Firestore sejak
-/// CreateOrderScreen menulisnya.
+/// UPDATED: nambah field deliveryType supaya pesan WhatsApp "siap
+/// diambil/diantar" bisa disesuaikan otomatis (self_pickup vs delivery),
+/// nggak selalu nanya "mau diambil atau diantar?" ke semua pelanggan.
 class _OrderDetailData {
   final String orderNumber;
   final String customerName;
@@ -69,6 +73,9 @@ class _OrderDetailData {
   final String paymentMethodRaw; // 'cash' | 'transfer' | 'debit' | 'ewallet'
   final double paidAmount;
 
+  // --- Pengiriman ---
+  final String deliveryType; // 'self_pickup' | 'delivery'
+
   _OrderDetailData({
     required this.orderNumber,
     required this.customerName,
@@ -85,6 +92,7 @@ class _OrderDetailData {
     required this.paymentStatus,
     required this.paymentMethodRaw,
     required this.paidAmount,
+    required this.deliveryType,
   });
 
   /// Sisa tagihan yang belum dibayar. Tidak pernah negatif (dijaga dengan
@@ -117,6 +125,7 @@ class _OrderDetailData {
       paymentStatus: (data['payment_status'] ?? 'pending') as String,
       paymentMethodRaw: (data['payment_method'] ?? 'cash') as String,
       paidAmount: ((data['paid_amount'] ?? 0) as num).toDouble(),
+      deliveryType: (data['delivery_type'] ?? 'self_pickup') as String,
     );
   }
 }
@@ -137,8 +146,14 @@ class OrderDetailScreen extends StatefulWidget {
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   bool _isLoading = true;
   bool _isUpdatingStatus = false;
+  bool _isGeneratingReceipt = false;
   String? _errorMessage;
   _OrderDetailData? _order;
+
+  /// Key buat "menangkap" tampilan struk (_buildReceiptCard) jadi gambar PNG
+  /// lewat RepaintBoundary. Widget-nya dirender offstage (di luar layar,
+  /// nggak keliatan user), cuma dipakai sebagai sumber screenshot.
+  final GlobalKey _receiptKey = GlobalKey();
 
   @override
   void initState() {
@@ -514,23 +529,137 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return digits;
   }
 
-  /// Buka WhatsApp ke nomor customer, isi pesan otomatis
-  /// bahwa pesanannya sudah selesai dan siap diambil/diantar.
-  Future<void> _openWhatsapp(_OrderDetailData order) async {
-    if (order.customerPhone.isEmpty) {
+  /// Kirim pesan WA generik lewat wa.me. Dipisah jadi helper sendiri
+  /// supaya _openWhatsapp dan _sendReceiptWhatsapp bisa reuse logic
+  /// buka-link + validasi nomor kosong yang sama.
+  Future<void> _launchWhatsappMessage(String phone, String message) async {
+    if (phone.isEmpty) {
       _showSnack('Nomor telepon pelanggan tidak tersedia', isError: true);
       return;
     }
 
-    final normalized = _normalizePhone(order.customerPhone);
-    final message = 'Halo kak ${order.customerName}!, ini Mintwash 😊 . '
-        'Pesanan kamu (${order.orderNumber}) sudah selesai dan siap. '
-        'Mau diantar ke alamat atau mau diambil sendiri ya?';
-
+    final normalized = _normalizePhone(phone);
     final uri = Uri.https('wa.me', '/$normalized', {'text': message});
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && mounted) {
       _showSnack('Tidak bisa membuka WhatsApp', isError: true);
+    }
+  }
+
+  /// Buka WhatsApp ke nomor customer, isi pesan otomatis bahwa
+  /// pesanannya sudah selesai. Isi pesan disesuaikan dengan deliveryType:
+  /// - self_pickup -> tanya mau diambil sendiri atau diantar
+  /// - delivery    -> kabari bahwa pesanan akan segera diantar
+  Future<void> _openWhatsapp(_OrderDetailData order) async {
+    final String message;
+    if (order.deliveryType == 'delivery') {
+      message = 'Halo kak ${order.customerName}!, ini Mintwash 😊 . '
+          'Pesanan kamu (${order.orderNumber}) sudah selesai dan akan segera kami antar ke alamat kakak ya. '
+          'Ditunggu ya kak 🙏';
+    } else {
+      message = 'Halo kak ${order.customerName}!, ini Mintwash 😊 . '
+          'Pesanan kamu (${order.orderNumber}) sudah selesai dan siap. '
+          'Mau diantar ke alamat atau mau diambil sendiri ya?';
+    }
+
+    await _launchWhatsappMessage(order.customerPhone, message);
+  }
+
+  /// Susun & kirim "struk" pesanan dalam bentuk teks terformat ke WhatsApp
+  /// pelanggan (pakai *bold* ala WA). Bukan gambar - wa.me hanya bisa
+  /// prefill teks. Tombol ini TETAP ada, dipakai berdampingan sama tombol
+  /// "Download Struk" (gambar) di bawah - pilih salah satu sesuai
+  /// kebutuhan kasir.
+  Future<void> _sendReceiptWhatsapp(_OrderDetailData order) async {
+    final buffer = StringBuffer();
+    buffer.writeln('*Struk Pesanan - Netwash*');
+    buffer.writeln('No. Pesanan: ${order.orderNumber}');
+    buffer.writeln('Tanggal: ${_formatDate(order.orderDate)}');
+    buffer.writeln('Pelanggan: ${order.customerName}');
+    buffer.writeln('');
+    buffer.writeln('*Item:*');
+    for (final item in order.items) {
+      final lineTotal = item.price * item.quantity;
+      buffer.writeln('${item.name} x${item.quantity} - ${_formatCurrency(lineTotal)}');
+    }
+    buffer.writeln('');
+    buffer.writeln('Subtotal: ${_formatCurrency(order.subtotal)}');
+    if (order.taxAmount > 0) {
+      buffer.writeln('Pajak: ${_formatCurrency(order.taxAmount)}');
+    }
+    buffer.writeln('*Total: ${_formatCurrency(order.totalAmount)}*');
+    buffer.writeln('');
+    buffer.writeln('Metode Bayar: ${_paymentMethodLabel(order.paymentMethodRaw)}');
+    buffer.writeln('Status Bayar: ${_getPaymentStatusLabel(order.paymentStatus)}');
+    buffer.writeln('Sudah Dibayar: ${_formatCurrency(order.paidAmount)}');
+    if (order.remainingAmount > 0) {
+      buffer.writeln('Sisa Tagihan: ${_formatCurrency(order.remainingAmount)}');
+    }
+    buffer.writeln('');
+    buffer.writeln('Terima kasih sudah pakai Netwash 🙏');
+
+    await _launchWhatsappMessage(order.customerPhone, buffer.toString());
+  }
+
+  /// Screenshot widget struk (_buildReceiptCard, dirender offstage lewat
+  /// _receiptKey) jadi bytes PNG. pixelRatio 3 biar hasilnya tajam kalau
+  /// di-zoom / dicetak.
+  Future<Uint8List?> _captureReceiptImage() async {
+    try {
+      // Kasih jeda 1 frame supaya widget offstage sempat ke-layout dulu
+      // sebelum di-screenshot, terutama kalau ini capture pertama kali.
+      await WidgetsBinding.instance.endOfFrame;
+
+      final boundary = _receiptKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return null;
+
+      final image = await boundary.toImage(pixelRatio: 3);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      return byteData?.buffer.asUint8List();
+    } catch (e) {
+      return null;
+    }
+  }
+
+/// Tombol "Download Struk": screenshot struk jadi PNG, lalu simpan
+  /// LANGSUNG ke galeri HP (pakai package `gal`) - TANPA share sheet /
+  /// dialog pilih aplikasi apa pun. Karyawan tinggal buka WhatsApp manual
+  /// (tombol "Kirim Struk via WA" di sebelahnya), lalu attach foto struk
+  /// itu sendiri dari galeri.
+  ///
+  /// Di Flutter Web, `gal` tidak punya implementasi (nggak ada "galeri"
+  /// di browser), jadi fallback-nya trigger download file .png biasa
+  /// lewat browser - juga tanpa share sheet.
+  Future<void> _downloadReceiptStruk(_OrderDetailData order) async {
+    setState(() => _isGeneratingReceipt = true);
+    try {
+      final bytes = await _captureReceiptImage();
+      if (bytes == null) {
+        _showSnack('Gagal membuat gambar struk', isError: true);
+        return;
+      }
+
+      final fileName =
+          'struk_${order.orderNumber.replaceAll(RegExp(r'[^A-Za-z0-9]'), '_')}.png';
+
+      if (kIsWeb) {
+        // Web: belum ada API "galeri" di browser, jadi paksa download
+        // file biasa. (Implementasi web di-skip di sini biar file utama
+        // tetap ringan - kalau butuh testing di Chrome, pakai package
+        // `universal_html` terpisah. Di HP asli, baris di bawah (mobile)
+        // yang jalan.)
+        _showSnack('Download struk cuma didukung di aplikasi HP, bukan di web');
+        return;
+      }
+
+      await Gal.putImageBytes(bytes, name: fileName);
+      _showSnack('Struk tersimpan di galeri');
+    } catch (e) {
+      if (mounted) {
+        _showSnack('Gagal mengunduh struk: ${e.toString()}', isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _isGeneratingReceipt = false);
     }
   }
 
@@ -572,61 +701,186 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isMobile = constraints.maxWidth < 800;
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      isMobile ? 16 : 24,
-                      isMobile ? 16 : 24,
-                      isMobile ? 16 : 24,
-                      24,
+        child: Stack(
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 800;
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 640),
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          isMobile ? 16 : 24,
+                          isMobile ? 16 : 24,
+                          isMobile ? 16 : 24,
+                          24,
+                        ),
+                        child: _isLoading
+                            ? _buildLoadingState(context)
+                            : _errorMessage != null
+                                ? Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildTopBar(context),
+                                      const SizedBox(height: AppTheme.xxl),
+                                      _buildErrorState(context),
+                                    ],
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildTopBar(context),
+                                      const SizedBox(height: AppTheme.xl),
+                                      _buildOrderHeader(context, _order!),
+                                      const SizedBox(height: AppTheme.xxl),
+                                      _buildCustomerInfo(context, _order!),
+                                      const SizedBox(height: AppTheme.xxl),
+                                      _buildOrderItems(context, _order!),
+                                      const SizedBox(height: AppTheme.xxl),
+                                      _buildPaymentSection(context, _order!),
+                                      const SizedBox(height: AppTheme.xxl),
+                                      _buildTimeline(context, _order!),
+                                      const SizedBox(height: AppTheme.xxl),
+                                      _buildPriceSummary(context, _order!),
+                                      const SizedBox(height: AppTheme.xxl),
+                                      _buildNotes(context, _order!),
+                                      const SizedBox(height: AppTheme.xxl),
+                                      _buildActionButtons(context, _order!),
+                                      const SizedBox(height: AppTheme.lg),
+                                    ],
+                                  ),
+                      ),
                     ),
-                    child: _isLoading
-                        ? _buildLoadingState(context)
-                        : _errorMessage != null
-                            ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildTopBar(context),
-                                  const SizedBox(height: AppTheme.xxl),
-                                  _buildErrorState(context),
-                                ],
-                              )
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildTopBar(context),
-                                  const SizedBox(height: AppTheme.xl),
-                                  _buildOrderHeader(context, _order!),
-                                  const SizedBox(height: AppTheme.xxl),
-                                  _buildCustomerInfo(context, _order!),
-                                  const SizedBox(height: AppTheme.xxl),
-                                  _buildOrderItems(context, _order!),
-                                  const SizedBox(height: AppTheme.xxl),
-                                  _buildPaymentSection(context, _order!),
-                                  const SizedBox(height: AppTheme.xxl),
-                                  _buildTimeline(context, _order!),
-                                  const SizedBox(height: AppTheme.xxl),
-                                  _buildPriceSummary(context, _order!),
-                                  const SizedBox(height: AppTheme.xxl),
-                                  _buildNotes(context, _order!),
-                                  const SizedBox(height: AppTheme.xxl),
-                                  _buildActionButtons(context, _order!),
-                                  const SizedBox(height: AppTheme.lg),
-                                ],
-                              ),
+                  ),
+                );
+              },
+            ),
+            // Widget struk dirender di luar layar (offstage), cuma dipakai
+            // sebagai sumber screenshot oleh _captureReceiptImage(). User
+            // nggak pernah lihat ini secara langsung.
+            if (_order != null)
+              Positioned(
+                left: -9999,
+                top: 0,
+                child: Material(
+                  color: Colors.transparent,
+                  child: RepaintBoundary(
+                    key: _receiptKey,
+                    child: _buildReceiptCard(_order!),
                   ),
                 ),
               ),
-            );
-          },
+          ],
         ),
+      ),
+    );
+  }
+
+  /// Tampilan struk versi "cetak" (bukan versi UI biasa) - dipakai khusus
+  /// buat di-screenshot jadi gambar oleh _downloadReceiptStruk(). Dibuat
+  /// dengan lebar tetap (bukan responsive) supaya hasil gambarnya rapi
+  /// di rasio gambar biasa, mirip struk kasir.
+  Widget _buildReceiptCard(_OrderDetailData order) {
+    return Container(
+      width: 380,
+      padding: const EdgeInsets.all(24),
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Netwash',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Struk Pesanan',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          Divider(color: AppTheme.borderColor),
+          const SizedBox(height: 12),
+          _receiptRow('No. Pesanan', order.orderNumber),
+          _receiptRow('Tanggal', _formatDate(order.orderDate)),
+          _receiptRow('Pelanggan', order.customerName),
+          const SizedBox(height: 12),
+          Divider(color: AppTheme.borderColor),
+          const SizedBox(height: 12),
+          ...order.items.map((item) {
+            final lineTotal = item.price * item.quantity;
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${item.name} x${item.quantity}',
+                      style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textPrimary),
+                    ),
+                  ),
+                  Text(
+                    _formatCurrency(lineTotal),
+                    style: GoogleFonts.poppins(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 12),
+          Divider(color: AppTheme.borderColor),
+          const SizedBox(height: 12),
+          _receiptRow('Subtotal', _formatCurrency(order.subtotal)),
+          if (order.taxAmount > 0) _receiptRow('Pajak', _formatCurrency(order.taxAmount)),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Total', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+              Text(
+                _formatCurrency(order.totalAmount),
+                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Divider(color: AppTheme.borderColor),
+          const SizedBox(height: 12),
+          _receiptRow('Metode Bayar', _paymentMethodLabel(order.paymentMethodRaw)),
+          _receiptRow('Status Bayar', _getPaymentStatusLabel(order.paymentStatus)),
+          _receiptRow('Sudah Dibayar', _formatCurrency(order.paidAmount)),
+          if (order.remainingAmount > 0) _receiptRow('Sisa Tagihan', _formatCurrency(order.remainingAmount)),
+          const SizedBox(height: 20),
+          Text(
+            'Terima kasih sudah pakai Netwash 🙏',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _receiptRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -935,7 +1189,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   /// Section Pembayaran: status, metode, sudah dibayar, sisa tagihan, dan
-  /// tombol "Konfirmasi Pembayaran" (muncul selama belum lunas).
+  /// 2 tombol struk berdampingan: "Download Struk" (gambar PNG lewat
+  /// share sheet) dan "Kirim Struk via WA" (teks langsung ke wa.me).
   Widget _buildPaymentSection(BuildContext context, _OrderDetailData order) {
     final statusColor = _getPaymentStatusColor(order.paymentStatus);
     final statusLabel = _getPaymentStatusLabel(order.paymentStatus);
@@ -1013,6 +1268,53 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                 ),
               ],
+              const SizedBox(height: AppTheme.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _isGeneratingReceipt ? null : () => _downloadReceiptStruk(order),
+                      icon: _isGeneratingReceipt
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppTheme.primaryColor,
+                              ),
+                            )
+                          : const Icon(Icons.download_outlined, size: 18),
+                      label: Text(
+                        'Download Struk',
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.primaryColor,
+                        side: BorderSide(color: AppTheme.primaryColor),
+                        padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.sm),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _sendReceiptWhatsapp(order),
+                      icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                      label: Text(
+                        'Kirim Struk via WA',
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF25D366),
+                        side: const BorderSide(color: Color(0xFF25D366)),
+                        padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -1356,7 +1658,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 onPressed: () => _openWhatsapp(order),
                 icon: const Icon(Icons.chat_outlined, size: 18),
                 label: Text(
-                  'Kabari via WhatsApp',
+                  order.deliveryType == 'delivery' ? 'Kabari Siap Diantar (WA)' : 'Kabari via WhatsApp',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
                 ),
                 style: ElevatedButton.styleFrom(
