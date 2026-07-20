@@ -36,6 +36,21 @@ class AppLocalizationsId extends AppLocalizations {
   String get notificationSubtitle => 'Atur pemberitahuan aplikasi';
 
   @override
+  String get notificationsPanelTitle => 'Pesanan Baru';
+
+  @override
+  String pendingOrdersNotifSubtitle(int count) {
+    return '$count pesanan menunggu diproses';
+  }
+
+  @override
+  String get noNewNotifications => 'Tidak ada notifikasi baru';
+
+  @override
+  String get noNewNotificationsSubtitle =>
+      'Pesanan baru yang masuk akan muncul di sini';
+
+  @override
   String get languageTitle => 'Bahasa';
 
   @override

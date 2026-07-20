@@ -152,6 +152,30 @@ abstract class AppLocalizations {
   /// **'Atur pemberitahuan aplikasi'**
   String get notificationSubtitle;
 
+  /// No description provided for @notificationsPanelTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan Baru'**
+  String get notificationsPanelTitle;
+
+  /// No description provided for @pendingOrdersNotifSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} pesanan menunggu diproses'**
+  String pendingOrdersNotifSubtitle(int count);
+
+  /// No description provided for @noNewNotifications.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada notifikasi baru'**
+  String get noNewNotifications;
+
+  /// No description provided for @noNewNotificationsSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan baru yang masuk akan muncul di sini'**
+  String get noNewNotificationsSubtitle;
+
   /// No description provided for @languageTitle.
   ///
   /// In id, this message translates to:

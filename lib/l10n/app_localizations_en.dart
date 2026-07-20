@@ -36,6 +36,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationSubtitle => 'Manage app notifications';
 
   @override
+  String get notificationsPanelTitle => 'New Orders';
+
+  @override
+  String pendingOrdersNotifSubtitle(int count) {
+    return '$count orders waiting to be processed';
+  }
+
+  @override
+  String get noNewNotifications => 'No new notifications';
+
+  @override
+  String get noNewNotificationsSubtitle =>
+      'New pending orders will show up here';
+
+  @override
   String get languageTitle => 'Language';
 
   @override

@@ -196,15 +196,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ],
                 ),
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                  ),
-                  child: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 20),
-                ),
+                _buildNotificationBell(context, t),
               ],
             ),
             const SizedBox(height: AppTheme.xl),
@@ -225,6 +217,262 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // ============================================
+  // NOTIFICATION BELL (Firestore Stream - pending orders)
+  // ============================================
+  // Badge angka = jumlah pesanan berstatus 'pending' saat ini (real-time).
+  // Tap => buka bottom sheet berisi list pesanan pending tsb.
+  Widget _buildNotificationBell(BuildContext context, AppLocalizations t) {
+    final pendingQuery = FirebaseFirestore.instance
+        .collection('users')
+        .doc(_currentUserId)
+        .collection('orders')
+        .where('status', isEqualTo: 'pending');
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: pendingQuery.snapshots(),
+      builder: (context, snapshot) {
+        final pendingCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
+
+        return InkWell(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          onTap: () => _showPendingOrdersSheet(context, t),
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 20),
+                if (pendingCount > 0)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      constraints: const BoxConstraints(minWidth: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: deepBlue, width: 1.5),
+                      ),
+                      child: Text(
+                        pendingCount > 9 ? '9+' : '$pendingCount',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showPendingOrdersSheet(BuildContext context, AppLocalizations t) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.radiusXl)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: borderColor,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(AppTheme.lg, AppTheme.lg, AppTheme.lg, AppTheme.md),
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(_currentUserId)
+                          .collection('orders')
+                          .where('status', isEqualTo: 'pending')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              t.notificationsPanelTitle,
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
+                            ),
+                            if (count > 0)
+                              Text(
+                                t.pendingOrdersNotifSubtitle(count),
+                                style: TextStyle(fontSize: 11.5, color: textSecondary),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(_currentUserId)
+                          .collection('orders')
+                          .where('status', isEqualTo: 'pending')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppTheme.lg),
+                              child: Text(
+                                '${snapshot.error}',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 12, color: textSecondary),
+                              ),
+                            ),
+                          );
+                        }
+
+                        // Sort di client (bukan pakai .orderBy() di query) supaya
+                        // query where('status')+orderBy('order_date') tidak butuh
+                        // composite index tambahan di Firestore.
+                        var docs = snapshot.data?.docs ?? [];
+                        docs = [...docs]..sort((a, b) {
+                          final ad = (a.data() as Map<String, dynamic>)['order_date'] as Timestamp?;
+                          final bd = (b.data() as Map<String, dynamic>)['order_date'] as Timestamp?;
+                          if (ad == null || bd == null) return 0;
+                          return bd.compareTo(ad); // descending
+                        });
+
+                        if (docs.isEmpty) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppTheme.lg),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.notifications_off_outlined, size: 40, color: textTertiary),
+                                  const SizedBox(height: AppTheme.md),
+                                  Text(
+                                    t.noNewNotifications,
+                                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: textPrimary),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    t.noNewNotificationsSubtitle,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 12, color: textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        return ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.fromLTRB(AppTheme.lg, 0, AppTheme.lg, AppTheme.xl),
+                          itemCount: docs.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: AppTheme.md),
+                          itemBuilder: (context, i) {
+                            final data = docs[i].data() as Map<String, dynamic>;
+                            final id = data['order_number'] ?? '#ORD-UNKNOWN';
+                            final customerName = data['customer_name'] ?? t.defaultCustomerName;
+                            final detail = t.orderDetailSummary(
+                              '${data['total_items'] ?? 0}',
+                              (data['total_amount'] ?? 0).toString(),
+                            );
+
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              onTap: () {
+                                Navigator.of(sheetContext).pop();
+                                context.push('/orders');
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(AppTheme.md),
+                                decoration: BoxDecoration(
+                                  color: bgColor,
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                  border: Border.all(color: borderColor),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.withOpacity(0.12),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.schedule_outlined, color: Colors.orange, size: 18),
+                                    ),
+                                    const SizedBox(width: AppTheme.md),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(customerName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary)),
+                                              const SizedBox(width: 6),
+                                              Text(id, style: TextStyle(fontSize: 11, color: textTertiary)),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(detail, style: TextStyle(fontSize: 11.5, color: textSecondary)),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(Icons.chevron_right_rounded, size: 20, color: textTertiary),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

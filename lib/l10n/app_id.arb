@@ -9,6 +9,15 @@
   "sectionPreference": "Preferensi",
   "notificationTitle": "Notifikasi",
   "notificationSubtitle": "Atur pemberitahuan aplikasi",
+  "notificationsPanelTitle": "Pesanan Baru",
+  "pendingOrdersNotifSubtitle": "{count} pesanan menunggu diproses",
+  "@pendingOrdersNotifSubtitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noNewNotifications": "Tidak ada notifikasi baru",
+  "noNewNotificationsSubtitle": "Pesanan baru yang masuk akan muncul di sini",
   "languageTitle": "Bahasa",
   "sectionOther": "Lainnya",
   "helpTitle": "Bantuan",
