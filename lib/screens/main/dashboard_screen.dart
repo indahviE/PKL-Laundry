@@ -34,8 +34,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Status dismiss checklist onboarding secara lokal
   bool _setupDismissed = false;
 
-  // Mengambil uid user yang sedang login dari Firebase Auth
-  final String _currentUserId = FirebaseAuth.instance.currentUser?.uid ?? "placeholder_uid";
+  /// FIX: sebelumnya ini `final String _currentUserId = ...` yang dibaca
+  /// SEKALI saat State dibuat. Kalau widget ini sempat ke-build sebelum
+  /// FirebaseAuth kelar restore session (race condition umum saat startup),
+  /// nilainya nyangkut jadi "placeholder_uid" selamanya untuk instance ini —
+  /// semua stream Firestore (termasuk chart mingguan) jadi query ke user
+  /// yang salah dan datanya keliatan kosong terus.
+  /// Sekarang jadi getter, jadi selalu baca currentUser terbaru tiap dipakai.
+  String get _currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "placeholder_uid";
 
   /// Mapping indeks filter ke status yang SAMA seperti OrdersListScreen
   /// (all, pending, processing, completed, cancelled).
@@ -571,8 +577,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ============================================
   // REAL-TIME WEEKLY REVENUE CHART
   // ============================================
+  /// FIX: sebelumnya `startOfWeek = DateTime.now().subtract(Duration(days: 7))`
+  /// tidak dibulatkan ke tengah malam, jadi rentang 7-hari-nya kepotong di
+  /// tengah hari. Akibatnya hari yang posisinya sama di kolom `weekday` bisa
+  /// numpuk data dari 2 hari kalender berbeda (sebagian hari-X minggu lalu +
+  /// sebagian hari-X minggu ini ke-sum jadi satu bar).
+  ///
+  /// Sekarang pakai calendar week yang benar: Senin 00:00 minggu ini s.d.
+  /// Minggu 23:59:59, sesuai urutan label (dayMon..daySun). Index bar dihitung
+  /// dari selisih hari terhadap Senin (bukan `.weekday - 1` dari tanggal order),
+  /// jadi tiap bar cuma berisi data dari satu hari kalender yang jelas.
   Widget _buildWeeklyChartRealtime(AppLocalizations t) {
-    final startOfWeek = DateTime.now().subtract(const Duration(days: 7));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    // Senin = weekday 1 ... Minggu = weekday 7 -> mundur ke Senin minggu ini.
+    final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 7)); // exclusive, awal Senin depan
+
     final days = [t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun];
 
     return StreamBuilder<QuerySnapshot>(
@@ -580,7 +601,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .collection('users')
           .doc(_currentUserId)
           .collection('orders')
-          .where('order_date', isGreaterThanOrEqualTo: startOfWeek)
+          .where('order_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfWeek))
+          .where('order_date', isLessThan: Timestamp.fromDate(endOfWeek))
           .snapshots(),
       builder: (context, snapshot) {
         List<double> values = List.filled(7, 0.0);
@@ -590,9 +612,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final data = doc.data() as Map<String, dynamic>;
             Timestamp? orderDate = data['order_date'] as Timestamp?;
             if (orderDate != null && data['payment_status'] == 'paid') {
-              int weekday = orderDate.toDate().weekday - 1;
-              if (weekday >= 0 && weekday < 7) {
-                values[weekday] += (data['total_amount'] ?? 0).toDouble();
+              final orderDay = orderDate.toDate();
+              // Index berdasarkan selisih hari kalender dari Senin minggu ini,
+              // bukan `.weekday` dari order_date (menghindari duplikasi/salah
+              // kolom akibat rentang tidak align tengah malam).
+              final dayOffset = DateTime(orderDay.year, orderDay.month, orderDay.day)
+                  .difference(startOfWeek)
+                  .inDays;
+              if (dayOffset >= 0 && dayOffset < 7) {
+                values[dayOffset] += (data['total_amount'] ?? 0).toDouble();
               }
             }
           }

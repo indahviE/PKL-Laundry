@@ -86,10 +86,19 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   late final ServiceRepository _serviceRepository;
   List<Service> _services = [];
 
+  /// Metode pembayaran. "Kredit" (nyicil) diganti jadi "Kartu Debit" karena
+  /// laundry ini nggak punya alur cicilan — 3 metode nyata yang dipakai
+  /// cuma cash, transfer, dan debit (EDC), dan ketiganya sama-sama
+  /// pembayaran sekali lunas, bukan bertahap.
+  ///
+  /// cash & debit -> transaksi langsung di kasir, jadi otomatis dianggap
+  /// LUNAS begitu order disimpan (lihat _handleSaveOrder).
+  /// transfer -> customer transfer sendiri, admin perlu cek mutasi dulu,
+  /// jadi tetap 'pending' sampai dikonfirmasi manual dari OrderDetailScreen.
   late final List<Map<String, dynamic>> _paymentMethods = [
     {'id': 'cash', 'label': 'Tunai', 'icon': Icons.payments_outlined},
     {'id': 'transfer', 'label': 'Transfer Bank', 'icon': Icons.account_balance_outlined},
-    {'id': 'credit', 'label': 'Kredit', 'icon': Icons.credit_card_outlined},
+    {'id': 'debit', 'label': 'Kartu Debit', 'icon': Icons.credit_card_outlined},
   ];
 
   late final List<Map<String, dynamic>> _orderTypes = [
@@ -375,6 +384,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       const taxAmount = 0.0;
       final totalAmount = subtotal - discountAmount + taxAmount;
 
+      // Cash & debit = transaksi langsung di kasir (tunai/gesek EDC), jadi
+      // dianggap lunas seketika. Transfer butuh verifikasi mutasi manual
+      // oleh admin, jadi tetap 'pending' sampai dikonfirmasi lewat
+      // OrderDetailScreen (tombol "Konfirmasi Pembayaran").
+      final bool isAutoPaid = _selectedPaymentMethod == 'cash' || _selectedPaymentMethod == 'debit';
+
       final itemsData = _orderItems
           .map((item) => {
                 'service_type_id': item.id,
@@ -417,9 +432,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         'pickup_date': null,
         'actual_completion': null,
         'delivery_date': null,
-        'payment_status': 'pending',
+        'payment_status': isAutoPaid ? 'paid' : 'pending',
         'payment_method': _selectedPaymentMethod,
-        'paid_amount': 0.0,
+        'paid_amount': isAutoPaid ? totalAmount : 0.0,
         'notes': _notesController.text.trim(),
         // Dua field ini yang dibaca PickupDeliveryScreen buat nentuin
         // order mana yang perlu masuk antrean jemput/antar.
@@ -746,6 +761,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       ),
                     );
                   }),
+                ),
+                // Info kecil biar admin ngerti kapan order dianggap lunas,
+                // beda perlakuan antara cash/debit (instan) vs transfer
+                // (nunggu konfirmasi manual).
+                const SizedBox(height: AppTheme.sm),
+                Text(
+                  _selectedPaymentMethod == 'transfer'
+                      ? 'Status pembayaran akan "Belum Dibayar" sampai dikonfirmasi manual di halaman detail pesanan.'
+                      : 'Pesanan akan langsung ditandai Lunas karena dibayar di kasir.',
+                  style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
                 ),
               ],
             ),
