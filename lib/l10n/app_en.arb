@@ -9,6 +9,15 @@
   "sectionPreference": "Preferences",
   "notificationTitle": "Notifications",
   "notificationSubtitle": "Manage app notifications",
+  "notificationsPanelTitle": "New Orders",
+  "pendingOrdersNotifSubtitle": "{count} orders waiting to be processed",
+  "@pendingOrdersNotifSubtitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noNewNotifications": "No new notifications",
+  "noNewNotificationsSubtitle": "New pending orders will show up here",
   "languageTitle": "Language",
   "sectionOther": "Others",
   "helpTitle": "Help",
