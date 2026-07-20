@@ -97,6 +97,8 @@
 
   "newOrderAction": "Pesanan\nBaru",
   "newEmployeeAction": "Karyawan\nBaru",
+  "manageBranchAction": "Kelola\nCabang",
+  "manageEmployeesAction": "Kelola\nKaryawan",
   "manageServicesAction": "Kelola\nLayanan",
   "pickupDeliveryAction": "Antar\nJemput",
   "reportAction": "Laporan",

@@ -218,6 +218,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newEmployeeAction => 'New\nEmployee';
 
   @override
+  String get manageBranchAction => 'Manage\nBranch';
+
+  @override
+  String get manageEmployeesAction => 'Manage\nEmployees';
+
+  @override
   String get manageServicesAction => 'Manage\nServices';
 
   @override

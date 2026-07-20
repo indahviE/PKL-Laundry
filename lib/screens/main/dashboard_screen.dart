@@ -507,8 +507,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // tombol "Baru" di halaman Pesanan).
   Widget _buildQuickActions(BuildContext context, AppLocalizations t) {
     final actions = [
-      (Icons.storefront_outlined, 'Kelola\nCabang', const Color(0xFF00A896), '/laundries', '', 0),
-      (Icons.badge_outlined, 'Kelola\nKaryawan', deepBlue, '/employees', '', 0),
+      (Icons.storefront_outlined, t.manageBranchAction, const Color(0xFF00A896), '/laundries', '', 0),
+      (Icons.badge_outlined, t.manageEmployeesAction, deepBlue, '/employees', '', 0),
       (Icons.local_laundry_service_outlined, t.manageServicesAction, const Color(0xFF9C27B0), '/services', '', 0),
       (Icons.local_shipping_outlined, t.pickupDeliveryAction, const Color(0xFF27AE60), '/antar-jemput', '', 0),
       (Icons.bar_chart_rounded, t.reportAction, const Color(0xFFE67E22), '/laporan', '', 0),

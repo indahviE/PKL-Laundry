@@ -218,6 +218,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get newEmployeeAction => 'Karyawan\nBaru';
 
   @override
+  String get manageBranchAction => 'Kelola\nCabang';
+
+  @override
+  String get manageEmployeesAction => 'Kelola\nKaryawan';
+
+  @override
   String get manageServicesAction => 'Kelola\nLayanan';
 
   @override
