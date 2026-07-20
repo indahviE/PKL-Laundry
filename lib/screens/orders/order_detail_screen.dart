@@ -4,13 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/themes/app_theme.dart';
-<<<<<<< Updated upstream
 import '../../models/order.dart';
 import '../../models/transaction.dart';
 import '../../repositories/order_repository.dart';
-=======
-import '../../l10n/app_localizations.dart';
->>>>>>> Stashed changes
 
 /// Model item pesanan
 class _OrderLineItem {
@@ -19,7 +15,7 @@ class _OrderLineItem {
   final double price;
 
   _OrderLineItem({required this.name, required this.quantity, required this.price});
- 
+
   factory _OrderLineItem.fromMap(Map<String, dynamic> map) {
     return _OrderLineItem(
       name: (map['service_name'] ?? '') as String,
@@ -637,7 +633,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   /// Build top bar (back button + title), gaya sama dengan CreateOrderScreen
   Widget _buildTopBar(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
     return Row(
       children: [
         InkWell(
@@ -663,7 +658,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         const SizedBox(width: 14),
         Expanded(
           child: Text(
-            _order != null ? 'Detail Pesanan ${_order!.orderNumber}' : t.orderDetailAppBarTitle,
+            _order != null ? 'Detail Pesanan ${_order!.orderNumber}' : 'Detail Pesanan',
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.poppins(
               fontSize: 17,
@@ -778,12 +773,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   /// Build customer info
   Widget _buildCustomerInfo(BuildContext context, _OrderDetailData order) {
-    final t = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          t.orderDetailCustomerInfoTitle,
+          'Informasi Pelanggan',
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -852,12 +846,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   /// Build order items
   Widget _buildOrderItems(BuildContext context, _OrderDetailData order) {
-    final t = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [  
+      children: [
         Text(
-          t.orderDetailItemsTitle,
+          'Item Pesanan',
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -1304,12 +1297,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     if (order.notes.isEmpty) {
       return const SizedBox.shrink();
     }
-    final t = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          t.orderDetailNotesTitle,
+          'Catatan',
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w700,
