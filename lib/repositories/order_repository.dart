@@ -1,8 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order, Transaction;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/order.dart';
+import '../models/transaction.dart';
 import '../providers/auth_provider.dart';
+
 class OrderRepository {
   final FirebaseFirestore _firestore;
   final String userId;
@@ -11,6 +13,12 @@ class OrderRepository {
 
   CollectionReference<Map<String, dynamic>> get _ordersRef =>
       _firestore.collection('users').doc(userId).collection('orders');
+
+  CollectionReference<Map<String, dynamic>> get _transactionsRef =>
+      _firestore.collection('users').doc(userId).collection('transactions');
+
+  CollectionReference<Map<String, dynamic>> get _customersRef =>
+      _firestore.collection('users').doc(userId).collection('customers');
 
   /// Creates a new order with an atomically-generated `order_number`.
   ///
@@ -25,6 +33,13 @@ class OrderRepository {
   /// Counter path/field (`laundries/{laundryId}/order_counters/{date}` ->
   /// `sequence`) intentionally matches what the Cloud Function fallback
   /// reads, so both sides agree on where the next number comes from.
+  ///
+  /// UPDATED: sekarang dalam transaction yang sama juga (1) meng-increment
+  /// statistik pelanggan (`total_orders`, `total_spent`, `last_order_date`)
+  /// - dulu dilakukan lewat WriteBatch terpisah langsung di
+  /// CreateOrderScreen - dan (2) mencatat 1 dokumen transactions/ kalau
+  /// order ini sudah ada pembayaran sejak dibuat (paidAmount > 0), supaya
+  /// histori pembayaran selalu lengkap dari order pertama kali dibuat.
   Future<Order> createOrder(Order order) async {
     final now = DateTime.now();
     final todayStr = DateFormat('yyyyMMdd').format(now);
@@ -48,6 +63,8 @@ class OrderRepository {
         .doc(order.laundryId)
         .collection('order_counters')
         .doc(todayStr);
+
+    final customerRef = _customersRef.doc(order.customerId);
 
     return _firestore.runTransaction((transaction) async {
       final counterSnapshot = await transaction.get(counterRef);
@@ -77,6 +94,31 @@ class OrderRepository {
       );
 
       transaction.set(docRef, newOrder.toJson());
+
+      transaction.update(customerRef, {
+        'total_orders': FieldValue.increment(1),
+        'total_spent': FieldValue.increment(newOrder.totalAmount),
+        'last_order_date': now,
+        'updated_at': now,
+      });
+
+      // Kalau sudah bayar (lunas atau DP) sejak order dibuat, catat sebagai
+      // transaksi pertama supaya konsisten dengan pembayaran susulan lewat
+      // recordPayment().
+      if (newOrder.paidAmount > 0) {
+        final transactionRef = _transactionsRef.doc();
+        transaction.set(transactionRef, {
+          'order_id': docRef.id,
+          'amount': newOrder.paidAmount,
+          'method': newOrder.paymentMethod?.name ?? PaymentMethod.cash.name,
+          'type': TransactionType.orderPayment.name,
+          'note': 'Pembayaran saat pesanan dibuat',
+          'recorded_by': null,
+          'created_at': now,
+          'updated_at': now,
+        });
+      }
+
       return newOrder;
     });
   }
@@ -110,27 +152,12 @@ class OrderRepository {
         .map((snapshot) => snapshot.docs.map((doc) => Order.fromJson(doc.data(), doc.id)).toList());
   }
 
-  /// Semua order yang relevan buat layar Antar Jemput: order yang
-  /// order_type-nya "pickup" (perlu dijemput) dan/atau delivery_type-nya
-  /// "delivery" (perlu diantar). Order yang full walk-in + self-pickup
-  /// sengaja TIDAK ikut di sini karena tidak butuh driver sama sekali -
-  /// tapi tetap bisa dilihat lewat getAllOrders() / filter "Ambil sendiri"
-  /// di UI kalau perlu ditampilkan sebagai info.
-  ///
-  /// Filter dilakukan di client, bukan di query Firestore, karena Firestore
-  /// tidak mendukung OR di dua field berbeda tanpa index komposit khusus -
-  /// untuk skala data order 1 laundry ini masih aman dilakukan di client.
   Stream<List<Order>> getLogisticsOrders() {
     return getAllOrders().map(
       (orders) => orders.where((o) => o.needsPickup || o.needsDelivery).toList(),
     );
   }
 
-  /// FIX: previously wrote `updated_at` as an ISO string
-  /// (`DateTime.now().toIso8601String()`), inconsistent with every other
-  /// write path which now stores a raw DateTime (-> Firestore Timestamp).
-  /// Also matches the Security Rule that only allows updating
-  /// `['status', 'status_history', 'updated_at']` together.
   Future<void> updateOrderStatus(String orderId, OrderStatus newStatus, {String? note}) async {
     final order = await getOrder(orderId);
     if (order == null) throw Exception('Order tidak ditemukan');
@@ -148,25 +175,78 @@ class OrderRepository {
     });
   }
 
-  /// Mirrors the Security Rule's other allowed update shape:
-  /// `['payment_status', 'paid_amount', 'updated_at']`.
-  Future<void> updatePaymentStatus(
-    String orderId,
-    PaymentStatus newStatus,
-    double additionalPaidAmount,
-  ) async {
-    final order = await getOrder(orderId);
-    if (order == null) throw Exception('Order tidak ditemukan');
+  /// Mencatat pembayaran baru untuk order yang sudah ada (pelunasan DP,
+  /// konfirmasi transfer manual, dst). Menulis 1 dokumen ke transactions/
+  /// SEKALIGUS meng-update paid_amount & payment_status di order - dua-duanya
+  /// dalam 1 Firestore transaction, jadi tidak akan pernah salah satu
+  /// berhasil sementara yang lain gagal (menggantikan updatePaymentStatus
+  /// lama yang baca-lalu-update terpisah, tidak atomic).
+  ///
+  /// Melempar Exception kalau amount <= 0 atau bikin paidAmount melebihi
+  /// totalAmount (overpay).
+  Future<void> recordPayment(
+    String orderId, {
+    required double amount,
+    required PaymentMethod method,
+    String? note,
+    String? recordedBy,
+  }) async {
+    if (amount <= 0) {
+      throw Exception('Nominal pembayaran harus lebih dari Rp0.');
+    }
 
-    await _ordersRef.doc(orderId).update({
-      'payment_status': newStatus.name,
-      'paid_amount': order.paidAmount + additionalPaidAmount,
-      'updated_at': DateTime.now(),
+    final orderRef = _ordersRef.doc(orderId);
+    final transactionRef = _transactionsRef.doc();
+
+    await _firestore.runTransaction((txn) async {
+      final orderSnap = await txn.get(orderRef);
+      if (!orderSnap.exists) throw Exception('Order tidak ditemukan.');
+
+      final order = Order.fromJson(orderSnap.data() as Map<String, dynamic>, orderSnap.id);
+      final newPaidAmount = order.paidAmount + amount;
+
+      // Guard overpay, toleransi Rp1 buat pembulatan double.
+      if (newPaidAmount > order.totalAmount + 1) {
+        throw Exception(
+          'Nominal melebihi sisa tagihan (sisa: Rp${order.remainingAmount.toStringAsFixed(0)}).',
+        );
+      }
+
+      final newStatus = newPaidAmount >= order.totalAmount - 1
+          ? PaymentStatus.paid
+          : PaymentStatus.partial;
+
+      final now = DateTime.now();
+
+      txn.set(transactionRef, {
+        'order_id': orderId,
+        'amount': amount,
+        'method': method.name,
+        'type': TransactionType.orderPayment.name,
+        'note': note,
+        'recorded_by': recordedBy,
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      txn.update(orderRef, {
+        'payment_status': newStatus.name,
+        'payment_method': method.name,
+        'paid_amount': newPaidAmount,
+        'updated_at': now,
+      });
     });
   }
 
-  /// Tandai baju sudah dijemput driver dari lokasi pelanggan.
-  /// Hanya mengisi `pickup_date`, tidak menyentuh `status` proses cucian.
+  /// Histori pembayaran (DP + pelunasan) untuk 1 order, terbaru duluan.
+  Stream<List<PaymentTransaction>> getPaymentsForOrder(String orderId) {
+    return _transactionsRef
+        .where('order_id', isEqualTo: orderId)
+        .orderBy('created_at', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => PaymentTransaction.fromJson(d.data(), d.id)).toList());
+  }
+
   Future<void> markPickedUp(String orderId, {String? driverNote}) async {
     await _ordersRef.doc(orderId).update({
       'pickup_date': DateTime.now(),
@@ -174,9 +254,6 @@ class OrderRepository {
     });
   }
 
-  /// Tandai baju sudah diantar sampai ke pelanggan.
-  /// Hanya mengisi `delivery_date`, tidak menyentuh `status` proses cucian
-  /// (status "completed" tetap diubah lewat updateOrderStatus terpisah).
   Future<void> markDelivered(String orderId, {String? driverNote}) async {
     await _ordersRef.doc(orderId).update({
       'delivery_date': DateTime.now(),

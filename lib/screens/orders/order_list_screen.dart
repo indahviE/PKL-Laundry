@@ -141,17 +141,36 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
     );
   }
 
-  /// Filter dan search orders
-  void _applyFiltersAndSearch() {
-    _filteredOrders = _allOrders.where((order) {
-      bool statusMatch = _selectedFilter == 'all' || order.status == _selectedFilter;
-      bool searchMatch = _searchController.text.isEmpty ||
-          order.customerName.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-          order.orderNumber.toLowerCase().contains(_searchController.text.toLowerCase());
-      return statusMatch && searchMatch;
-    }).toList();
-    setState(() {});
-  }
+/// Status-status mentah (dari OrderStatus enum) yang masuk kelompok
+/// "Diproses" di UI - staff gak perlu breakdown per tahap (dicuci/
+/// dikeringkan/disetrika/dst), cukup tau order lagi "diproses".
+static const List<String> _inProgressStatuses = [
+  'inProgress',
+  'washing',
+  'drying',
+  'ironing',
+  'qualityCheck',
+];
+
+/// Filter dan search orders
+void _applyFiltersAndSearch() {
+  _filteredOrders = _allOrders.where((order) {
+    bool statusMatch;
+    if (_selectedFilter == 'all') {
+      statusMatch = true;
+    } else if (_selectedFilter == 'inProgress') {
+      statusMatch = _inProgressStatuses.contains(order.status);
+    } else {
+      statusMatch = order.status == _selectedFilter;
+    }
+
+    bool searchMatch = _searchController.text.isEmpty ||
+        order.customerName.toLowerCase().contains(_searchController.text.toLowerCase()) ||
+        order.orderNumber.toLowerCase().contains(_searchController.text.toLowerCase());
+    return statusMatch && searchMatch;
+  }).toList();
+  setState(() {});
+}
 
   /// Buka Create Order screen. List sudah realtime lewat
   /// snapshots(), jadi begitu order baru tersimpan, dia
@@ -160,13 +179,25 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
     await context.push<bool>('/orders/create');
   }
 
-  /// Get status color
+/// Get status color
   Color _getStatusColor(String status) {
     switch (status) {
       case 'pending':
         return Colors.orange;
-      case 'processing':
-        return AppTheme.primaryColor;
+      case 'confirmed':
+        return const Color(0xFF9B7EDE);
+      case 'inProgress':
+        return const Color(0xFF5DADE2);
+      case 'washing':
+        return const Color(0xFF5DADE2);
+      case 'drying':
+        return const Color(0xFFF4A259);
+      case 'ironing':
+        return const Color(0xFFF4A259);
+      case 'qualityCheck':
+        return const Color(0xFF5DADE2);
+      case 'ready':
+        return const Color(0xFF51CF66);
       case 'completed':
         return const Color(0xFF51CF66);
       case 'cancelled':
@@ -181,8 +212,20 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
     switch (status) {
       case 'pending':
         return 'Menunggu';
-      case 'processing':
+      case 'confirmed':
+        return 'Dikonfirmasi';
+      case 'inProgress':
         return 'Diproses';
+      case 'washing':
+        return 'Dicuci';
+      case 'drying':
+        return 'Dikeringkan';
+      case 'ironing':
+        return 'Disetrika';
+      case 'qualityCheck':
+        return 'Cek Kualitas';
+      case 'ready':
+        return 'Siap Diambil';
       case 'completed':
         return 'Selesai';
       case 'cancelled':
@@ -381,13 +424,14 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
 
   /// Build filter buttons
   Widget _buildFilterButtons(BuildContext context) {
-    final filters = [
-      ('all', 'Semua', Icons.all_inbox_outlined),
-      ('pending', 'Menunggu', Icons.schedule_outlined),
-      ('processing', 'Diproses', Icons.local_laundry_service_outlined),
-      ('completed', 'Selesai', Icons.check_circle_outline),
-      ('cancelled', 'Dibatalkan', Icons.cancel_outlined),
-    ];
+  final filters = [
+    ('all', 'Semua', Icons.all_inbox_outlined),
+    ('pending', 'Menunggu', Icons.schedule_outlined),
+    ('inProgress', 'Diproses', Icons.local_laundry_service_outlined),
+    ('ready', 'Siap Diambil', Icons.inventory_2_outlined),
+    ('completed', 'Selesai', Icons.check_circle_outline),
+    ('cancelled', 'Dibatalkan', Icons.cancel_outlined),
+  ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -410,7 +454,13 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                 children: [
                   Icon(filters[index].$3, size: 16),
                   const SizedBox(width: AppTheme.sm),
-                  Text(filters[index].$2),
+                  Flexible(
+                    child: Text(
+                      filters[index].$2,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                    ),
+                  ),
                 ],
               ),
               backgroundColor: AppTheme.cardColor,
