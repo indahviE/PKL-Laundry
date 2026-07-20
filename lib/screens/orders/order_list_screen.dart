@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Order Model
 class OrderItem {
@@ -208,9 +209,10 @@ void _applyFiltersAndSearch() {
   }
 
   /// Get status label
-  String _getStatusLabel(String status) {
+  String _getStatusLabel(String status, AppLocalizations t) {
     switch (status) {
       case 'pending':
+<<<<<<< Updated upstream
         return 'Menunggu';
       case 'confirmed':
         return 'Dikonfirmasi';
@@ -226,10 +228,15 @@ void _applyFiltersAndSearch() {
         return 'Cek Kualitas';
       case 'ready':
         return 'Siap Diambil';
+=======
+        return t.orderWaitingStatus;
+      case 'processing':
+        return t.orderProcessingStatus;
+>>>>>>> Stashed changes
       case 'completed':
-        return 'Selesai';
+        return t.orderCompletedStatus;
       case 'cancelled':
-        return 'Dibatalkan';
+        return t.orderCancelledStatus;
       default:
         return status;
     }
@@ -304,6 +311,7 @@ void _applyFiltersAndSearch() {
   /// lebar dari layar HP -> overflow). Khusus mobile tombolnya diringkas
   /// jadi icon-only bulat, persis pola yang dipakai di CustomersListScreen.
   Widget _buildHeader(BuildContext context, bool isMobile) {
+    final t = AppLocalizations.of(context)!;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -326,7 +334,7 @@ void _applyFiltersAndSearch() {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Pesanan',
+                t.ordersListTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
@@ -337,7 +345,7 @@ void _applyFiltersAndSearch() {
               ),
               const SizedBox(height: 2),
               Text(
-                'Kelola semua pesanan laundry Anda',
+                t.ordersListSubtitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
@@ -357,7 +365,7 @@ void _applyFiltersAndSearch() {
             onPressed: () => _openCreateOrder(context),
             icon: const Icon(Icons.note_add_outlined, size: 18),
             label: Text(
-              'Baru',
+              t.newOrderButtonLabel,
               style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
             ),
             style: ElevatedButton.styleFrom(
@@ -379,6 +387,7 @@ void _applyFiltersAndSearch() {
 
   /// Build search bar
   Widget _buildSearchBar(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
@@ -396,7 +405,7 @@ void _applyFiltersAndSearch() {
         onChanged: (value) => _applyFiltersAndSearch(),
         style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
         decoration: InputDecoration(
-          hintText: 'Cari pesanan atau pelanggan...',
+          hintText: t.searchOrderHint,
           hintStyle: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textTertiary),
           prefixIcon: Icon(Icons.search, color: AppTheme.textTertiary),
           border: OutlineInputBorder(
@@ -424,6 +433,7 @@ void _applyFiltersAndSearch() {
 
   /// Build filter buttons
   Widget _buildFilterButtons(BuildContext context) {
+<<<<<<< Updated upstream
   final filters = [
     ('all', 'Semua', Icons.all_inbox_outlined),
     ('pending', 'Menunggu', Icons.schedule_outlined),
@@ -432,6 +442,16 @@ void _applyFiltersAndSearch() {
     ('completed', 'Selesai', Icons.check_circle_outline),
     ('cancelled', 'Dibatalkan', Icons.cancel_outlined),
   ];
+=======
+    final t = AppLocalizations.of(context)!;
+    final filters = [
+      ('all', 'Semua', Icons.all_inbox_outlined),
+      ('pending', t.orderWaitingStatus, Icons.schedule_outlined),
+      ('processing', t.orderProcessingStatus, Icons.local_laundry_service_outlined),
+      ('completed', t.orderCompletedStatus, Icons.check_circle_outline),
+      ('cancelled', t.orderCancelledStatus, Icons.cancel_outlined),
+    ];
+>>>>>>> Stashed changes
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -486,6 +506,7 @@ void _applyFiltersAndSearch() {
 
   /// Build stats summary
   Widget _buildStatsSummary(BuildContext context, bool isMobile) {
+    final t = AppLocalizations.of(context)!;
     final totalOrders = _filteredOrders.length;
     final totalAmount = _filteredOrders.fold<double>(
       0,
@@ -496,7 +517,7 @@ void _applyFiltersAndSearch() {
       children: [
         Expanded(
           child: _StatBox(
-            title: 'Total Pesanan',
+            title: t.orderTotalOrdersLabel,
             value: '$totalOrders',
             icon: Icons.receipt_outlined,
             color: AppTheme.primaryColor,
@@ -505,7 +526,7 @@ void _applyFiltersAndSearch() {
         const SizedBox(width: AppTheme.lg),
         Expanded(
           child: _StatBox(
-            title: 'Total Revenue',
+            title: t.orderTotalRevenueLabel,
             value: _formatCurrency(totalAmount),
             icon: Icons.trending_up,
             color: const Color(0xFF51CF66),
@@ -552,6 +573,7 @@ void _applyFiltersAndSearch() {
 
   /// Build empty state
   Widget _buildEmptyState(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
@@ -572,7 +594,7 @@ void _applyFiltersAndSearch() {
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
-              'Tidak ada pesanan',
+              t.orderNoOrdersLabel,
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -591,7 +613,7 @@ void _applyFiltersAndSearch() {
             ElevatedButton.icon(
               onPressed: () => _openCreateOrder(context),
               icon: const Icon(Icons.note_add_outlined, size: 18),
-              label: Text('Buat Pesanan', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              label: Text(t.orderCreateOrderButtonLabel, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
@@ -610,6 +632,7 @@ void _applyFiltersAndSearch() {
 
   /// Build orders list
   Widget _buildOrdersList(BuildContext context, bool isMobile) {
+    final t = AppLocalizations.of(context)!;
     return Column(
       children: List.generate(
         _filteredOrders.length,
@@ -618,7 +641,7 @@ void _applyFiltersAndSearch() {
             _OrderCard(
               order: _filteredOrders[index],
               statusColor: _getStatusColor(_filteredOrders[index].status),
-              statusLabel: _getStatusLabel(_filteredOrders[index].status),
+              statusLabel: _getStatusLabel(_filteredOrders[index].status, t),
               formattedAmount: _formatCurrency(_filteredOrders[index].amount),
               formattedDate: _formatDate(_filteredOrders[index].date),
               onTap: () => context.push('/orders/${_filteredOrders[index].id}'),

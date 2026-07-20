@@ -1235,13 +1235,13 @@ abstract class AppLocalizations {
   /// No description provided for @phoneLabel.
   ///
   /// In id, this message translates to:
-  /// **'Nomor Telepon'**
+  /// **'Telepon'**
   String get phoneLabel;
 
   /// No description provided for @addressLabel.
   ///
   /// In id, this message translates to:
-  /// **'Alamat Lengkap'**
+  /// **'Alamat'**
   String get addressLabel;
 
   /// No description provided for @orderHistoryTitle.
@@ -1532,6 +1532,12 @@ abstract class AppLocalizations {
   /// **'Kode Cabang'**
   String get branchCodeLabel;
 
+  /// No description provided for @branchFullAddressLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat Lengkap'**
+  String get branchFullAddressLabel;
+
   /// No description provided for @cityLabel.
   ///
   /// In id, this message translates to:
@@ -1543,6 +1549,12 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Provinsi'**
   String get provinceLabel;
+
+  /// No description provided for @branchContactPhoneLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Nomor Telepon'**
+  String get branchContactPhoneLabel;
 
   /// No description provided for @emailOptionalLabel.
   ///
@@ -2029,6 +2041,270 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Des'**
   String get monthDec;
+
+  /// No description provided for @ordersListTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan'**
+  String get ordersListTitle;
+
+  /// No description provided for @ordersListSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola semua pesanan laundry Anda'**
+  String get ordersListSubtitle;
+
+  /// No description provided for @newOrderButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Baru'**
+  String get newOrderButtonLabel;
+
+  /// No description provided for @searchOrderHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari pesanan atau pelanggan...'**
+  String get searchOrderHint;
+
+  /// No description provided for @orderWaitingStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Menunggu'**
+  String get orderWaitingStatus;
+
+  /// No description provided for @orderProcessingStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Diproses'**
+  String get orderProcessingStatus;
+
+  /// No description provided for @orderCompletedStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai'**
+  String get orderCompletedStatus;
+
+  /// No description provided for @orderCancelledStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Dibatalkan'**
+  String get orderCancelledStatus;
+
+  /// No description provided for @orderTotalOrdersLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total Pesanan'**
+  String get orderTotalOrdersLabel;
+
+  /// No description provided for @orderTotalRevenueLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total Revenue'**
+  String get orderTotalRevenueLabel;
+
+  /// No description provided for @orderRetryButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Coba Lagi'**
+  String get orderRetryButtonLabel;
+
+  /// No description provided for @orderNoOrdersLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada pesanan'**
+  String get orderNoOrdersLabel;
+
+  /// No description provided for @orderNoOrdersSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Buat pesanan baru untuk memulai'**
+  String get orderNoOrdersSubtitle;
+
+  /// No description provided for @orderCreateOrderButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Buat Pesanan'**
+  String get orderCreateOrderButtonLabel;
+
+  /// No description provided for @orderSessionNotFoundError.
+  ///
+  /// In id, this message translates to:
+  /// **'Sesi tidak ditemukan, silakan login ulang'**
+  String get orderSessionNotFoundError;
+
+  /// No description provided for @createOrderAppBarTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Buat Pesanan Baru'**
+  String get createOrderAppBarTitle;
+
+  /// No description provided for @createOrderSectionTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail Pesanan'**
+  String get createOrderSectionTitle;
+
+  /// No description provided for @createOrderSectionSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Isi informasi pesanan'**
+  String get createOrderSectionSubtitle;
+
+  /// No description provided for @selectCustomerLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan'**
+  String get selectCustomerLabel;
+
+  /// No description provided for @selectCustomerHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih pelanggan'**
+  String get selectCustomerHint;
+
+  /// No description provided for @selectServiceLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih Layanan'**
+  String get selectServiceLabel;
+
+  /// No description provided for @selectServiceHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih jenis layanan'**
+  String get selectServiceHint;
+
+  /// No description provided for @quantityLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah'**
+  String get quantityLabel;
+
+  /// No description provided for @priceLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Harga'**
+  String get priceLabel;
+
+  /// No description provided for @subtotalLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Subtotal'**
+  String get subtotalLabel;
+
+  /// No description provided for @taxLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pajak'**
+  String get taxLabel;
+
+  /// No description provided for @totalLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total'**
+  String get totalLabel;
+
+  /// No description provided for @notesOrderLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan'**
+  String get notesOrderLabel;
+
+  /// No description provided for @notesOrderHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambahkan catatan khusus untuk pesanan ini'**
+  String get notesOrderHint;
+
+  /// No description provided for @addServiceItemButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah Layanan'**
+  String get addServiceItemButton;
+
+  /// No description provided for @removeServiceItemButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus'**
+  String get removeServiceItemButton;
+
+  /// No description provided for @saveOrderButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan Pesanan'**
+  String get saveOrderButton;
+
+  /// No description provided for @createOrderSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan berhasil dibuat!'**
+  String get createOrderSuccess;
+
+  /// No description provided for @createOrderError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal membuat pesanan: {error}'**
+  String createOrderError(String error);
+
+  /// No description provided for @noActiveServicesError.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada layanan aktif. Tambahkan layanan dulu di menu Layanan sebelum membuat pesanan.'**
+  String get noActiveServicesError;
+
+  /// No description provided for @selectCustomerError.
+  ///
+  /// In id, this message translates to:
+  /// **'Silakan pilih pelanggan terlebih dahulu'**
+  String get selectCustomerError;
+
+  /// No description provided for @orderDetailAppBarTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail Pesanan'**
+  String get orderDetailAppBarTitle;
+
+  /// No description provided for @orderDetailCustomerInfoTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Informasi Pelanggan'**
+  String get orderDetailCustomerInfoTitle;
+
+  /// No description provided for @orderDetailItemsTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Item'**
+  String get orderDetailItemsTitle;
+
+  /// No description provided for @orderDetailTimelineTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Timeline Status'**
+  String get orderDetailTimelineTitle;
+
+  /// No description provided for @orderDetailSummaryTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ringkasan Pesanan'**
+  String get orderDetailSummaryTitle;
+
+  /// No description provided for @orderDetailNotesTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan'**
+  String get orderDetailNotesTitle;
+
+  /// No description provided for @orderDetailActionButtonsTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Aksi'**
+  String get orderDetailActionButtonsTitle;
+
+  /// No description provided for @orderItemLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} item'**
+  String orderItemLabel(int count);
 }
 
 class _AppLocalizationsDelegate

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/common/app_input.dart';
 import '../../models/service.dart';
 import '../../models/order.dart';
@@ -274,6 +275,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   void _addOrderItem() {
+    final t = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -281,7 +283,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
             title: Text(
-              'Pilih Layanan',
+              t.selectServiceLabel,
               style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
             ),
             content: SizedBox(
@@ -566,6 +568,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   Widget _buildTopBar(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Row(
       children: [
         InkWell(
@@ -590,7 +593,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         ),
         const SizedBox(width: 14),
         Text(
-          'Buat Pesanan Baru',
+          t.createOrderAppBarTitle,
           style: GoogleFonts.poppins(
             fontSize: 17,
             fontWeight: FontWeight.w600,
@@ -946,6 +949,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   Widget _buildCustomerDropdown(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     if (_isLoadingCustomers) {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: AppTheme.lg),
@@ -1016,7 +1020,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       decoration: InputDecoration(
         labelText: 'Pelanggan *',
         labelStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
-        hintText: 'Pilih pelanggan',
+        hintText: t.selectCustomerHint,
         hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
         prefixIcon: Icon(Icons.person_outline, color: AppTheme.textTertiary),
         filled: true,
@@ -1044,6 +1048,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   Widget _buildOrderItemsSection(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1161,7 +1166,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Jumlah',
+                          t.quantityLabel,
                           style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
                         ),
                         Row(
@@ -1212,6 +1217,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   Widget _buildPriceSummary(BuildContext context) {
     final total = _calculateTotal();
+    final t = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
@@ -1241,7 +1247,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Subtotal', style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary)),
+              Text(t.subtotalLabel, style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary)),
               Text(
                 _formatCurrency(total),
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5, color: AppTheme.textPrimary),
@@ -1255,7 +1261,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Total',
+                t.totalLabel,
                 style: GoogleFonts.poppins(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
               ),
               Text(
@@ -1274,6 +1280,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   Widget _buildSaveButton(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return SizedBox(
       width: double.infinity,
       height: 52,
@@ -1309,7 +1316,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 ],
               )
             : Text(
-                'Simpan Pesanan',
+                t.saveOrderButton,
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,

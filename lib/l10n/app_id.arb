@@ -395,10 +395,10 @@
   "registerCompanyFirst": "+ Daftarkan Perusahaan Terlebih Dahulu",
   "branchNameLabel": "Nama Cabang",
   "branchCodeLabel": "Kode Cabang",
-  "addressLabel": "Alamat Lengkap",
+  "branchFullAddressLabel": "Alamat Lengkap",
   "cityLabel": "Kota",
   "provinceLabel": "Provinsi",
-  "phoneLabel": "Nomor Telepon",
+  "branchContactPhoneLabel": "Nomor Telepon",
   "emailOptionalLabel": "Email Cabang (Opsional)",
   "managerOptionalLabel": "Manajer Cabang (Opsional)",
   "noEmployeeDataInfo": "Belum ada data karyawan. Manajer bisa ditugaskan belakangan.",
@@ -495,12 +495,6 @@
       "error": { "type": "String" }
     }
   },
-  "toggleStatusError": "Gagal mengubah status: {error}",
-  "@toggleStatusError": {
-    "placeholders": {
-      "error": { "type": "String" }
-    }
-  },
   "addressShortLabel": "Alamat",
   "phoneShortLabel": "Telepon",
   "capacityShortLabel": "Kapasitas",
@@ -521,4 +515,61 @@
   "monthOct": "Okt",
   "monthNov": "Nov",
   "monthDec": "Des"
+,
+  "ordersListTitle": "Pesanan",
+  "ordersListSubtitle": "Kelola semua pesanan laundry Anda",
+  "newOrderButtonLabel": "Baru",
+  "searchOrderHint": "Cari pesanan atau pelanggan...",
+  "orderWaitingStatus": "Menunggu",
+  "orderProcessingStatus": "Diproses",
+  "orderCompletedStatus": "Selesai",
+  "orderCancelledStatus": "Dibatalkan",
+  "orderTotalOrdersLabel": "Total Pesanan",
+  "orderTotalRevenueLabel": "Total Revenue",
+  "orderRetryButtonLabel": "Coba Lagi",
+  "orderNoOrdersLabel": "Tidak ada pesanan",
+  "orderNoOrdersSubtitle": "Buat pesanan baru untuk memulai",
+  "orderCreateOrderButtonLabel": "Buat Pesanan",
+  "orderSessionNotFoundError": "Sesi tidak ditemukan, silakan login ulang",
+
+  "createOrderAppBarTitle": "Buat Pesanan Baru",
+  "createOrderSectionTitle": "Detail Pesanan",
+  "createOrderSectionSubtitle": "Isi informasi pesanan",
+  "selectCustomerLabel": "Pelanggan",
+  "selectCustomerHint": "Pilih pelanggan",
+  "selectServiceLabel": "Pilih Layanan",
+  "selectServiceHint": "Pilih jenis layanan",
+  "quantityLabel": "Jumlah",
+  "priceLabel": "Harga",
+  "subtotalLabel": "Subtotal",
+  "taxLabel": "Pajak",
+  "totalLabel": "Total",
+  "notesOrderLabel": "Catatan",
+  "notesOrderHint": "Tambahkan catatan khusus untuk pesanan ini",
+  "addServiceItemButton": "Tambah Layanan",
+  "removeServiceItemButton": "Hapus",
+  "saveOrderButton": "Simpan Pesanan",
+  "createOrderSuccess": "Pesanan berhasil dibuat!",
+  "createOrderError": "Gagal membuat pesanan: {error}",
+  "@createOrderError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "noActiveServicesError": "Tidak ada layanan aktif. Tambahkan layanan dulu di menu Layanan sebelum membuat pesanan.",
+  "selectCustomerError": "Silakan pilih pelanggan terlebih dahulu",
+
+  "orderDetailAppBarTitle": "Detail Pesanan",
+  "orderDetailCustomerInfoTitle": "Informasi Pelanggan",
+  "orderDetailItemsTitle": "Item",
+  "orderDetailTimelineTitle": "Timeline Status",
+  "orderDetailSummaryTitle": "Ringkasan Pesanan",
+  "orderDetailNotesTitle": "Catatan",
+  "orderDetailActionButtonsTitle": "Aksi",
+  "orderItemLabel": "{count} item",
+  "@orderItemLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  }
 }

@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
 
 /// Model breakdown pendapatan per jenis layanan
@@ -34,26 +36,244 @@ class _ReportsScreenState extends State<ReportsScreen> {
   final List<String> _periods = ['Hari Ini', 'Minggu Ini', 'Bulan Ini', 'Tahun Ini'];
   bool _isExporting = false;
 
-  // ============================================
-  // DUMMY DATA (ganti dengan fetch Firestore nanti)
-  // ============================================
-  double get _totalRevenue => 24500000;
-  int get _totalOrders => 186;
-  int get _newCustomers => 32;
-  double get _avgOrderValue => _totalRevenue / _totalOrders;
-  double get _growthRate => 12.5;
-  double get _completionRate => 94.5;
-  double get _customerRating => 4.8;
+  // Real data dari Firebase (bukan dummy lagi)
+  double _totalRevenue = 0;
+  int _totalOrders = 0;
+  int _newCustomers = 0;
+  double _avgOrderValue = 0;
+  double _growthRate = 0;
+  double _completionRate = 0;
+  double _customerRating = 0;
 
-  final List<double> _weeklyValues = const [0.45, 0.6, 0.5, 0.8, 0.65, 1.0, 0.7];
+  List<double> _weeklyValues = List.filled(7, 0.0);
   final List<String> _weeklyDays = const ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+  List<_ServiceBreakdown> _serviceBreakdown = [];
 
-  List<_ServiceBreakdown> get _serviceBreakdown => [
-        _ServiceBreakdown(name: 'Cuci Kering', revenue: 9800000, orderCount: 72, color: AppTheme.primaryColor),
-        _ServiceBreakdown(name: 'Cuci Setrika', revenue: 7200000, orderCount: 54, color: const Color(0xFF51CF66)),
-        _ServiceBreakdown(name: 'Setrika Saja', revenue: 4100000, orderCount: 38, color: const Color(0xFFFFA94D)),
-        _ServiceBreakdown(name: 'Dry Clean', revenue: 3400000, orderCount: 22, color: const Color(0xFFB197FC)),
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchReportsData();
+  }
+
+  /// Fetch semua data dari Firebase sesuai period yang dipilih
+  Future<void> _fetchReportsData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        setState(() {
+          _errorMessage = 'Sesi tidak ditemukan, silakan login ulang';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final now = DateTime.now();
+      late DateTime startDate;
+      late DateTime endDate;
+
+      // Tentukan range tanggal berdasarkan period
+      if (_selectedPeriod == 0) {
+        // Hari Ini
+        startDate = DateTime(now.year, now.month, now.day);
+        endDate = startDate.add(const Duration(days: 1));
+      } else if (_selectedPeriod == 1) {
+        // Minggu Ini
+        startDate = now.subtract(Duration(days: now.weekday - 1));
+        startDate = DateTime(startDate.year, startDate.month, startDate.day);
+        endDate = startDate.add(const Duration(days: 7));
+      } else if (_selectedPeriod == 2) {
+        // Bulan Ini
+        startDate = DateTime(now.year, now.month, 1);
+        endDate = DateTime(now.year, now.month + 1, 1);
+      } else {
+        // Tahun Ini
+        startDate = DateTime(now.year, 1, 1);
+        endDate = DateTime(now.year + 1, 1, 1);
+      }
+
+      // Fetch orders
+      final ordersSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('orders')
+          .where('order_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('order_date', isLessThan: Timestamp.fromDate(endDate))
+          .get();
+
+      // Fetch customers
+      final customersSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('customers')
+          .where('created_at', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('created_at', isLessThan: Timestamp.fromDate(endDate))
+          .get();
+
+      // Calculate metrics dari orders
+      double totalRevenue = 0;
+      int completedOrders = 0;
+      int totalOrdersCount = ordersSnap.docs.length;
+      double totalRating = 0;
+      int ratedOrders = 0;
+
+      Map<String, double> serviceRevenue = {};
+      Map<String, int> serviceOrderCount = {};
+
+      for (var doc in ordersSnap.docs) {
+        final data = doc.data();
+        final amount = ((data['total_amount'] ?? 0) as num).toDouble();
+        final status = data['status'] ?? 'pending';
+        final rating = ((data['customer_rating'] ?? 0) as num).toDouble();
+
+        totalRevenue += amount;
+
+        if (status == 'completed') {
+          completedOrders++;
+        }
+
+        if (rating > 0) {
+          totalRating += rating;
+          ratedOrders++;
+        }
+
+        // Service breakdown -> nama layanan disimpan di dalam array `items`,
+        // satu order bisa punya lebih dari 1 jenis layanan sekaligus.
+        final items = (data['items'] as List?) ?? [];
+        if (items.isEmpty) {
+          const fallbackName = 'Lainnya';
+          serviceRevenue[fallbackName] = (serviceRevenue[fallbackName] ?? 0) + amount;
+          serviceOrderCount[fallbackName] = (serviceOrderCount[fallbackName] ?? 0) + 1;
+        } else {
+          for (final rawItem in items) {
+            final item = Map<String, dynamic>.from(rawItem as Map);
+            final serviceName = (item['service_name'] ?? 'Lainnya') as String;
+            final itemTotal = ((item['total_price'] ?? 0) as num).toDouble();
+            serviceRevenue[serviceName] = (serviceRevenue[serviceName] ?? 0) + itemTotal;
+            serviceOrderCount[serviceName] = (serviceOrderCount[serviceName] ?? 0) + 1;
+          }
+        }
+      }
+
+      // Build service breakdown list
+      final serviceList = <_ServiceBreakdown>[];
+      final colors = [
+        AppTheme.primaryColor,
+        const Color(0xFF51CF66),
+        const Color(0xFFFFA94D),
+        const Color(0xFFB197FC),
       ];
+      int colorIndex = 0;
+
+      serviceRevenue.forEach((service, revenue) {
+        serviceList.add(
+          _ServiceBreakdown(
+            name: service,
+            revenue: revenue,
+            orderCount: serviceOrderCount[service] ?? 0,
+            color: colors[colorIndex % colors.length],
+          ),
+        );
+        colorIndex++;
+      });
+
+      // Sort by revenue descending
+      serviceList.sort((a, b) => b.revenue.compareTo(a.revenue));
+
+      // Calculate weekly breakdown (7 hari terakhir)
+      final weeklyData = await _calculateWeeklyData(user.uid, startDate, endDate);
+
+      // Calculate growth rate (bandingkan dengan periode sebelumnya)
+      final previousPeriodRevenue = await _getPreviousPeriodRevenue(user.uid, startDate, endDate);
+      final growthPercentage = previousPeriodRevenue > 0
+          ? ((totalRevenue - previousPeriodRevenue) / previousPeriodRevenue * 100)
+          : 0.0;
+
+      if (!mounted) return;
+      setState(() {
+        _totalRevenue = totalRevenue;
+        _totalOrders = totalOrdersCount;
+        _newCustomers = customersSnap.docs.length;
+        _avgOrderValue = totalOrdersCount > 0 ? totalRevenue / totalOrdersCount : 0.0;
+        _growthRate = growthPercentage;
+        _completionRate = totalOrdersCount > 0 ? (completedOrders / totalOrdersCount * 100) : 0.0;
+        _customerRating = ratedOrders > 0 ? (totalRating / ratedOrders) : 0.0;
+        _serviceBreakdown = serviceList.isEmpty ? [] : serviceList;
+        _weeklyValues = weeklyData;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Error: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Calculate weekly revenue breakdown
+  Future<List<double>> _calculateWeeklyData(String uid, DateTime startDate, DateTime endDate) async {
+    final weeklyRevenue = <int, double>{}; // day of week -> revenue
+
+    final ordersSnap = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('orders')
+        .where('order_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('order_date', isLessThan: Timestamp.fromDate(endDate))
+        .get();
+
+    double maxRevenue = 0;
+
+    for (var doc in ordersSnap.docs) {
+      final data = doc.data();
+      final amount = ((data['total_amount'] ?? 0) as num).toDouble();
+      final orderDate = (data['order_date'] as Timestamp).toDate();
+      final dayOfWeek = orderDate.weekday; // 1 = Monday, 7 = Sunday
+
+      weeklyRevenue[dayOfWeek] = (weeklyRevenue[dayOfWeek] ?? 0) + amount;
+      if (amount > maxRevenue) maxRevenue = amount;
+    }
+
+    // Convert to list format (Monday to Sunday)
+    final result = <double>[];
+    for (int i = 1; i <= 7; i++) {
+      final revenue = weeklyRevenue[i] ?? 0;
+      result.add(maxRevenue > 0 ? revenue / maxRevenue : 0.0);
+    }
+
+    return result;
+  }
+
+  /// Get revenue dari periode sebelumnya untuk calculate growth
+  Future<double> _getPreviousPeriodRevenue(String uid, DateTime currentStart, DateTime currentEnd) async {
+    final duration = currentEnd.difference(currentStart);
+    final prevStart = currentStart.subtract(duration);
+    final prevEnd = currentStart;
+
+    final ordersSnap = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('orders')
+        .where('order_date', isGreaterThanOrEqualTo: Timestamp.fromDate(prevStart))
+        .where('order_date', isLessThan: Timestamp.fromDate(prevEnd))
+        .get();
+
+    double totalRevenue = 0;
+    for (var doc in ordersSnap.docs) {
+      final data = doc.data();
+      totalRevenue += ((data['total_amount'] ?? 0) as num).toDouble();
+    }
+
+    return totalRevenue;
+  }
 
   String _formatCurrency(double amount) {
     return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
@@ -83,7 +303,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final generatedAt = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} '
           '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
-      final maxRevenue = _serviceBreakdown.map((s) => s.revenue).reduce((a, b) => a > b ? a : b);
+      final maxRevenue = _serviceBreakdown.isEmpty
+          ? 1.0
+          : _serviceBreakdown.map((s) => s.revenue).reduce((a, b) => a > b ? a : b);
 
       doc.addPage(
         pw.MultiPage(
@@ -116,9 +338,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 _pdfTableRow(['Total Pesanan', '$_totalOrders']),
                 _pdfTableRow(['Pelanggan Baru', '$_newCustomers']),
                 _pdfTableRow(['Rata-rata Order', _formatCurrency(_avgOrderValue)]),
-                _pdfTableRow(['Pertumbuhan', '+$_growthRate% dari periode sebelumnya']),
-                _pdfTableRow(['Completion Rate', '$_completionRate%']),
-                _pdfTableRow(['Customer Rating', '$_customerRating/5.0']),
+                _pdfTableRow(['Pertumbuhan', '+${_growthRate.toStringAsFixed(1)}% dari periode sebelumnya']),
+                _pdfTableRow(['Completion Rate', '${_completionRate.toStringAsFixed(1)}%']),
+                _pdfTableRow(['Customer Rating', '${_customerRating.toStringAsFixed(1)}/5.0']),
               ],
             ),
             pw.SizedBox(height: 20),
@@ -259,19 +481,48 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildTopBar(context),
+                        const SizedBox(height: AppTheme.lg),
                         _buildHeader(context),
                         const SizedBox(height: 22),
                         _buildPeriodChips(context),
                         const SizedBox(height: AppTheme.lg),
-                        _buildMainKPICards(context, isMobile),
-                        const SizedBox(height: AppTheme.lg),
-                        _buildGrowthIndicator(context),
-                        const SizedBox(height: AppTheme.lg),
-                        _buildRevenueChart(context),
-                        const SizedBox(height: AppTheme.lg),
-                        _buildServiceBreakdownSection(context),
-                        const SizedBox(height: AppTheme.lg),
-                        _buildAdditionalMetrics(context),
+                        if (_isLoading)
+                          const Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else if (_errorMessage != null)
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    _errorMessage ?? 'Error',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.poppins(color: Colors.red),
+                                  ),
+                                  const SizedBox(height: AppTheme.lg),
+                                  TextButton(
+                                    onPressed: _fetchReportsData,
+                                    child: Text('Coba lagi', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else ...[
+                          _buildMainKPICards(context, isMobile),
+                          const SizedBox(height: AppTheme.lg),
+                          _buildGrowthIndicator(context),
+                          const SizedBox(height: AppTheme.lg),
+                          _buildRevenueChart(context),
+                          const SizedBox(height: AppTheme.lg),
+                          _buildServiceBreakdownSection(context),
+                          const SizedBox(height: AppTheme.lg),
+                          _buildAdditionalMetrics(context),
+                        ],
                         const SizedBox(height: AppTheme.lg),
                       ],
                     ),
@@ -282,6 +533,36 @@ class _ReportsScreenState extends State<ReportsScreen> {
           },
         ),
       ),
+    );
+  }
+
+  /// Tombol back di paling atas, gaya sama dengan top bar di
+  /// CreateOrderScreen/OrderDetailScreen (biar konsisten, karena
+  /// /laporan juga route full-page di luar shell/bottom-nav).
+  Widget _buildTopBar(BuildContext context) {
+    return Row(
+      children: [
+        InkWell(
+          onTap: () => Navigator.pop(context),
+          borderRadius: BorderRadius.circular(11),
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppTheme.cardColor,
+              borderRadius: BorderRadius.circular(11),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: AppTheme.textPrimary),
+          ),
+        ),
+      ],
     );
   }
 
@@ -371,7 +652,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
             padding: EdgeInsets.only(right: index < _periods.length - 1 ? AppTheme.md : 0),
             child: ChoiceChip(
               selected: _selectedPeriod == index,
-              onSelected: (_) => setState(() => _selectedPeriod = index),
+              onSelected: (_) {
+                setState(() => _selectedPeriod = index);
+                _fetchReportsData();
+              },
               showCheckmark: false,
               label: Text(_periods[index]),
               backgroundColor: AppTheme.cardColor,
@@ -417,6 +701,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   /// Build growth indicator — dirampingkan jadi satu baris ringkas
   Widget _buildGrowthIndicator(BuildContext context) {
+    final isPositive = _growthRate >= 0;
+    final growthColor = isPositive ? const Color(0xFF51CF66) : Colors.red;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg, vertical: AppTheme.md),
       decoration: BoxDecoration(
@@ -435,10 +722,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: const Color(0xFF51CF66).withOpacity(0.12),
+              color: growthColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(9),
             ),
-            child: const Icon(Icons.trending_up_rounded, color: Color(0xFF51CF66), size: 17),
+            child: Icon(
+              isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+              color: growthColor,
+              size: 17,
+            ),
           ),
           const SizedBox(width: AppTheme.md),
           Expanded(
@@ -451,7 +742,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Naik $_growthRate% dari periode sebelumnya',
+                  '${isPositive ? "Naik" : "Turun"} ${_growthRate.abs().toStringAsFixed(1)}% dari periode sebelumnya',
                   style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
                 ),
               ],
@@ -460,12 +751,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 5),
             decoration: BoxDecoration(
-              color: const Color(0xFF51CF66).withOpacity(0.12),
+              color: growthColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              '+$_growthRate%',
-              style: GoogleFonts.poppins(fontSize: 12.5, fontWeight: FontWeight.w700, color: const Color(0xFF51CF66)),
+              '${isPositive ? "+" : "-"}${_growthRate.abs().toStringAsFixed(1)}%',
+              style: GoogleFonts.poppins(fontSize: 12.5, fontWeight: FontWeight.w700, color: growthColor),
             ),
           ),
         ],
@@ -517,7 +808,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(_weeklyValues.length, (i) {
-                final isPeak = _weeklyValues[i] == _weeklyValues.reduce((a, b) => a > b ? a : b);
+                final maxVal = _weeklyValues.reduce((a, b) => a > b ? a : b);
+                final isPeak = maxVal > 0 && _weeklyValues[i] == maxVal;
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -551,6 +843,38 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   /// Build breakdown pendapatan per layanan
   Widget _buildServiceBreakdownSection(BuildContext context) {
+    if (_serviceBreakdown.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppTheme.lg),
+        decoration: BoxDecoration(
+          color: AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Pendapatan per Layanan',
+              style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+            ),
+            const SizedBox(height: AppTheme.lg),
+            Text(
+              'Belum ada data pesanan pada periode ini.',
+              style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+            ),
+          ],
+        ),
+      );
+    }
+
     final maxRevenue = _serviceBreakdown.map((s) => s.revenue).reduce((a, b) => a > b ? a : b);
 
     return Container(
@@ -579,7 +903,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             final i = entry.key;
             final service = entry.value;
             final isLast = i == _serviceBreakdown.length - 1;
-            final percentage = (service.revenue / maxRevenue * 100).toStringAsFixed(0);
+            final percentage = maxRevenue > 0 ? (service.revenue / maxRevenue * 100).toStringAsFixed(0) : '0';
 
             return Padding(
               padding: EdgeInsets.only(bottom: isLast ? 0 : AppTheme.lg),
@@ -633,7 +957,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(6),
                     child: LinearProgressIndicator(
-                      value: service.revenue / maxRevenue,
+                      value: maxRevenue > 0 ? service.revenue / maxRevenue : 0,
                       minHeight: 6,
                       backgroundColor: AppTheme.backgroundColor,
                       valueColor: AlwaysStoppedAnimation(service.color),
@@ -642,7 +966,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -656,7 +980,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           child: _MetricCard(
             icon: Icons.check_circle_outline,
             label: 'Completion Rate',
-            value: '$_completionRate%',
+            value: '${_completionRate.toStringAsFixed(1)}%',
             caption: 'dari seluruh pesanan',
             color: const Color(0xFF51CF66),
           ),
@@ -666,7 +990,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           child: _MetricCard(
             icon: Icons.star_outline_rounded,
             label: 'Customer Rating',
-            value: '$_customerRating/5.0',
+            value: '${_customerRating.toStringAsFixed(1)}/5.0',
             caption: 'dari $_totalOrders review',
             color: AppTheme.primaryColor,
           ),

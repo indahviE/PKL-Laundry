@@ -643,10 +643,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get contactInfoTitle => 'Informasi Kontak';
 
   @override
-  String get phoneLabel => 'Nomor Telepon';
+  String get phoneLabel => 'Telepon';
 
   @override
-  String get addressLabel => 'Alamat Lengkap';
+  String get addressLabel => 'Alamat';
 
   @override
   String get orderHistoryTitle => 'Riwayat Pesanan';
@@ -805,10 +805,16 @@ class AppLocalizationsId extends AppLocalizations {
   String get branchCodeLabel => 'Kode Cabang';
 
   @override
+  String get branchFullAddressLabel => 'Alamat Lengkap';
+
+  @override
   String get cityLabel => 'Kota';
 
   @override
   String get provinceLabel => 'Provinsi';
+
+  @override
+  String get branchContactPhoneLabel => 'Nomor Telepon';
 
   @override
   String get emailOptionalLabel => 'Email Cabang (Opsional)';
@@ -1070,4 +1076,142 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get monthDec => 'Des';
+
+  @override
+  String get ordersListTitle => 'Pesanan';
+
+  @override
+  String get ordersListSubtitle => 'Kelola semua pesanan laundry Anda';
+
+  @override
+  String get newOrderButtonLabel => 'Baru';
+
+  @override
+  String get searchOrderHint => 'Cari pesanan atau pelanggan...';
+
+  @override
+  String get orderWaitingStatus => 'Menunggu';
+
+  @override
+  String get orderProcessingStatus => 'Diproses';
+
+  @override
+  String get orderCompletedStatus => 'Selesai';
+
+  @override
+  String get orderCancelledStatus => 'Dibatalkan';
+
+  @override
+  String get orderTotalOrdersLabel => 'Total Pesanan';
+
+  @override
+  String get orderTotalRevenueLabel => 'Total Revenue';
+
+  @override
+  String get orderRetryButtonLabel => 'Coba Lagi';
+
+  @override
+  String get orderNoOrdersLabel => 'Tidak ada pesanan';
+
+  @override
+  String get orderNoOrdersSubtitle => 'Buat pesanan baru untuk memulai';
+
+  @override
+  String get orderCreateOrderButtonLabel => 'Buat Pesanan';
+
+  @override
+  String get orderSessionNotFoundError =>
+      'Sesi tidak ditemukan, silakan login ulang';
+
+  @override
+  String get createOrderAppBarTitle => 'Buat Pesanan Baru';
+
+  @override
+  String get createOrderSectionTitle => 'Detail Pesanan';
+
+  @override
+  String get createOrderSectionSubtitle => 'Isi informasi pesanan';
+
+  @override
+  String get selectCustomerLabel => 'Pelanggan';
+
+  @override
+  String get selectCustomerHint => 'Pilih pelanggan';
+
+  @override
+  String get selectServiceLabel => 'Pilih Layanan';
+
+  @override
+  String get selectServiceHint => 'Pilih jenis layanan';
+
+  @override
+  String get quantityLabel => 'Jumlah';
+
+  @override
+  String get priceLabel => 'Harga';
+
+  @override
+  String get subtotalLabel => 'Subtotal';
+
+  @override
+  String get taxLabel => 'Pajak';
+
+  @override
+  String get totalLabel => 'Total';
+
+  @override
+  String get notesOrderLabel => 'Catatan';
+
+  @override
+  String get notesOrderHint => 'Tambahkan catatan khusus untuk pesanan ini';
+
+  @override
+  String get addServiceItemButton => 'Tambah Layanan';
+
+  @override
+  String get removeServiceItemButton => 'Hapus';
+
+  @override
+  String get saveOrderButton => 'Simpan Pesanan';
+
+  @override
+  String get createOrderSuccess => 'Pesanan berhasil dibuat!';
+
+  @override
+  String createOrderError(String error) {
+    return 'Gagal membuat pesanan: $error';
+  }
+
+  @override
+  String get noActiveServicesError =>
+      'Tidak ada layanan aktif. Tambahkan layanan dulu di menu Layanan sebelum membuat pesanan.';
+
+  @override
+  String get selectCustomerError => 'Silakan pilih pelanggan terlebih dahulu';
+
+  @override
+  String get orderDetailAppBarTitle => 'Detail Pesanan';
+
+  @override
+  String get orderDetailCustomerInfoTitle => 'Informasi Pelanggan';
+
+  @override
+  String get orderDetailItemsTitle => 'Item';
+
+  @override
+  String get orderDetailTimelineTitle => 'Timeline Status';
+
+  @override
+  String get orderDetailSummaryTitle => 'Ringkasan Pesanan';
+
+  @override
+  String get orderDetailNotesTitle => 'Catatan';
+
+  @override
+  String get orderDetailActionButtonsTitle => 'Aksi';
+
+  @override
+  String orderItemLabel(int count) {
+    return '$count item';
+  }
 }
