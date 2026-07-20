@@ -482,6 +482,18 @@ abstract class AppLocalizations {
   /// **'Karyawan\nBaru'**
   String get newEmployeeAction;
 
+  /// No description provided for @manageBranchAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola\nCabang'**
+  String get manageBranchAction;
+
+  /// No description provided for @manageEmployeesAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola\nKaryawan'**
+  String get manageEmployeesAction;
+
   /// No description provided for @manageServicesAction.
   ///
   /// In id, this message translates to:
