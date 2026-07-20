@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
 import '../../widgets/common/app_input.dart';
 import '../../models/service.dart';
+import '../../models/order.dart';
 import '../../repositories/service_repository.dart';
+import '../../repositories/order_repository.dart';
 
-/// Order Item Form Model
+/// Order Item Form Model (UI-only, dikonversi ke OrderItem domain model
+/// pas save)
 class OrderItemForm {
   final String id;
   final String name;
@@ -54,6 +57,7 @@ class CreateOrderScreen extends StatefulWidget {
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
   // Controllers
   late TextEditingController _notesController;
+  late TextEditingController _dpAmountController;
 
   // Form key
   final _formKey = GlobalKey<FormState>();
@@ -67,39 +71,50 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   String? _selectedCustomerId;
   String? _selectedPaymentMethod = 'cash';
 
-  // Cara baju MASUK ke laundry: 'walk_in' (pelanggan taruh sendiri ke
-  // counter) atau 'pickup' (dijemput driver ke lokasi pelanggan).
+  // Lunas vs DP (sebagian) - hanya relevan buat metode instan
+  // (cash/debit/ewallet). Transfer selalu mulai dari 0 dibayar, dikonfirmasi
+  // manual belakangan di OrderDetailScreen.
+  bool _isFullPayment = true;
+
+  // Cara baju MASUK ke laundry: 'walk_in' atau 'pickup'.
   String _selectedOrderType = 'walk_in';
 
-  // Cara baju KELUAR dari laundry: 'self_pickup' (pelanggan ambil sendiri
-  // ke counter) atau 'delivery' (diantar driver ke lokasi pelanggan).
-  // Dua field ini yang dibaca PickupDeliveryScreen buat nentuin order mana
-  // yang perlu masuk antrean jemput/antar.
+  // Cara baju KELUAR dari laundry: 'self_pickup' atau 'delivery'.
   String _selectedDeliveryType = 'self_pickup';
 
   List<OrderItemForm> _orderItems = [];
   List<_CustomerOption> _customers = [];
 
-  // Jenis layanan sekarang di-fetch dari users/{uid}/service_types
-  // lewat ServiceRepository (sumber yang sama dipakai ServicesListScreen),
-  // supaya perubahan CRUD layanan di sana langsung kepakai di sini juga.
   late final ServiceRepository _serviceRepository;
   List<Service> _services = [];
 
-  /// Metode pembayaran. "Kredit" (nyicil) diganti jadi "Kartu Debit" karena
-  /// laundry ini nggak punya alur cicilan — 3 metode nyata yang dipakai
-  /// cuma cash, transfer, dan debit (EDC), dan ketiganya sama-sama
-  /// pembayaran sekali lunas, bukan bertahap.
+  // Business context (company & cabang) buat OrderRepository.createOrder().
+  // NOTE: cabang di-auto-pick (cabang pertama milik company) karena
+  // CreateOrderScreen belum punya UI pilih cabang. Kalau NetWash sudah
+  // multi-cabang, ini perlu diganti jadi dropdown.
+  String? _companyId;
+  String? _laundryId;
+  bool _isLoadingBusinessContext = true;
+  String? _businessContextError;
+
+  /// Metode pembayaran nyata yang dipakai laundry ini:
+  /// cash, transfer, debit (EDC), ewallet.
   ///
-  /// cash & debit -> transaksi langsung di kasir, jadi otomatis dianggap
-  /// LUNAS begitu order disimpan (lihat _handleSaveOrder).
+  /// cash, debit, & ewallet -> transaksi langsung (di kasir / scan QR),
+  /// jadi dianggap dibayar seketika (lunas atau DP tergantung toggle
+  /// _isFullPayment di bawah).
   /// transfer -> customer transfer sendiri, admin perlu cek mutasi dulu,
-  /// jadi tetap 'pending' sampai dikonfirmasi manual dari OrderDetailScreen.
+  /// jadi tetap 'pending' (paid_amount 0) sampai dikonfirmasi manual dari
+  /// OrderDetailScreen.
   late final List<Map<String, dynamic>> _paymentMethods = [
     {'id': 'cash', 'label': 'Tunai', 'icon': Icons.payments_outlined},
     {'id': 'transfer', 'label': 'Transfer Bank', 'icon': Icons.account_balance_outlined},
     {'id': 'debit', 'label': 'Kartu Debit', 'icon': Icons.credit_card_outlined},
+    {'id': 'ewallet', 'label': 'E-Wallet', 'icon': Icons.account_balance_wallet_outlined},
   ];
+
+  bool get _isInstantMethod =>
+      _selectedPaymentMethod == 'cash' || _selectedPaymentMethod == 'debit' || _selectedPaymentMethod == 'ewallet';
 
   late final List<Map<String, dynamic>> _orderTypes = [
     {'id': 'walk_in', 'label': 'Antar Sendiri', 'icon': Icons.storefront_outlined},
@@ -115,16 +130,63 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   void initState() {
     super.initState();
     _notesController = TextEditingController();
+    _dpAmountController = TextEditingController();
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     _serviceRepository = ServiceRepository(userId: uid);
     _fetchCustomers();
     _fetchServices();
+    _fetchBusinessContext();
   }
 
   @override
   void dispose() {
     _notesController.dispose();
+    _dpAmountController.dispose();
     super.dispose();
+  }
+
+  /// Ambil company_id (dari companies pertama) & laundry_id (cabang
+  /// pertama milik company itu), dibutuhkan OrderRepository.createOrder()
+  /// buat generate order_number.
+  Future<void> _fetchBusinessContext() async {
+    setState(() {
+      _isLoadingBusinessContext = true;
+      _businessContextError = null;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw 'Sesi tidak ditemukan, silakan login ulang.';
+      }
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+      final companiesSnap = await userDocRef.collection('companies').limit(1).get();
+      if (companiesSnap.docs.isEmpty) {
+        throw 'Perusahaan belum diatur. Selesaikan onboarding terlebih dahulu.';
+      }
+      final companyId = companiesSnap.docs.first.id;
+
+      final laundriesSnap = await userDocRef
+          .collection('laundries')
+          .where('company_id', isEqualTo: companyId)
+          .limit(1)
+          .get();
+      if (laundriesSnap.docs.isEmpty) {
+        throw 'Belum ada cabang laundry. Tambahkan cabang dulu sebelum membuat pesanan.';
+      }
+
+      setState(() {
+        _companyId = companyId;
+        _laundryId = laundriesSnap.docs.first.id;
+        _isLoadingBusinessContext = false;
+      });
+    } catch (e) {
+      setState(() {
+        _businessContextError = e.toString();
+        _isLoadingBusinessContext = false;
+      });
+    }
   }
 
   /// Ambil daftar pelanggan dari users/{uid}/customers buat dropdown
@@ -159,9 +221,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     }
   }
 
-  /// Ambil daftar layanan dari users/{uid}/service_types (via ServiceRepository).
-  /// Hanya layanan aktif (is_active: true) yang ditampilkan sebagai opsi,
-  /// selaras dengan soft-delete di ServicesListScreen.
+  /// Ambil daftar layanan aktif dari users/{uid}/service_types.
   Future<void> _fetchServices() async {
     setState(() {
       _isLoadingServices = true;
@@ -180,7 +240,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       setState(() {
         _services = activeServices;
         _isLoadingServices = false;
-        // Isi 1 item default dari layanan aktif pertama, kalau ada.
         if (_orderItems.isEmpty && activeServices.isNotEmpty) {
           final first = activeServices.first;
           _orderItems = [
@@ -201,7 +260,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     }
   }
 
-  /// Harga per unit dari sebuah Service, tergantung pricing_type-nya.
   double _servicePrice(Service service) {
     if (service.pricingType == PricingType.perKg) {
       return service.pricePerKg ?? 0;
@@ -209,14 +267,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     return service.pricePerItem ?? 0;
   }
 
-  /// Label satuan harga, buat ditampilin di dialog & kartu item.
   String _servicePriceLabel(Service service) {
     final price = _servicePrice(service);
     final suffix = service.pricingType == PricingType.perKg ? '/kg' : '/item';
     return '${_formatCurrency(price)}$suffix';
   }
 
-  /// Handle add item -> pilih dari layanan aktif hasil fetch Firestore
   void _addOrderItem() {
     showDialog(
       context: context,
@@ -244,8 +300,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Isi dialog pilih layanan, dengan state loading/error/kosong,
-  /// plus tombol coba lagi kalau fetch gagal.
   Widget _buildServiceDialogContent(BuildContext context, StateSetter setDialogState) {
     if (_isLoadingServices) {
       return const Padding(
@@ -324,36 +378,61 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Handle remove item
   void _removeOrderItem(int index) {
     setState(() {
       _orderItems.removeAt(index);
     });
   }
 
-  /// Generate order_number berikutnya, format ORD001, ORD002, dst
-  /// berdasarkan jumlah order yang sudah ada.
-  Future<String> _generateOrderNumber(CollectionReference ordersRef) async {
-    final countSnapshot = await ordersRef.count().get();
-    final nextNumber = (countSnapshot.count ?? 0) + 1;
-    return 'ORD${nextNumber.toString().padLeft(4, '0')}';
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppTheme.errorColor),
+    );
   }
 
-  /// Handle save order -> tulis ke Firestore: users/{uid}/orders
-  /// sekalian update total_orders & total_spent di dokumen customer terkait.
+  /// Handle save order -> lewat OrderRepository.createOrder(), yang
+  /// atomic: generate order_number, tulis order, update statistik
+  /// customer, dan (kalau ada pembayaran) catat transactions/, semuanya
+  /// dalam 1 Firestore transaction.
   Future<void> _handleSaveOrder() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     if (_orderItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tambahkan minimal 1 item pesanan'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      _showError('Tambahkan minimal 1 item pesanan');
       return;
+    }
+
+    if (_companyId == null || _laundryId == null) {
+      _showError(_businessContextError ?? 'Data perusahaan/cabang belum siap. Coba lagi sebentar.');
+      return;
+    }
+
+    final totalItems = _orderItems.fold<int>(0, (sum, item) => sum + item.quantity);
+    final subtotal = _calculateTotal();
+    const discountAmount = 0.0;
+    const taxAmount = 0.0;
+    final totalAmount = subtotal - discountAmount + taxAmount;
+
+    // Tentukan berapa yang dibayar sekarang.
+    double paidNow = 0;
+    if (_isInstantMethod) {
+      if (_isFullPayment) {
+        paidNow = totalAmount;
+      } else {
+        final rawDp = _dpAmountController.text.replaceAll(RegExp(r'[^0-9]'), '');
+        final dp = double.tryParse(rawDp) ?? 0;
+        if (dp <= 0) {
+          _showError('Isi nominal DP terlebih dahulu');
+          return;
+        }
+        if (dp >= totalAmount) {
+          _showError('Nominal DP harus lebih kecil dari total. Pilih "Lunas" kalau bayar penuh.');
+          return;
+        }
+        paidNow = dp;
+      }
     }
 
     setState(() => _isLoading = true);
@@ -364,97 +443,52 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         throw 'Sesi tidak ditemukan, silakan login ulang.';
       }
 
-      final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-
-      // Ambil company_id dari subcollection users/{uid}/companies
-      final companiesSnapshot = await userDocRef.collection('companies').limit(1).get();
-      if (companiesSnapshot.docs.isEmpty) {
-        throw 'Perusahaan belum diatur. Selesaikan onboarding terlebih dahulu.';
-      }
-      final companyId = companiesSnapshot.docs.first.id;
-
       final selectedCustomer = _customers.firstWhere((c) => c.id == _selectedCustomerId);
 
-      final ordersRef = userDocRef.collection('orders');
-      final orderNumber = await _generateOrderNumber(ordersRef);
+      final PaymentStatus paymentStatus = paidNow <= 0
+          ? PaymentStatus.pending
+          : (paidNow >= totalAmount - 1 ? PaymentStatus.paid : PaymentStatus.partial);
 
-      final totalItems = _orderItems.fold<int>(0, (sum, item) => sum + item.quantity);
-      final subtotal = _calculateTotal();
-      const discountAmount = 0.0;
-      const taxAmount = 0.0;
-      final totalAmount = subtotal - discountAmount + taxAmount;
+    final order = Order(
+      id: '',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      companyId: _companyId!,
+      laundryId: _laundryId!,
+      customerId: selectedCustomer.id,
+      customerName: selectedCustomer.name,
+      customerPhone: selectedCustomer.phone,
+      orderNumber: '', // di-generate OrderRepository
+      items: _orderItems
+          .map((item) => OrderItem(
+                serviceTypeId: item.id,
+                serviceName: item.name,
+                quantity: item.quantity,
+                weight: 0,
+                pricePerUnit: item.price,
+                totalPrice: item.subtotal,
+              ))
+          .toList(),
+      totalWeight: 0,
+      totalItems: totalItems,
+      subtotal: subtotal,
+      discountAmount: discountAmount,
+      taxAmount: taxAmount,
+      totalAmount: totalAmount,
+      status: OrderStatus.pending,
+      statusHistory: const [],
+      orderDate: DateTime.now(),
+      paymentStatus: paymentStatus,
+      paymentMethod: PaymentMethod.values.firstWhere((e) => e.name == _selectedPaymentMethod),
+      paidAmount: paidNow,
+      notes: _notesController.text.trim(),
+      priorityLevel: PriorityLevel.normal, // ⬅️ TAMBAHIN INI
+      orderType: _selectedOrderType == 'pickup' ? OrderType.pickup : OrderType.walkIn,
+      deliveryType: _selectedDeliveryType == 'delivery' ? DeliveryType.delivery : DeliveryType.selfPickup,
+    );
 
-      // Cash & debit = transaksi langsung di kasir (tunai/gesek EDC), jadi
-      // dianggap lunas seketika. Transfer butuh verifikasi mutasi manual
-      // oleh admin, jadi tetap 'pending' sampai dikonfirmasi lewat
-      // OrderDetailScreen (tombol "Konfirmasi Pembayaran").
-      final bool isAutoPaid = _selectedPaymentMethod == 'cash' || _selectedPaymentMethod == 'debit';
-
-      final itemsData = _orderItems
-          .map((item) => {
-                'service_type_id': item.id,
-                'service_name': item.name,
-                'quantity': item.quantity,
-                'price_per_unit': item.price,
-                'total_price': item.subtotal,
-              })
-          .toList();
-
-      final orderDocRef = ordersRef.doc();
-      final customerDocRef = userDocRef.collection('customers').doc(_selectedCustomerId);
-
-      final batch = FirebaseFirestore.instance.batch();
-
-      batch.set(orderDocRef, {
-        'company_id': companyId,
-        'customer_id': selectedCustomer.id,
-        'customer_name': selectedCustomer.name,
-        'customer_phone': selectedCustomer.phone,
-        'order_number': orderNumber,
-        'items': itemsData,
-        'total_items': totalItems,
-        'subtotal': subtotal,
-        'discount_amount': discountAmount,
-        'tax_amount': taxAmount,
-        'total_amount': totalAmount,
-        'status': 'pending',
-        'status_history': [
-          {
-            'status': 'pending',
-            'timestamp': Timestamp.now(),
-            'note': 'Pesanan dibuat',
-          }
-        ],
-        'order_date': FieldValue.serverTimestamp(),
-        // pickup_date sengaja dibiarkan null di sini walau order_type-nya
-        // 'pickup' - baru diisi PickupDeliveryScreen begitu driver beneran
-        // jemput baju (lewat markPickedUp()), bukan pas order dibuat.
-        'pickup_date': null,
-        'actual_completion': null,
-        'delivery_date': null,
-        'payment_status': isAutoPaid ? 'paid' : 'pending',
-        'payment_method': _selectedPaymentMethod,
-        'paid_amount': isAutoPaid ? totalAmount : 0.0,
-        'notes': _notesController.text.trim(),
-        // Dua field ini yang dibaca PickupDeliveryScreen buat nentuin
-        // order mana yang perlu masuk antrean jemput/antar.
-        'order_type': _selectedOrderType,
-        'delivery_type': _selectedDeliveryType,
-        'created_at': FieldValue.serverTimestamp(),
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-
-      batch.update(customerDocRef, {
-        'total_orders': FieldValue.increment(1),
-        'total_spent': FieldValue.increment(totalAmount),
-        // FIX: sebelumnya field ini gak pernah ditulis, jadi
-        // CustomersListScreen selalu nganggep customer "belum pernah
-        // order" walaupun total_orders-nya udah kehitung bertambah.
-        'last_order_date': FieldValue.serverTimestamp(),
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-
-      await batch.commit();
+      final repository = OrderRepository(userId: user.uid);
+      await repository.createOrder(order);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -467,24 +501,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
+        _showError('Error: ${e.toString()}');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  /// Calculate total
   double _calculateTotal() {
     return _orderItems.fold(0, (sum, item) => sum + item.subtotal);
   }
 
-  /// Format currency
   String _formatCurrency(double amount) {
     return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
   }
@@ -538,7 +565,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Build top bar (back button + title)
   Widget _buildTopBar(BuildContext context) {
     return Row(
       children: [
@@ -575,7 +601,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Build Progress Indicator
   Widget _buildProgressIndicator(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -618,7 +643,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Build Header
   Widget _buildHeader(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -656,7 +680,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Build Form
   Widget _buildForm(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
@@ -675,12 +698,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         key: _formKey,
         child: Column(
           children: [
-            // Customer Dropdown
             _buildCustomerDropdown(context),
 
             const SizedBox(height: AppTheme.lg),
 
-            // Cara baju masuk (walk-in / dijemput)
             _buildToggleGroup(
               label: 'Baju Masuk *',
               options: _orderTypes,
@@ -690,7 +711,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
             const SizedBox(height: AppTheme.lg),
 
-            // Cara baju keluar (ambil sendiri / diantar)
             _buildToggleGroup(
               label: 'Baju Keluar *',
               options: _deliveryTypes,
@@ -713,71 +733,107 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ),
                 ),
                 const SizedBox(height: AppTheme.md),
-                Row(
-                  children: List.generate(_paymentMethods.length, (index) {
-                    final method = _paymentMethods[index];
-                    final isSelected = _selectedPaymentMethod == method['id'];
-                    return Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          right: index < _paymentMethods.length - 1 ? AppTheme.sm : 0,
-                        ),
-                        child: InkWell(
-                          onTap: () => setState(() => _selectedPaymentMethod = method['id']),
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: AppTheme.md, horizontal: AppTheme.sm),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppTheme.primaryColor.withOpacity(0.1)
-                                  : AppTheme.backgroundColor,
-                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                              border: Border.all(
-                                color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
-                                width: isSelected ? 1.5 : 1,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = (constraints.maxWidth - AppTheme.sm) / 2;
+                    return Wrap(
+                      spacing: AppTheme.sm,
+                      runSpacing: AppTheme.sm,
+                      children: _paymentMethods.map((method) {
+                        final isSelected = _selectedPaymentMethod == method['id'];
+                        return SizedBox(
+                          width: itemWidth,
+                          child: InkWell(
+                            onTap: () => setState(() => _selectedPaymentMethod = method['id']),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: AppTheme.md, horizontal: AppTheme.sm),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? AppTheme.primaryColor.withOpacity(0.1)
+                                    : AppTheme.backgroundColor,
+                                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                border: Border.all(
+                                  color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+                                  width: isSelected ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    method['icon'],
+                                    size: 20,
+                                    color: isSelected ? AppTheme.primaryColor : AppTheme.textTertiary,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    method['label'],
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  method['icon'],
-                                  size: 20,
-                                  color: isSelected ? AppTheme.primaryColor : AppTheme.textTertiary,
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  method['label'],
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      }).toList(),
                     );
-                  }),
+                  },
                 ),
-                // Info kecil biar admin ngerti kapan order dianggap lunas,
-                // beda perlakuan antara cash/debit (instan) vs transfer
-                // (nunggu konfirmasi manual).
                 const SizedBox(height: AppTheme.sm),
                 Text(
                   _selectedPaymentMethod == 'transfer'
                       ? 'Status pembayaran akan "Belum Dibayar" sampai dikonfirmasi manual di halaman detail pesanan.'
-                      : 'Pesanan akan langsung ditandai Lunas karena dibayar di kasir.',
+                      : 'Metode ini dianggap dibayar langsung di kasir/saat itu juga.',
                   style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
                 ),
+
+                // Toggle Lunas / DP - hanya buat metode instan.
+                if (_isInstantMethod) ...[
+                  const SizedBox(height: AppTheme.lg),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildPaymentOptionChip(
+                          label: 'Lunas',
+                          isSelected: _isFullPayment,
+                          onTap: () => setState(() => _isFullPayment = true),
+                        ),
+                      ),
+                      const SizedBox(width: AppTheme.sm),
+                      Expanded(
+                        child: _buildPaymentOptionChip(
+                          label: 'DP (Sebagian)',
+                          isSelected: !_isFullPayment,
+                          onTap: () => setState(() => _isFullPayment = false),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!_isFullPayment) ...[
+                    const SizedBox(height: AppTheme.md),
+                    AppInput(
+                      label: 'Nominal DP',
+                      controller: _dpAmountController,
+                      hintText: 'Contoh: 20000',
+                      prefixIcon: Icons.payments_outlined,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.',
+                      style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
+                    ),
+                  ],
+                ],
               ],
             ),
 
             const SizedBox(height: AppTheme.lg),
 
-            // Notes
             AppInput(
               label: 'Catatan (Opsional)',
               controller: _notesController,
@@ -791,8 +847,37 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Toggle 2 opsi generik (dipakai buat Baju Masuk & Baju Keluar) - gaya
-  /// tombolnya sengaja disamain dengan Metode Pembayaran biar konsisten.
+  Widget _buildPaymentOptionChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: AppTheme.sm),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : AppTheme.backgroundColor,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          border: Border.all(
+            color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildToggleGroup({
     required String label,
     required List<Map<String, dynamic>> options,
@@ -860,8 +945,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Build Customer Dropdown, dengan state loading & error &
-  /// tombol "Tambah Pelanggan" kalau list-nya masih kosong.
   Widget _buildCustomerDropdown(BuildContext context) {
     if (_isLoadingCustomers) {
       return Container(
@@ -960,7 +1043,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Build Order Items Section
   Widget _buildOrderItemsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1128,7 +1210,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Build Price Summary
   Widget _buildPriceSummary(BuildContext context) {
     final total = _calculateTotal();
 
@@ -1192,7 +1273,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Build Save Button
   Widget _buildSaveButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
@@ -1240,7 +1320,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 }
 
-/// Tombol bulat kecil untuk stepper jumlah item
 class _QuantityButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;

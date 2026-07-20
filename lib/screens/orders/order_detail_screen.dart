@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/themes/app_theme.dart';
+import '../../models/order.dart';
+import '../../models/transaction.dart';
+import '../../repositories/order_repository.dart';
 
 /// Model item pesanan
 class _OrderLineItem {
@@ -42,6 +45,11 @@ class _StatusHistoryEntry {
 
 /// Model data order lengkap untuk halaman detail, di-fetch dari
 /// users/{uid}/orders/{orderId}
+///
+/// UPDATED: nambah 3 field pembayaran (paymentStatus, paymentMethodRaw,
+/// paidAmount) yang sebelumnya tidak dibaca/ditampilkan sama sekali di
+/// layar ini, walaupun datanya sudah ada di dokumen Firestore sejak
+/// CreateOrderScreen menulisnya.
 class _OrderDetailData {
   final String orderNumber;
   final String customerName;
@@ -56,6 +64,11 @@ class _OrderDetailData {
   final String notes;
   final List<_StatusHistoryEntry> statusHistory;
 
+  // --- Pembayaran ---
+  final String paymentStatus; // 'pending' | 'partial' | 'paid' | 'refunded'
+  final String paymentMethodRaw; // 'cash' | 'transfer' | 'debit' | 'ewallet'
+  final double paidAmount;
+
   _OrderDetailData({
     required this.orderNumber,
     required this.customerName,
@@ -69,7 +82,18 @@ class _OrderDetailData {
     required this.paymentMethod,
     required this.notes,
     required this.statusHistory,
+    required this.paymentStatus,
+    required this.paymentMethodRaw,
+    required this.paidAmount,
   });
+
+  /// Sisa tagihan yang belum dibayar. Tidak pernah negatif (dijaga dengan
+  /// clamp di sini supaya UI tidak pernah menampilkan angka minus kalau
+  /// ada selisih pembulatan kecil).
+  double get remainingAmount {
+    final remaining = totalAmount - paidAmount;
+    return remaining < 0 ? 0 : remaining;
+  }
 
   factory _OrderDetailData.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
@@ -90,6 +114,9 @@ class _OrderDetailData {
       paymentMethod: (data['payment_method'] ?? 'cash') as String,
       notes: (data['notes'] ?? '') as String,
       statusHistory: rawHistory.map((e) => _StatusHistoryEntry.fromMap(Map<String, dynamic>.from(e))).toList(),
+      paymentStatus: (data['payment_status'] ?? 'pending') as String,
+      paymentMethodRaw: (data['payment_method'] ?? 'cash') as String,
+      paidAmount: ((data['paid_amount'] ?? 0) as num).toDouble(),
     );
   }
 }
@@ -155,8 +182,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     switch (status) {
       case 'pending':
         return Colors.orange;
-      case 'processing':
+      case 'confirmed':
+        return const Color(0xFF9B7EDE);
+      case 'inProgress':
         return const Color(0xFF5DADE2);
+      case 'washing':
+        return const Color(0xFF5DADE2);
+      case 'drying':
+        return const Color(0xFFF4A259);
+      case 'ironing':
+        return const Color(0xFFF4A259);
+      case 'qualityCheck':
+        return const Color(0xFF5DADE2);
+      case 'ready':
+        return const Color(0xFF51CF66);
       case 'completed':
         return const Color(0xFF51CF66);
       case 'cancelled':
@@ -171,14 +210,116 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     switch (status) {
       case 'pending':
         return 'Menunggu';
-      case 'processing':
+      case 'confirmed':
+        return 'Dikonfirmasi';
+      case 'inProgress':
         return 'Diproses';
+      case 'washing':
+        return 'Dicuci';
+      case 'drying':
+        return 'Dikeringkan';
+      case 'ironing':
+        return 'Disetrika';
+      case 'qualityCheck':
+        return 'Cek Kualitas';
+      case 'ready':
+        return 'Siap Diambil';
       case 'completed':
         return 'Selesai';
       case 'cancelled':
         return 'Dibatalkan';
       default:
         return status;
+    }
+  }
+
+  /// Urutan linear status pesanan (di luar 'cancelled', yang merupakan
+  /// status terminal terpisah dan tidak termasuk alur maju normal).
+  static const List<String> _statusFlow = [
+    'pending',
+    'confirmed',
+    'inProgress',
+    'washing',
+    'drying',
+    'ironing',
+    'qualityCheck',
+    'ready',
+    'completed',
+  ];
+
+  /// Label tombol buat maju ke status berikutnya. null kalau sudah di
+  /// status terakhir (completed) atau sudah cancelled.
+  String? _nextStatusButtonLabel(String currentStatus) {
+    switch (currentStatus) {
+      case 'pending':
+        return 'Konfirmasi Pesanan';
+      case 'confirmed':
+        return 'Mulai Proses';
+      case 'inProgress':
+        return 'Mulai Mencuci';
+      case 'washing':
+        return 'Selesai Dicuci';
+      case 'drying':
+        return 'Selesai Dikeringkan';
+      case 'ironing':
+        return 'Selesai Disetrika';
+      case 'qualityCheck':
+        return 'Lolos Cek Kualitas';
+      case 'ready':
+        return 'Tandai Selesai';
+      default:
+        return null; // completed / cancelled -> tidak ada tombol maju
+    }
+  }
+
+  String? _nextStatus(String currentStatus) {
+    final index = _statusFlow.indexOf(currentStatus);
+    if (index == -1 || index == _statusFlow.length - 1) return null;
+    return _statusFlow[index + 1];
+  }
+
+  /// Label metode pembayaran, dipakai baik untuk metode order maupun
+  /// metode per-transaksi di riwayat pembayaran.
+  String _paymentMethodLabel(String method) {
+    switch (method) {
+      case 'cash':
+        return 'Tunai';
+      case 'transfer':
+        return 'Transfer Bank';
+      case 'debit':
+        return 'Kartu Debit';
+      case 'ewallet':
+        return 'E-Wallet';
+      default:
+        return method;
+    }
+  }
+
+  Color _getPaymentStatusColor(String status) {
+    switch (status) {
+      case 'paid':
+        return const Color(0xFF51CF66);
+      case 'partial':
+        return Colors.orange;
+      case 'refunded':
+        return Colors.red;
+      case 'pending':
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getPaymentStatusLabel(String status) {
+    switch (status) {
+      case 'paid':
+        return 'Lunas';
+      case 'partial':
+        return 'DP Sebagian';
+      case 'refunded':
+        return 'Refund';
+      case 'pending':
+      default:
+        return 'Belum Dibayar';
     }
   }
 
@@ -197,9 +338,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
+  void _showSnack(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.poppins()),
+        backgroundColor: isError ? AppTheme.errorColor : const Color(0xFF51CF66),
+      ),
+    );
+  }
+
   /// Handle update status -> tulis ke Firestore: update field `status`,
   /// tambah entri baru ke `status_history`, dan set `actual_completion`
   /// begitu status jadi 'completed'.
+  ///
+  /// NOTE: alur ubah status ini SENGAJA tetap pakai raw Firestore call
+  /// (bukan lewat OrderRepository) - scope refactor kali ini difokuskan
+  /// ke bagian pembayaran saja.
   Future<void> _handleUpdateStatus(String newStatus, {String? note}) async {
     if (_order == null) return;
 
@@ -225,26 +380,124 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       await _ordersRef.doc(widget.orderId).update(updateData);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Status berhasil diubah menjadi ${_getStatusLabel(newStatus)}'),
-            backgroundColor: const Color(0xFF51CF66),
-          ),
-        );
+        _showSnack('Status berhasil diubah menjadi ${_getStatusLabel(newStatus)}');
       }
 
       await _fetchOrder();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengupdate status: ${e.toString()}'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
+        _showSnack('Gagal mengupdate status: ${e.toString()}', isError: true);
       }
     } finally {
       if (mounted) setState(() => _isUpdatingStatus = false);
+    }
+  }
+
+  /// Buka dialog buat catat pembayaran baru (DP, pelunasan, atau konfirmasi
+  /// transfer) lewat OrderRepository.recordPayment() - atomic: menulis 1
+  /// dokumen transactions/ SEKALIGUS update paid_amount & payment_status
+  /// di order dalam 1 Firestore transaction.
+  Future<void> _showRecordPaymentDialog(_OrderDetailData order) async {
+    final remaining = order.remainingAmount;
+    final amountController = TextEditingController(text: remaining.toStringAsFixed(0));
+    String selectedMethod = order.paymentMethodRaw.isNotEmpty ? order.paymentMethodRaw : 'cash';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+            title: Text(
+              'Konfirmasi Pembayaran',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Sisa tagihan: ${_formatCurrency(remaining)}',
+                  style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: AppTheme.md),
+                TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  style: GoogleFonts.poppins(fontSize: 13.5),
+                  decoration: InputDecoration(
+                    labelText: 'Nominal Dibayar',
+                    labelStyle: GoogleFonts.poppins(fontSize: 12.5),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.md),
+                DropdownButtonFormField<String>(
+                  value: selectedMethod,
+                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                  items: [
+                    DropdownMenuItem(value: 'cash', child: Text(_paymentMethodLabel('cash'))),
+                    DropdownMenuItem(value: 'transfer', child: Text(_paymentMethodLabel('transfer'))),
+                    DropdownMenuItem(value: 'debit', child: Text(_paymentMethodLabel('debit'))),
+                    DropdownMenuItem(value: 'ewallet', child: Text(_paymentMethodLabel('ewallet'))),
+                  ],
+                  onChanged: (val) => setDialogState(() => selectedMethod = val ?? selectedMethod),
+                  decoration: InputDecoration(
+                    labelText: 'Metode',
+                    labelStyle: GoogleFonts.poppins(fontSize: 12.5),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text('Batal', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                ),
+                child: Text('Simpan', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final rawAmount = amountController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final amount = double.tryParse(rawAmount) ?? 0;
+
+    if (amount <= 0) {
+      _showSnack('Nominal harus lebih dari Rp0', isError: true);
+      return;
+    }
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw 'Sesi tidak ditemukan, silakan login ulang.';
+
+      await OrderRepository(userId: user.uid).recordPayment(
+        widget.orderId,
+        amount: amount,
+        method: PaymentMethod.values.firstWhere(
+          (e) => e.name == selectedMethod,
+          orElse: () => PaymentMethod.cash,
+        ),
+      );
+
+      _showSnack('Pembayaran berhasil dicatat');
+      await _fetchOrder();
+    } catch (e) {
+      _showSnack(e.toString(), isError: true);
     }
   }
 
@@ -265,12 +518,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   /// bahwa pesanannya sudah selesai dan siap diambil/diantar.
   Future<void> _openWhatsapp(_OrderDetailData order) async {
     if (order.customerPhone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Nomor telepon pelanggan tidak tersedia', style: GoogleFonts.poppins()),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      _showSnack('Nomor telepon pelanggan tidak tersedia', isError: true);
       return;
     }
 
@@ -282,9 +530,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final uri = Uri.https('wa.me', '/$normalized', {'text': message});
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tidak bisa membuka WhatsApp', style: GoogleFonts.poppins())),
-      );
+      _showSnack('Tidak bisa membuka WhatsApp', isError: true);
     }
   }
 
@@ -362,6 +608,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                   _buildCustomerInfo(context, _order!),
                                   const SizedBox(height: AppTheme.xxl),
                                   _buildOrderItems(context, _order!),
+                                  const SizedBox(height: AppTheme.xxl),
+                                  _buildPaymentSection(context, _order!),
                                   const SizedBox(height: AppTheme.xxl),
                                   _buildTimeline(context, _order!),
                                   const SizedBox(height: AppTheme.xxl),
@@ -597,11 +845,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   /// Build order items
-  ///
-  /// FIX (overflow di mobile): nama item sekarang dibatasi maxLines: 2 +
-  /// ellipsis, dan harga di kanan dibungkus supaya nggak pernah mepet ke
-  /// tepi layar. Juga fix logic: harga yang ditampilkan sekarang total
-  /// per baris (price_per_unit * quantity), bukan cuma harga satuan.
   Widget _buildOrderItems(BuildContext context, _OrderDetailData order) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -691,6 +934,181 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
+  /// Section Pembayaran: status, metode, sudah dibayar, sisa tagihan, dan
+  /// tombol "Konfirmasi Pembayaran" (muncul selama belum lunas).
+  Widget _buildPaymentSection(BuildContext context, _OrderDetailData order) {
+    final statusColor = _getPaymentStatusColor(order.paymentStatus);
+    final statusLabel = _getPaymentStatusLabel(order.paymentStatus);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Pembayaran',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        const SizedBox(height: AppTheme.lg),
+        Container(
+          padding: const EdgeInsets.all(AppTheme.lg),
+          decoration: BoxDecoration(
+            color: AppTheme.cardColor,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor.withOpacity(0.06),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _paymentMethodLabel(order.paymentMethodRaw),
+                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppTheme.md),
+              _buildPriceRow('Sudah Dibayar', order.paidAmount),
+              const SizedBox(height: 6),
+              _buildPriceRow('Sisa Tagihan', order.remainingAmount),
+              if (order.paymentStatus != 'paid') ...[
+                const SizedBox(height: AppTheme.md),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showRecordPaymentDialog(order),
+                    icon: const Icon(Icons.payments_outlined, size: 18),
+                    label: Text(
+                      'Konfirmasi Pembayaran',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: AppTheme.lg),
+        _buildPaymentHistory(context),
+      ],
+    );
+  }
+
+  /// Riwayat pembayaran (DP + pelunasan) dari users/{uid}/transactions,
+  /// realtime lewat StreamBuilder. Tidak tampil apa-apa kalau belum ada
+  /// pembayaran sama sekali.
+  Widget _buildPaymentHistory(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const SizedBox.shrink();
+
+    return StreamBuilder<List<PaymentTransaction>>(
+      stream: OrderRepository(userId: user.uid).getPaymentsForOrder(widget.orderId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        final payments = snapshot.data!;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Riwayat Pembayaran',
+              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+            ),
+            const SizedBox(height: AppTheme.md),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg),
+              decoration: BoxDecoration(
+                color: AppTheme.cardColor,
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.06),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: List.generate(payments.length, (index) {
+                  final p = payments[index];
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _paymentMethodLabel(p.method.name),
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${_formatDate(p.createdAt)} ${_formatTime(p.createdAt)}',
+                                    style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              _formatCurrency(p.amount),
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (index < payments.length - 1) Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
+                    ],
+                  );
+                }),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   /// Build timeline
   Widget _buildTimeline(BuildContext context, _OrderDetailData order) {
     if (order.statusHistory.isEmpty) {
@@ -745,11 +1163,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         child: Icon(
                           item.status == 'pending'
                               ? Icons.schedule
-                              : item.status == 'processing'
-                                  ? Icons.local_laundry_service
-                                  : item.status == 'cancelled'
-                                      ? Icons.cancel
-                                      : Icons.check_circle,
+                              : item.status == 'cancelled'
+                                  ? Icons.cancel
+                                  : item.status == 'completed'
+                                      ? Icons.check_circle
+                                      : Icons.local_laundry_service,
                           color: _getStatusColor(item.status),
                           size: 18,
                         ),
@@ -917,17 +1335,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  /// Build action buttons — dinamis sesuai status pesanan sekarang.
-  /// pending -> "Mulai Proses"; processing -> "Tandai Selesai";
-  /// completed/cancelled -> tidak ada aksi ubah status lagi.
+  /// Build action buttons — dinamis sesuai status pesanan sekarang, ngikutin
+  /// urutan _statusFlow. Tombol maju berubah label sesuai tahap
+  /// (Konfirmasi Pesanan -> Mulai Proses -> ... -> Tandai Selesai).
+  /// completed/cancelled -> tidak ada tombol maju lagi.
   Widget _buildActionButtons(BuildContext context, _OrderDetailData order) {
-    final canCancel = order.status == 'pending' || order.status == 'processing';
+    final canCancel = order.status != 'completed' && order.status != 'cancelled';
+    final nextStatus = _nextStatus(order.status);
+    final nextLabel = _nextStatusButtonLabel(order.status);
 
     return Column(
       children: [
-        // Begitu pesanan ditandai selesai, munculin tombol khusus buat
-        // langsung chat customer via WhatsApp (nomornya diambil dari
-        // order.customerPhone, sudah dinormalisasi ke format 62xxx).
         if (order.status == 'completed')
           Padding(
             padding: const EdgeInsets.only(bottom: AppTheme.md),
@@ -950,16 +1368,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             ),
           ),
-        if (order.status == 'pending')
+        if (nextStatus != null && nextLabel != null)
           SizedBox(
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
               onPressed: _isUpdatingStatus
                   ? null
-                  : () => _handleUpdateStatus('processing', note: 'Mulai diproses'),
+                  : () => _handleUpdateStatus(nextStatus, note: nextLabel),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5DADE2),
+                backgroundColor: nextStatus == 'completed'
+                    ? const Color(0xFF51CF66)
+                    : const Color(0xFF5DADE2),
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
@@ -971,33 +1391,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : Text(
-                      'Mulai Proses',
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15),
-                    ),
-            ),
-          ),
-        if (order.status == 'processing')
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _isUpdatingStatus
-                  ? null
-                  : () => _handleUpdateStatus('completed', note: 'Pesanan selesai'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF51CF66),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-              ),
-              child: _isUpdatingStatus
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(
-                      'Tandai Selesai',
+                      nextLabel,
                       style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15),
                     ),
             ),

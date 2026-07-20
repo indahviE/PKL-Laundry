@@ -20,10 +20,13 @@ enum PaymentStatus {
   refunded,
 }
 
+/// FIX: sebelumnya `card`, sekarang `debit` — mengikuti metode yang
+/// benar-benar dipakai di CreateOrderScreen (cash, transfer, debit,
+/// ewallet). `ewallet` ditambahkan sebagai opsi baru.
 enum PaymentMethod {
   cash,
-  card,
   transfer,
+  debit,
   ewallet,
 }
 
@@ -253,6 +256,12 @@ class Order extends BaseModel {
   /// (datang ke counter & ambil ke counter) -> tidak perlu driver sama sekali.
   bool get isFullySelfService => !needsPickup && !needsDelivery;
 
+  /// Sisa tagihan yang belum dibayar. Tidak pernah negatif.
+  double get remainingAmount {
+    final remaining = totalAmount - paidAmount;
+    return remaining < 0 ? 0 : remaining;
+  }
+
   Order copyWith({
     String? id,
     DateTime? createdAt,
@@ -405,12 +414,6 @@ class Order extends BaseModel {
         (e) => e.name == json['priority_level'],
         orElse: () => PriorityLevel.normal,
       ),
-      // FIX: sebelumnya dibandingkan pakai enum.name (camelCase: 'walkIn',
-      // 'selfPickup') padahal CreateOrderScreen nulis snake_case ke
-      // Firestore ('walk_in', 'self_pickup') -> gak pernah match, selalu
-      // jatuh ke orElse. Kebetulan "aman" untuk walk-in/self-pickup karena
-      // orElse-nya kebetulan sama, tapi rapuh. Sekarang eksplisit lewat
-      // helper _orderTypeFromFirestore / _deliveryTypeFromFirestore.
       orderType: _orderTypeFromFirestore(json['order_type']),
       deliveryType: _deliveryTypeFromFirestore(json['delivery_type']),
     );

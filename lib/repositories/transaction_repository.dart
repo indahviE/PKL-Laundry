@@ -1,6 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/transaction.dart';
+import '../models/transaction.dart'; // sesuaikan path/nama file model lo
 import '../providers/auth_provider.dart';
 
 class TransactionRepository {
@@ -12,60 +12,76 @@ class TransactionRepository {
   CollectionReference<Map<String, dynamic>> get _transactionsRef =>
       _firestore.collection('users').doc(userId).collection('transactions');
 
-  /// FIX: previously dropped subscriptionId/stripePaymentIntentId/currency/
-  /// metadata/notes/processedBy when re-constructing the object before
-  /// save - those fields existed on the Transaction model but were never
-  /// actually passed through, so they'd always be written as null/default.
-  Future<Transaction> addTransaction(Transaction transaction) async {
+  DocumentReference<Map<String, dynamic>> _orderRef(String orderId) =>
+      _firestore.collection('users').doc(userId).collection('orders').doc(orderId);
+
+  /// Nyatet transaksi pembayaran BARU, sekaligus update saldo di order terkait
+  /// (paidAmount bertambah, status order ikut ke-update kalau udah lunas).
+  /// Pakai Firestore transaction biar konsisten (atomic).
+  Future<PaymentTransaction> addTransaction(PaymentTransaction transaction) async {
     final docRef = _transactionsRef.doc();
     final now = DateTime.now();
-    final newTransaction = Transaction(
+
+    final newTransaction = PaymentTransaction(
       id: docRef.id,
       createdAt: now,
       updatedAt: now,
-      companyId: transaction.companyId,
       orderId: transaction.orderId,
-      subscriptionId: transaction.subscriptionId,
-      stripePaymentIntentId: transaction.stripePaymentIntentId,
       amount: transaction.amount,
-      currency: transaction.currency,
-      transactionType: transaction.transactionType,
-      paymentMethod: transaction.paymentMethod,
-      status: transaction.status,
-      metadata: transaction.metadata,
-      notes: transaction.notes,
-      processedBy: transaction.processedBy,
+      method: transaction.method,
+      type: transaction.type,
+      note: transaction.note,
+      recordedBy: transaction.recordedBy,
     );
-    await docRef.set(newTransaction.toJson());
+
+    await _firestore.runTransaction((tx) async {
+      final orderSnap = await tx.get(_orderRef(transaction.orderId));
+      if (!orderSnap.exists) {
+        throw Exception('Order ${transaction.orderId} tidak ditemukan');
+      }
+
+      final orderData = orderSnap.data()!;
+      final double currentPaid = (orderData['paid_amount'] ?? 0.0).toDouble();
+      final double totalAmount = (orderData['total_amount'] ?? 0.0).toDouble();
+
+      // refund ngurangin paid_amount, orderPayment nambahin
+      final double delta = transaction.type == TransactionType.refund
+          ? -transaction.amount
+          : transaction.amount;
+      final double newPaid = currentPaid + delta;
+
+      tx.set(docRef, newTransaction.toJson());
+      tx.update(_orderRef(transaction.orderId), {
+        'paid_amount': newPaid,
+        'payment_status': newPaid >= totalAmount ? 'paid' : 'partial',
+        'updated_at': now,
+      });
+    });
+
     return newTransaction;
   }
 
-  Future<Transaction?> getTransaction(String transactionId) async {
+  Future<PaymentTransaction?> getTransaction(String transactionId) async {
     final doc = await _transactionsRef.doc(transactionId).get();
     if (!doc.exists || doc.data() == null) return null;
-    return Transaction.fromJson(doc.data()!, doc.id);
+    return PaymentTransaction.fromJson(doc.data()!, doc.id);
   }
 
-  Stream<List<Transaction>> streamTransactions() {
+  Stream<List<PaymentTransaction>> streamTransactions() {
     return _transactionsRef
         .orderBy('created_at', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => Transaction.fromJson(doc.data(), doc.id)).toList());
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => PaymentTransaction.fromJson(doc.data(), doc.id)).toList());
   }
 
-  Stream<List<Transaction>> streamTransactionsByOrder(String orderId) {
+  Stream<List<PaymentTransaction>> streamTransactionsByOrder(String orderId) {
     return _transactionsRef
         .where('order_id', isEqualTo: orderId)
         .orderBy('created_at', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => Transaction.fromJson(doc.data(), doc.id)).toList());
-  }
-
-  Future<void> updateTransactionStatus(String transactionId, String newStatus) async {
-    await _transactionsRef.doc(transactionId).update({
-      'status': newStatus,
-      'updated_at': DateTime.now(),
-    });
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => PaymentTransaction.fromJson(doc.data(), doc.id)).toList());
   }
 }
 
