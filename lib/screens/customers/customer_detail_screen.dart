@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -420,9 +421,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               ),
               onSelected: (value) {
                 if (value == 'edit') {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.editCustomerComingSoon)),
-                  );
+                  context.push('/customers/${widget.customerId}/edit');
                 } else if (value == 'delete') {
                   _showDeleteConfirmation(context, l10n);
                 }
