@@ -9,6 +9,7 @@ import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
 import '../../screens/auth/verify_email_screen.dart';
 import '../../screens/auth/setup_profile_screen.dart';
+import '../../screens/auth/forgot_password_screen.dart';
 
 // --- Main / Shell ---
 import '../../../screens/main/main_screen.dart';
@@ -50,15 +51,6 @@ import '../../screens/reports/reports_screen.dart';
 import '../../screens/delivery/pickup_delivery_screen.dart';
 
 
-// Screen di bawah belum dibuat filenya, pakai PlaceholderScreen sementara.
-// import '../../screens/auth/forgot_password_screen.dart';
-// import '../../screens/orders/orders_list_screen.dart';
-// import '../../screens/orders/order_detail_screen.dart';
-// import '../../screens/orders/create_order_screen.dart';
-// import '../../screens/orders/update_order_status_screen.dart';
-// import '../../screens/customers/customers_list_screen.dart';
-// import '../../screens/customers/customer_detail_screen.dart';
-// import '../../screens/customers/create_customer_screen.dart';
 import '../../screens/employees/employees_list_screen.dart';
 import '../../screens/employees/employee_detail_screen.dart';
 import '../../screens/laundries/laundries_list_screen.dart';
@@ -184,8 +176,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgot-password',
         name: 'forgot-password',
-        builder: (context, state) =>
-            const PlaceholderScreen(title: 'Lupa Password'),
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
 
       // ==================== ONBOARDING ====================
@@ -241,11 +232,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // ==================== COMPANIES ====================
+      // Sesuai PRD (5.1 & 3.6.1): 1 user = 1 perusahaan, dibuat sekali
+      // lewat SetupCompanyScreen saat onboarding. Route ini BUKAN fitur
+      // "multi-company" — cuma fallback kalau CreateLaundryScreen tidak
+      // menemukan data company (data-inconsistency, seharusnya tidak
+      // terjadi di alur normal). Pakai ulang SetupCompanyScreen yang sama
+      // (isOnboarding: false) alih-alih bikin screen terpisah.
       GoRoute(
         path: '/companies/create',
         name: 'companies-create',
         builder: (context, state) =>
-            const PlaceholderScreen(title: 'Tambah Perusahaan Baru'),
+            const SetupCompanyScreen(isOnboarding: false),
       ),
 
       // ==================== LAUNDRIES ====================
@@ -336,13 +333,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           orderId: state.pathParameters['orderId'] ?? '',
         ),
       ),
-      GoRoute(
-        path: '/orders/:orderId/update-status',
-        name: 'order-update-status',
-        builder: (context, state) => PlaceholderScreen(
-          title: 'Update Status Pesanan (${state.pathParameters['orderId']})',
-        ),
-      ),
+      // Catatan: tidak ada route terpisah untuk "update status pesanan".
+      // Perubahan status (beserta status_history & actual_completion)
+      // sudah ditangani langsung di dalam OrderDetailScreen di atas.
 
       // ==================== SERVICES ====================
       GoRoute(
