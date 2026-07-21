@@ -6,7 +6,30 @@ import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/app_input.dart';
 
+/// Opsi cabang buat dropdown, di-fetch dari users/{uid}/laundries
+/// (sesuai Blueprint §3.2.3).
+class _LaundryOption {
+  final String id;
+  final String name;
+
+  _LaundryOption({required this.id, required this.name});
+
+  factory _LaundryOption.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    return _LaundryOption(
+      id: doc.id,
+      name: (data['name'] ?? 'Cabang Tanpa Nama') as String,
+    );
+  }
+}
+
 /// Create Customer Screen
+///
+/// UPDATED: sekarang customer di-assign ke 1 cabang (laundry_id) - field
+/// ini TIDAK ada di skema `customers` versi PRD (Blueprint §3.3.1, cuma
+/// company_id), sengaja ditambahkan supaya saat CreateOrderScreen pilih
+/// Cabang A, dropdown pelanggan bisa di-filter cuma nampilin pelanggan
+/// Cabang A juga (pola sama seperti employee -> laundry_id).
 class CreateCustomerScreen extends StatefulWidget {
   const CreateCustomerScreen({Key? key}) : super(key: key);
 
@@ -28,6 +51,15 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
   // State
   bool _isLoading = false;
 
+  // Cabang - dropdown cuma ditampilkan kalau _laundriesList.length > 1,
+  // pola sama persis dengan _showLaundryDropdown di CreateOrderScreen.
+  bool _isLoadingLaundries = true;
+  String? _laundriesError;
+  List<_LaundryOption> _laundriesList = [];
+  String? _selectedLaundryId;
+
+  bool get _showLaundryDropdown => _laundriesList.length > 1;
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +68,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
     _emailController = TextEditingController();
     _addressController = TextEditingController();
     _notesController = TextEditingController();
+    _fetchLaundries();
   }
 
   @override
@@ -46,6 +79,52 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
     _addressController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  /// Ambil semua cabang aktif milik company ini, buat dropdown penempatan
+  /// pelanggan. Sama pola dengan _fetchBusinessContext() di
+  /// CreateOrderScreen - kalau cabang cuma 1, auto-pick tanpa dropdown.
+  Future<void> _fetchLaundries() async {
+    setState(() {
+      _isLoadingLaundries = true;
+      _laundriesError = null;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw 'Sesi tidak ditemukan, silakan login ulang.';
+      }
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+      final companiesSnap = await userDocRef.collection('companies').limit(1).get();
+      if (companiesSnap.docs.isEmpty) {
+        throw 'Perusahaan belum diatur. Selesaikan onboarding terlebih dahulu.';
+      }
+      final companyId = companiesSnap.docs.first.id;
+
+      final laundriesSnap = await userDocRef
+          .collection('laundries')
+          .where('company_id', isEqualTo: companyId)
+          .where('is_active', isEqualTo: true)
+          .get();
+      if (laundriesSnap.docs.isEmpty) {
+        throw 'Belum ada cabang laundry. Tambahkan cabang dulu sebelum menambah pelanggan.';
+      }
+
+      final laundries = laundriesSnap.docs.map((d) => _LaundryOption.fromFirestore(d)).toList();
+
+      setState(() {
+        _laundriesList = laundries;
+        _selectedLaundryId = laundries.first.id;
+        _isLoadingLaundries = false;
+      });
+    } catch (e) {
+      setState(() {
+        _laundriesError = e.toString();
+        _isLoadingLaundries = false;
+      });
+    }
   }
 
   /// Generate customer_code berikutnya, format CUST001, CUST002, dst
@@ -59,6 +138,16 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
   /// Handle save customer -> tulis ke Firestore: users/{uid}/customers
   Future<void> _handleSaveCustomer(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_selectedLaundryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_laundriesError ?? 'Cabang belum siap, coba lagi sebentar.'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
       return;
     }
 
@@ -89,6 +178,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
         'address': _addressController.text.trim(),
         'notes': _notesController.text.trim(),
         'company_id': companyId,
+        'laundry_id': _selectedLaundryId,
         'customer_code': customerCode,
         'membership_type': 'reguler',
         'is_active': true,
@@ -149,6 +239,10 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
                         const SizedBox(height: AppTheme.xl),
                         _buildHeader(context, l10n),
                         const SizedBox(height: AppTheme.xxl),
+                        if (_laundriesError != null) ...[
+                          _buildLaundryError(context),
+                          const SizedBox(height: AppTheme.xxl),
+                        ],
                         _buildForm(context, l10n),
                         const SizedBox(height: AppTheme.xxl),
                         _buildSaveButton(context, l10n),
@@ -161,6 +255,33 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  /// Banner error kalau cabang belum siap/belum ada sama sekali.
+  Widget _buildLaundryError(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.md),
+      decoration: BoxDecoration(
+        color: AppTheme.errorColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, size: 18, color: AppTheme.errorColor),
+          const SizedBox(width: AppTheme.sm),
+          Expanded(
+            child: Text(
+              _laundriesError!,
+              style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.errorColor),
+            ),
+          ),
+          TextButton(
+            onPressed: _fetchLaundries,
+            child: Text('Coba lagi', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+          ),
+        ],
       ),
     );
   }
@@ -240,6 +361,66 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
     );
   }
 
+  /// Dropdown pilih cabang penempatan pelanggan. Cuma dirender kalau
+  /// _showLaundryDropdown true (cabang > 1).
+  Widget _buildLaundryDropdown(BuildContext context) {
+    if (_isLoadingLaundries) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.lg),
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
+        ),
+      );
+    }
+
+    return DropdownButtonFormField<String>(
+      value: _laundriesList.any((l) => l.id == _selectedLaundryId) ? _selectedLaundryId : null,
+      onChanged: (value) => setState(() => _selectedLaundryId = value),
+      style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+      isExpanded: true,
+      items: _laundriesList
+          .map((laundry) => DropdownMenuItem(
+                value: laundry.id,
+                child: Text(
+                  laundry.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(fontSize: 13.5),
+                ),
+              ))
+          .toList(),
+      decoration: InputDecoration(
+        labelText: 'Cabang *',
+        labelStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+        hintText: 'Pilih cabang pelanggan ini',
+        hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
+        prefixIcon: Icon(Icons.storefront_outlined, color: AppTheme.textTertiary),
+        filled: true,
+        fillColor: AppTheme.backgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Pilih cabang terlebih dahulu';
+        }
+        return null;
+      },
+    );
+  }
+
   /// Build Form
   Widget _buildForm(BuildContext context, AppLocalizations l10n) {
     return Container(
@@ -259,6 +440,14 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
         key: _formKey,
         child: Column(
           children: [
+            // Dropdown cabang - cuma muncul kalau owner punya > 1 cabang
+            // aktif. Kalau cuma 1 (mis. paket Starter), auto-pick tanpa
+            // dropdown, sama persis pola di CreateOrderScreen.
+            if (_showLaundryDropdown) ...[
+              _buildLaundryDropdown(context),
+              const SizedBox(height: AppTheme.lg),
+            ],
+
             // Nama Lengkap
             AppInput(
               label: '${l10n.fullNameLabel} *',

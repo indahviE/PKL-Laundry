@@ -16,8 +16,23 @@ import '../../widgets/common/app_input.dart';
 /// dikenali oleh redirect logic di routes.dart.
 /// Desain disamakan dengan SetupProfileScreen & VerifyEmailScreen
 /// (card putih polos, tanpa gradient, konsisten AppTheme).
+///
+/// PRD ini didesain dengan asumsi 1 user = 1 perusahaan (lihat
+/// AuthRepository.saveCompanyData(): kalau company sudah ada, di-update,
+/// bukan dibuat baru). Jadi TIDAK ada layar terpisah "Tambah Perusahaan
+/// Baru" — screen ini dipakai ulang untuk dua konteks lewat
+/// [isOnboarding]:
+/// - true (default): dipanggil sebagai bagian alur onboarding, redirect
+///   ke '/choose-plan' setelah simpan.
+/// - false: dipanggil sebagai fallback ketika CreateLaundryScreen tidak
+///   menemukan data company (kasus data-inconsistency yang seharusnya
+///   tidak terjadi di alur normal) — setelah simpan, cukup kembali ke
+///   layar sebelumnya, TIDAK memaksa user balik ke pemilihan paket.
 class SetupCompanyScreen extends ConsumerStatefulWidget {
-  const SetupCompanyScreen({Key? key}) : super(key: key);
+  const SetupCompanyScreen({Key? key, this.isOnboarding = true})
+      : super(key: key);
+
+  final bool isOnboarding;
 
   @override
   ConsumerState<SetupCompanyScreen> createState() =>
@@ -102,8 +117,20 @@ class _SetupCompanyScreenState extends ConsumerState<SetupCompanyScreen> {
         );
       }
 
-      // Lanjut ke step 5: Pilih Paket, sesuai PRD 5.1
-      router.go('/choose-plan');
+      // Kalau dipanggil sebagai bagian onboarding, lanjut ke step 5:
+      // Pilih Paket, sesuai PRD 5.1. Kalau bukan (dipanggil sebagai
+      // fallback dari layar lain, mis. CreateLaundryScreen), user sudah
+      // pernah lewat onboarding sebelumnya — jangan paksa balik ke
+      // pemilihan paket, cukup kembali ke layar asal.
+      if (widget.isOnboarding) {
+        router.go('/choose-plan');
+      } else if (mounted) {
+        if (context.canPop()) {
+          context.pop(true);
+        } else {
+          router.go('/laundries');
+        }
+      }
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');

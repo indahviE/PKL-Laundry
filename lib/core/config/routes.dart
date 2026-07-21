@@ -233,11 +233,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // ==================== COMPANIES ====================
+      // Sesuai PRD (5.1 & 3.6.1): 1 user = 1 perusahaan, dibuat sekali
+      // lewat SetupCompanyScreen saat onboarding. Route ini BUKAN fitur
+      // "multi-company" — cuma fallback kalau CreateLaundryScreen tidak
+      // menemukan data company (data-inconsistency, seharusnya tidak
+      // terjadi di alur normal). Pakai ulang SetupCompanyScreen yang sama
+      // (isOnboarding: false) alih-alih bikin screen terpisah.
       GoRoute(
         path: '/companies/create',
         name: 'companies-create',
         builder: (context, state) =>
-            const PlaceholderScreen(title: 'Tambah Perusahaan Baru'),
+            const SetupCompanyScreen(isOnboarding: false),
       ),
 
       // ==================== LAUNDRIES ====================
