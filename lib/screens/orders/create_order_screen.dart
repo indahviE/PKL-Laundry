@@ -34,8 +34,14 @@ class _CustomerOption {
   final String id;
   final String name;
   final String phone;
+  // Cabang tempat pelanggan ini terdaftar (field tambahan di luar skema
+  // PRD §3.3.1, lihat CreateCustomerScreen). Bisa null buat pelanggan
+  // lama yang dibuat sebelum field ini ada - sengaja TIDAK di-default ke
+  // cabang manapun, supaya kelihatan jelas pelanggan mana yang masih
+  // perlu di-assign manual (bukan ketebak otomatis, sesuai kesepakatan).
+  final String? laundryId;
 
-  _CustomerOption({required this.id, required this.name, required this.phone});
+  _CustomerOption({required this.id, required this.name, required this.phone, this.laundryId});
 
   factory _CustomerOption.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
@@ -43,6 +49,24 @@ class _CustomerOption {
       id: doc.id,
       name: (data['full_name'] ?? '') as String,
       phone: (data['phone'] ?? '') as String,
+      laundryId: data['laundry_id'] as String?,
+    );
+  }
+}
+
+/// Opsi cabang buat dropdown, di-fetch dari users/{uid}/laundries
+/// (sesuai Blueprint §3.2.3).
+class _LaundryOption {
+  final String id;
+  final String name;
+
+  _LaundryOption({required this.id, required this.name});
+
+  factory _LaundryOption.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    return _LaundryOption(
+      id: doc.id,
+      name: (data['name'] ?? 'Cabang Tanpa Nama') as String,
     );
   }
 }
@@ -90,13 +114,32 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   List<Service> _services = [];
 
   // Business context (company & cabang) buat OrderRepository.createOrder().
-  // NOTE: cabang di-auto-pick (cabang pertama milik company) karena
-  // CreateOrderScreen belum punya UI pilih cabang. Kalau NetWash sudah
-  // multi-cabang, ini perlu diganti jadi dropdown.
+  //
+  // _laundriesList = SEMUA cabang aktif milik company ini. Dropdown pilih
+  // cabang cuma ditampilin kalau isinya > 1 (artinya paket owner sudah
+  // Professional/Enterprise dan dia sudah benar-benar nambah cabang lain).
+  // Kalau cuma 1 cabang (mis. paket Starter, max 1 cabang), dropdown
+  // disembunyikan dan _selectedLaundryId di-auto-pick ke cabang itu -
+  // owner Starter gak akan pernah lihat dropdown sama sekali.
+  //
+  // Sengaja TIDAK baca plan_id dari subscriptions/ buat mutusin ini -
+  // jumlah cabang aktual lebih reliable (langsung merefleksikan kondisi
+  // nyata, gak perlu extra call, dan otomatis ke-update sendiri begitu
+  // owner nambah/upgrade cabang tanpa perlu logic tambahan apapun).
   String? _companyId;
-  String? _laundryId;
+  List<_LaundryOption> _laundriesList = [];
+  String? _selectedLaundryId;
   bool _isLoadingBusinessContext = true;
   String? _businessContextError;
+
+  bool get _showLaundryDropdown => _laundriesList.length > 1;
+
+  /// Pelanggan yang ditampilkan di dropdown, di-filter KETAT sesuai
+  /// cabang yang lagi dipilih (_selectedLaundryId). Pelanggan lama yang
+  /// belum punya laundry_id (null) sengaja TIDAK ikut muncul di manapun -
+  /// harus di-assign manual dulu lewat halaman edit pelanggan.
+  List<_CustomerOption> get _filteredCustomers =>
+      _customers.where((c) => c.laundryId != null && c.laundryId == _selectedLaundryId).toList();
 
   /// Metode pembayaran nyata yang dipakai laundry ini:
   /// cash, transfer, debit (EDC), ewallet.
@@ -146,9 +189,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     super.dispose();
   }
 
-  /// Ambil company_id (dari companies pertama) & laundry_id (cabang
-  /// pertama milik company itu), dibutuhkan OrderRepository.createOrder()
-  /// buat generate order_number.
+  /// Ambil company_id (dari companies pertama) & SEMUA cabang aktif milik
+  /// company itu, dibutuhkan OrderRepository.createOrder() buat generate
+  /// order_number dan buat isi dropdown cabang (kalau > 1).
   Future<void> _fetchBusinessContext() async {
     setState(() {
       _isLoadingBusinessContext = true;
@@ -171,15 +214,21 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       final laundriesSnap = await userDocRef
           .collection('laundries')
           .where('company_id', isEqualTo: companyId)
-          .limit(1)
+          .where('is_active', isEqualTo: true)
           .get();
       if (laundriesSnap.docs.isEmpty) {
         throw 'Belum ada cabang laundry. Tambahkan cabang dulu sebelum membuat pesanan.';
       }
 
+      final laundries = laundriesSnap.docs.map((d) => _LaundryOption.fromFirestore(d)).toList();
+
       setState(() {
         _companyId = companyId;
-        _laundryId = laundriesSnap.docs.first.id;
+        _laundriesList = laundries;
+        // Auto-pick cabang pertama. Kalau cabang cuma 1 (mis. paket
+        // Starter), inilah satu-satunya pilihan dan dropdown gak
+        // ditampilkan sama sekali - owner gak perlu ngapa-ngapain.
+        _selectedLaundryId = laundries.first.id;
         _isLoadingBusinessContext = false;
       });
     } catch (e) {
@@ -406,7 +455,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       return;
     }
 
-    if (_companyId == null || _laundryId == null) {
+    if (_companyId == null || _selectedLaundryId == null) {
       _showError(_businessContextError ?? 'Data perusahaan/cabang belum siap. Coba lagi sebentar.');
       return;
     }
@@ -456,7 +505,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       companyId: _companyId!,
-      laundryId: _laundryId!,
+      laundryId: _selectedLaundryId!,
       customerId: selectedCustomer.id,
       customerName: selectedCustomer.name,
       customerPhone: selectedCustomer.phone,
@@ -484,7 +533,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       paymentMethod: PaymentMethod.values.firstWhere((e) => e.name == _selectedPaymentMethod),
       paidAmount: paidNow,
       notes: _notesController.text.trim(),
-      priorityLevel: PriorityLevel.normal, // ⬅️ TAMBAHIN INI
+      priorityLevel: PriorityLevel.normal,
       orderType: _selectedOrderType == 'pickup' ? OrderType.pickup : OrderType.walkIn,
       deliveryType: _selectedDeliveryType == 'delivery' ? DeliveryType.delivery : DeliveryType.selfPickup,
     );
@@ -547,6 +596,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         const SizedBox(height: AppTheme.xxl),
                         _buildHeader(context),
                         const SizedBox(height: AppTheme.xxl),
+                        if (_businessContextError != null) ...[
+                          _buildBusinessContextError(context),
+                          const SizedBox(height: AppTheme.xxl),
+                        ],
                         _buildForm(context),
                         const SizedBox(height: AppTheme.xxl),
                         _buildOrderItemsSection(context),
@@ -563,6 +616,35 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  /// Banner error kalau cabang/company belum siap (mis. belum ada cabang
+  /// sama sekali). Ditaruh di atas form biar owner langsung ngeh kenapa
+  /// gak bisa lanjut, alih-alih baru ketauan pas klik Simpan.
+  Widget _buildBusinessContextError(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.md),
+      decoration: BoxDecoration(
+        color: AppTheme.errorColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, size: 18, color: AppTheme.errorColor),
+          const SizedBox(width: AppTheme.sm),
+          Expanded(
+            child: Text(
+              _businessContextError!,
+              style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.errorColor),
+            ),
+          ),
+          TextButton(
+            onPressed: _fetchBusinessContext,
+            child: Text('Coba lagi', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+          ),
+        ],
       ),
     );
   }
@@ -701,6 +783,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         key: _formKey,
         child: Column(
           children: [
+            // Dropdown cabang - CUMA muncul kalau owner punya lebih dari
+            // 1 cabang aktif (lihat _showLaundryDropdown). Owner paket
+            // Starter (max 1 cabang) gak akan pernah lihat ini sama
+            // sekali, ordernya otomatis nempel ke satu-satunya cabang
+            // yang ada.
+            if (_showLaundryDropdown) ...[
+              _buildLaundryDropdown(context),
+              const SizedBox(height: AppTheme.lg),
+            ],
+
             _buildCustomerDropdown(context),
 
             const SizedBox(height: AppTheme.lg),
@@ -850,6 +942,72 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
+  /// Dropdown pilih cabang. Cuma dipanggil kalau _showLaundryDropdown
+  /// true (owner punya lebih dari 1 cabang aktif).
+  Widget _buildLaundryDropdown(BuildContext context) {
+    if (_isLoadingBusinessContext) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.lg),
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
+        ),
+      );
+    }
+
+    return DropdownButtonFormField<String>(
+      value: _laundriesList.any((l) => l.id == _selectedLaundryId) ? _selectedLaundryId : null,
+      onChanged: (value) => setState(() {
+        _selectedLaundryId = value;
+        // Ganti cabang -> daftar pelanggan yang cocok ikut berubah,
+        // jadi pelanggan yang sebelumnya kepilih (dari cabang lain)
+        // harus direset supaya gak nyangkut nempel ke cabang yang salah.
+        _selectedCustomerId = null;
+      }),
+      style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+      isExpanded: true,
+      items: _laundriesList
+          .map((laundry) => DropdownMenuItem(
+                value: laundry.id,
+                child: Text(
+                  laundry.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(fontSize: 13.5),
+                ),
+              ))
+          .toList(),
+      decoration: InputDecoration(
+        labelText: 'Cabang *',
+        labelStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+        hintText: 'Pilih cabang untuk pesanan ini',
+        hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
+        prefixIcon: Icon(Icons.storefront_outlined, color: AppTheme.textTertiary),
+        filled: true,
+        fillColor: AppTheme.backgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Pilih cabang terlebih dahulu';
+        }
+        return null;
+      },
+    );
+  }
+
   Widget _buildPaymentOptionChip({
     required String label,
     required bool isSelected,
@@ -988,6 +1146,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       );
     }
 
+    final filteredCustomers = _filteredCustomers;
+
     if (_customers.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(AppTheme.md),
@@ -1002,12 +1162,29 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       );
     }
 
+    if (filteredCustomers.isEmpty) {
+      // Ada pelanggan, tapi gak ada satupun yang laundry_id-nya cocok
+      // sama cabang yang lagi dipilih (atau memang belum di-assign
+      // sama sekali - laundry_id-nya null).
+      return Container(
+        padding: const EdgeInsets.all(AppTheme.md),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryColor.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        child: Text(
+          'Belum ada pelanggan yang terdaftar di cabang ini. Tambahkan pelanggan baru, atau cek penempatan cabang pelanggan yang sudah ada.',
+          style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+        ),
+      );
+    }
+
     return DropdownButtonFormField<String>(
       value: _selectedCustomerId,
       onChanged: (value) => setState(() => _selectedCustomerId = value),
       style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
       isExpanded: true,
-      items: _customers
+      items: filteredCustomers
           .map((customer) => DropdownMenuItem(
                 value: customer.id,
                 child: Text(

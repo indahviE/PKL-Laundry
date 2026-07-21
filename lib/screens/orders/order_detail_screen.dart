@@ -21,7 +21,7 @@ class _OrderLineItem {
   final double price;
 
   _OrderLineItem({required this.name, required this.quantity, required this.price});
- 
+
   factory _OrderLineItem.fromMap(Map<String, dynamic> map) {
     return _OrderLineItem(
       name: (map['service_name'] ?? '') as String,
