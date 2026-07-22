@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
 import '../../core/providers/locale.provider.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/user_model.dart';
+import '../../repositories/user_repository.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -92,7 +94,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 icon: Icons.notifications_outlined,
                                 title: t.notificationTitle,
                                 subtitle: t.notificationSubtitle,
-                                onTap: () {},
+                                onTap: () =>
+                                    context.push('/settings/notifications'),
                               ),
                               _buildTile(
                                 icon: Icons.language_outlined,
@@ -106,19 +109,60 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                             ]),
                             const SizedBox(height: 20),
+                            // Section ini cuma nongol buat user dengan
+                            // role 'admin' (tim CS platform NetWash) --
+                            // owner/manager/employee biasa nggak lihat ini
+                            // sama sekali. Role dibaca dari dokumen profil
+                            // Firestore, bukan FirebaseAuth User.
+                            if (_user != null)
+                              StreamBuilder<UserModel?>(
+                                stream: ref
+                                    .read(userRepositoryProvider)
+                                    .getUserProfileStream(_user!.uid),
+                                builder: (context, snapshot) {
+                                  if (snapshot.data?.role != 'admin') {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _sectionLabel('Tim CS'),
+                                      _buildSectionCard([
+                                        _buildTile(
+                                          icon: Icons.support_agent_rounded,
+                                          title: 'Kelola Chat CS',
+                                          subtitle:
+                                              'Balas percakapan dari semua user',
+                                          onTap: () =>
+                                              context.push('/admin/support'),
+                                          showDivider: false,
+                                        ),
+                                      ]),
+                                      const SizedBox(height: 20),
+                                    ],
+                                  );
+                                },
+                              ),
                             _sectionLabel(t.sectionOther),
                             _buildSectionCard([
+                              _buildTile(
+                                icon: Icons.chat_bubble_outline_rounded,
+                                title: 'Chat dan CS',
+                                subtitle: 'Balasan dari customer service',
+                                onTap: () => context.push('/settings/chat-cs'),
+                              ),
                               _buildTile(
                                 icon: Icons.help_outline_rounded,
                                 title: t.helpTitle,
                                 subtitle: t.helpSubtitle,
-                                onTap: () {},
+                                onTap: () => context.push('/settings/help'),
                               ),
                               _buildTile(
                                 icon: Icons.info_outline_rounded,
                                 title: t.aboutTitle,
                                 subtitle: 'NetWash v1.0.0',
-                                onTap: () {},
+                                onTap: () => context.push('/settings/about'),
                                 showDivider: false,
                               ),
                             ]),

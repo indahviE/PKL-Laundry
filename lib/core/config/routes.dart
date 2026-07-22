@@ -24,6 +24,12 @@ import '../../screens/onboarding/payment_screen.dart';
 import '../../screens/settings/setting_screen.dart';
 import '../../screens/settings/edit_profile_screen.dart';
 import '../../screens/settings/change_password_screen.dart';
+import '../../screens/settings/notifications_screen.dart';
+import '../../screens/settings/chat_cs_screen.dart';
+import '../../screens/admin/admin_support_list_screen.dart';
+import '../../screens/admin/admin_support_chat_screen.dart';
+import '../../screens/settings/help_screen.dart';
+import '../../screens/settings/about_screen.dart';
 
 // --- Repositories ---
 import '../../repositories/auth_repository.dart';
@@ -380,6 +386,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const PickupDeliveryScreen(),
       ),
 
+      // ==================== ADMIN / CS (khusus role admin) ====================
+      GoRoute(
+        path: '/admin/support',
+        name: 'admin-support-list',
+        builder: (context, state) => const AdminSupportListScreen(),
+      ),
+      GoRoute(
+        path: '/admin/support/:userId',
+        name: 'admin-support-chat',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return AdminSupportChatScreen(
+            userId: state.pathParameters['userId'] ?? '',
+            businessName: extra?['businessName'] as String?,
+          );
+        },
+      ),
+
       // ==================== SETTINGS ====================
       GoRoute(
         path: '/settings/profile',
@@ -390,6 +414,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       path: '/settings/change-password',
       builder: (context, state) => const ChangePasswordScreen(),
     ),
+      GoRoute(
+        path: '/settings/notifications',
+        name: 'settings-notifications',
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/chat-cs',
+        name: 'settings-chat-cs',
+        builder: (context, state) => const ChatCsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/help',
+        name: 'settings-help',
+        builder: (context, state) => const HelpScreen(),
+      ),
+      GoRoute(
+        path: '/settings/about',
+        name: 'settings-about',
+        builder: (context, state) => const AboutScreen(),
+      ),
       GoRoute(
         path: '/settings/subscription',
         name: 'settings-subscription',

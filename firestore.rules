@@ -12,9 +12,44 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    // CS/admin platform NetWash (bukan admin per-perusahaan) -- role ini
+    // dibaca dari dokumen profil user sendiri (users/{uid}.role == 'admin').
+    // Cuma dipakai buat 2 rule sempit di bawah (profil + support_messages),
+    // BUKAN akses penuh ke semua data user lain (orders/customers/dst
+    // tetap isolated per pemiliknya).
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     // 1. Mengamankan seluruh sub-koleksi utama di bawah users/{userId}
     match /users/{userId}/{document=**} {
       allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // 1b. Admin/CS boleh baca profil dasar user manapun (buat nampilin
+    // nama di daftar percakapan CS), TAPI tetap tidak boleh baca/tulis
+    // subcollection user itu (orders, customers, dst) lewat rule ini --
+    // itu masih exclusive isOwner lewat rule #1 di atas.
+    match /users/{userId} {
+      allow read: if isAdmin();
+    }
+
+    // 1c. Chat CS ("Chat dan CS" di NotificationsScreen): pemilik akun
+    // tetap baca/tulis penuh lewat rule #1. Admin/CS ditambahin akses
+    // sempit di sini: boleh baca semua percakapan, dan boleh KIRIM pesan
+    // hanya dengan sender == 'cs' (tidak bisa nyamar jadi 'user').
+    //
+    // PENTING: dipakai lewat collectionGroup('support_messages') di sisi
+    // admin (AdminSupportRepository.watchRecentConversations), jadi
+    // path-nya HARUS pakai wildcard {path=**} di depan, bukan
+    // 'users/{userId}/support_messages/{messageId}' yang spesifik.
+    // Rule dengan path spesifik itu cuma berlaku buat collection query
+    // biasa, TIDAK berlaku buat collection group query -- makanya admin
+    // dapet permission-denied walau isAdmin() sudah true.
+    match /{path=**}/support_messages/{messageId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.sender == 'cs';
     }
 
     // 2. Aturan spesifik tambahan untuk koleksi 'orders' milik user tertentu (Validasi Data)

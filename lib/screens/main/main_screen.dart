@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../widgets/common/bottom_navigation.dart';
+import '../../services/fcm_service.dart';
 
 /// Main Screen - Layout utama setelah login (Wadah / Shell Navigasi)
 ///
@@ -27,6 +28,15 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   DateTime? _lastBackPress;
+
+  @override
+  void initState() {
+    super.initState();
+    // MainScreen cuma ke-reach setelah user lolos login & onboarding
+    // (lihat redirect di routes.dart), jadi titik ini aman buat
+    // registrasi FCM token pertama kali.
+    FcmService.registerToken();
+  }
 
   /// Fungsi untuk berpindah tab saat bottom nav diklik.
   /// `initialLocation: true` kalau tab yang sama diklik lagi -> reset ke

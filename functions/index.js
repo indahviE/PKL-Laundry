@@ -8,8 +8,16 @@
  */
 
 const {setGlobalOptions} = require("firebase-functions");
-const {onRequest} = require("firebase-functions/https");
+const {
+  onDocumentUpdated,
+  onDocumentCreated,
+} = require("firebase-functions/v2/firestore");
+const {onCall} = require("firebase-functions/v2/https");
+const {onSchedule} = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
+const admin = require("firebase-admin");
+
+admin.initializeApp();
 
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
@@ -21,7 +29,7 @@ const logger = require("firebase-functions/logger");
 // functions should each use functions.runWith({ maxInstances: 10 }) instead.
 // In the v1 API, each function can only serve one request per container, so
 // this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+setGlobalOptions({maxInstances: 10});
 
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
@@ -30,3 +38,272 @@ setGlobalOptions({ maxInstances: 10 });
 //   logger.info("Hello logs!", {structuredData: true});
 //   response.send("Hello from Firebase!");
 // });
+
+/**
+ * CONTOH #1 -- notifikasi event-triggered ("Status pesanan").
+ *
+ * Jalan otomatis tiap dokumen order di users/{userId}/orders/{orderId}
+ * ke-update. Cek dulu notif_prefs.status_pesanan user itu di Firestore
+ * sebelum kirim push -- ini titik yang bikin toggle di NotificationsScreen
+ * beneran ngefek, bukan cuma preferensi yang nganggur di device.
+ *
+ * NOTE: sesuaikan kondisi "kapan harus notif" (`beforeStatus !==
+ * afterStatus`) dan isi pesan dengan alur bisnis order kamu yang
+ * sebenarnya -- ini kerangka contoh, bukan versi final.
+ */
+exports.onOrderStatusChanged = onDocumentUpdated(
+    "users/{userId}/orders/{orderId}",
+    async (event) => {
+      const before = event.data.before.data();
+      const after = event.data.after.data();
+      if (before.status === after.status) return;
+
+      const userId = event.params.userId;
+      const userSnap = await admin.firestore()
+          .collection("users").doc(userId).get();
+      const user = userSnap.data();
+      if (!user) return;
+
+      // Baris ini yang jadi inti "opsi 2": cek preferensi sebelum kirim.
+      const wantsNotif = user.notif_prefs?.status_pesanan !== false;
+      if (!wantsNotif || !user.fcm_token) {
+        logger.info(`Skip notif status_pesanan ${userId} (off/tanpa token)`);
+        return;
+      }
+
+      await admin.messaging().send({
+        token: user.fcm_token,
+        notification: {
+          title: "Status pesanan diperbarui",
+          body: `Pesanan #${event.params.orderId} sekarang: ${after.status}`,
+        },
+        data: {
+          type: "status_pesanan",
+          orderId: event.params.orderId,
+        },
+      });
+    },
+);
+
+/**
+ * CONTOH #2 -- notifikasi broadcast tertarget ("Promo dan diskon").
+ *
+ * Callable function: dipanggil manual dari admin panel/dashboard tiap
+ * ada promo baru. Query semua user yang notif_prefs.promo == true DAN
+ * punya fcm_token, baru kirim batch (maks 500 token per panggilan
+ * sendEachForMulticast -- looping kalau usernya lebih banyak dari itu).
+ */
+exports.sendPromoBroadcast = onCall(async (request) => {
+  const {title, body} = request.data;
+  if (!title || !body) {
+    throw new Error("title dan body wajib diisi");
+  }
+
+  const usersSnap = await admin
+      .firestore()
+      .collection("users")
+      .where("notif_prefs.promo", "==", true)
+      .get();
+
+  const tokens = usersSnap.docs
+      .map((doc) => doc.data().fcm_token)
+      .filter((token) => typeof token === "string" && token.length > 0);
+
+  if (tokens.length === 0) {
+    return {sent: 0};
+  }
+
+  const response = await admin.messaging().sendEachForMulticast({
+    tokens,
+    notification: {title, body},
+    data: {type: "promo"},
+  });
+
+  logger.info(
+      `Promo broadcast: ${response.successCount} terkirim, ` +
+      `${response.failureCount} gagal`,
+  );
+  return {sent: response.successCount, failed: response.failureCount};
+});
+
+/**
+ * CONTOH #3 -- notifikasi terjadwal ("Pengingat").
+ *
+ * Jalan otomatis tiap jam. Order disimpan per-user di
+ * `users/{userId}/orders/{orderId}` (lihat OrderRepository), jadi buat
+ * nyisir SEMUA user sekaligus dipakai collectionGroup('orders') --
+ * bukan loop manual per dokumen users/.
+ *
+ * Dua hal yang dicek:
+ * 1. `pickup_date` mendekat (order_type == 'pickup', belum dijemput)
+ * 2. `delivery_date` mendekat (delivery_type == 'delivery', siap diantar)
+ *
+ * PENTING -- asumsi yang perlu kamu cek/sesuaikan:
+ * - Field `pickup_reminder_sent` / `delivery_reminder_sent` (boolean)
+ *   BELUM ada di model Order kamu. Ini dipakai biar reminder yang sama
+ *   tidak terkirim berkali-kali tiap function jalan (tiap jam). Tambahin
+ *   dua field ini ke Order (default false / tidak diisi), atau ganti
+ *   strategi dedup-nya kalau kamu punya cara lain.
+ * - Window pengingat aku set H-2 jam (REMINDER_WINDOW_HOURS). Kondisi
+ *   status yang dianggap "belum selesai" (`PENDING_PICKUP_STATUSES` /
+ *   `READY_FOR_DELIVERY_STATUSES`) juga cuma tebakan dari alur status di
+ *   OrderStatus enum -- sesuaikan dengan bisnis proses kamu yang beneran.
+ * - Query di bawah pakai range filter (pickup_date/delivery_date) +
+ *   equality filter (order_type/delivery_type) sekaligus -> Firestore
+ *   BUTUH composite index. Pertama kali deploy & jalan, cek log function;
+ *   Firebase biasanya kasih link langsung buat generate index-nya, atau
+ *   tambahin manual ke firestore.indexes.json.
+ */
+const REMINDER_WINDOW_HOURS = 2;
+const PENDING_PICKUP_STATUSES = ["pending", "confirmed"];
+const READY_FOR_DELIVERY_STATUSES = ["ready"];
+
+/**
+ * Kirim satu notifikasi pengingat ke owner akun (users/{userId}) yang
+ * punya order ini, dengan cek notif_prefs.pengingat + fcm_token dulu.
+ *
+ * @param {FirebaseFirestore.DocumentSnapshot} orderSnap Snapshot dokumen
+ *   order (di bawah users/{userId}/orders/{orderId}).
+ * @param {{title: string, body: string, extraData: object}} payload Isi
+ *   notifikasi yang mau dikirim.
+ * @return {Promise<boolean>} true kalau notif jadi terkirim (dipakai
+ *   buat mark reminder_sent).
+ */
+async function _sendPengingatNotif(orderSnap, {title, body, extraData}) {
+  const userRef = orderSnap.ref.parent.parent; // users/{userId}
+  if (!userRef) return false;
+
+  const userSnap = await userRef.get();
+  const user = userSnap.data();
+  if (!user) return false;
+
+  const wantsNotif = user.notif_prefs?.pengingat !== false;
+  if (!wantsNotif || !user.fcm_token) {
+    logger.info(`Skip pengingat untuk ${userRef.id} (off/tanpa token)`);
+    return false;
+  }
+
+  await admin.messaging().send({
+    token: user.fcm_token,
+    notification: {title, body},
+    data: {type: "pengingat", orderId: orderSnap.id, ...extraData},
+  });
+  return true;
+}
+
+exports.sendPengingatReminders = onSchedule(
+    {schedule: "every 60 minutes", timeZone: "Asia/Jakarta"},
+    async () => {
+      const now = admin.firestore.Timestamp.now();
+      const windowEnd = admin.firestore.Timestamp.fromMillis(
+          now.toMillis() + REMINDER_WINDOW_HOURS * 60 * 60 * 1000,
+      );
+
+      // --- 1) Pengingat jemput ---
+      const pickupSnap = await admin
+          .firestore()
+          .collectionGroup("orders")
+          .where("order_type", "==", "pickup")
+          .where("pickup_date", ">=", now)
+          .where("pickup_date", "<=", windowEnd)
+          .get();
+
+      let pickupSent = 0;
+      for (const doc of pickupSnap.docs) {
+        const order = doc.data();
+        if (order.pickup_reminder_sent === true) continue;
+        if (!PENDING_PICKUP_STATUSES.includes(order.status)) continue;
+
+        const sent = await _sendPengingatNotif(doc, {
+          title: "Jadwal jemput sebentar lagi",
+          body: `Pesanan #${order.order_number ?? doc.id} ` +
+              "dijadwalkan dijemput sebentar lagi.",
+          extraData: {reminderType: "pickup"},
+        });
+        if (sent) {
+          await doc.ref.update({pickup_reminder_sent: true});
+          pickupSent++;
+        }
+      }
+
+      // --- 2) Pengingat antar ---
+      const deliverySnap = await admin
+          .firestore()
+          .collectionGroup("orders")
+          .where("delivery_type", "==", "delivery")
+          .where("delivery_date", ">=", now)
+          .where("delivery_date", "<=", windowEnd)
+          .get();
+
+      let deliverySent = 0;
+      for (const doc of deliverySnap.docs) {
+        const order = doc.data();
+        if (order.delivery_reminder_sent === true) continue;
+        if (!READY_FOR_DELIVERY_STATUSES.includes(order.status)) continue;
+
+        const sent = await _sendPengingatNotif(doc, {
+          title: "Jadwal antar sebentar lagi",
+          body: `Pesanan #${order.order_number ?? doc.id} ` +
+              "dijadwalkan diantar sebentar lagi.",
+          extraData: {reminderType: "delivery"},
+        });
+        if (sent) {
+          await doc.ref.update({delivery_reminder_sent: true});
+          deliverySent++;
+        }
+      }
+
+      logger.info(
+          `Pengingat: ${pickupSent} jemput, ${deliverySent} antar terkirim`,
+      );
+    },
+);
+
+/**
+ * CONTOH #4 -- notifikasi trigger ("Chat dan CS").
+ *
+ * CATATAN PENTING: aku cek ke seluruh codebase dan BELUM ada fitur chat
+ * sama sekali (tidak ada model/collection chat/message). Jadi function
+ * di bawah ini SCAFFOLD berdasarkan asumsi skema, bukan yang final:
+ *
+ *   users/{userId}/support_messages/{messageId}
+ *   { sender: "cs" | "user", text: "...", created_at: <timestamp> }
+ *
+ * Kalau nanti fitur chat-nya dibuat dengan struktur beda (mis. nested di
+ * bawah order, atau pakai koleksi top-level `chats/{chatId}/messages`),
+ * tinggal ganti path trigger-nya di argumen pertama `onDocumentCreated`
+ * dan nama field `sender`-nya -- logic notifikasinya (cek notif_prefs,
+ * kirim FCM) tetap sama.
+ */
+exports.onSupportMessageCreated = onDocumentCreated(
+    "users/{userId}/support_messages/{messageId}",
+    async (event) => {
+      const message = event.data.data();
+      // Cuma notif kalau ini balasan DARI CS ke user, bukan pesan user sendiri.
+      if (message.sender !== "cs") return;
+
+      const userId = event.params.userId;
+      const userSnap = await admin.firestore()
+          .collection("users").doc(userId).get();
+      const user = userSnap.data();
+      if (!user) return;
+
+      const wantsNotif = user.notif_prefs?.chat_cs !== false;
+      if (!wantsNotif || !user.fcm_token) {
+        logger.info(`Skip notif chat_cs untuk ${userId} (off/tanpa token)`);
+        return;
+      }
+
+      await admin.messaging().send({
+        token: user.fcm_token,
+        notification: {
+          title: "Balasan dari Customer Service",
+          body: message.text ?? "Kamu punya pesan baru dari CS.",
+        },
+        data: {
+          type: "chat_cs",
+          messageId: event.params.messageId,
+        },
+      });
+    },
+);
