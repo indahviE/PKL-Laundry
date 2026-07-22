@@ -29,6 +29,21 @@ class AdminSupportListScreen extends ConsumerWidget {
                       .read(adminSupportRepositoryProvider)
                       .watchRecentConversations(),
                   builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            'Gagal memuat percakapan:\n${snapshot.error}',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.5,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
                     if (!snapshot.hasData) {
                       return const Center(
                         child: CircularProgressIndicator(

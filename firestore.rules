@@ -39,7 +39,15 @@ service cloud.firestore {
     // tetap baca/tulis penuh lewat rule #1. Admin/CS ditambahin akses
     // sempit di sini: boleh baca semua percakapan, dan boleh KIRIM pesan
     // hanya dengan sender == 'cs' (tidak bisa nyamar jadi 'user').
-    match /users/{userId}/support_messages/{messageId} {
+    //
+    // PENTING: dipakai lewat collectionGroup('support_messages') di sisi
+    // admin (AdminSupportRepository.watchRecentConversations), jadi
+    // path-nya HARUS pakai wildcard {path=**} di depan, bukan
+    // 'users/{userId}/support_messages/{messageId}' yang spesifik.
+    // Rule dengan path spesifik itu cuma berlaku buat collection query
+    // biasa, TIDAK berlaku buat collection group query -- makanya admin
+    // dapet permission-denied walau isAdmin() sudah true.
+    match /{path=**}/support_messages/{messageId} {
       allow read: if isAdmin();
       allow create: if isAdmin() && request.resource.data.sender == 'cs';
     }

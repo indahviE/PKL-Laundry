@@ -43,7 +43,15 @@ class FcmService {
         return;
       }
 
-      final token = await messaging.getToken();
+      // Web WAJIB pasang vapidKey (ambil dari Firebase Console > Project
+      // Settings > Cloud Messaging > Web Push certificates), kalau enggak
+      // getToken() throw diem-diem di web (ketelen try-catch di bawah) dan
+      // fcm_token nggak pernah kesimpen -- makanya notif nggak masuk pas
+      // dites di Chrome/web meskipun Cloud Function-nya udah bener.
+      // Di Android/iOS parameter ini diabaikan, jadi aman dipasang selalu.
+      final token = await messaging.getToken(
+        vapidKey: 'BKXn0ow3YGHnSY9WmYnU5Z9HO2gMgAM-2Kuj8JdGFfEpqvvL08PcSdfDnjD_tBtXWWYyOuQKbAu-_OUpk8Ox8UE',
+      );
       if (token != null) {
         await _userRepository.updateFcmToken(user.uid, token);
       }

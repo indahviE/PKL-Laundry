@@ -30,6 +30,20 @@ class AdminGuard extends ConsumerWidget {
     return StreamBuilder<UserModel?>(
       stream: ref.read(userRepositoryProvider).getUserProfileStream(uid),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: AppTheme.backgroundColor,
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Gagal memuat profil:\n${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          );
+        }
         if (!snapshot.hasData) {
           return const Scaffold(
             backgroundColor: AppTheme.backgroundColor,
