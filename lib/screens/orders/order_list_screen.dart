@@ -19,6 +19,7 @@ class OrderItem {
   final String customerPhone;
   final String orderType; // 'walk_in' / 'pickup' -> cara baju MASUK
   final String deliveryType; // 'self_pickup' / 'delivery' -> cara baju KELUAR
+  final String laundryId; // cabang tempat order ini dibuat
 
   OrderItem({
     required this.id,
@@ -31,6 +32,7 @@ class OrderItem {
     required this.customerPhone,
     required this.orderType,
     required this.deliveryType,
+    required this.laundryId,
   });
 
   /// Mapping dari dokumen Firestore users/{uid}/orders/{orderId}
@@ -52,6 +54,7 @@ class OrderItem {
       customerPhone: (data['customer_phone'] ?? '') as String,
       orderType: (data['order_type'] ?? 'walk_in') as String,
       deliveryType: (data['delivery_type'] ?? 'self_pickup') as String,
+      laundryId: (data['laundry_id'] ?? '') as String,
     );
   }
 
@@ -67,6 +70,23 @@ class OrderItem {
   String get deliveryTypeLabel => isDelivery ? 'Diantar' : 'Ambil Sendiri';
   IconData get deliveryTypeIcon => isDelivery ? Icons.call_made_rounded : Icons.storefront_outlined;
   Color get deliveryTypeColor => isDelivery ? AppTheme.primaryColor : const Color(0xFF51CF66);
+}
+
+/// Opsi cabang buat filter chip, di-fetch dari users/{uid}/laundries
+/// (sesuai Blueprint §3.2.3), sama pola dengan CreateOrderScreen.
+class _LaundryOption {
+  final String id;
+  final String name;
+
+  _LaundryOption({required this.id, required this.name});
+
+  factory _LaundryOption.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    return _LaundryOption(
+      id: doc.id,
+      name: (data['name'] ?? 'Cabang Tanpa Nama') as String,
+    );
+  }
 }
 
 /// Orders List Screen
@@ -90,10 +110,20 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
   String? _errorMessage;
   StreamSubscription<QuerySnapshot>? _ordersSubscription;
 
+  // Filter cabang - 'all' berarti tampilkan semua cabang sekaligus
+  // (termasuk order lama yang laundry_id-nya masih kosong). Chip
+  // filter cuma ditampilkan kalau owner punya > 1 cabang aktif (lihat
+  // _showLaundryFilter), sama pola persis dengan CustomersListScreen.
+  List<_LaundryOption> _laundriesList = [];
+  String _selectedLaundryId = 'all';
+
+  bool get _showLaundryFilter => _laundriesList.length > 1;
+
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _fetchLaundries();
     _listenToOrders();
   }
 
@@ -102,6 +132,37 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
     _searchController.dispose();
     _ordersSubscription?.cancel();
     super.dispose();
+  }
+
+  /// Ambil semua cabang aktif milik company ini, buat isi chip filter
+  /// (cuma ditampilkan kalau > 1, lihat _showLaundryFilter).
+  Future<void> _fetchLaundries() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+      final companiesSnap = await userDocRef.collection('companies').limit(1).get();
+      if (companiesSnap.docs.isEmpty) return;
+      final companyId = companiesSnap.docs.first.id;
+
+      final laundriesSnap = await userDocRef
+          .collection('laundries')
+          .where('company_id', isEqualTo: companyId)
+          .where('is_active', isEqualTo: true)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _laundriesList = laundriesSnap.docs.map((d) => _LaundryOption.fromFirestore(d)).toList();
+        });
+      }
+    } catch (_) {
+      // Diamkan - kalau gagal, filter cabang cuma gak muncul (tetap
+      // fallback ke "Semua Cabang" karena _selectedLaundryId null).
+      // List order utama tidak terganggu oleh kegagalan ini.
+    }
   }
 
   /// Subscribe realtime ke users/{uid}/orders di Firestore.
@@ -165,10 +226,13 @@ void _applyFiltersAndSearch() {
       statusMatch = order.status == _selectedFilter;
     }
 
+    // 'all' -> "Semua Cabang", jadi semua order lolos filter cabang.
+    bool laundryMatch = _selectedLaundryId == 'all' || order.laundryId == _selectedLaundryId;
+
     bool searchMatch = _searchController.text.isEmpty ||
         order.customerName.toLowerCase().contains(_searchController.text.toLowerCase()) ||
         order.orderNumber.toLowerCase().contains(_searchController.text.toLowerCase());
-    return statusMatch && searchMatch;
+    return statusMatch && laundryMatch && searchMatch;
   }).toList();
   setState(() {});
 }
@@ -274,6 +338,10 @@ void _applyFiltersAndSearch() {
                         _buildSearchBar(context),
                         const SizedBox(height: AppTheme.lg),
                         _buildFilterButtons(context),
+                        if (_showLaundryFilter) ...[
+                          const SizedBox(height: AppTheme.md),
+                          _buildLaundryFilterButtons(context),
+                        ],
                         const SizedBox(height: AppTheme.xl),
                         _buildStatsSummary(context, isMobile),
                         const SizedBox(height: AppTheme.xl),
@@ -425,6 +493,75 @@ void _applyFiltersAndSearch() {
     );
   }
 
+  /// Build filter chip CABANG - baris terpisah di bawah filter status,
+  /// cuma dirender kalau _showLaundryFilter true (cabang > 1). Chip
+  /// pertama selalu "Semua Cabang", sisanya sesuai nama cabang aktif.
+  /// Pola sama persis dengan CustomersListScreen.
+  Widget _buildLaundryFilterButtons(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: AppTheme.md),
+            child: _buildLaundryChip(
+              label: 'Semua Cabang',
+              isSelected: _selectedLaundryId == 'all',
+              onTap: () {
+                setState(() => _selectedLaundryId = 'all');
+                _applyFiltersAndSearch();
+              },
+            ),
+          ),
+          ..._laundriesList.map((laundry) {
+            final isLast = laundry.id == _laundriesList.last.id;
+            return Padding(
+              padding: EdgeInsets.only(right: isLast ? 0 : AppTheme.md),
+              child: _buildLaundryChip(
+                label: laundry.name,
+                isSelected: _selectedLaundryId == laundry.id,
+                onTap: () {
+                  setState(() => _selectedLaundryId = laundry.id);
+                  _applyFiltersAndSearch();
+                },
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLaundryChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return FilterChip(
+      selected: isSelected,
+      onSelected: (_) => onTap(),
+      showCheckmark: false,
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.storefront_outlined, size: 15),
+          const SizedBox(width: AppTheme.sm),
+          Text(label),
+        ],
+      ),
+      backgroundColor: AppTheme.cardColor,
+      selectedColor: AppTheme.primaryColor.withOpacity(0.12),
+      side: BorderSide(
+        color: isSelected ? AppTheme.primaryColor.withOpacity(0.4) : AppTheme.borderColor,
+      ),
+      labelStyle: GoogleFonts.poppins(
+        fontSize: 12.5,
+        color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
   /// Build filter buttons
   Widget _buildFilterButtons(BuildContext context) {
   final filters = [
@@ -557,6 +694,11 @@ void _applyFiltersAndSearch() {
   /// Build empty state
   Widget _buildEmptyState(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    // Beda pesan kalau kosong gara-gara filter cabang lagi aktif (bukan
+    // benar-benar belum ada order sama sekali), sama pola dengan
+    // CustomersListScreen.
+    final isFilteredByLaundry = _selectedLaundryId != 'all';
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
@@ -577,7 +719,7 @@ void _applyFiltersAndSearch() {
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
-              t.orderNoOrdersLabel,
+              isFilteredByLaundry ? 'Belum ada pesanan di cabang ini' : t.orderNoOrdersLabel,
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -586,7 +728,10 @@ void _applyFiltersAndSearch() {
             ),
             const SizedBox(height: AppTheme.sm),
             Text(
-              'Buat pesanan baru untuk memulai',
+              isFilteredByLaundry
+                  ? 'Coba pilih cabang lain, atau buat pesanan baru untuk cabang ini.'
+                  : 'Buat pesanan baru untuk memulai',
+              textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 color: AppTheme.textSecondary,

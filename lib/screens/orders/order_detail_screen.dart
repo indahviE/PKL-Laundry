@@ -54,6 +54,12 @@ class _StatusHistoryEntry {
 /// UPDATED: nambah field deliveryType supaya pesan WhatsApp "siap
 /// diambil/diantar" bisa disesuaikan otomatis (self_pickup vs delivery),
 /// nggak selalu nanya "mau diambil atau diantar?" ke semua pelanggan.
+///
+/// UPDATED lagi: nambah field laundryId - order sudah tersimpan dengan
+/// cabang yang benar sejak CreateOrderScreen (lihat laundry_id di
+/// dokumen Firestore), cuma sebelumnya gak pernah dibaca/ditampilkan di
+/// halaman detail ini. Nama cabang (bukan cuma ID mentah) di-resolve
+/// terpisah lewat _fetchLaundryName() setelah order berhasil dimuat.
 class _OrderDetailData {
   final String orderNumber;
   final String customerName;
@@ -76,6 +82,9 @@ class _OrderDetailData {
   // --- Pengiriman ---
   final String deliveryType; // 'self_pickup' | 'delivery'
 
+  // --- Cabang ---
+  final String laundryId; // bisa kosong buat order lama sebelum fitur cabang ada
+
   _OrderDetailData({
     required this.orderNumber,
     required this.customerName,
@@ -93,6 +102,7 @@ class _OrderDetailData {
     required this.paymentMethodRaw,
     required this.paidAmount,
     required this.deliveryType,
+    required this.laundryId,
   });
 
   /// Sisa tagihan yang belum dibayar. Tidak pernah negatif (dijaga dengan
@@ -126,6 +136,7 @@ class _OrderDetailData {
       paymentMethodRaw: (data['payment_method'] ?? 'cash') as String,
       paidAmount: ((data['paid_amount'] ?? 0) as num).toDouble(),
       deliveryType: (data['delivery_type'] ?? 'self_pickup') as String,
+      laundryId: (data['laundry_id'] ?? '') as String,
     );
   }
 }
@@ -149,6 +160,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   bool _isGeneratingReceipt = false;
   String? _errorMessage;
   _OrderDetailData? _order;
+
+  // Nama cabang (resolved dari laundryId) - null selama masih loading
+  // atau kalau order.laundryId kosong (order lama sebelum fitur cabang).
+  String? _laundryName;
+  bool _isLoadingLaundryName = false;
 
   /// Key buat "menangkap" tampilan struk (_buildReceiptCard) jadi gambar PNG
   /// lewat RepaintBoundary. Widget-nya dirender offstage (di luar layar,
@@ -180,15 +196,48 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       if (!doc.exists) {
         throw 'Pesanan tidak ditemukan.';
       }
+      final order = _OrderDetailData.fromFirestore(doc);
       setState(() {
-        _order = _OrderDetailData.fromFirestore(doc);
+        _order = order;
         _isLoading = false;
       });
+      // Resolve nama cabang setelah order utama selesai dimuat - gak
+      // memblokir tampilan utama, cukup nongol belakangan begitu siap.
+      if (order.laundryId.isNotEmpty) {
+        _fetchLaundryName(order.laundryId);
+      }
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;
       });
+    }
+  }
+
+  /// Ambil nama cabang dari users/{uid}/laundries/{laundryId}, dipanggil
+  /// setelah order berhasil dimuat. Kegagalan di sini bukan error fatal -
+  /// halaman detail order tetap tampil normal, cuma info cabangnya gak
+  /// muncul (fallback ke null, ditangani di UI).
+  Future<void> _fetchLaundryName(String laundryId) async {
+    setState(() => _isLoadingLaundryName = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('laundries')
+          .doc(laundryId)
+          .get();
+
+      if (!mounted) return;
+      setState(() {
+        _laundryName = doc.exists ? ((doc.data()?['name'] ?? '') as String) : null;
+        _isLoadingLaundryName = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingLaundryName = false);
     }
   }
 
@@ -798,7 +847,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Struk Pesanan',
+            _laundryName != null && _laundryName!.isNotEmpty ? _laundryName! : 'Struk Pesanan',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
           ),
@@ -963,6 +1012,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   /// Build order header
+  ///
+  /// UPDATED: ditambah baris kecil di bawah tanggal yang nampilin nama
+  /// cabang (pill kecil dengan ikon toko), diresolve dari laundryId lewat
+  /// _fetchLaundryName(). 3 kondisi yang ditangani:
+  /// - order.laundryId kosong (order lama sebelum fitur cabang) -> gak
+  ///   nampilin apa-apa, gak worth nunjukin "cabang: -"
+  /// - masih resolve nama cabangnya -> gak nampilin apa-apa dulu sampai
+  ///   siap (menghindari flicker teks placeholder)
+  /// - berhasil di-resolve -> tampil pill "Cabang X"
   Widget _buildOrderHeader(BuildContext context, _OrderDetailData order) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
@@ -998,6 +1056,31 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   _formatDate(order.orderDate),
                   style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
                 ),
+                if (order.laundryId.isNotEmpty && _laundryName != null && _laundryName!.isNotEmpty) ...[
+                  const SizedBox(height: AppTheme.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.storefront_outlined, size: 12, color: AppTheme.primaryColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          _laundryName!,
+                          style: GoogleFonts.poppins(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1737,4 +1820,4 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ],
     );
   }
-} 
+}

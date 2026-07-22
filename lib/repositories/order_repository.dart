@@ -254,6 +254,52 @@ class OrderRepository {
     });
   }
 
+  Future<void> confirmPickupWithItems(
+  String orderId, {
+  required List<OrderItem> items,
+  required double totalWeight,
+  required int totalItems,
+  required double subtotal,
+}) async {
+  if (items.isEmpty) {
+    throw Exception('Item cucian tidak boleh kosong.');
+  }
+
+  final orderRef = _ordersRef.doc(orderId);
+
+  await _firestore.runTransaction((txn) async {
+    final orderSnap = await txn.get(orderRef);
+    if (!orderSnap.exists) throw Exception('Order tidak ditemukan.');
+
+    final order = Order.fromJson(orderSnap.data() as Map<String, dynamic>, orderSnap.id);
+    final now = DateTime.now();
+    final amountDelta = subtotal - order.totalAmount;
+
+    final updatedHistory = [
+      ...order.statusHistory,
+      StatusHistory(status: order.status, timestamp: now, note: 'Item & berat dicatat saat jemput'),
+    ];
+
+    txn.update(orderRef, {
+      'items': items.map((e) => e.toJson()).toList(),
+      'total_weight': totalWeight,
+      'total_items': totalItems,
+      'total_amount': subtotal,
+      'pickup_date': now,
+      'status_history': updatedHistory.map((e) => e.toJson()).toList(),
+      'updated_at': now,
+    });
+
+    if (amountDelta != 0) {
+      final customerRef = _customersRef.doc(order.customerId);
+      txn.update(customerRef, {
+        'total_spent': FieldValue.increment(amountDelta),
+        'updated_at': now,
+      });
+    }
+  });
+}
+
   Future<void> markDelivered(String orderId, {String? driverNote}) async {
     await _ordersRef.doc(orderId).update({
       'delivery_date': DateTime.now(),

@@ -1,9 +1,17 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
 import '../../models/order.dart';
+import '../../models/service.dart';
 import '../../repositories/order_repository.dart';
+import '../../repositories/service_repository.dart';
+// Reuse OrderItemForm (model form item UI-only) dari CreateOrderScreen,
+// supaya logika "1 item = layanan + qty/berat + subtotal" gak perlu
+// ditulis dua kali. Class-nya memang public (tanpa underscore) di file
+// asalnya justru supaya bisa dipakai ulang seperti ini.
+import '../orders/create_order_screen.dart' show OrderItemForm;
 
 /// Kategori tampilan untuk 1 order di layar Antar Jemput.
 /// Ini turunan dari orderType/deliveryType/status/pickupDate/deliveryDate -
@@ -138,23 +146,22 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
     }
   }
 
-  Future<void> _markPickedUp(Order order) async {
-    setState(() => _updatingOrderId = order.id);
-    try {
-      await ref.read(orderRepositoryProvider).markPickedUp(order.id);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${order.orderNumber} ditandai sudah dijemput', style: GoogleFonts.poppins())),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal update: $e', style: GoogleFonts.poppins()), backgroundColor: AppTheme.errorColor),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _updatingOrderId = null);
+  /// Order pickup di alur baru selalu dibuat TANPA item (lihat
+  /// CreateOrderScreen: validasi item dilonggarin khusus orderType
+  /// pickup). Jadi tombol "Tandai Sudah Dijemput" gak langsung nembak
+  /// markPickedUp() kayak dulu - dibuka dulu bottom sheet buat isi item
+  /// & berat, karena baru sekarang barangnya beneran ada di tangan
+  /// karyawan dan bisa ditimbang.
+  Future<void> _handlePickupTap(Order order) async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _ConfirmPickupSheet(order: order),
+    );
+
+    if (confirmed == true) {
+      _showSnack('${order.orderNumber} ditandai sudah dijemput');
     }
   }
 
@@ -163,19 +170,25 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
     try {
       await ref.read(orderRepositoryProvider).markDelivered(order.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${order.orderNumber} ditandai sudah diantar', style: GoogleFonts.poppins())),
-        );
+        _showSnack('${order.orderNumber} ditandai sudah diantar');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal update: $e', style: GoogleFonts.poppins()), backgroundColor: AppTheme.errorColor),
-        );
+        _showSnack('Gagal update: $e', isError: true);
       }
     } finally {
       if (mounted) setState(() => _updatingOrderId = null);
     }
+  }
+
+  void _showSnack(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.poppins()),
+        backgroundColor: isError ? AppTheme.errorColor : null,
+      ),
+    );
   }
 
   List<Order> _applyFilters(List<Order> orders) {
@@ -512,7 +525,7 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
               categoryIcon: _categoryIcon(category),
               categoryLabel: category == _LogisticsCategory.other ? _fallbackStatusLabel(order.status) : _categoryLabel(category),
               isUpdating: _updatingOrderId == order.id,
-              onMarkPickedUp: () => _markPickedUp(order),
+              onMarkPickedUp: () => _handlePickupTap(order),
               onMarkDelivered: () => _markDelivered(order),
             ),
             if (index < orders.length - 1) const SizedBox(height: AppTheme.md),
@@ -528,6 +541,438 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
 final _allOrdersStreamProvider = StreamProvider.autoDispose<List<Order>>((ref) {
   return ref.watch(orderRepositoryProvider).getAllOrders();
 });
+
+/// Bottom sheet konfirmasi jemput: pilih layanan + isi berat/qty, lalu
+/// simpan lewat OrderRepository.confirmPickupWithItems() - atomic, sama
+/// pola-nya dengan _EditServiceSheet & _showRecordPaymentDialog di layar
+/// lain (state loading lokal, showModalBottomSheet, pop(true) kalau
+/// sukses supaya pemanggil bisa nampilin snackbar).
+class _ConfirmPickupSheet extends StatefulWidget {
+  final Order order;
+
+  const _ConfirmPickupSheet({required this.order});
+
+  @override
+  State<_ConfirmPickupSheet> createState() => _ConfirmPickupSheetState();
+}
+
+class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
+  late final ServiceRepository _serviceRepository;
+  List<Service> _services = [];
+  List<OrderItemForm> _items = [];
+  bool _isLoadingServices = true;
+  String? _servicesError;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    _serviceRepository = ServiceRepository(userId: uid);
+    _fetchServices();
+  }
+
+  @override
+  void dispose() {
+    for (final item in _items) {
+      item.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _fetchServices() async {
+    setState(() {
+      _isLoadingServices = true;
+      _servicesError = null;
+    });
+    try {
+      final allServices = await _serviceRepository.streamServices().first;
+      setState(() {
+        _services = allServices.where((s) => s.isActive).toList();
+        _isLoadingServices = false;
+      });
+    } catch (e) {
+      setState(() {
+        _servicesError = e.toString();
+        _isLoadingServices = false;
+      });
+    }
+  }
+
+  double _servicePrice(Service service) {
+    return service.pricingType == PricingType.perKg ? (service.pricePerKg ?? 0) : (service.pricePerItem ?? 0);
+  }
+
+  String _formatCurrency(double amount) {
+    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
+  }
+
+  void _pickService() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+        title: Text('Pilih Layanan', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: _services.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    'Belum ada layanan aktif.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+                  ),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _services.length,
+                  itemBuilder: (context, index) {
+                    final service = _services[index];
+                    final price = _servicePrice(service);
+                    final suffix = service.pricingType == PricingType.perKg ? '/kg' : '/item';
+                    return ListTile(
+                      title: Text(service.name, style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w500)),
+                      subtitle: Text('${_formatCurrency(price)}$suffix', style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+                      onTap: () {
+                        setState(() {
+                          _items.add(
+                            OrderItemForm(
+                              id: service.id,
+                              name: service.name,
+                              pricingType: service.pricingType,
+                              quantity: 1,
+                              weight: service.pricingType == PricingType.perKg ? 1.0 : 0,
+                              price: price,
+                            ),
+                          );
+                        });
+                        Navigator.pop(dialogContext);
+                      },
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text('Tutup', style: GoogleFonts.poppins())),
+        ],
+      ),
+    );
+  }
+
+  void _removeItem(int index) {
+    setState(() {
+      _items[index].dispose();
+      _items.removeAt(index);
+    });
+  }
+
+  double get _subtotal => _items.fold(0, (sum, item) => sum + item.subtotal);
+
+  double get _totalWeight =>
+      _items.where((i) => i.pricingType == PricingType.perKg).fold(0, (sum, item) => sum + item.weight);
+
+  int get _totalItems => _items.fold(0, (sum, item) => sum + item.quantity);
+
+  Future<void> _handleConfirm() async {
+    if (_items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Tambahkan minimal 1 item', style: GoogleFonts.poppins()), backgroundColor: AppTheme.errorColor),
+      );
+      return;
+    }
+
+    for (final item in _items) {
+      if (item.pricingType == PricingType.perKg && item.weight <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Isi berat (kg) untuk "${item.name}"', style: GoogleFonts.poppins()),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+        return;
+      }
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw 'Sesi tidak ditemukan, silakan login ulang.';
+
+      final orderItems = _items
+          .map((item) => OrderItem(
+                serviceTypeId: item.id,
+                serviceName: item.name,
+                quantity: item.pricingType == PricingType.perKg ? 1 : item.quantity,
+                weight: item.pricingType == PricingType.perKg ? item.weight : 0,
+                pricePerUnit: item.price,
+                totalPrice: item.subtotal,
+              ))
+          .toList();
+
+      await OrderRepository(userId: user.uid).confirmPickupWithItems(
+        widget.order.id,
+        items: orderItems,
+        totalWeight: _totalWeight,
+        totalItems: _totalItems,
+        subtotal: _subtotal,
+      );
+
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal konfirmasi: $e', style: GoogleFonts.poppins()), backgroundColor: AppTheme.errorColor),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+        decoration: BoxDecoration(
+          color: AppTheme.cardColor,
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(color: AppTheme.borderColor, borderRadius: BorderRadius.circular(4)),
+                ),
+              ),
+              Text(
+                'Konfirmasi Jemput',
+                style: GoogleFonts.poppins(fontSize: 19, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Catat item & berat cucian ${widget.order.customerName ?? "pelanggan"} (${widget.order.orderNumber})',
+                style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 22),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Item Cucian',
+                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+                  ),
+                  TextButton.icon(
+                    onPressed: _isLoadingServices || _isSaving ? null : _pickService,
+                    icon: const Icon(Icons.add, size: 16),
+                    label: Text('Tambah', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                    style: TextButton.styleFrom(foregroundColor: AppTheme.primaryColor),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppTheme.sm),
+
+              if (_isLoadingServices)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                )
+              else if (_servicesError != null)
+                Text(_servicesError!, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.errorColor))
+              else if (_items.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(AppTheme.md),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
+                  child: Text(
+                    'Belum ada item. Tekan "Tambah" untuk memilih layanan.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+                  ),
+                )
+              else
+                ..._items.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  final isPerKg = item.pricingType == PricingType.perKg;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppTheme.sm),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.md),
+                      decoration: BoxDecoration(
+                        color: AppTheme.backgroundColor,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.name,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textPrimary),
+                                ),
+                              ),
+                              Text(
+                                _formatCurrency(item.subtotal),
+                                style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 12.5, color: AppTheme.primaryColor),
+                              ),
+                              InkWell(
+                                onTap: !_isSaving ? () => _removeItem(index) : null,
+                                borderRadius: BorderRadius.circular(16),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: Icon(Icons.close, size: 16, color: AppTheme.textTertiary),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                isPerKg ? '${_formatCurrency(item.price)} / kg' : '${_formatCurrency(item.price)} / item',
+                                style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
+                              ),
+                              isPerKg
+                                  ? SizedBox(
+                                      width: 92,
+                                      height: 34,
+                                      child: TextField(
+                                        controller: item.weightController,
+                                        enabled: !_isSaving,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                                        decoration: InputDecoration(
+                                          isDense: true,
+                                          suffixText: 'kg',
+                                          suffixStyle: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                          filled: true,
+                                          fillColor: AppTheme.cardColor,
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
+                                        onChanged: (val) {
+                                          final parsed = double.tryParse(val.replaceAll(',', '.'));
+                                          setState(() => item.weight = parsed ?? 0);
+                                        },
+                                      ),
+                                    )
+                                  : Row(
+                                      children: [
+                                        _MiniQtyButton(
+                                          icon: Icons.remove,
+                                          onTap: item.quantity > 1 ? () => setState(() => item.quantity--) : null,
+                                        ),
+                                        SizedBox(
+                                          width: 26,
+                                          child: Text(
+                                            '${item.quantity}',
+                                            textAlign: TextAlign.center,
+                                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                                          ),
+                                        ),
+                                        _MiniQtyButton(
+                                          icon: Icons.add,
+                                          onTap: !_isSaving ? () => setState(() => item.quantity++) : null,
+                                        ),
+                                      ],
+                                    ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+
+              const SizedBox(height: AppTheme.md),
+              Divider(color: AppTheme.borderColor.withOpacity(0.6)),
+              const SizedBox(height: AppTheme.md),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Total', style: GoogleFonts.poppins(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+                  Text(
+                    _formatCurrency(_subtotal),
+                    style: GoogleFonts.poppins(fontSize: 19, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppTheme.xl),
+
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _handleConfirm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(
+                          'Konfirmasi Sudah Dijemput',
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniQtyButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _MiniQtyButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = onTap != null;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          color: isEnabled ? AppTheme.primaryColor.withOpacity(0.1) : AppTheme.cardColor,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 13, color: isEnabled ? AppTheme.primaryColor : AppTheme.textTertiary),
+      ),
+    );
+  }
+}
 
 /// Kartu ringkasan angka (perlu dijemput / siap diantar / ambil sendiri).
 /// Dibuat compact & modern dengan aksen warna lembut di ikon.

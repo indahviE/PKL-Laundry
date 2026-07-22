@@ -850,7 +850,7 @@ enum OrderStatus {
   pending,
   confirmed,
   inProgress,
-  washing,
+  washing,3
   drying,
   ironing,
   qualityCheck,
