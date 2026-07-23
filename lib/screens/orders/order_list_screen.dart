@@ -7,6 +7,77 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 
+// ============================================
+// DESIGN TOKENS (dari DESIGN.md / code.html referensi)
+// Di-hardcode di sini biar tampilan layar ini benar-benar presisi
+// sama referensi desain, terlepas dari nilai di AppTheme.
+// ============================================
+const Color _cSurface = Color(0xFFFBF9F8);
+const Color _cCard = Color(0xFFFFFFFF);
+const Color _cOnSurface = Color(0xFF1B1C1C);
+const Color _cOnSurfaceVariant = Color(0xFF404752);
+const Color _cOutlineVariant = Color(0xFFBFC7D4);
+const Color _cPrimary = Color(0xFF0061A4); // teks/aksen di atas card
+const Color _cPrimaryContainer = Color(0xFF2196F3); // tombol/aksi
+const Color _cSurfaceContainerHighest = Color(0xFFE4E2E1); // chip "Semua"
+const Color _cSecondaryContainer = Color(0xFFE0E3E6); // empty state bg
+const Color _cOnSecondaryContainer = Color(0xFF626567); // empty state icon
+const Color _cError = Color(0xFFBA1A1A);
+
+/// Palet status: dipetakan ke warna Tailwind (yellow/blue/purple/green/red)
+/// sesuai referensi HTML (filter chip status & status pill di order card).
+class _StatusStyle {
+  final Color chipBg; // dipakai untuk filter chip (versi -50)
+  final Color chipBorder; // filter chip (versi -200)
+  final Color chipText; // filter chip (versi -800)
+  final Color pillBg; // status pill di card (versi -100)
+  final Color pillText; // status pill di card (versi -700)
+
+  const _StatusStyle({
+    required this.chipBg,
+    required this.chipBorder,
+    required this.chipText,
+    required this.pillBg,
+    required this.pillText,
+  });
+}
+
+const _statusYellow = _StatusStyle(
+  chipBg: Color(0xFFFEFCE8),
+  chipBorder: Color(0xFFFEF08A),
+  chipText: Color(0xFF854D0E),
+  pillBg: Color(0xFFFEF9C3),
+  pillText: Color(0xFFA16207),
+);
+const _statusBlue = _StatusStyle(
+  chipBg: Color(0xFFEFF6FF),
+  chipBorder: Color(0xFFBFDBFE),
+  chipText: Color(0xFF1E40AF),
+  pillBg: Color(0xFFDBEAFE),
+  pillText: Color(0xFF1D4ED8),
+);
+const _statusPurple = _StatusStyle(
+  chipBg: Color(0xFFFAF5FF),
+  chipBorder: Color(0xFFE9D5FF),
+  chipText: Color(0xFF6B21A8),
+  pillBg: Color(0xFFF3E8FF),
+  pillText: Color(0xFF7E22CE),
+);
+const _statusGreen = _StatusStyle(
+  chipBg: Color(0xFFF0FDF4),
+  chipBorder: Color(0xFFBBF7D0),
+  chipText: Color(0xFF166534),
+  pillBg: Color(0xFFDCFCE7),
+  pillText: Color(0xFF15803D),
+);
+const _statusRed = _StatusStyle(
+  chipBg: Color(0xFFFEF2F2),
+  chipBorder: Color(0xFFFECACA),
+  chipText: Color(0xFF991B1B),
+  pillBg: Color(0xFFFEE2E2),
+  pillText: Color(0xFFB91C1C),
+);
+
 /// Order Model
 class OrderItem {
   final String id; // Firestore document id
@@ -20,6 +91,7 @@ class OrderItem {
   final String orderType; // 'walk_in' / 'pickup' -> cara baju MASUK
   final String deliveryType; // 'self_pickup' / 'delivery' -> cara baju KELUAR
   final String laundryId; // cabang tempat order ini dibuat
+  final String serviceSummary; // ringkasan nama layanan, dari items[].service_name
 
   OrderItem({
     required this.id,
@@ -33,6 +105,7 @@ class OrderItem {
     required this.orderType,
     required this.deliveryType,
     required this.laundryId,
+    required this.serviceSummary,
   });
 
   /// Mapping dari dokumen Firestore users/{uid}/orders/{orderId}
@@ -40,6 +113,20 @@ class OrderItem {
   factory OrderItem.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
     final orderDate = data['order_date'];
+
+    // Nama layanan disimpan per-baris di dalam array `items`
+    // (items[].service_name), bukan field terpisah di level order -
+    // sama persis skema yang dipakai OrderDetailScreen (_OrderLineItem).
+    final rawItems = (data['items'] as List?) ?? [];
+    final serviceNames = rawItems
+        .map((e) => (Map<String, dynamic>.from(e as Map)['service_name'] ?? '') as String)
+        .where((name) => name.isNotEmpty)
+        .toList();
+    final serviceSummary = serviceNames.isEmpty
+        ? '-'
+        : serviceNames.length == 1
+            ? serviceNames.first
+            : '${serviceNames.first} +${serviceNames.length - 1} lainnya';
 
     return OrderItem(
       id: doc.id,
@@ -55,21 +142,18 @@ class OrderItem {
       orderType: (data['order_type'] ?? 'walk_in') as String,
       deliveryType: (data['delivery_type'] ?? 'self_pickup') as String,
       laundryId: (data['laundry_id'] ?? '') as String,
+      serviceSummary: serviceSummary,
     );
   }
 
-  // Helper buat pill "baju masuk" & "baju keluar" - style disamain
-  // dengan _OrderLogisticsCard di PickupDeliveryScreen biar konsisten.
   bool get isPickup => orderType == 'pickup';
   bool get isDelivery => deliveryType == 'delivery';
 
   String get orderTypeLabel => isPickup ? 'Dijemput' : 'Walk-in';
   IconData get orderTypeIcon => isPickup ? Icons.call_received_rounded : Icons.storefront_outlined;
-  Color get orderTypeColor => isPickup ? const Color(0xFFB197FC) : AppTheme.textTertiary;
 
   String get deliveryTypeLabel => isDelivery ? 'Diantar' : 'Ambil Sendiri';
   IconData get deliveryTypeIcon => isDelivery ? Icons.call_made_rounded : Icons.storefront_outlined;
-  Color get deliveryTypeColor => isDelivery ? AppTheme.primaryColor : const Color(0xFF51CF66);
 }
 
 /// Opsi cabang buat filter chip, di-fetch dari users/{uid}/laundries
@@ -135,7 +219,8 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
   }
 
   /// Ambil semua cabang aktif milik company ini, buat isi chip filter
-  /// (cuma ditampilkan kalau > 1, lihat _showLaundryFilter).
+  /// (cuma ditampilkan kalau > 1, lihat _showLaundryFilter) dan juga
+  /// buat resolve nama cabang yang ditampilkan di tiap order card.
   Future<void> _fetchLaundries() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -163,6 +248,16 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
       // fallback ke "Semua Cabang" karena _selectedLaundryId null).
       // List order utama tidak terganggu oleh kegagalan ini.
     }
+  }
+
+  /// Resolve nama cabang dari laundryId, buat ditampilkan di order card.
+  /// Fallback ke '-' kalau kosong / belum ke-load.
+  String _laundryNameFor(String laundryId) {
+    if (laundryId.isEmpty) return '-';
+    for (final l in _laundriesList) {
+      if (l.id == laundryId) return l.name;
+    }
+    return '-';
   }
 
   /// Subscribe realtime ke users/{uid}/orders di Firestore.
@@ -203,39 +298,39 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
     );
   }
 
-/// Status-status mentah (dari OrderStatus enum) yang masuk kelompok
-/// "Diproses" di UI - staff gak perlu breakdown per tahap (dicuci/
-/// dikeringkan/disetrika/dst), cukup tau order lagi "diproses".
-static const List<String> _inProgressStatuses = [
-  'inProgress',
-  'washing',
-  'drying',
-  'ironing',
-  'qualityCheck',
-];
+  /// Status-status mentah (dari OrderStatus enum) yang masuk kelompok
+  /// "Diproses" di UI - staff gak perlu breakdown per tahap (dicuci/
+  /// dikeringkan/disetrika/dst), cukup tau order lagi "diproses".
+  static const List<String> _inProgressStatuses = [
+    'inProgress',
+    'washing',
+    'drying',
+    'ironing',
+    'qualityCheck',
+  ];
 
-/// Filter dan search orders
-void _applyFiltersAndSearch() {
-  _filteredOrders = _allOrders.where((order) {
-    bool statusMatch;
-    if (_selectedFilter == 'all') {
-      statusMatch = true;
-    } else if (_selectedFilter == 'inProgress') {
-      statusMatch = _inProgressStatuses.contains(order.status);
-    } else {
-      statusMatch = order.status == _selectedFilter;
-    }
+  /// Filter dan search orders
+  void _applyFiltersAndSearch() {
+    _filteredOrders = _allOrders.where((order) {
+      bool statusMatch;
+      if (_selectedFilter == 'all') {
+        statusMatch = true;
+      } else if (_selectedFilter == 'inProgress') {
+        statusMatch = _inProgressStatuses.contains(order.status);
+      } else {
+        statusMatch = order.status == _selectedFilter;
+      }
 
-    // 'all' -> "Semua Cabang", jadi semua order lolos filter cabang.
-    bool laundryMatch = _selectedLaundryId == 'all' || order.laundryId == _selectedLaundryId;
+      // 'all' -> "Semua Cabang", jadi semua order lolos filter cabang.
+      bool laundryMatch = _selectedLaundryId == 'all' || order.laundryId == _selectedLaundryId;
 
-    bool searchMatch = _searchController.text.isEmpty ||
-        order.customerName.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-        order.orderNumber.toLowerCase().contains(_searchController.text.toLowerCase());
-    return statusMatch && laundryMatch && searchMatch;
-  }).toList();
-  setState(() {});
-}
+      bool searchMatch = _searchController.text.isEmpty ||
+          order.customerName.toLowerCase().contains(_searchController.text.toLowerCase()) ||
+          order.orderNumber.toLowerCase().contains(_searchController.text.toLowerCase());
+      return statusMatch && laundryMatch && searchMatch;
+    }).toList();
+    setState(() {});
+  }
 
   /// Buka Create Order screen. List sudah realtime lewat
   /// snapshots(), jadi begitu order baru tersimpan, dia
@@ -244,31 +339,28 @@ void _applyFiltersAndSearch() {
     await context.push<bool>('/orders/create');
   }
 
-/// Get status color
-  Color _getStatusColor(String status) {
+  /// Palet status (chip filter + status pill) - disamain sama referensi
+  /// desain (yellow/blue/purple/green/red).
+  _StatusStyle _statusStyle(String status) {
     switch (status) {
       case 'pending':
-        return Colors.orange;
+        return _statusYellow;
       case 'confirmed':
-        return const Color(0xFF9B7EDE);
+        return _statusPurple;
       case 'inProgress':
-        return const Color(0xFF5DADE2);
       case 'washing':
-        return const Color(0xFF5DADE2);
       case 'drying':
-        return const Color(0xFFF4A259);
       case 'ironing':
-        return const Color(0xFFF4A259);
       case 'qualityCheck':
-        return const Color(0xFF5DADE2);
+        return _statusBlue;
       case 'ready':
-        return const Color(0xFF51CF66);
+        return _statusPurple;
       case 'completed':
-        return const Color(0xFF51CF66);
+        return _statusGreen;
       case 'cancelled':
-        return Colors.red;
+        return _statusRed;
       default:
-        return Colors.grey;
+        return _statusBlue;
     }
   }
 
@@ -313,7 +405,7 @@ void _applyFiltersAndSearch() {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: _cSurface,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -334,17 +426,15 @@ void _applyFiltersAndSearch() {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildHeader(context, isMobile),
-                        const SizedBox(height: 22),
-                        _buildSearchBar(context),
                         const SizedBox(height: AppTheme.lg),
-                        _buildFilterButtons(context),
+                        _buildSearchBar(context),
+                        const SizedBox(height: AppTheme.md),
                         if (_showLaundryFilter) ...[
-                          const SizedBox(height: AppTheme.md),
                           _buildLaundryFilterButtons(context),
+                          const SizedBox(height: AppTheme.sm),
                         ],
-                        const SizedBox(height: AppTheme.xl),
-                        _buildStatsSummary(context, isMobile),
-                        const SizedBox(height: AppTheme.xl),
+                        _buildFilterButtons(context),
+                        const SizedBox(height: AppTheme.lg),
                         if (_isLoading)
                           _buildLoadingState(context)
                         else if (_errorMessage != null)
@@ -366,157 +456,94 @@ void _applyFiltersAndSearch() {
     );
   }
 
-  /// Build header (solid, no gradient) — sama gayanya dengan CustomersListScreen
-  ///
-  /// FIX overflow mobile: judul + subtitle sekarang dibungkus Expanded
-  /// (sebelumnya nggak, jadi Row badge+judul+tombol "Baru" bisa lebih
-  /// lebar dari layar HP -> overflow). Khusus mobile tombolnya diringkas
-  /// jadi icon-only bulat, persis pola yang dipakai di CustomersListScreen.
+  /// Header - versi flat sesuai referensi: icon outline + judul, warna
+  /// primary, tanpa kotak/box di belakang icon, tanpa subtitle. Tombol
+  /// tambah bulat (primary-container) di kanan.
   Widget _buildHeader(BuildContext context, bool isMobile) {
     final t = AppLocalizations.of(context)!;
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: Icon(
-            Icons.receipt_long_rounded,
-            color: AppTheme.primaryColor,
-            size: 22,
-          ),
+        const Icon(
+          Icons.local_laundry_service_outlined,
+          color: _cPrimary,
+          size: 24,
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 10),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                t.ordersListTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                t.ordersListSubtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w400,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-            ],
+          child: Text(
+            t.ordersListTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.beVietnamPro(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+              color: _cPrimary,
+            ),
           ),
         ),
         const SizedBox(width: AppTheme.md),
-        if (isMobile)
-          _CompactAddButton(onTap: () => _openCreateOrder(context))
-        else
-          ElevatedButton.icon(
-            onPressed: () => _openCreateOrder(context),
-            icon: const Icon(Icons.note_add_outlined, size: 18),
-            label: Text(
-              t.newOrderButtonLabel,
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppTheme.lg,
-                vertical: AppTheme.md,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-              ),
-            ),
-          ),
+        _AddButton(onTap: () => _openCreateOrder(context), isMobile: isMobile, label: t.newOrderButtonLabel),
       ],
     );
   }
 
-  /// Build search bar
+  /// Build search bar - tanpa tinggi container yang dipaksa, biar
+  /// TextField (isDense) yang atur tinggi natural-nya sendiri (~44px),
+  /// jadi ga kelihatan gemuk atau ikonnya nggak center.
   Widget _buildSearchBar(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: _cCard,
+        border: Border.all(color: _cOutlineVariant),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
         controller: _searchController,
         onChanged: (value) => _applyFiltersAndSearch(),
-        style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+        cursorColor: _cPrimary,
+        style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _cOnSurface),
         decoration: InputDecoration(
+          isDense: true,
           hintText: t.searchOrderHint,
-          hintStyle: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textTertiary),
-          prefixIcon: Icon(Icons.search, color: AppTheme.textTertiary),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
-          ),
-          filled: true,
-          fillColor: AppTheme.cardColor,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.lg,
-            vertical: AppTheme.md,
-          ),
+          hintStyle: GoogleFonts.beVietnamPro(fontSize: 13.5, color: const Color(0xFF707883)),
+          prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF707883)),
+          prefixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 20),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          filled: false,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 0),
         ),
       ),
     );
   }
 
-  /// Build filter chip CABANG - baris terpisah di bawah filter status,
-  /// cuma dirender kalau _showLaundryFilter true (cabang > 1). Chip
-  /// pertama selalu "Semua Cabang", sisanya sesuai nama cabang aktif.
-  /// Pola sama persis dengan CustomersListScreen.
+  /// Filter chip CABANG - pill penuh (rounded-full). Selected = solid
+  /// primary + teks putih, unselected = putih + border outline-variant.
+  /// Cuma dirender kalau _showLaundryFilter true (cabang > 1).
   Widget _buildLaundryFilterButtons(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
         children: [
-          Padding(
-            padding: const EdgeInsets.only(right: AppTheme.md),
-            child: _buildLaundryChip(
-              label: 'Semua Cabang',
-              isSelected: _selectedLaundryId == 'all',
-              onTap: () {
-                setState(() => _selectedLaundryId = 'all');
-                _applyFiltersAndSearch();
-              },
-            ),
+          _buildLaundryChip(
+            label: 'Semua Cabang',
+            isSelected: _selectedLaundryId == 'all',
+            onTap: () {
+              setState(() => _selectedLaundryId = 'all');
+              _applyFiltersAndSearch();
+            },
           ),
           ..._laundriesList.map((laundry) {
-            final isLast = laundry.id == _laundriesList.last.id;
             return Padding(
-              padding: EdgeInsets.only(right: isLast ? 0 : AppTheme.md),
+              padding: const EdgeInsets.only(left: AppTheme.sm),
               child: _buildLaundryChip(
                 label: laundry.name,
                 isSelected: _selectedLaundryId == laundry.id,
@@ -537,86 +564,25 @@ void _applyFiltersAndSearch() {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return FilterChip(
-      selected: isSelected,
-      onSelected: (_) => onTap(),
-      showCheckmark: false,
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.storefront_outlined, size: 15),
-          const SizedBox(width: AppTheme.sm),
-          Text(label),
-        ],
-      ),
-      backgroundColor: AppTheme.cardColor,
-      selectedColor: AppTheme.primaryColor.withOpacity(0.12),
-      side: BorderSide(
-        color: isSelected ? AppTheme.primaryColor.withOpacity(0.4) : AppTheme.borderColor,
-      ),
-      labelStyle: GoogleFonts.poppins(
-        fontSize: 12.5,
-        color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
-
-  /// Build filter buttons
-  Widget _buildFilterButtons(BuildContext context) {
-  final filters = [
-    ('all', 'Semua', Icons.all_inbox_outlined),
-    ('pending', 'Menunggu', Icons.schedule_outlined),
-    ('inProgress', 'Diproses', Icons.local_laundry_service_outlined),
-    ('ready', 'Siap Diambil', Icons.inventory_2_outlined),
-    ('completed', 'Selesai', Icons.check_circle_outline),
-    ('cancelled', 'Dibatalkan', Icons.cancel_outlined),
-  ];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(
-          filters.length,
-          (index) => Padding(
-            padding: EdgeInsets.only(right: index < filters.length - 1 ? AppTheme.md : 0),
-            child: FilterChip(
-              selected: _selectedFilter == filters[index].$1,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedFilter = filters[index].$1;
-                });
-                _applyFiltersAndSearch();
-              },
-              showCheckmark: false,
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(filters[index].$3, size: 16),
-                  const SizedBox(width: AppTheme.sm),
-                  Flexible(
-                    child: Text(
-                      filters[index].$2,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false,
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: AppTheme.cardColor,
-              selectedColor: AppTheme.primaryColor.withOpacity(0.12),
-              side: BorderSide(
-                color: _selectedFilter == filters[index].$1
-                    ? AppTheme.primaryColor.withOpacity(0.4)
-                    : AppTheme.borderColor,
-              ),
-              labelStyle: GoogleFonts.poppins(
-                fontSize: 12.5,
-                color: _selectedFilter == filters[index].$1
-                    ? AppTheme.primaryColor
-                    : AppTheme.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? _cPrimary : _cCard,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: isSelected ? _cPrimary : _cOutlineVariant),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.beVietnamPro(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.02,
+              color: isSelected ? Colors.white : _cOnSurfaceVariant,
             ),
           ),
         ),
@@ -624,44 +590,79 @@ void _applyFiltersAndSearch() {
     );
   }
 
-  /// Build stats summary
-  Widget _buildStatsSummary(BuildContext context, bool isMobile) {
-    final t = AppLocalizations.of(context)!;
-    final totalOrders = _filteredOrders.length;
-    final totalAmount = _filteredOrders.fold<double>(
-      0,
-      (sum, order) => sum + order.amount,
-    );
+  /// Filter chip STATUS - selalu bertona warna sesuai statusnya (persis
+  /// referensi: kuning Menunggu, biru Diproses, ungu Siap Diambil, hijau
+  /// Selesai, merah Dibatalkan). "Semua" pakai netral surface-container.
+  /// Yang lagi aktif ditebalkan border & warna latarnya.
+  Widget _buildFilterButtons(BuildContext context) {
+    final filters = <(String, String)>[
+      ('all', 'Semua'),
+      ('pending', 'Menunggu'),
+      ('inProgress', 'Diproses'),
+      ('ready', 'Siap Diambil'),
+      ('completed', 'Selesai'),
+      ('cancelled', 'Dibatalkan'),
+    ];
 
-    return Row(
-      children: [
-        Expanded(
-          child: _StatBox(
-            title: t.orderTotalOrdersLabel,
-            value: '$totalOrders',
-            icon: Icons.receipt_outlined,
-            color: AppTheme.primaryColor,
-          ),
-        ),
-        const SizedBox(width: AppTheme.lg),
-        Expanded(
-          child: _StatBox(
-            title: t.orderTotalRevenueLabel,
-            value: _formatCurrency(totalAmount),
-            icon: Icons.trending_up,
-            color: const Color(0xFF51CF66),
-          ),
-        ),
-      ],
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: AppTheme.sm),
+        itemBuilder: (context, index) {
+          final key = filters[index].$1;
+          final label = filters[index].$2;
+          final isSelected = _selectedFilter == key;
+          final isAll = key == 'all';
+          final style = isAll ? null : _statusStyle(key);
+
+          final bg = isAll ? _cSurfaceContainerHighest : style!.chipBg;
+          final border = isAll ? Colors.transparent : style!.chipBorder;
+          final text = isAll ? _cOnSurface : style!.chipText;
+
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () {
+                setState(() => _selectedFilter = key);
+                _applyFiltersAndSearch();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: border,
+                    width: isSelected && !isAll ? 1.5 : 1,
+                  ),
+                ),
+                child: Text(
+                  label,
+                  style: GoogleFonts.beVietnamPro(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.02,
+                    color: text,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
   /// Build loading state
   Widget _buildLoadingState(BuildContext context) {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
-        child: CircularProgressIndicator(color: AppTheme.primaryColor),
+        padding: EdgeInsets.symmetric(vertical: AppTheme.xxl),
+        child: CircularProgressIndicator(color: _cPrimary),
       ),
     );
   }
@@ -673,17 +674,17 @@ void _applyFiltersAndSearch() {
         padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
         child: Column(
           children: [
-            Icon(Icons.error_outline_rounded, size: 40, color: AppTheme.errorColor),
+            const Icon(Icons.error_outline_rounded, size: 40, color: _cError),
             const SizedBox(height: AppTheme.md),
             Text(
               _errorMessage ?? '',
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+              style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
             ),
             const SizedBox(height: AppTheme.lg),
             TextButton(
               onPressed: _listenToOrders,
-              child: Text('Coba lagi', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              child: Text('Coba lagi', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cPrimary)),
             ),
           ],
         ),
@@ -691,7 +692,7 @@ void _applyFiltersAndSearch() {
     );
   }
 
-  /// Build empty state
+  /// Build empty state - lingkaran secondary-container + icon, sesuai referensi.
   Widget _buildEmptyState(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     // Beda pesan kalau kosong gara-gara filter cabang lagi aktif (bukan
@@ -701,54 +702,56 @@ void _applyFiltersAndSearch() {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
+        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 32),
         child: Column(
           children: [
             Container(
-              width: 84,
-              height: 84,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.08),
+              width: 128,
+              height: 128,
+              decoration: const BoxDecoration(
+                color: _cSecondaryContainer,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.inbox_outlined,
-                size: 40,
-                color: AppTheme.primaryColor.withOpacity(0.6),
+              child: const Icon(
+                Icons.shopping_basket_outlined,
+                size: 56,
+                color: _cOnSecondaryContainer,
               ),
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
               isFilteredByLaundry ? 'Belum ada pesanan di cabang ini' : t.orderNoOrdersLabel,
-              style: GoogleFonts.poppins(
-                fontSize: 15,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.beVietnamPro(
+                fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
+                letterSpacing: -0.01,
+                color: _cOnSurface,
               ),
             ),
             const SizedBox(height: AppTheme.sm),
             Text(
               isFilteredByLaundry
-                  ? 'Coba pilih cabang lain, atau buat pesanan baru untuk cabang ini.'
-                  : 'Buat pesanan baru untuk memulai',
+                  ? 'Silakan tambahkan pesanan baru atau coba pilih filter cabang yang berbeda.'
+                  : t.orderCreateOrderButtonLabel,
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: AppTheme.textSecondary,
+              style: GoogleFonts.beVietnamPro(
+                fontSize: 14,
+                color: _cOnSurfaceVariant,
               ),
             ),
             const SizedBox(height: AppTheme.xl),
             ElevatedButton.icon(
               onPressed: () => _openCreateOrder(context),
               icon: const Icon(Icons.note_add_outlined, size: 18),
-              label: Text(t.orderCreateOrderButtonLabel, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              label: Text(t.orderCreateOrderButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: _cPrimaryContainer,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: AppTheme.xl, vertical: AppTheme.md),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
@@ -764,20 +767,25 @@ void _applyFiltersAndSearch() {
     return Column(
       children: List.generate(
         _filteredOrders.length,
-        (index) => Column(
-          children: [
-            _OrderCard(
-              order: _filteredOrders[index],
-              statusColor: _getStatusColor(_filteredOrders[index].status),
-              statusLabel: _getStatusLabel(_filteredOrders[index].status, t),
-              formattedAmount: _formatCurrency(_filteredOrders[index].amount),
-              formattedDate: _formatDate(_filteredOrders[index].date),
-              onTap: () => context.push('/orders/${_filteredOrders[index].id}'),
-            ),
-            if (index < _filteredOrders.length - 1)
-              const SizedBox(height: AppTheme.lg),
-          ],
-        ),
+        (index) {
+          final order = _filteredOrders[index];
+          final style = _statusStyle(order.status);
+          return Column(
+            children: [
+              _OrderCard(
+                order: order,
+                pillBg: style.pillBg,
+                pillText: style.pillText,
+                statusLabel: _getStatusLabel(order.status, t),
+                formattedAmount: _formatCurrency(order.amount),
+                formattedDate: _formatDate(order.date),
+                cabangName: _laundryNameFor(order.laundryId),
+                onTap: () => context.push('/orders/${order.id}'),
+              ),
+              if (index < _filteredOrders.length - 1) const SizedBox(height: AppTheme.md),
+            ],
+          );
+        },
       ),
     );
   }
@@ -787,144 +795,117 @@ void _applyFiltersAndSearch() {
 // HELPER WIDGETS
 // ============================================
 
-/// Tombol "Baru" versi ringkas (icon-only, bulat) khusus mobile,
-/// biar header nggak overflow saat layar sempit — sama pola dengan
-/// _CompactAddButton di CustomersListScreen.
-class _CompactAddButton extends StatelessWidget {
+/// Tombol tambah pesanan. Di mobile: bulat, icon-only (persis referensi
+/// desain — 40x40, bg primary-container). Di desktop: pill icon+label
+/// biar lebih jelas, tetap warna primary-container.
+class _AddButton extends StatelessWidget {
   final VoidCallback onTap;
+  final bool isMobile;
+  final String label;
 
-  const _CompactAddButton({required this.onTap});
+  const _AddButton({required this.onTap, required this.isMobile, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppTheme.primaryColor,
-      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        onTap: onTap,
-        child: const SizedBox(
-          width: 44,
-          height: 44,
-          child: Icon(Icons.note_add_outlined, color: Colors.white, size: 20),
+    if (isMobile) {
+      return Material(
+        color: _cPrimaryContainer,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: onTap,
+          child: const SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(Icons.add, color: Colors.white, size: 22),
+          ),
+        ),
+      );
+    }
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: const Icon(Icons.add, size: 18),
+      label: Text(label, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13.5)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: _cPrimaryContainer,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg, vertical: AppTheme.md),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(999),
         ),
       ),
     );
   }
 }
 
-/// Stat Box Widget — sama persis gayanya dengan CustomersListScreen
-class _StatBox extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _StatBox({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.lg),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(AppTheme.sm),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 20,
-            ),
-          ),
-          const SizedBox(height: AppTheme.md),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: AppTheme.textTertiary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Pill kecil buat nunjukkin 1 atribut order (cara baju masuk / keluar).
-/// Style disamain persis dengan _Pill di PickupDeliveryScreen supaya
-/// konsisten secara visual di kedua layar.
-class _Pill extends StatelessWidget {
+/// Satu baris kecil icon + label buat info grid di order card
+/// (cabang, tanggal, cara masuk, cara keluar).
+class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
+  final bool alignEnd;
 
-  const _Pill({required this.icon, required this.label, required this.color});
+  const _InfoRow({required this.icon, required this.label, this.alignEnd = false});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    if (alignEnd) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(label, style: GoogleFonts.poppins(fontSize: 10.5, fontWeight: FontWeight.w700, color: color)),
+          Flexible(
+            child: Text(
+              label,
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Icon(icon, size: 18, color: _cOnSurfaceVariant),
         ],
-      ),
+      );
+    }
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: _cOnSurfaceVariant),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// Order Card Widget — sama persis gayanya dengan CustomerCard.
-/// Sekarang ada tambahan 2 pill (baju masuk & baju keluar) yang
-/// dibaca langsung dari order.orderType / order.deliveryType, yang
-/// udah ditentuin pas order dibuat di CreateOrderScreen.
+/// Order Card Widget - dibuat presisi sama referensi desain:
+/// nomor order (primary, bold) di atas nama pelanggan (headline-md),
+/// status pill bulat berwarna di kanan atas, info grid 2 kolom (cabang,
+/// tanggal, cara masuk, cara keluar), lalu divider + total pembayaran,
+/// dengan shadow & radius sesuai token desain.
 class _OrderCard extends StatelessWidget {
   final OrderItem order;
-  final Color statusColor;
+  final Color pillBg;
+  final Color pillText;
   final String statusLabel;
   final String formattedAmount;
   final String formattedDate;
+  final String cabangName;
   final VoidCallback onTap;
 
   const _OrderCard({
     required this.order,
-    required this.statusColor,
+    required this.pillBg,
+    required this.pillText,
     required this.statusLabel,
     required this.formattedAmount,
     required this.formattedDate,
+    required this.cabangName,
     required this.onTap,
   });
 
@@ -932,25 +913,27 @@ class _OrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(AppTheme.lg),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.cardColor,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          color: _cCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.5)),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.06),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header: no. order + nama pelanggan (kiri), status pill (kanan)
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Column(
@@ -959,19 +942,20 @@ class _OrderCard extends StatelessWidget {
                       Text(
                         order.orderNumber,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.beVietnamPro(
                           fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: AppTheme.textPrimary,
+                          fontSize: 14,
+                          color: _cPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         order.customerName,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 12.5,
-                          color: AppTheme.textSecondary,
+                        style: GoogleFonts.beVietnamPro(
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w600,
+                          color: _cOnSurface,
                         ),
                       ),
                     ],
@@ -979,83 +963,59 @@ class _OrderCard extends StatelessWidget {
                 ),
                 const SizedBox(width: AppTheme.sm),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.md,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    color: pillBg,
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    statusLabel,
-                    style: GoogleFonts.poppins(
+                    statusLabel.toUpperCase(),
+                    style: GoogleFonts.beVietnamPro(
                       fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
+                      fontWeight: FontWeight.w700,
+                      color: pillText,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: AppTheme.sm),
-            // Pill "baju masuk" (walk-in/dijemput) & "baju keluar"
-            // (ambil sendiri/diantar) - dibungkus Wrap biar otomatis
-            // pindah baris di layar sempit.
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
+            const SizedBox(height: 12),
+            // Info grid 2x2: cabang & tanggal, lalu cara masuk & cara keluar.
+            // Kolom kanan (tanggal / item) dirender rata kanan (alignEnd)
+            // biar nempel ke ujung kanan card, sesuai referensi desain
+            // (bukan ngambang deket tengah).
+            Row(
               children: [
-                _Pill(icon: order.orderTypeIcon, label: order.orderTypeLabel, color: order.orderTypeColor),
-                _Pill(icon: order.deliveryTypeIcon, label: order.deliveryTypeLabel, color: order.deliveryTypeColor),
+                Expanded(child: _InfoRow(icon: Icons.location_on_outlined, label: cabangName)),
+                const SizedBox(width: AppTheme.sm),
+                Expanded(child: _InfoRow(icon: Icons.calendar_today_outlined, label: formattedDate, alignEnd: true)),
               ],
             ),
-            const SizedBox(height: AppTheme.md),
-            Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
-            const SizedBox(height: AppTheme.md),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: _InfoRow(icon: Icons.dry_cleaning_outlined, label: order.serviceSummary)),
+                const SizedBox(width: AppTheme.sm),
+                Expanded(child: _InfoRow(icon: Icons.shopping_bag_outlined, label: '${order.itemCount} item', alignEnd: true)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Divider(height: 1, color: _cOutlineVariant.withOpacity(0.3)),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.shopping_bag_outlined,
-                      size: 15,
-                      color: AppTheme.textTertiary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${order.itemCount} item',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11.5,
-                        color: AppTheme.textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today_outlined,
-                      size: 15,
-                      color: AppTheme.textTertiary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      formattedDate,
-                      style: GoogleFonts.poppins(
-                        fontSize: 11.5,
-                        color: AppTheme.textTertiary,
-                      ),
-                    ),
-                  ],
+                Text(
+                  'Total Pembayaran',
+                  style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
                 ),
                 Text(
                   formattedAmount,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13.5,
+                  style: GoogleFonts.beVietnamPro(
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.primaryColor,
+                    color: _cPrimary,
                   ),
                 ),
               ],

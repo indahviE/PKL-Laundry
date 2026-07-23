@@ -13,6 +13,42 @@ import '../../models/order.dart';
 import '../../models/transaction.dart';
 import '../../repositories/order_repository.dart';
 
+// ============================================
+// DESIGN TOKENS (dari DESIGN.md / code.html referensi "Order Detail -
+// NetWash"). Di-hardcode di sini - sama pola dengan OrdersListScreen -
+// biar layar ini presisi sama referensi desain, terlepas dari nilai
+// AppTheme lama (yang sebelumnya dipakai screen ini, gaya Poppins/biru
+// generik).
+// ============================================
+const Color _cSurface = Color(0xFFFBF9F8);
+const Color _cSurfaceContainerLow = Color(0xFFF5F3F3);
+const Color _cSurfaceContainer = Color(0xFFF0EDED);
+const Color _cSurfaceContainerHighest = Color(0xFFE4E2E1);
+const Color _cCard = Color(0xFFFFFFFF);
+const Color _cOnSurface = Color(0xFF1B1C1C);
+const Color _cOnSurfaceVariant = Color(0xFF404752);
+const Color _cOutlineVariant = Color(0xFFBFC7D4);
+const Color _cPrimary = Color(0xFF0061A4);
+const Color _cPrimaryContainer = Color(0xFF2196F3);
+const Color _cPrimaryFixed = Color(0xFFD1E4FF); // bg chip "estimasi"/ring aktif
+const Color _cOnPrimaryFixedVariant = Color(0xFF00497D); // teks di atas primaryFixed
+const Color _cSecondary = Color(0xFF5B5F61);
+const Color _cSecondaryContainer = Color(0xFFE0E3E6);
+const Color _cTertiaryFixed = Color(0xFFD6E5EF); // bg ikon cabang
+const Color _cOnTertiaryFixed = Color(0xFF0F1D25);
+const Color _cError = Color(0xFFBA1A1A);
+const Color _cGreenBg = Color(0xFFDCFCE7);
+const Color _cGreenText = Color(0xFF15803D);
+const Color _cYellowBg = Color(0xFFFEF9C3);
+const Color _cYellowText = Color(0xFFA16207);
+const Color _cRedBg = Color(0xFFFEE2E2);
+const Color _cRedText = Color(0xFFB91C1C);
+
+// Radius token dari referensi (tailwind config): DEFAULT/lg = 16px,
+// xl = 20px (dipakai untuk card & tombol besar), full = pill.
+const double _rLg = 16;
+const double _rXl = 20;
+
 /// Model item pesanan
 class _OrderLineItem {
   final String name;
@@ -113,6 +149,32 @@ class _OrderDetailData {
     return remaining < 0 ? 0 : remaining;
   }
 
+  /// Total jumlah item (sum quantity semua baris), dipakai di kartu
+  /// ringkasan "Jumlah Item" (bento grid), padanan "Total Berat" di
+  /// referensi desain - proyek ini nggak nyimpen berat, jadi dipakai
+  /// jumlah item sebagai gantinya.
+  int get totalItemCount => items.fold<int>(0, (sum, i) => sum + i.quantity);
+
+  /// Ringkasan nama layanan buat kartu "Layanan" - sama pola dengan
+  /// OrdersListScreen.serviceSummary.
+  String get serviceSummary {
+    if (items.isEmpty) return '-';
+    if (items.length == 1) return items.first.name;
+    return '${items.first.name} +${items.length - 1} lainnya';
+  }
+
+  bool get isDelivery => deliveryType == 'delivery';
+  String get deliveryTypeLabel => isDelivery ? 'Diantar' : 'Ambil Sendiri';
+  IconData get deliveryTypeIcon => isDelivery ? Icons.local_shipping_outlined : Icons.storefront_outlined;
+
+  /// Cari timestamp status tertentu dari riwayat (dipakai timeline).
+  DateTime? timestampForStatus(String status) {
+    for (final h in statusHistory) {
+      if (h.status == status) return h.timestamp;
+    }
+    return null;
+  }
+
   factory _OrderDetailData.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
     final orderDate = data['order_date'];
@@ -138,6 +200,104 @@ class _OrderDetailData {
       deliveryType: (data['delivery_type'] ?? 'self_pickup') as String,
       laundryId: (data['laundry_id'] ?? '') as String,
     );
+  }
+}
+
+/// Urutan linear status pesanan (di luar 'cancelled', yang merupakan
+/// status terminal terpisah dan tidak termasuk alur maju normal).
+/// Sama persis 9 tahapnya dengan "Lacak Progress" di referensi desain.
+const List<String> _statusFlow = [
+  'pending',
+  'confirmed',
+  'inProgress',
+  'washing',
+  'drying',
+  'ironing',
+  'qualityCheck',
+  'ready',
+  'completed',
+];
+
+/// Ikon per tahap status, dipetakan sedekat mungkin ke ikon di referensi
+/// desain (schedule, check_circle, sync, local_laundry_service, air,
+/// checkroom, verified, local_shipping, task_alt).
+IconData _iconForStatus(String status) {
+  switch (status) {
+    case 'pending':
+      return Icons.schedule;
+    case 'confirmed':
+      return Icons.check_circle_outline;
+    case 'inProgress':
+      return Icons.sync;
+    case 'washing':
+      return Icons.local_laundry_service;
+    case 'drying':
+      return Icons.air;
+    case 'ironing':
+      return Icons.checkroom;
+    case 'qualityCheck':
+      return Icons.verified;
+    case 'ready':
+      return Icons.local_shipping_outlined;
+    case 'completed':
+      return Icons.task_alt;
+    default:
+      return Icons.circle;
+  }
+}
+
+/// Catatan singkat buat tahap yang lagi AKTIF di timeline (pengganti
+/// timestamp, sama seperti "Sedang dalam mesin cuci" di referensi).
+String _activeStepNote(String status) {
+  switch (status) {
+    case 'pending':
+      return 'Menunggu konfirmasi';
+    case 'confirmed':
+      return 'Pesanan sudah dikonfirmasi';
+    case 'inProgress':
+      return 'Sedang diproses';
+    case 'washing':
+      return 'Sedang dalam mesin cuci';
+    case 'drying':
+      return 'Sedang dikeringkan';
+    case 'ironing':
+      return 'Sedang disetrika';
+    case 'qualityCheck':
+      return 'Sedang dicek kualitasnya';
+    case 'ready':
+      return 'Siap diambil / diantar';
+    case 'completed':
+      return 'Pesanan sudah selesai';
+    default:
+      return '';
+  }
+}
+
+/// Warna badge status pembayaran, dipetakan ke palet yang sama dengan
+/// filter status di OrdersListScreen (kuning/hijau/merah).
+Color _paymentBg(String status) {
+  switch (status) {
+    case 'paid':
+      return _cGreenBg;
+    case 'partial':
+      return _cYellowBg;
+    case 'refunded':
+      return _cRedBg;
+    default:
+      return _cSurfaceContainerHighest;
+  }
+}
+
+Color _paymentFg(String status) {
+  switch (status) {
+    case 'paid':
+      return _cGreenText;
+    case 'partial':
+      return _cYellowText;
+    case 'refunded':
+      return _cRedText;
+    default:
+      return _cOnSurfaceVariant;
   }
 }
 
@@ -241,34 +401,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  /// Get status color
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'pending':
-        return Colors.orange;
-      case 'confirmed':
-        return const Color(0xFF9B7EDE);
-      case 'inProgress':
-        return const Color(0xFF5DADE2);
-      case 'washing':
-        return const Color(0xFF5DADE2);
-      case 'drying':
-        return const Color(0xFFF4A259);
-      case 'ironing':
-        return const Color(0xFFF4A259);
-      case 'qualityCheck':
-        return const Color(0xFF5DADE2);
-      case 'ready':
-        return const Color(0xFF51CF66);
-      case 'completed':
-        return const Color(0xFF51CF66);
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
   /// Get status label
   String _getStatusLabel(String status) {
     switch (status) {
@@ -279,15 +411,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case 'inProgress':
         return 'Diproses';
       case 'washing':
-        return 'Dicuci';
+        return 'Washing (Pencucian)';
       case 'drying':
-        return 'Dikeringkan';
+        return 'Drying (Pengeringan)';
       case 'ironing':
-        return 'Disetrika';
+        return 'Ironing (Penyetrikaan)';
       case 'qualityCheck':
-        return 'Cek Kualitas';
+        return 'Quality Check';
       case 'ready':
-        return 'Siap Diambil';
+        return 'Siap Diambil/Kirim';
       case 'completed':
         return 'Selesai';
       case 'cancelled':
@@ -297,19 +429,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  /// Urutan linear status pesanan (di luar 'cancelled', yang merupakan
-  /// status terminal terpisah dan tidak termasuk alur maju normal).
-  static const List<String> _statusFlow = [
-    'pending',
-    'confirmed',
-    'inProgress',
-    'washing',
-    'drying',
-    'ironing',
-    'qualityCheck',
-    'ready',
-    'completed',
-  ];
+  /// Warna aksen buat status pesanan sekarang - primary di sepanjang alur
+  /// normal, hijau kalau completed, merah kalau cancelled. Dipakai di
+  /// kartu status & dot indikator.
+  Color _statusAccentColor(String status) {
+    if (status == 'cancelled') return _cError;
+    if (status == 'completed') return _cGreenText;
+    return _cPrimary;
+  }
 
   /// Label tombol buat maju ke status berikutnya. null kalau sudah di
   /// status terakhir (completed) atau sudah cancelled.
@@ -359,20 +486,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  Color _getPaymentStatusColor(String status) {
-    switch (status) {
-      case 'paid':
-        return const Color(0xFF51CF66);
-      case 'partial':
-        return Colors.orange;
-      case 'refunded':
-        return Colors.red;
-      case 'pending':
-      default:
-        return Colors.grey;
-    }
-  }
-
   String _getPaymentStatusLabel(String status) {
     switch (status) {
       case 'paid':
@@ -406,8 +519,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: GoogleFonts.poppins()),
-        backgroundColor: isError ? AppTheme.errorColor : const Color(0xFF51CF66),
+        content: Text(message, style: GoogleFonts.beVietnamPro()),
+        backgroundColor: isError ? _cError : _cGreenText,
       ),
     );
   }
@@ -471,10 +584,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) {
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rLg)),
             title: Text(
               'Konfirmasi Pembayaran',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+              style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cOnSurface),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -482,23 +595,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               children: [
                 Text(
                   'Sisa tagihan: ${_formatCurrency(remaining)}',
-                  style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+                  style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
                 ),
                 const SizedBox(height: AppTheme.md),
                 TextField(
                   controller: amountController,
                   keyboardType: TextInputType.number,
-                  style: GoogleFonts.poppins(fontSize: 13.5),
+                  style: GoogleFonts.beVietnamPro(fontSize: 13.5),
                   decoration: InputDecoration(
                     labelText: 'Nominal Dibayar',
-                    labelStyle: GoogleFonts.poppins(fontSize: 12.5),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                    labelStyle: GoogleFonts.beVietnamPro(fontSize: 12.5),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
                 const SizedBox(height: AppTheme.md),
                 DropdownButtonFormField<String>(
                   value: selectedMethod,
-                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                  style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _cOnSurface),
                   items: [
                     DropdownMenuItem(value: 'cash', child: Text(_paymentMethodLabel('cash'))),
                     DropdownMenuItem(value: 'transfer', child: Text(_paymentMethodLabel('transfer'))),
@@ -508,8 +621,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   onChanged: (val) => setDialogState(() => selectedMethod = val ?? selectedMethod),
                   decoration: InputDecoration(
                     labelText: 'Metode',
-                    labelStyle: GoogleFonts.poppins(fontSize: 12.5),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                    labelStyle: GoogleFonts.beVietnamPro(fontSize: 12.5),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ],
@@ -517,17 +630,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: Text('Batal', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
+                child: Text('Batal', style: GoogleFonts.beVietnamPro(color: _cOnSurfaceVariant)),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(dialogContext, true),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: _cPrimaryContainer,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: Text('Simpan', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                child: Text('Simpan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
               ),
             ],
           );
@@ -579,8 +692,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   /// Kirim pesan WA generik lewat wa.me. Dipisah jadi helper sendiri
-  /// supaya _openWhatsapp dan _sendReceiptWhatsapp bisa reuse logic
-  /// buka-link + validasi nomor kosong yang sama.
+  /// supaya beberapa aksi WhatsApp lain bisa reuse logic buka-link +
+  /// validasi nomor kosong yang sama.
   Future<void> _launchWhatsappMessage(String phone, String message) async {
     if (phone.isEmpty) {
       _showSnack('Nomor telepon pelanggan tidak tersedia', isError: true);
@@ -602,15 +715,24 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Future<void> _openWhatsapp(_OrderDetailData order) async {
     final String message;
     if (order.deliveryType == 'delivery') {
-      message = 'Halo kak ${order.customerName}!, ini Mintwash 😊 . '
+      message = 'Halo kak ${order.customerName}!, ini Netwash 😊 . '
           'Pesanan kamu (${order.orderNumber}) sudah selesai dan akan segera kami antar ke alamat kakak ya. '
           'Ditunggu ya kak 🙏';
     } else {
-      message = 'Halo kak ${order.customerName}!, ini Mintwash 😊 . '
+      message = 'Halo kak ${order.customerName}!, ini Netwash 😊 . '
           'Pesanan kamu (${order.orderNumber}) sudah selesai dan siap. '
           'Mau diantar ke alamat atau mau diambil sendiri ya?';
     }
 
+    await _launchWhatsappMessage(order.customerPhone, message);
+  }
+
+  /// Kontak umum ke pelanggan (tombol "Hubungi Pelanggan" di action bar),
+  /// beda dari _openWhatsapp yang khusus notifikasi "sudah selesai" -
+  /// ini cuma sapaan umum yang nyebut nomor pesanan, dipakai di status apa
+  /// pun.
+  Future<void> _contactCustomerWhatsapp(_OrderDetailData order) async {
+    final message = 'Halo kak ${order.customerName}, ini dari Netwash terkait pesanan ${order.orderNumber}.';
     await _launchWhatsappMessage(order.customerPhone, message);
   }
 
@@ -670,7 +792,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-/// Tombol "Download Struk": screenshot struk jadi PNG, lalu simpan
+  /// Tombol "Download Struk": screenshot struk jadi PNG, lalu simpan
   /// LANGSUNG ke galeri HP (pakai package `gal`) - TANPA share sheet /
   /// dialog pilih aplikasi apa pun. Karyawan tinggal buka WhatsApp manual
   /// (tombol "Kirim Struk via WA" di sebelahnya), lalu attach foto struk
@@ -688,8 +810,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         return;
       }
 
-      final fileName =
-          'struk_${order.orderNumber.replaceAll(RegExp(r'[^A-Za-z0-9]'), '_')}.png';
+      final fileName = 'struk_${order.orderNumber.replaceAll(RegExp(r'[^A-Za-z0-9]'), '_')}.png';
 
       if (kIsWeb) {
         // Web: belum ada API "galeri" di browser, jadi paksa download
@@ -716,19 +837,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rLg)),
         title: Text(
           'Batalkan Pesanan?',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+          style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cOnSurface),
         ),
         content: Text(
           'Tindakan ini akan mengubah status pesanan menjadi Dibatalkan.',
-          style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+          style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Tidak', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
+            child: Text('Tidak', style: GoogleFonts.beVietnamPro(color: _cOnSurfaceVariant)),
           ),
           TextButton(
             onPressed: () {
@@ -737,7 +858,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             },
             child: Text(
               'Ya, Batalkan',
-              style: GoogleFonts.poppins(color: AppTheme.errorColor, fontWeight: FontWeight.w600),
+              style: GoogleFonts.beVietnamPro(color: _cError, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -748,10 +869,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: _cSurface,
       body: SafeArea(
         child: Stack(
           children: [
+            // ---- Konten utama (scrollable) ----
             LayoutBuilder(
               builder: (context, constraints) {
                 final isMobile = constraints.maxWidth < 800;
@@ -763,42 +885,39 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       child: Padding(
                         padding: EdgeInsets.fromLTRB(
                           isMobile ? 16 : 24,
+                          72, // ruang buat top bar fixed
                           isMobile ? 16 : 24,
-                          isMobile ? 16 : 24,
-                          24,
+                          _order != null && _errorMessage == null && !_isLoading ? 110 : 24,
                         ),
                         child: _isLoading
                             ? _buildLoadingState(context)
                             : _errorMessage != null
-                                ? Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      _buildTopBar(context),
-                                      const SizedBox(height: AppTheme.xxl),
-                                      _buildErrorState(context),
-                                    ],
-                                  )
+                                ? _buildErrorState(context)
                                 : Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      _buildTopBar(context),
-                                      const SizedBox(height: AppTheme.xl),
-                                      _buildOrderHeader(context, _order!),
-                                      const SizedBox(height: AppTheme.xxl),
-                                      _buildCustomerInfo(context, _order!),
-                                      const SizedBox(height: AppTheme.xxl),
-                                      _buildOrderItems(context, _order!),
-                                      const SizedBox(height: AppTheme.xxl),
-                                      _buildPaymentSection(context, _order!),
-                                      const SizedBox(height: AppTheme.xxl),
-                                      _buildTimeline(context, _order!),
-                                      const SizedBox(height: AppTheme.xxl),
-                                      _buildPriceSummary(context, _order!),
-                                      const SizedBox(height: AppTheme.xxl),
-                                      _buildNotes(context, _order!),
-                                      const SizedBox(height: AppTheme.xxl),
-                                      _buildActionButtons(context, _order!),
-                                      const SizedBox(height: AppTheme.lg),
+                                      _buildStatusCard(context, _order!),
+                                      const SizedBox(height: AppTheme.md),
+                                      if (_order!.status == 'cancelled')
+                                        _buildCancelledCard(context, _order!)
+                                      else
+                                        _buildTimelineCard(context, _order!),
+                                      const SizedBox(height: AppTheme.md),
+                                      _buildBentoGrid(context, _order!, isMobile),
+                                      const SizedBox(height: AppTheme.md),
+                                      _buildCostBreakdown(context, _order!),
+                                      const SizedBox(height: AppTheme.md),
+                                      _buildPaymentBanner(context, _order!),
+                                      const SizedBox(height: AppTheme.md),
+                                      _buildPaymentHistory(context),
+                                      if (_order!.notes.isNotEmpty) ...[
+                                        const SizedBox(height: AppTheme.md),
+                                        _buildNotes(context, _order!),
+                                      ],
+                                      if (_order!.status != 'completed' && _order!.status != 'cancelled') ...[
+                                        const SizedBox(height: AppTheme.lg),
+                                        _buildCancelLink(context),
+                                      ],
                                     ],
                                   ),
                       ),
@@ -807,6 +926,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 );
               },
             ),
+            // ---- Top bar (fixed) ----
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _buildTopBar(context),
+            ),
+            // ---- Bottom action bar (fixed) ----
+            if (!_isLoading && _errorMessage == null && _order != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildBottomActionBar(context, _order!),
+              ),
             // Widget struk dirender di luar layar (offstage), cuma dipakai
             // sebagai sumber screenshot oleh _captureReceiptImage(). User
             // nggak pernah lihat ini secara langsung.
@@ -843,22 +977,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           Text(
             'Netwash',
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+            style: GoogleFonts.beVietnamPro(fontSize: 20, fontWeight: FontWeight.w700, color: _cOnSurface),
           ),
           const SizedBox(height: 4),
           Text(
             _laundryName != null && _laundryName!.isNotEmpty ? _laundryName! : 'Struk Pesanan',
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+            style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
           ),
           const SizedBox(height: 16),
-          Divider(color: AppTheme.borderColor),
+          Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
           _receiptRow('No. Pesanan', order.orderNumber),
           _receiptRow('Tanggal', _formatDate(order.orderDate)),
           _receiptRow('Pelanggan', order.customerName),
           const SizedBox(height: 12),
-          Divider(color: AppTheme.borderColor),
+          Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
           ...order.items.map((item) {
             final lineTotal = item.price * item.quantity;
@@ -870,19 +1004,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   Expanded(
                     child: Text(
                       '${item.name} x${item.quantity}',
-                      style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textPrimary),
+                      style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurface),
                     ),
                   ),
                   Text(
                     _formatCurrency(lineTotal),
-                    style: GoogleFonts.poppins(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600, color: _cOnSurface),
                   ),
                 ],
               ),
             );
           }),
           const SizedBox(height: 12),
-          Divider(color: AppTheme.borderColor),
+          Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
           _receiptRow('Subtotal', _formatCurrency(order.subtotal)),
           if (order.taxAmount > 0) _receiptRow('Pajak', _formatCurrency(order.taxAmount)),
@@ -890,15 +1024,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+              Text('Total', style: GoogleFonts.beVietnamPro(fontSize: 14, fontWeight: FontWeight.w700, color: _cOnSurface)),
               Text(
                 _formatCurrency(order.totalAmount),
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
+                style: GoogleFonts.beVietnamPro(fontSize: 16, fontWeight: FontWeight.w700, color: _cPrimary),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Divider(color: AppTheme.borderColor),
+          Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
           _receiptRow('Metode Bayar', _paymentMethodLabel(order.paymentMethodRaw)),
           _receiptRow('Status Bayar', _getPaymentStatusLabel(order.paymentStatus)),
@@ -908,7 +1042,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           Text(
             'Terima kasih sudah pakai Netwash 🙏',
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textSecondary),
+            style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _cOnSurfaceVariant),
           ),
         ],
       ),
@@ -921,12 +1055,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+          Text(label, style: GoogleFonts.beVietnamPro(fontSize: 12, color: _cOnSurfaceVariant)),
           Flexible(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+              style: GoogleFonts.beVietnamPro(fontSize: 12, fontWeight: FontWeight.w600, color: _cOnSurface),
             ),
           ),
         ],
@@ -934,55 +1068,57 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  /// Build top bar (back button + title), gaya sama dengan CreateOrderScreen
+  /// Top bar fixed: tombol kembali bulat + nomor pesanan (headline-md
+  /// bold, warna primary) - persis referensi desain.
   Widget _buildTopBar(BuildContext context) {
-    return Row(
-      children: [
-        InkWell(
-          onTap: () => Navigator.pop(context),
-          borderRadius: BorderRadius.circular(11),
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppTheme.cardColor,
-              borderRadius: BorderRadius.circular(11),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
+    return Container(
+      height: 64,
+      color: _cSurface,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Material(
+                  color: Colors.transparent,
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => Navigator.pop(context),
+                    child: const SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Icon(Icons.arrow_back_rounded, color: _cOnSurface, size: 20),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _order != null ? _order!.orderNumber : 'Detail Pesanan',
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.beVietnamPro(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.01,
+                      color: _cPrimary,
+                    ),
+                  ),
                 ),
               ],
             ),
-            child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: AppTheme.textPrimary),
           ),
         ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Text(
-            _order != null ? 'Detail Pesanan ${_order!.orderNumber}' : 'Detail Pesanan',
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   Widget _buildLoadingState(BuildContext context) {
-    return Column(
-      children: [
-        _buildTopBar(context),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
-          child: Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
+      child: Center(child: CircularProgressIndicator(color: _cPrimary)),
     );
   }
 
@@ -993,17 +1129,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline_rounded, size: 40, color: AppTheme.errorColor),
+            const Icon(Icons.error_outline_rounded, size: 40, color: _cError),
             const SizedBox(height: AppTheme.md),
             Text(
               _errorMessage ?? '',
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+              style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
             ),
             const SizedBox(height: AppTheme.lg),
             TextButton(
               onPressed: _fetchOrder,
-              child: Text('Coba lagi', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              child: Text('Coba lagi', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cPrimary)),
             ),
           ],
         ),
@@ -1011,70 +1147,127 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  /// Build order header
-  ///
-  /// UPDATED: ditambah baris kecil di bawah tanggal yang nampilin nama
-  /// cabang (pill kecil dengan ikon toko), diresolve dari laundryId lewat
-  /// _fetchLaundryName(). 3 kondisi yang ditangani:
-  /// - order.laundryId kosong (order lama sebelum fitur cabang) -> gak
-  ///   nampilin apa-apa, gak worth nunjukin "cabang: -"
-  /// - masih resolve nama cabangnya -> gak nampilin apa-apa dulu sampai
-  ///   siap (menghindari flicker teks placeholder)
-  /// - berhasil di-resolve -> tampil pill "Cabang X"
-  Widget _buildOrderHeader(BuildContext context, _OrderDetailData order) {
+  /// Kartu putih generik dengan radius & shadow sesuai token desain
+  /// (rounded-xl 20px, shadow 0px 4px 12px rgba(0,0,0,0.05)).
+  BoxDecoration _cardDecoration({bool withBorder = true}) {
+    return BoxDecoration(
+      color: _cCard,
+      borderRadius: BorderRadius.circular(_rXl),
+      border: withBorder ? Border.all(color: _cSurfaceContainer) : null,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
+
+  /// "Status & Badge Section" - status pesanan (dot berdenyut + label
+  /// besar berwarna aksen) + badge cara pengiriman.
+  Widget _buildStatusCard(BuildContext context, _OrderDetailData order) {
+    final accent = _statusAccentColor(order.status);
     return Container(
-      padding: const EdgeInsets.all(AppTheme.lg),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  order.orderNumber,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'STATUS PESANAN',
+                      style: GoogleFonts.beVietnamPro(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.02,
+                        color: _cOnSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            _getStatusLabel(order.status),
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.beVietnamPro(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.01,
+                              color: accent,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppTheme.sm),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(color: _cPrimaryFixed, borderRadius: BorderRadius.circular(999)),
+                child: Text(
+                  _formatDate(order.orderDate).toUpperCase(),
+                  style: GoogleFonts.beVietnamPro(
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    letterSpacing: 0.02,
+                    color: _cOnPrimaryFixedVariant,
                   ),
                 ),
-                const SizedBox(height: AppTheme.sm),
-                Text(
-                  _formatDate(order.orderDate),
-                  style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.only(top: 12),
+            decoration: BoxDecoration(border: Border(top: BorderSide(color: _cSurfaceContainerLow))),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: _cSecondaryContainer.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(_rLg),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(order.deliveryTypeIcon, size: 18, color: _cSecondary),
+                      const SizedBox(width: 6),
+                      Text(
+                        order.deliveryTypeLabel,
+                        style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _cSecondary),
+                      ),
+                    ],
+                  ),
                 ),
                 if (order.laundryId.isNotEmpty && _laundryName != null && _laundryName!.isNotEmpty) ...[
-                  const SizedBox(height: AppTheme.sm),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                  const SizedBox(width: AppTheme.sm),
+                  Expanded(
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.storefront_outlined, size: 12, color: AppTheme.primaryColor),
+                        Icon(Icons.storefront_outlined, size: 16, color: _cOnSurfaceVariant),
                         const SizedBox(width: 4),
-                        Text(
-                          _laundryName!,
-                          style: GoogleFonts.poppins(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.primaryColor,
+                        Expanded(
+                          child: Text(
+                            _laundryName!,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
                           ),
                         ),
                       ],
@@ -1084,23 +1277,48 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ],
             ),
           ),
-          const SizedBox(width: AppTheme.sm),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.lg,
-              vertical: AppTheme.md,
-            ),
-            decoration: BoxDecoration(
-              color: _getStatusColor(order.status).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            ),
-            child: Text(
-              _getStatusLabel(order.status),
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: _getStatusColor(order.status),
-              ),
+        ],
+      ),
+    );
+  }
+
+  /// Kartu khusus kalau pesanan dibatalkan - gantiin timeline, karena
+  /// "cancelled" bukan bagian dari alur maju normal (_statusFlow).
+  Widget _buildCancelledCard(BuildContext context, _OrderDetailData order) {
+    _StatusHistoryEntry? cancelEntry;
+    for (final h in order.statusHistory) {
+      if (h.status == 'cancelled') cancelEntry = h;
+    }
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cRedBg.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(_rXl),
+        border: Border.all(color: _cError.withOpacity(0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.cancel_outlined, color: _cError, size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pesanan Dibatalkan',
+                  style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 15, color: _cError),
+                ),
+                if (cancelEntry != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    cancelEntry.note.isNotEmpty
+                        ? cancelEntry.note
+                        : '${_formatDate(cancelEntry.timestamp ?? order.orderDate)} ${_formatTime(cancelEntry.timestamp)}',
+                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -1108,302 +1326,511 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  /// Build customer info
-  Widget _buildCustomerInfo(BuildContext context, _OrderDetailData order) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Informasi Pelanggan',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
+  /// "Lacak Progress" - timeline penuh 9 tahap _statusFlow: tahap yang
+  /// sudah lewat ditandai check hijau-primary, tahap aktif di-highlight
+  /// dengan ring + catatan singkat, tahap depan digrayscale/opacity 40%.
+  Widget _buildTimelineCard(BuildContext context, _OrderDetailData order) {
+    final currentIndex = _statusFlow.indexOf(order.status);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(withBorder: false),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Lacak Progress',
+            style: GoogleFonts.beVietnamPro(fontSize: 14, fontWeight: FontWeight.w500, color: _cOnSurfaceVariant),
           ),
-        ),
-        const SizedBox(height: AppTheme.lg),
-        Container(
-          padding: const EdgeInsets.all(AppTheme.lg),
-          decoration: BoxDecoration(
-            color: AppTheme.cardColor,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.06),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildInfoRow('Nama', order.customerName),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
-                child: Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
-              ),
-              _buildInfoRow('Telepon', order.customerPhone),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+          const SizedBox(height: 20),
+          Column(
+            children: List.generate(_statusFlow.length, (index) {
+              final status = _statusFlow[index];
+              final isPast = currentIndex >= 0 && index < currentIndex;
+              final isCurrent = index == currentIndex;
+              final isLast = index == _statusFlow.length - 1;
+              final ts = order.timestampForStatus(status);
 
-  /// Build info row
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+              Widget circle;
+              if (isPast) {
+                circle = Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(color: _cPrimary, shape: BoxShape.circle),
+                  child: const Icon(Icons.check, color: Colors.white, size: 16),
+                );
+              } else if (isCurrent) {
+                circle = Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: _cPrimary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _cPrimaryFixed, width: 4),
+                  ),
+                  child: Icon(_iconForStatus(status), color: Colors.white, size: 15),
+                );
+              } else {
+                circle = Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(color: _cSurfaceContainerHighest, shape: BoxShape.circle),
+                  child: Icon(_iconForStatus(status), color: _cOnSurfaceVariant, size: 15),
+                );
+              }
 
-  /// Build order items
-  Widget _buildOrderItems(BuildContext context, _OrderDetailData order) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Item Pesanan',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        const SizedBox(height: AppTheme.lg),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg),
-          decoration: BoxDecoration(
-            color: AppTheme.cardColor,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.06),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Column(
-            children: List.generate(
-              order.items.length,
-              (index) {
-                final item = order.items[index];
-                final lineTotal = item.price * item.quantity;
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: AppTheme.lg),
-                      child: Row(
+              final row = Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Column(
+                    children: [
+                      circle,
+                      if (!isLast)
+                        Container(
+                          width: 2,
+                          height: 34,
+                          color: _cSurfaceContainerHighest,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: isLast ? 0 : 22, top: isCurrent ? 2 : 0),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.name,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.poppins(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Qty: ${item.quantity}',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: AppTheme.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: AppTheme.sm),
                           Text(
-                            _formatCurrency(lineTotal),
-                            textAlign: TextAlign.right,
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13.5,
-                              color: AppTheme.primaryColor,
+                            _getStatusLabel(status),
+                            style: GoogleFonts.beVietnamPro(
+                              fontSize: 14,
+                              fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+                              color: isPast || isCurrent ? _cPrimary.withOpacity(isPast ? 0.7 : 1) : _cOnSurfaceVariant,
                             ),
                           ),
+                          if (isPast && ts != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              '${_formatDate(ts)}, ${_formatTime(ts)}',
+                              style: GoogleFonts.beVietnamPro(fontSize: 11, color: _cOnSurfaceVariant),
+                            ),
+                          ] else if (isCurrent) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              _activeStepNote(status),
+                              style: GoogleFonts.beVietnamPro(fontSize: 11, color: _cOnSurfaceVariant),
+                            ),
+                          ],
                         ],
                       ),
                     ),
-                    if (index < order.items.length - 1)
-                      Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
-                  ],
-                );
-              },
+                  ),
+                ],
+              );
+
+              return (!isPast && !isCurrent) ? Opacity(opacity: 0.4, child: row) : row;
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// "Bento Grid": kartu info pelanggan (kiri) + 2 mini-kartu ringkasan
+  /// jumlah item & layanan (kanan). Di mobile ditumpuk vertikal.
+  Widget _buildBentoGrid(BuildContext context, _OrderDetailData order, bool isMobile) {
+    final customerCard = Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'INFORMASI PELANGGAN',
+                style: GoogleFonts.beVietnamPro(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.02,
+                  color: _cOnSurfaceVariant,
+                ),
+              ),
+              Icon(Icons.person_outline, color: _cSecondary, size: 20),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            order.customerName,
+            style: GoogleFonts.beVietnamPro(fontSize: 18, fontWeight: FontWeight.w700, color: _cOnSurface),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(Icons.phone_outlined, size: 14, color: _cSecondary),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  order.customerPhone.isNotEmpty ? order.customerPhone : '-',
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cSecondary),
+                ),
+              ),
+            ],
+          ),
+          if (order.laundryId.isNotEmpty && _laundryName != null && _laundryName!.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.only(top: 12),
+              decoration: BoxDecoration(border: Border(top: BorderSide(color: _cSurfaceContainerLow))),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(color: _cTertiaryFixed, borderRadius: BorderRadius.circular(_rLg)),
+                    child: Icon(Icons.store_outlined, color: _cOnTertiaryFixed, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CABANG TERDAFTAR',
+                          style: GoogleFonts.beVietnamPro(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.02,
+                            color: _cOnSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          _laundryName!,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.beVietnamPro(fontSize: 14, fontWeight: FontWeight.w500, color: _cOnSurface),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ],
+        ],
+      ),
+    );
+
+    final statsGrid = Row(
+      children: [
+        Expanded(child: _miniStatCard(icon: Icons.shopping_bag_outlined, label: 'Jumlah Item', value: '${order.totalItemCount} item')),
+        const SizedBox(width: AppTheme.sm),
+        Expanded(child: _miniStatCard(icon: Icons.category_outlined, label: 'Layanan', value: order.serviceSummary)),
+      ],
+    );
+
+    if (isMobile) {
+      return Column(
+        children: [
+          customerCard,
+          const SizedBox(height: AppTheme.sm),
+          statsGrid,
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: customerCard),
+        const SizedBox(width: AppTheme.sm),
+        Expanded(
+          child: Column(
+            children: [
+              _miniStatCard(icon: Icons.shopping_bag_outlined, label: 'Jumlah Item', value: '${order.totalItemCount} item'),
+              const SizedBox(height: AppTheme.sm),
+              _miniStatCard(icon: Icons.category_outlined, label: 'Layanan', value: order.serviceSummary),
+            ],
           ),
         ),
       ],
     );
   }
 
-  /// Section Pembayaran: status, metode, sudah dibayar, sisa tagihan, dan
-  /// 2 tombol struk berdampingan: "Download Struk" (gambar PNG lewat
-  /// share sheet) dan "Kirim Struk via WA" (teks langsung ke wa.me).
-  Widget _buildPaymentSection(BuildContext context, _OrderDetailData order) {
-    final statusColor = _getPaymentStatusColor(order.paymentStatus);
-    final statusLabel = _getPaymentStatusLabel(order.paymentStatus);
+  Widget _miniStatCard({required IconData icon, required String label, required String value}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      decoration: _cardDecoration(),
+      child: Column(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(color: _cSecondaryContainer, shape: BoxShape.circle),
+            child: Icon(icon, color: _cPrimary, size: 20),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.beVietnamPro(fontSize: 11.5, fontWeight: FontWeight.w700, color: _cOnSurfaceVariant),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.beVietnamPro(fontSize: 15, fontWeight: FontWeight.w700, color: _cPrimary),
+          ),
+        ],
+      ),
+    );
+  }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Pembayaran',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
+  /// "Rincian Biaya" - daftar item, subtotal, pajak, lalu total dengan
+  /// highlight background biru muda (primaryFixed).
+  Widget _buildCostBreakdown(BuildContext context, _OrderDetailData order) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'RINCIAN BIAYA',
+            style: GoogleFonts.beVietnamPro(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.02,
+              color: _cOnSurfaceVariant,
+            ),
           ),
-        ),
-        const SizedBox(height: AppTheme.lg),
-        Container(
-          padding: const EdgeInsets.all(AppTheme.lg),
-          decoration: BoxDecoration(
-            color: AppTheme.cardColor,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.06),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _paymentMethodLabel(order.paymentMethodRaw),
-                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      statusLabel,
-                      style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppTheme.md),
-              _buildPriceRow('Sudah Dibayar', order.paidAmount),
-              const SizedBox(height: 6),
-              _buildPriceRow('Sisa Tagihan', order.remainingAmount),
-              if (order.paymentStatus != 'paid') ...[
-                const SizedBox(height: AppTheme.md),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showRecordPaymentDialog(order),
-                    icon: const Icon(Icons.payments_outlined, size: 18),
-                    label: Text(
-                      'Konfirmasi Pembayaran',
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: AppTheme.md),
-              Row(
+          const SizedBox(height: 12),
+          ...order.items.map((item) {
+            final lineTotal = item.price * item.quantity;
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _isGeneratingReceipt ? null : () => _downloadReceiptStruk(order),
-                      icon: _isGeneratingReceipt
-                          ? SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppTheme.primaryColor,
-                              ),
-                            )
-                          : const Icon(Icons.download_outlined, size: 18),
-                      label: Text(
-                        'Download Struk',
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.primaryColor,
-                        side: BorderSide(color: AppTheme.primaryColor),
-                        padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-                      ),
+                    child: Text(
+                      '${item.name}${item.quantity > 1 ? ' x${item.quantity}' : ''}',
+                      style: GoogleFonts.beVietnamPro(fontSize: 14, color: _cSecondary),
                     ),
                   ),
                   const SizedBox(width: AppTheme.sm),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _sendReceiptWhatsapp(order),
-                      icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                      label: Text(
-                        'Kirim Struk via WA',
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF25D366),
-                        side: const BorderSide(color: Color(0xFF25D366)),
-                        padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-                      ),
-                    ),
+                  Text(
+                    _formatCurrency(lineTotal),
+                    style: GoogleFonts.beVietnamPro(fontSize: 14, fontWeight: FontWeight.w600, color: _cOnSurface),
                   ),
                 ],
               ),
+            );
+          }),
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: 14),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: _cOutlineVariant, width: 1, style: BorderStyle.solid)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Subtotal', style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cSecondary)),
+                    Text(
+                      _formatCurrency(order.subtotal),
+                      style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w600, color: _cOnSurface),
+                    ),
+                  ],
+                ),
+                if (order.taxAmount > 0) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Pajak', style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cSecondary)),
+                      Text(
+                        _formatCurrency(order.taxAmount),
+                        style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w600, color: _cOnSurface),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _cPrimaryFixed.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(_rLg),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Total Tagihan', style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w700, color: _cPrimary)),
+                      Text(
+                        _formatCurrency(order.totalAmount),
+                        style: GoogleFonts.beVietnamPro(fontSize: 18, fontWeight: FontWeight.w700, color: _cPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Banner info pembayaran: metode + badge status berwarna, sisa
+  /// tagihan (merah kalau > 0), lalu tombol konfirmasi pembayaran &
+  /// 2 tombol struk berdampingan.
+  Widget _buildPaymentBanner(BuildContext context, _OrderDetailData order) {
+    final badgeBg = _paymentBg(order.paymentStatus);
+    final badgeFg = _paymentFg(order.paymentStatus);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cSurfaceContainerLow,
+        borderRadius: BorderRadius.circular(_rXl),
+        border: Border.all(color: _cOutlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.account_balance_wallet_outlined, color: _cPrimary, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'PEMBAYARAN',
+                      style: GoogleFonts.beVietnamPro(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.02,
+                        color: _cOnSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _paymentMethodLabel(order.paymentMethodRaw),
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.beVietnamPro(fontSize: 14, fontWeight: FontWeight.w500, color: _cOnSurface),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(999)),
+                          child: Text(
+                            _getPaymentStatusLabel(order.paymentStatus).toUpperCase(),
+                            style: GoogleFonts.beVietnamPro(fontSize: 10, fontWeight: FontWeight.w700, color: badgeFg),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-        ),
-        const SizedBox(height: AppTheme.lg),
-        _buildPaymentHistory(context),
-      ],
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.only(top: 10),
+            decoration: BoxDecoration(border: Border(top: BorderSide(color: _cOutlineVariant))),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Sudah Dibayar', style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant)),
+                Text(
+                  _formatCurrency(order.paidAmount),
+                  style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _cOnSurface),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Sisa Tagihan', style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant)),
+              Text(
+                _formatCurrency(order.remainingAmount),
+                style: GoogleFonts.beVietnamPro(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: order.remainingAmount > 0 ? _cError : _cGreenText,
+                ),
+              ),
+            ],
+          ),
+          if (order.paymentStatus != 'paid') ...[
+            const SizedBox(height: AppTheme.md),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _showRecordPaymentDialog(order),
+                icon: const Icon(Icons.payments_outlined, size: 18),
+                label: Text('Konfirmasi Pembayaran', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _cPrimaryContainer,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: AppTheme.md),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _isGeneratingReceipt ? null : () => _downloadReceiptStruk(order),
+                  icon: _isGeneratingReceipt
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _cPrimary))
+                      : const Icon(Icons.download_outlined, size: 18),
+                  label: Text('Download Struk', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 12.5)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _cPrimary,
+                    side: const BorderSide(color: _cPrimary),
+                    backgroundColor: _cCard,
+                    padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppTheme.sm),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _sendReceiptWhatsapp(order),
+                  icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                  label: Text('Kirim Struk via WA', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 12.5)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF25D366),
+                    side: const BorderSide(color: Color(0xFF25D366)),
+                    backgroundColor: _cCard,
+                    padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -1421,34 +1848,29 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           return const SizedBox.shrink();
         }
         final payments = snapshot.data!;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Riwayat Pembayaran',
-              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
-            ),
-            const SizedBox(height: AppTheme.md),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg),
-              decoration: BoxDecoration(
-                color: AppTheme.cardColor,
-                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.06),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: _cardDecoration(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'RIWAYAT PEMBAYARAN',
+                style: GoogleFonts.beVietnamPro(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.02,
+                  color: _cOnSurfaceVariant,
+                ),
               ),
-              child: Column(
+              const SizedBox(height: 8),
+              Column(
                 children: List.generate(payments.length, (index) {
                   final p = payments[index];
                   return Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Row(
                           children: [
                             Expanded(
@@ -1457,367 +1879,155 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                 children: [
                                   Text(
                                     _paymentMethodLabel(p.method.name),
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.textPrimary,
-                                    ),
+                                    style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w600, color: _cOnSurface),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     '${_formatDate(p.createdAt)} ${_formatTime(p.createdAt)}',
-                                    style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
+                                    style: GoogleFonts.beVietnamPro(fontSize: 11, color: _cOnSurfaceVariant),
                                   ),
                                 ],
                               ),
                             ),
                             Text(
                               _formatCurrency(p.amount),
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.primaryColor,
-                              ),
+                              style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _cPrimary),
                             ),
                           ],
                         ),
                       ),
-                      if (index < payments.length - 1) Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
+                      if (index < payments.length - 1) Divider(height: 1, color: _cOutlineVariant.withOpacity(0.4)),
                     ],
                   );
                 }),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
   }
 
-  /// Build timeline
-  Widget _buildTimeline(BuildContext context, _OrderDetailData order) {
-    if (order.statusHistory.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Riwayat Status',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        const SizedBox(height: AppTheme.lg),
-        Container(
-          padding: const EdgeInsets.all(AppTheme.lg),
-          decoration: BoxDecoration(
-            color: AppTheme.cardColor,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.06),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: order.statusHistory.length,
-            itemBuilder: (context, index) {
-              final item = order.statusHistory[index];
-              final isLast = index == order.statusHistory.length - 1;
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(item.status).withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          item.status == 'pending'
-                              ? Icons.schedule
-                              : item.status == 'cancelled'
-                                  ? Icons.cancel
-                                  : item.status == 'completed'
-                                      ? Icons.check_circle
-                                      : Icons.local_laundry_service,
-                          color: _getStatusColor(item.status),
-                          size: 18,
-                        ),
-                      ),
-                      if (!isLast)
-                        Container(
-                          width: 2,
-                          height: 46,
-                          color: AppTheme.borderColor,
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: AppTheme.lg),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: AppTheme.lg),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.note.isNotEmpty ? item.note : _getStatusLabel(item.status),
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13.5,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                          if (item.timestamp != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              '${_formatDate(item.timestamp!)} ${_formatTime(item.timestamp)}',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: AppTheme.textTertiary,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Build price summary
-  Widget _buildPriceSummary(BuildContext context, _OrderDetailData order) {
+  /// Build notes
+  Widget _buildNotes(BuildContext context, _OrderDetailData order) {
     return Container(
-      padding: const EdgeInsets.all(AppTheme.lg),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Ringkasan Harga',
-            style: GoogleFonts.poppins(
-              fontSize: 15,
+            'CATATAN',
+            style: GoogleFonts.beVietnamPro(
+              fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+              letterSpacing: 0.02,
+              color: _cOnSurfaceVariant,
             ),
           ),
-          const SizedBox(height: AppTheme.lg),
-          _buildPriceRow('Subtotal', order.subtotal),
-          const SizedBox(height: AppTheme.md),
-          _buildPriceRow('Pajak', order.taxAmount),
-          const SizedBox(height: AppTheme.md),
-          Divider(color: AppTheme.borderColor),
-          const SizedBox(height: AppTheme.md),
-          _buildPriceRow(
-            'Total',
-            order.totalAmount,
-            isBold: true,
-            isTotal: true,
+          const SizedBox(height: 8),
+          Text(
+            order.notes,
+            style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _cOnSurfaceVariant, height: 1.6),
           ),
         ],
       ),
     );
   }
 
-  /// Build price row
-  Widget _buildPriceRow(
-    String label,
-    double amount, {
-    bool isBold = false,
-    bool isTotal = false,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-            fontSize: isTotal ? 14.5 : 12.5,
-            color: isTotal ? AppTheme.textPrimary : AppTheme.textSecondary,
-          ),
-        ),
-        Text(
-          _formatCurrency(amount),
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w700,
-            fontSize: isTotal ? 19 : 12.5,
-            color: isTotal ? AppTheme.primaryColor : AppTheme.textPrimary,
-          ),
-        ),
-      ],
+  /// Link "Batalkan Pesanan" - dipisah dari action bar bawah (yang sudah
+  /// dipakai buat aksi maju status), tampil di akhir konten kalau order
+  /// masih bisa dibatalkan.
+  Widget _buildCancelLink(BuildContext context) {
+    return Center(
+      child: TextButton.icon(
+        onPressed: _isUpdatingStatus ? null : _confirmCancelOrder,
+        icon: const Icon(Icons.cancel_outlined, size: 18, color: _cError),
+        label: Text('Batalkan Pesanan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13.5, color: _cError)),
+      ),
     );
   }
 
-  /// Build notes
-  Widget _buildNotes(BuildContext context, _OrderDetailData order) {
-    if (order.notes.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Catatan',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        const SizedBox(height: AppTheme.lg),
-        Container(
-          padding: const EdgeInsets.all(AppTheme.lg),
-          decoration: BoxDecoration(
-            color: AppTheme.cardColor,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.06),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Text(
-            order.notes,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: AppTheme.textSecondary,
-              height: 1.6,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Build action buttons — dinamis sesuai status pesanan sekarang, ngikutin
-  /// urutan _statusFlow. Tombol maju berubah label sesuai tahap
-  /// (Konfirmasi Pesanan -> Mulai Proses -> ... -> Tandai Selesai).
-  /// completed/cancelled -> tidak ada tombol maju lagi.
-  Widget _buildActionButtons(BuildContext context, _OrderDetailData order) {
-    final canCancel = order.status != 'completed' && order.status != 'cancelled';
+  /// Action bar bawah (fixed): tombol utama primary (aksi maju status,
+  /// atau "Kabari Pelanggan" kalau sudah completed) + tombol sekunder
+  /// outline "Hubungi Pelanggan" - persis pola 2-tombol di referensi.
+  Widget _buildBottomActionBar(BuildContext context, _OrderDetailData order) {
     final nextStatus = _nextStatus(order.status);
     final nextLabel = _nextStatusButtonLabel(order.status);
+    final canCancel = order.status != 'completed' && order.status != 'cancelled';
 
-    return Column(
-      children: [
-        if (order.status == 'completed')
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppTheme.md),
-            child: SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                onPressed: () => _openWhatsapp(order),
-                icon: const Icon(Icons.chat_outlined, size: 18),
-                label: Text(
-                  order.deliveryType == 'delivery' ? 'Kabari Siap Diantar (WA)' : 'Kabari via WhatsApp',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF51CF66),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-                ),
-              ),
-            ),
-          ),
-        if (nextStatus != null && nextLabel != null)
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _isUpdatingStatus
-                  ? null
-                  : () => _handleUpdateStatus(nextStatus, note: nextLabel),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: nextStatus == 'completed'
-                    ? const Color(0xFF51CF66)
-                    : const Color(0xFF5DADE2),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-              ),
-              child: _isUpdatingStatus
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(
-                      nextLabel,
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15),
-                    ),
-            ),
-          ),
-        if (canCancel) ...[
-          const SizedBox(height: AppTheme.md),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: OutlinedButton(
-              onPressed: _isUpdatingStatus ? null : _confirmCancelOrder,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.errorColor,
-                side: BorderSide(color: AppTheme.errorColor),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-              ),
-              child: Text(
-                'Batalkan Pesanan',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-            ),
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        color: _cCard,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 16, offset: const Offset(0, -4)),
         ],
-        const SizedBox(height: AppTheme.md),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: OutlinedButton(
-            onPressed: _isUpdatingStatus ? null : () => Navigator.pop(context),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.textSecondary,
-              side: BorderSide(color: AppTheme.borderColor),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-            ),
-            child: Text(
-              'Kembali',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (order.status == 'completed')
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _openWhatsapp(order),
+                      icon: const Icon(Icons.chat_outlined, size: 18),
+                      label: Text(
+                        order.isDelivery ? 'Kabari Siap Diantar' : 'Kabari via WhatsApp',
+                        style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _cPrimaryContainer,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rXl)),
+                      ),
+                    ),
+                  )
+                else if (nextStatus != null && nextLabel != null)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: _isUpdatingStatus ? null : () => _handleUpdateStatus(nextStatus, note: nextLabel),
+                      icon: _isUpdatingStatus
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.update, size: 18),
+                      label: Text(nextLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _cPrimaryContainer,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rXl)),
+                      ),
+                    ),
+                  ),
+                if (nextLabel != null || order.status == 'completed') const SizedBox(height: AppTheme.sm),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _contactCustomerWhatsapp(order),
+                    icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                    label: Text('Hubungi Pelanggan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _cPrimary,
+                      side: const BorderSide(color: _cPrimary, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rXl)),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
