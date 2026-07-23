@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
+import '../../repositories/subscription_repository.dart';
 
 /// Create / Edit Laundry (Cabang) Screen - NetWash
 /// Skema data & feature gating mengikuti Blueprint §3.2.3 (Manajemen Cabang)
@@ -312,28 +313,33 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
   /// Persis mengikuti SubscriptionService.canAddLaundry (Blueprint §3.6.3):
   /// baca `limits.max_laundries` dari dokumen subscription, -1 = unlimited.
   /// HANYA dipanggil di mode CREATE — edit tidak menambah jumlah cabang.
-  Future<bool> _checkLaundryLimit(String userId) async {
-    final firestore = FirebaseFirestore.instance;
+  ///
+  /// FIX: sebelumnya query manual `.where('status','active').limit(1)`
+  /// tanpa sorting bisa mengambil dokumen subscription yang SALAH kalau
+  /// ada lebih dari satu dokumen berstatus 'active' untuk company yang
+  /// sama (mis. sisa dokumen lama yang belum dinonaktifkan saat upgrade
+  /// paket - lihat kasus yang sama yang sudah diperbaiki di
+  /// CreateEmployeeScreen._checkEmployeeLimit). Sekarang pakai
+  /// SubscriptionRepository.streamActiveSubscription(), yang sudah
+  /// mengurutkan berdasarkan createdAt descending dan selalu memilih
+  /// dokumen aktif/trialing yang PALING BARU - jadi konsisten dengan
+  /// pola yang dipakai di layar employee.
+  Future<bool> _checkLaundryLimit(String userId, String companyId) async {
+    final subscriptionRepo = SubscriptionRepository(userId: userId);
+    final activeSubscription =
+        await subscriptionRepo.streamActiveSubscription(companyId).first;
 
-    final subSnap = await firestore
-        .collection('users')
-        .doc(userId)
-        .collection('subscriptions')
-        .where('status', isEqualTo: 'active')
-        .limit(1)
-        .get();
-
-    if (subSnap.docs.isEmpty) {
-      // Tidak ada langganan aktif → default ke batasan Starter (maks 1 cabang)
+    if (activeSubscription == null) {
+      // Jika tidak ada data langganan, default kembali ke batasan Starter (maks 1)
       final currentCount = await _getCurrentLaundryCount(userId);
       return currentCount < 1;
     }
 
-    final subData = subSnap.docs.first.data();
-    final Map<String, dynamic> limits =
-        (subData['limits'] as Map<String, dynamic>?) ?? const {'max_laundries': 1};
-    final int maxLaundries = (limits['max_laundries'] as num?)?.toInt() ?? 1;
-
+    // Sesuai Blueprint §3.6.3 (SubscriptionService.canAddLaundry):
+    // batas kuota dibaca langsung dari `limits.max_laundries` pada
+    // dokumen subscription, BUKAN hardcode per plan_id.
+    // Nilai -1 pada limits berarti unlimited (khusus paket Enterprise).
+    final int maxLaundries = activeSubscription.limits.maxLaundries;
     if (maxLaundries == -1) return true; // Unlimited
 
     final currentCount = await _getCurrentLaundryCount(userId);
@@ -401,7 +407,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       // Pengecekan kuota (Blueprint §3.6.3) hanya relevan saat menambah
       // cabang baru. Saat edit, jumlah cabang tidak bertambah jadi dilewati.
       if (!isEditMode) {
-        final isQuotaAvailable = await _checkLaundryLimit(currentUserId);
+        final isQuotaAvailable = await _checkLaundryLimit(currentUserId, _selectedCompanyId!);
         if (!isQuotaAvailable) {
           if (mounted) {
             _showQuotaReachedDialog();

@@ -12,20 +12,44 @@ import '../../repositories/order_repository.dart';
 
 /// Order Item Form Model (UI-only, dikonversi ke OrderItem domain model
 /// pas save)
+///
+/// UPDATED: nambah `pricingType` & `weight`. Sebelumnya semua item
+/// (per-kg maupun per-item) dihitung pakai `quantity` doang (stepper
+/// integer), padahal layanan per-kg secara bisnis butuh berat asli
+/// (desimal, mis. 3.5 kg) - bukan "3 buah". Sekarang subtotal dihitung
+/// beda tergantung pricingType:
+/// - perKg   -> price x weight
+/// - perItem -> price x quantity
 class OrderItemForm {
   final String id;
   final String name;
+  final PricingType pricingType;
   int quantity;
+  double weight;
   double price;
+
+  /// Controller buat input berat (khusus item perKg). Dibuat sekali per
+  /// item supaya cursor/fokus TextField gak reset tiap kali setState.
+  late final TextEditingController weightController;
 
   OrderItemForm({
     required this.id,
     required this.name,
+    required this.pricingType,
     required this.quantity,
+    required this.weight,
     required this.price,
-  });
+  }) {
+    weightController = TextEditingController(
+      text: weight > 0 ? weight.toStringAsFixed(1) : '',
+    );
+  }
 
-  double get subtotal => quantity * price;
+  double get subtotal => pricingType == PricingType.perKg ? weight * price : quantity * price;
+
+  void dispose() {
+    weightController.dispose();
+  }
 }
 
 /// Opsi pelanggan buat dropdown, di-fetch dari
@@ -186,6 +210,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   void dispose() {
     _notesController.dispose();
     _dpAmountController.dispose();
+    // Dispose semua weightController milik tiap item, biar gak ada
+    // TextEditingController yang nyangkut kepegang (memory leak) begitu
+    // layar ini ditutup.
+    for (final item in _orderItems) {
+      item.dispose();
+    }
     super.dispose();
   }
 
@@ -296,7 +326,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             OrderItemForm(
               id: first.id,
               name: first.name,
+              pricingType: first.pricingType,
               quantity: 1,
+              // Item perKg mulai dari 1.0 kg biar TextField gak kosong
+              // (gampang lupa diisi), item perItem gak butuh weight sama
+              // sekali jadi tetap 0.
+              weight: first.pricingType == PricingType.perKg ? 1.0 : 0,
               price: _servicePrice(first),
             ),
           ];
@@ -417,7 +452,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 OrderItemForm(
                   id: service.id,
                   name: service.name,
+                  pricingType: service.pricingType,
                   quantity: 1,
+                  weight: service.pricingType == PricingType.perKg ? 1.0 : 0,
                   price: _servicePrice(service),
                 ),
               );
@@ -431,6 +468,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   void _removeOrderItem(int index) {
     setState(() {
+      _orderItems[index].dispose();
       _orderItems.removeAt(index);
     });
   }
@@ -450,9 +488,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       return;
     }
 
-    if (_orderItems.isEmpty) {
-      _showError('Tambahkan minimal 1 item pesanan');
-      return;
+    if (_selectedOrderType != 'pickup') {
+      if (_orderItems.isEmpty) {
+        _showError('Tambahkan minimal 1 item pesanan');
+        return;
+      }
+      for (final item in _orderItems) {
+        if (item.pricingType == PricingType.perKg && item.weight <= 0) {
+          _showError('Isi berat (kg) untuk "${item.name}" terlebih dahulu');
+          return;
+        }
+      }
     }
 
     if (_companyId == null || _selectedLaundryId == null) {
@@ -461,6 +507,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     }
 
     final totalItems = _orderItems.fold<int>(0, (sum, item) => sum + item.quantity);
+
+    // Total berat cuma dijumlah dari item yang pricingType-nya perKg -
+    // item perItem gak punya berat yang relevan buat dicatat di sini.
+    final totalWeight = _orderItems
+        .where((item) => item.pricingType == PricingType.perKg)
+        .fold<double>(0, (sum, item) => sum + item.weight);
+
     final subtotal = _calculateTotal();
     const discountAmount = 0.0;
     const taxAmount = 0.0;
@@ -494,49 +547,61 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         throw 'Sesi tidak ditemukan, silakan login ulang.';
       }
 
-      final selectedCustomer = _customers.firstWhere((c) => c.id == _selectedCustomerId);
+      // FIX: firstWhere tanpa orElse bisa lempar StateError mentah kalau
+      // _selectedCustomerId somehow gak ketemu di _customers (mis. list
+      // sempat ke-refresh pas user lagi isi form). Sekarang dilempar
+      // sebagai String biasa, jadi ketangkep rapi sama catch di bawah
+      // dan tampil sebagai snackbar merah - bukan crash gak jelas.
+      final selectedCustomer = _customers.firstWhere(
+        (c) => c.id == _selectedCustomerId,
+        orElse: () => throw 'Pelanggan yang dipilih tidak ditemukan, coba pilih ulang.',
+      );
 
       final PaymentStatus paymentStatus = paidNow <= 0
           ? PaymentStatus.pending
           : (paidNow >= totalAmount - 1 ? PaymentStatus.paid : PaymentStatus.partial);
 
-    final order = Order(
-      id: '',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      companyId: _companyId!,
-      laundryId: _selectedLaundryId!,
-      customerId: selectedCustomer.id,
-      customerName: selectedCustomer.name,
-      customerPhone: selectedCustomer.phone,
-      orderNumber: '', // di-generate OrderRepository
-      items: _orderItems
-          .map((item) => OrderItem(
-                serviceTypeId: item.id,
-                serviceName: item.name,
-                quantity: item.quantity,
-                weight: 0,
-                pricePerUnit: item.price,
-                totalPrice: item.subtotal,
-              ))
-          .toList(),
-      totalWeight: 0,
-      totalItems: totalItems,
-      subtotal: subtotal,
-      discountAmount: discountAmount,
-      taxAmount: taxAmount,
-      totalAmount: totalAmount,
-      status: OrderStatus.pending,
-      statusHistory: const [],
-      orderDate: DateTime.now(),
-      paymentStatus: paymentStatus,
-      paymentMethod: PaymentMethod.values.firstWhere((e) => e.name == _selectedPaymentMethod),
-      paidAmount: paidNow,
-      notes: _notesController.text.trim(),
-      priorityLevel: PriorityLevel.normal,
-      orderType: _selectedOrderType == 'pickup' ? OrderType.pickup : OrderType.walkIn,
-      deliveryType: _selectedDeliveryType == 'delivery' ? DeliveryType.delivery : DeliveryType.selfPickup,
-    );
+      final order = Order(
+        id: '',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        companyId: _companyId!,
+        laundryId: _selectedLaundryId!,
+        customerId: selectedCustomer.id,
+        customerName: selectedCustomer.name,
+        customerPhone: selectedCustomer.phone,
+        orderNumber: '', // di-generate OrderRepository
+        items: _orderItems
+            .map((item) => OrderItem(
+                  serviceTypeId: item.id,
+                  serviceName: item.name,
+                  // Item perKg -> quantity dikunci 1 (satu "paket" laundry
+                  // seberat sekian kg), berat asli yang nentuin harga.
+                  // Item perItem -> quantity asli dari stepper, weight 0
+                  // (gak relevan).
+                  quantity: item.pricingType == PricingType.perKg ? 1 : item.quantity,
+                  weight: item.pricingType == PricingType.perKg ? item.weight : 0,
+                  pricePerUnit: item.price,
+                  totalPrice: item.subtotal,
+                ))
+            .toList(),
+        totalWeight: totalWeight,
+        totalItems: totalItems,
+        subtotal: subtotal,
+        discountAmount: discountAmount,
+        taxAmount: taxAmount,
+        totalAmount: totalAmount,
+        status: OrderStatus.pending,
+        statusHistory: const [],
+        orderDate: DateTime.now(),
+        paymentStatus: paymentStatus,
+        paymentMethod: PaymentMethod.values.firstWhere((e) => e.name == _selectedPaymentMethod),
+        paidAmount: paidNow,
+        notes: _notesController.text.trim(),
+        priorityLevel: PriorityLevel.normal,
+        orderType: _selectedOrderType == 'pickup' ? OrderType.pickup : OrderType.walkIn,
+        deliveryType: _selectedDeliveryType == 'delivery' ? DeliveryType.delivery : DeliveryType.selfPickup,
+      );
 
       final repository = OrderRepository(userId: user.uid);
       await repository.createOrder(order);
@@ -591,21 +656,21 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildTopBar(context),
-                        const SizedBox(height: AppTheme.xl),
-                        _buildProgressIndicator(context),
-                        const SizedBox(height: AppTheme.xxl),
-                        _buildHeader(context),
-                        const SizedBox(height: AppTheme.xxl),
+                        const SizedBox(height: AppTheme.lg),
                         if (_businessContextError != null) ...[
                           _buildBusinessContextError(context),
-                          const SizedBox(height: AppTheme.xxl),
+                          const SizedBox(height: AppTheme.lg),
                         ],
-                        _buildForm(context),
-                        const SizedBox(height: AppTheme.xxl),
-                        _buildOrderItemsSection(context),
-                        const SizedBox(height: AppTheme.xxl),
-                        _buildPriceSummary(context),
-                        const SizedBox(height: AppTheme.xxl),
+                        // Satu card utama yang nampung SEMUA: data
+                        // pesanan, item, sampai ringkasan harga.
+                        // Sebelumnya ini 3-4 card terpisah yang masing-
+                        // masing punya shadow sendiri (Form, tiap item
+                        // pesanan, ringkasan harga) - keliatan numpuk
+                        // banget kalau di-scroll. Sekarang cukup 1 card
+                        // dengan pemisah section pakai label kecil +
+                        // divider tipis, jauh lebih ringkas.
+                        _buildMainCard(context),
+                        const SizedBox(height: AppTheme.xl),
                         _buildSaveButton(context),
                         const SizedBox(height: AppTheme.lg),
                       ],
@@ -649,9 +714,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
+  /// Top bar sekaligus jadi header - tombol back, judul layar, dan
+  /// subjudul singkat, tanpa kotak ikon besar & progress bar terpisah
+  /// yang cuma makan tempat tanpa nambah informasi baru.
   Widget _buildTopBar(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
           onTap: () => Navigator.pop(context, false),
@@ -674,98 +743,60 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ),
         ),
         const SizedBox(width: 14),
-        Text(
-          t.createOrderAppBarTitle,
-          style: GoogleFonts.poppins(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProgressIndicator(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              flex: 6,
-              child: Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor,
-                  borderRadius: BorderRadius.circular(3),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t.createOrderAppBarTitle,
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
                 ),
               ),
-            ),
-            const SizedBox(width: AppTheme.sm),
-            Expanded(
-              flex: 1,
-              child: Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: AppTheme.borderColor,
-                  borderRadius: BorderRadius.circular(3),
+              const SizedBox(height: 2),
+              Text(
+                'Buat dan kelola pesanan laundry baru',
+                style: GoogleFonts.poppins(
+                  fontSize: 12.5,
+                  color: AppTheme.textSecondary,
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppTheme.md),
-        Text(
-          'Step 1 dari 2',
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: AppTheme.primaryColor,
-            fontWeight: FontWeight.w600,
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(AppTheme.lg),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          ),
-          child: Icon(
-            Icons.add_circle_outline_rounded,
-            color: AppTheme.primaryColor,
-            size: 34,
-          ),
+  /// Label kecil buat mulai section baru di dalam _buildMainCard,
+  /// gantiin kotak/card terpisah per section.
+  Widget _sectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppTheme.md),
+      child: Text(
+        text,
+        style: GoogleFonts.poppins(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: AppTheme.textPrimary,
         ),
-        const SizedBox(height: AppTheme.xl),
-        Text(
-          'Pesanan Baru',
-          style: GoogleFonts.poppins(
-            fontSize: 21,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        const SizedBox(height: AppTheme.sm),
-        Text(
-          'Buat dan kelola pesanan laundry baru',
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildForm(BuildContext context) {
+  Widget _sectionDivider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.lg),
+      child: Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
+    );
+  }
+
+  /// Card utama - satu-satunya kotak putih ber-shadow di layar ini.
+  /// Isinya 3 section (Data Pesanan, Item Pesanan, Ringkasan Harga)
+  /// dipisahkan pakai divider tipis + label, bukan card terpisah lagi.
+  Widget _buildMainCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
@@ -782,7 +813,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       child: Form(
         key: _formKey,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _sectionLabel('Data Pesanan'),
+
             // Dropdown cabang - CUMA muncul kalau owner punya lebih dari
             // 1 cabang aktif (lihat _showLaundryDropdown). Owner paket
             // Starter (max 1 cabang) gak akan pernah lihat ini sama
@@ -842,7 +876,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             onTap: () => setState(() => _selectedPaymentMethod = method['id']),
                             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: AppTheme.md, horizontal: AppTheme.sm),
+                              padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.sm),
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? AppTheme.primaryColor.withOpacity(0.1)
@@ -853,21 +887,25 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                   width: isSelected ? 1.5 : 1,
                                 ),
                               ),
-                              child: Column(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
                                     method['icon'],
-                                    size: 20,
+                                    size: 16,
                                     color: isSelected ? AppTheme.primaryColor : AppTheme.textTertiary,
                                   ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    method['label'],
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      method['label'],
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -936,6 +974,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               prefixIcon: Icons.note_outlined,
               maxLines: 3,
             ),
+
+            _sectionDivider(),
+
+            _buildOrderItemsSection(context),
+
+            _sectionDivider(),
+
+            _buildPriceSummary(context),
           ],
         ),
       ),
@@ -1224,6 +1270,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
+  /// Section item pesanan - sekarang bagian dari _buildMainCard, bukan
+  /// widget berdiri sendiri. Tiap item ditampilkan sebagai row tipis
+  /// (bukan card+shadow masing-masing) dipisah divider, jauh lebih
+  /// ringkas dibanding sebelumnya.
+  ///
+  /// UPDATED: baris kontrol kuantitas sekarang kondisional. Item dengan
+  /// pricingType perKg menampilkan input berat (TextField desimal, kg)
+  /// alih-alih stepper +/- integer, karena harga per-kg dihitung dari
+  /// berat asli, bukan "banyaknya barang".
   Widget _buildOrderItemsSection(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     return Column(
@@ -1235,224 +1290,218 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             Text(
               'Item Pesanan',
               style: GoogleFonts.poppins(
-                fontSize: 16,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.textPrimary,
               ),
             ),
-            ElevatedButton.icon(
+            TextButton.icon(
               onPressed: !_isLoading ? _addOrderItem : null,
               icon: const Icon(Icons.add, size: 16),
-              label: Text('Tambah Item', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.md,
-                  vertical: AppTheme.sm,
-                ),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+              label: Text('Tambah', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5)),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.primaryColor,
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 4),
               ),
             ),
           ],
         ),
-        const SizedBox(height: AppTheme.lg),
+        const SizedBox(height: AppTheme.sm),
         if (_orderItems.isEmpty)
           Container(
-            padding: const EdgeInsets.all(AppTheme.lg),
+            padding: const EdgeInsets.all(AppTheme.md),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: AppTheme.primaryColor.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             ),
             child: Text(
-              'Belum ada item. Tekan "Tambah Item" untuk memilih layanan.',
+              'Belum ada item. Tekan "Tambah" untuk memilih layanan.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
             ),
-          ),
-        ..._orderItems.asMap().entries.map(
-          (entry) {
+          )
+        else
+          ..._orderItems.asMap().entries.map((entry) {
             final index = entry.key;
             final item = entry.value;
+            final isLast = index == _orderItems.length - 1;
+            final isPerKg = item.pricingType == PricingType.perKg;
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: AppTheme.lg),
+              padding: EdgeInsets.only(bottom: isLast ? 0 : AppTheme.sm),
               child: Container(
-                padding: const EdgeInsets.all(AppTheme.lg),
+                padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.md),
                 decoration: BoxDecoration(
-                  color: AppTheme.cardColor,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryColor.withOpacity(0.06),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  color: AppTheme.backgroundColor,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Baris 1: nama layanan, subtotal, tombol hapus.
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.name,
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: AppTheme.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatCurrency(item.price),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: AppTheme.primaryColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            item.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: AppTheme.textPrimary,
+                            ),
                           ),
                         ),
-                        InkWell(
-                          onTap: !_isLoading ? () => _removeOrderItem(index) : null,
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: AppTheme.errorColor.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(Icons.close, size: 16, color: AppTheme.errorColor),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppTheme.md),
-                    Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
-                    const SizedBox(height: AppTheme.md),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          t.quantityLabel,
-                          style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
-                        ),
-                        Row(
-                          children: [
-                            _QuantityButton(
-                              icon: Icons.remove,
-                              onTap: item.quantity > 1
-                                  ? () => setState(() => item.quantity--)
-                                  : null,
-                            ),
-                            SizedBox(
-                              width: 36,
-                              child: Text(
-                                '${item.quantity}',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.textPrimary,
-                                ),
-                              ),
-                            ),
-                            _QuantityButton(
-                              icon: Icons.add,
-                              onTap: !_isLoading ? () => setState(() => item.quantity++) : null,
-                            ),
-                          ],
-                        ),
+                        const SizedBox(width: AppTheme.sm),
                         Text(
                           _formatCurrency(item.subtotal),
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w700,
-                            fontSize: 13.5,
+                            fontSize: 12.5,
                             color: AppTheme.primaryColor,
                           ),
                         ),
+                        InkWell(
+                          onTap: !_isLoading ? () => _removeOrderItem(index) : null,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Icon(Icons.close, size: 16, color: AppTheme.textTertiary),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // Baris 2: harga satuan (kiri) & kontrol kanan -
+                    // input berat (kg) untuk item perKg, atau stepper
+                    // qty untuk item perItem.
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          isPerKg
+                              ? '${_formatCurrency(item.price)} / kg'
+                              : '${_formatCurrency(item.price)} / item',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: AppTheme.textTertiary,
+                          ),
+                        ),
+                        isPerKg
+                            ? SizedBox(
+                                width: 92,
+                                height: 34,
+                                child: TextField(
+                                  controller: item.weightController,
+                                  enabled: !_isLoading,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    suffixText: 'kg',
+                                    suffixStyle: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
+                                    contentPadding:
+                                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    filled: true,
+                                    fillColor: AppTheme.cardColor,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: AppTheme.borderColor),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: AppTheme.borderColor),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
+                                    ),
+                                  ),
+                                  onChanged: (val) {
+                                    final parsed = double.tryParse(val.replaceAll(',', '.'));
+                                    setState(() => item.weight = parsed ?? 0);
+                                  },
+                                ),
+                              )
+                            : Row(
+                                children: [
+                                  _QuantityButton(
+                                    icon: Icons.remove,
+                                    onTap: item.quantity > 1 ? () => setState(() => item.quantity--) : null,
+                                  ),
+                                  SizedBox(
+                                    width: 28,
+                                    child: Text(
+                                      '${item.quantity}',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  _QuantityButton(
+                                    icon: Icons.add,
+                                    onTap: !_isLoading ? () => setState(() => item.quantity++) : null,
+                                  ),
+                                ],
+                              ),
                       ],
                     ),
                   ],
                 ),
               ),
             );
-          },
-        ),
+          }),
       ],
     );
   }
 
+  /// Ringkasan harga - sekarang cuma beberapa baris teks di dalam
+  /// _buildMainCard, bukan card terpisah lagi.
   Widget _buildPriceSummary(BuildContext context) {
     final total = _calculateTotal();
     final t = AppLocalizations.of(context)!;
 
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.lg),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Ringkasan Harga',
-            style: GoogleFonts.poppins(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(t.subtotalLabel, style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary)),
+            Text(
+              _formatCurrency(total),
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5, color: AppTheme.textPrimary),
             ),
-          ),
-          const SizedBox(height: AppTheme.lg),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(t.subtotalLabel, style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary)),
-              Text(
-                _formatCurrency(total),
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5, color: AppTheme.textPrimary),
+          ],
+        ),
+        const SizedBox(height: AppTheme.sm),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              t.totalLabel,
+              style: GoogleFonts.poppins(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+            ),
+            Text(
+              _formatCurrency(total),
+              style: GoogleFonts.poppins(
+                fontSize: 19,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.primaryColor,
               ),
-            ],
-          ),
-          const SizedBox(height: AppTheme.md),
-          Divider(color: AppTheme.borderColor),
-          const SizedBox(height: AppTheme.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                t.totalLabel,
-                style: GoogleFonts.poppins(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
-              ),
-              Text(
-                _formatCurrency(total),
-                style: GoogleFonts.poppins(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.primaryColor,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -1515,17 +1564,17 @@ class _QuantityButton extends StatelessWidget {
     final isEnabled = onTap != null;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        width: 30,
-        height: 30,
+        width: 24,
+        height: 24,
         decoration: BoxDecoration(
-          color: isEnabled ? AppTheme.primaryColor.withOpacity(0.1) : AppTheme.backgroundColor,
+          color: isEnabled ? AppTheme.primaryColor.withOpacity(0.1) : AppTheme.cardColor,
           shape: BoxShape.circle,
         ),
         child: Icon(
           icon,
-          size: 16,
+          size: 14,
           color: isEnabled ? AppTheme.primaryColor : AppTheme.textTertiary,
         ),
       ),
