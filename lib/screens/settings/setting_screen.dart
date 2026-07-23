@@ -148,8 +148,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             _buildSectionCard([
                               _buildTile(
                                 icon: Icons.chat_bubble_outline_rounded,
-                                title: 'Chat dan CS',
-                                subtitle: 'Balasan dari customer service',
+                                title: 'Chat',
+                                subtitle: 'Balasan',
                                 onTap: () => context.push('/settings/chat-cs'),
                               ),
                               _buildTile(
