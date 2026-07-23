@@ -244,6 +244,18 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
     return name.isNotEmpty ? name[0].toUpperCase() : '?';
   }
 
+  /// Cari nama cabang dari laundryId, buat ditampilkan sebagai badge kecil
+  /// di kartu pelanggan (mirip badge "Menteng"/"Sudirman" di code.html).
+  /// Null kalau customer belum di-assign ke cabang manapun atau cabangnya
+  /// sudah tidak ada di _laundriesList.
+  String? _branchNameFor(String? laundryId) {
+    if (laundryId == null) return null;
+    for (final laundry in _laundriesList) {
+      if (laundry.id == laundryId) return laundry.name;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -428,55 +440,61 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
     );
   }
 
-  /// Build filter buttons (status: all/active/inactive)
+  /// Build filter buttons (status: all/active/inactive) — sekarang
+  /// bentuknya segmented control (tab pill di dalam 1 container abu-abu),
+  /// meniru pola "Semua / Aktif / Tidak Aktif" di code.html.
   Widget _buildFilterButtons(BuildContext context, AppLocalizations l10n) {
     final filters = [
-      ('all', l10n.filterAll, Icons.people_outline),
-      ('active', l10n.customerActiveLabel, Icons.check_circle_outline),
-      ('inactive', l10n.customerInactiveLabel, Icons.pause_circle_outline),
+      ('all', l10n.filterAll),
+      ('active', l10n.customerActiveLabel),
+      ('inactive', l10n.customerInactiveLabel),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppTheme.borderColor.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
       child: Row(
-        children: List.generate(
-          filters.length,
-          (index) => Padding(
-            padding: EdgeInsets.only(right: index < filters.length - 1 ? AppTheme.md : 0),
-            child: FilterChip(
-              selected: _selectedFilter == filters[index].$1,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedFilter = filters[index].$1;
-                });
+        children: List.generate(filters.length, (index) {
+          final isSelected = _selectedFilter == filters[index].$1;
+          return Expanded(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd - 2),
+              onTap: () {
+                setState(() => _selectedFilter = filters[index].$1);
                 _applyFiltersAndSearch();
               },
-              showCheckmark: false,
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(filters[index].$3, size: 16),
-                  const SizedBox(width: AppTheme.sm),
-                  Text(filters[index].$2),
-                ],
-              ),
-              backgroundColor: AppTheme.cardColor,
-              selectedColor: AppTheme.primaryColor.withOpacity(0.12),
-              side: BorderSide(
-                color: _selectedFilter == filters[index].$1
-                    ? AppTheme.primaryColor.withOpacity(0.4)
-                    : AppTheme.borderColor,
-              ),
-              labelStyle: GoogleFonts.poppins(
-                fontSize: 12.5,
-                color: _selectedFilter == filters[index].$1
-                    ? AppTheme.primaryColor
-                    : AppTheme.textSecondary,
-                fontWeight: FontWeight.w600,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(vertical: AppTheme.sm + 2),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppTheme.cardColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd - 2),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withOpacity(0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  filters[index].$2,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        }),
       ),
     );
   }
@@ -691,6 +709,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
               customer: _filteredCustomers[index],
               l10n: l10n,
               initials: _getInitials(_filteredCustomers[index].name),
+              branchName: _branchNameFor(_filteredCustomers[index].laundryId),
               formattedSpent: _formatCurrency(_filteredCustomers[index].totalSpent),
               formattedLastOrder: _formatLastOrder(l10n, _filteredCustomers[index].lastOrderDate),
               onTap: () => context.push('/customers/${_filteredCustomers[index].id}'),
@@ -800,11 +819,14 @@ class _StatBox extends StatelessWidget {
   }
 }
 
-/// Customer Card Widget
+/// Customer Card Widget — layout mengikuti code.html: avatar inisial warna
+/// variatif, nama + dot indikator aktif/nonaktif, badge cabang kecil + jumlah
+/// order, dan label "Total Spent" di kanan.
 class _CustomerCard extends StatelessWidget {
   final CustomerItem customer;
   final AppLocalizations l10n;
   final String initials;
+  final String? branchName;
   final String formattedSpent;
   final String formattedLastOrder;
   final VoidCallback onTap;
@@ -813,13 +835,34 @@ class _CustomerCard extends StatelessWidget {
     required this.customer,
     required this.l10n,
     required this.initials,
+    required this.branchName,
     required this.formattedSpent,
     required this.formattedLastOrder,
     required this.onTap,
   });
 
+  // Palet warna avatar inisial, dipilih otomatis dari huruf pertama nama
+  // supaya kartu terlihat variatif — meniru variasi warna avatar
+  // (blue/orange/gray/purple) di code.html.
+  static final List<Color> _avatarPalette = [
+    AppTheme.primaryColor,
+    const Color(0xFFE67E22),
+    const Color(0xFF8E44AD),
+    const Color(0xFF16A085),
+    const Color(0xFFEB74A8),
+    const Color(0xFF5499C7),
+  ];
+
+  Color _avatarColorFor(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return _avatarPalette[0];
+    return _avatarPalette[trimmed.codeUnitAt(0) % _avatarPalette.length];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final avatarColor = _avatarColorFor(customer.name);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -836,116 +879,132 @@ class _CustomerCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppTheme.primaryColor.withOpacity(0.12),
-                  child: Text(
-                    initials,
-                    style: GoogleFonts.poppins(
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
-                  ),
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: avatarColor.withOpacity(0.14),
+              child: Text(
+                initials,
+                style: GoogleFonts.poppins(
+                  color: avatarColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
                 ),
-                const SizedBox(width: AppTheme.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            ),
+            const SizedBox(width: AppTheme.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        customer.name,
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14.5,
-                          color: AppTheme.textPrimary,
+                      Flexible(
+                        child: Text(
+                          customer.name,
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.5,
+                            color: AppTheme.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        customer.phone,
-                        style: GoogleFonts.poppins(
-                          fontSize: 12.5,
-                          color: AppTheme.textSecondary,
+                      const SizedBox(width: 6),
+                      // Dot kecil hijau/abu-abu menggantikan badge besar
+                      // Aktif/Nonaktif, meniru pola indikator di code.html.
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: customer.isActive ? const Color(0xFF51CF66) : AppTheme.textTertiary,
                         ),
                       ),
                     ],
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.md,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: (customer.isActive ? const Color(0xFF51CF66) : Colors.grey)
-                        .withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                  ),
-                  child: Text(
-                    customer.isActive ? l10n.customerActiveLabel : l10n.customerInactiveLabel,
+                  const SizedBox(height: 2),
+                  Text(
+                    customer.phone,
                     style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: customer.isActive ? const Color(0xFF51CF66) : Colors.grey.shade600,
+                      fontSize: 12.5,
+                      color: AppTheme.textSecondary,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      if (branchName != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Text(
+                            branchName!.toUpperCase(),
+                            style: GoogleFonts.poppins(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
+                              color: AppTheme.primaryColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Icon(Icons.receipt_long_outlined, size: 13, color: AppTheme.textTertiary),
+                      const SizedBox(width: 3),
+                      Text(
+                        l10n.ordersCountLabel(customer.totalOrders),
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: AppTheme.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppTheme.lg),
-            Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
-            const SizedBox(height: AppTheme.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            const SizedBox(width: AppTheme.sm),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.receipt_long_outlined,
-                      size: 15,
-                      color: AppTheme.textTertiary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      l10n.ordersCountLabel(customer.totalOrders),
-                      style: GoogleFonts.poppins(
-                        fontSize: 11.5,
-                        color: AppTheme.textTertiary,
-                      ),
-                    ),
-                  ],
+                Text(
+                  'TOTAL SPENT',
+                  style: GoogleFonts.poppins(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                    color: AppTheme.textTertiary,
+                  ),
                 ),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.schedule_outlined,
-                      size: 15,
-                      color: AppTheme.textTertiary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      formattedLastOrder,
-                      style: GoogleFonts.poppins(
-                        fontSize: 11.5,
-                        color: AppTheme.textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 3),
                 Text(
                   formattedSpent,
                   style: GoogleFonts.poppins(
-                    fontSize: 13.5,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.primaryColor,
                   ),
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.schedule_outlined, size: 11, color: AppTheme.textTertiary),
+                    const SizedBox(width: 3),
+                    Text(
+                      formattedLastOrder,
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: AppTheme.textTertiary,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
