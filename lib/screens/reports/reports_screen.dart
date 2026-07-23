@@ -23,7 +23,32 @@ class _ServiceBreakdown {
   });
 }
 
+/// Opsi cabang buat filter, di-fetch dari users/{uid}/laundries
+/// (sesuai Blueprint §3.2.3). Pola sama persis dengan _LaundryOption di
+/// OrdersListScreen / CustomersListScreen.
+class _LaundryOption {
+  final String id;
+  final String name;
+
+  _LaundryOption({required this.id, required this.name});
+
+  factory _LaundryOption.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    return _LaundryOption(
+      id: doc.id,
+      name: (data['name'] ?? 'Cabang Tanpa Nama') as String,
+    );
+  }
+}
+
 /// Reports Screen
+///
+/// UPDATED: berbeda dari PickupDeliveryScreen (yang sengaja TIDAK
+/// dipisah per cabang karena sifatnya operasional harian), laporan di
+/// sini justru butuh breakdown per cabang - owner dengan banyak cabang
+/// perlu tahu "cabang mana yang paling untung", bukan cuma angka gabungan.
+/// Filter cabang cuma muncul kalau owner punya > 1 cabang aktif (lihat
+/// _showLaundryFilter), sama pola auto-hide di semua layar list lainnya.
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({Key? key}) : super(key: key);
 
@@ -36,6 +61,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
   final List<String> _periods = ['Hari Ini', 'Minggu Ini', 'Bulan Ini', 'Tahun Ini'];
   bool _isExporting = false;
 
+  // Filter cabang - 'all' berarti gabungan semua cabang (behavior lama,
+  // tetap jadi default). Chip filter cuma ditampilkan kalau owner punya
+  // > 1 cabang aktif (_showLaundryFilter).
+  List<_LaundryOption> _laundriesList = [];
+  String _selectedLaundryId = 'all';
+
+  bool get _showLaundryFilter => _laundriesList.length > 1;
+
   // Real data dari Firebase (bukan dummy lagi)
   double _totalRevenue = 0;
   int _totalOrders = 0;
@@ -43,7 +76,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
   double _avgOrderValue = 0;
   double _growthRate = 0;
   double _completionRate = 0;
-  double _customerRating = 0;
 
   List<double> _weeklyValues = List.filled(7, 0.0);
   final List<String> _weeklyDays = const ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
@@ -55,10 +87,46 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   void initState() {
     super.initState();
+    _fetchLaundries();
     _fetchReportsData();
   }
 
-  /// Fetch semua data dari Firebase sesuai period yang dipilih
+  /// Ambil semua cabang aktif milik company ini, buat isi chip filter
+  /// (cuma ditampilkan kalau > 1, lihat _showLaundryFilter). Gagal fetch
+  /// bukan error fatal - laporan tetap jalan dengan data gabungan semua
+  /// cabang, cuma filter chip-nya gak muncul.
+  Future<void> _fetchLaundries() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final companiesSnap = await userDocRef.collection('companies').limit(1).get();
+      if (companiesSnap.docs.isEmpty) return;
+      final companyId = companiesSnap.docs.first.id;
+
+      final laundriesSnap = await userDocRef
+          .collection('laundries')
+          .where('company_id', isEqualTo: companyId)
+          .where('is_active', isEqualTo: true)
+          .get();
+
+      if (!mounted) return;
+      setState(() {
+        _laundriesList = laundriesSnap.docs.map((d) => _LaundryOption.fromFirestore(d)).toList();
+      });
+    } catch (e) {
+      debugPrint('Gagal memuat data cabang: $e');
+    }
+  }
+
+  /// Fetch semua data dari Firebase sesuai period & cabang yang dipilih.
+  ///
+  /// NOTE PENTING: menambahkan filter laundry_id di atas range query
+  /// order_date butuh composite index di Firestore. Kalau muncul error
+  /// "failed-precondition" pas pertama kali jalan dengan filter cabang
+  /// aktif, buka link yang Firestore kasih di error tersebut - itu akan
+  /// otomatis bikinkan index yang dibutuhkan, tidak perlu dibuat manual.
   Future<void> _fetchReportsData() async {
     setState(() {
       _isLoading = true;
@@ -99,49 +167,49 @@ class _ReportsScreenState extends State<ReportsScreen> {
         endDate = DateTime(now.year + 1, 1, 1);
       }
 
-      // Fetch orders
-      final ordersSnap = await FirebaseFirestore.instance
+      // Query dasar orders, ditambah filter cabang kalau bukan "Semua Cabang"
+      Query ordersQuery = FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .collection('orders')
           .where('order_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
-          .where('order_date', isLessThan: Timestamp.fromDate(endDate))
-          .get();
+          .where('order_date', isLessThan: Timestamp.fromDate(endDate));
+      if (_selectedLaundryId != 'all') {
+        ordersQuery = ordersQuery.where('laundry_id', isEqualTo: _selectedLaundryId);
+      }
+      final ordersSnap = await ordersQuery.get();
 
-      // Fetch customers
-      final customersSnap = await FirebaseFirestore.instance
+      // Query dasar customers, ditambah filter cabang yang sama - supaya
+      // "Pelanggan Baru" juga menghitung pelanggan cabang yang dipilih
+      // saja (customer.laundry_id, lihat CreateCustomerScreen).
+      Query customersQuery = FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .collection('customers')
           .where('created_at', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
-          .where('created_at', isLessThan: Timestamp.fromDate(endDate))
-          .get();
+          .where('created_at', isLessThan: Timestamp.fromDate(endDate));
+      if (_selectedLaundryId != 'all') {
+        customersQuery = customersQuery.where('laundry_id', isEqualTo: _selectedLaundryId);
+      }
+      final customersSnap = await customersQuery.get();
 
       // Calculate metrics dari orders
       double totalRevenue = 0;
       int completedOrders = 0;
       int totalOrdersCount = ordersSnap.docs.length;
-      double totalRating = 0;
-      int ratedOrders = 0;
 
       Map<String, double> serviceRevenue = {};
       Map<String, int> serviceOrderCount = {};
 
       for (var doc in ordersSnap.docs) {
-        final data = doc.data();
+        final data = doc.data() as Map<String, dynamic>;
         final amount = ((data['total_amount'] ?? 0) as num).toDouble();
         final status = data['status'] ?? 'pending';
-        final rating = ((data['customer_rating'] ?? 0) as num).toDouble();
 
         totalRevenue += amount;
 
         if (status == 'completed') {
           completedOrders++;
-        }
-
-        if (rating > 0) {
-          totalRating += rating;
-          ratedOrders++;
         }
 
         // Service breakdown -> nama layanan disimpan di dalam array `items`,
@@ -204,7 +272,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
         _avgOrderValue = totalOrdersCount > 0 ? totalRevenue / totalOrdersCount : 0.0;
         _growthRate = growthPercentage;
         _completionRate = totalOrdersCount > 0 ? (completedOrders / totalOrdersCount * 100) : 0.0;
-        _customerRating = ratedOrders > 0 ? (totalRating / ratedOrders) : 0.0;
         _serviceBreakdown = serviceList.isEmpty ? [] : serviceList;
         _weeklyValues = weeklyData;
         _isLoading = false;
@@ -218,28 +285,41 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  /// Calculate weekly revenue breakdown
+  /// Calculate weekly revenue breakdown - ikut filter cabang yang aktif.
+  ///
+  /// NOTE: maxRevenue dihitung dari TOTAL pendapatan per hari (bukan dari
+  /// amount per order), supaya rasio tinggi bar (revenue / maxRevenue) di
+  /// _buildRevenueChart selalu berada di rentang 0.0-1.0. Kalau dihitung
+  /// dari amount per order, hari dengan banyak order kecil bisa punya
+  /// total lebih besar dari "order tunggal terbesar", bikin rasio > 1.0
+  /// dan bar overflow keluar dari SizedBox(height: 110).
   Future<List<double>> _calculateWeeklyData(String uid, DateTime startDate, DateTime endDate) async {
     final weeklyRevenue = <int, double>{}; // day of week -> revenue
 
-    final ordersSnap = await FirebaseFirestore.instance
+    Query ordersQuery = FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
         .collection('orders')
         .where('order_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
-        .where('order_date', isLessThan: Timestamp.fromDate(endDate))
-        .get();
-
-    double maxRevenue = 0;
+        .where('order_date', isLessThan: Timestamp.fromDate(endDate));
+    if (_selectedLaundryId != 'all') {
+      ordersQuery = ordersQuery.where('laundry_id', isEqualTo: _selectedLaundryId);
+    }
+    final ordersSnap = await ordersQuery.get();
 
     for (var doc in ordersSnap.docs) {
-      final data = doc.data();
+      final data = doc.data() as Map<String, dynamic>;
       final amount = ((data['total_amount'] ?? 0) as num).toDouble();
       final orderDate = (data['order_date'] as Timestamp).toDate();
       final dayOfWeek = orderDate.weekday; // 1 = Monday, 7 = Sunday
 
       weeklyRevenue[dayOfWeek] = (weeklyRevenue[dayOfWeek] ?? 0) + amount;
-      if (amount > maxRevenue) maxRevenue = amount;
+    }
+
+    // Cari max dari TOTAL per hari, bukan dari amount per order
+    double maxRevenue = 0;
+    for (final total in weeklyRevenue.values) {
+      if (total > maxRevenue) maxRevenue = total;
     }
 
     // Convert to list format (Monday to Sunday)
@@ -252,27 +332,40 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return result;
   }
 
-  /// Get revenue dari periode sebelumnya untuk calculate growth
+  /// Get revenue dari periode sebelumnya untuk calculate growth - ikut
+  /// filter cabang yang aktif, supaya growth rate dihitung apple-to-apple
+  /// (cabang yang sama, bukan dibandingkan ke gabungan semua cabang).
   Future<double> _getPreviousPeriodRevenue(String uid, DateTime currentStart, DateTime currentEnd) async {
     final duration = currentEnd.difference(currentStart);
     final prevStart = currentStart.subtract(duration);
     final prevEnd = currentStart;
 
-    final ordersSnap = await FirebaseFirestore.instance
+    Query ordersQuery = FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
         .collection('orders')
         .where('order_date', isGreaterThanOrEqualTo: Timestamp.fromDate(prevStart))
-        .where('order_date', isLessThan: Timestamp.fromDate(prevEnd))
-        .get();
+        .where('order_date', isLessThan: Timestamp.fromDate(prevEnd));
+    if (_selectedLaundryId != 'all') {
+      ordersQuery = ordersQuery.where('laundry_id', isEqualTo: _selectedLaundryId);
+    }
+    final ordersSnap = await ordersQuery.get();
 
     double totalRevenue = 0;
     for (var doc in ordersSnap.docs) {
-      final data = doc.data();
+      final data = doc.data() as Map<String, dynamic>;
       totalRevenue += ((data['total_amount'] ?? 0) as num).toDouble();
     }
 
     return totalRevenue;
+  }
+
+  /// Nama cabang yang lagi difilter, buat ditampilin di judul PDF.
+  /// "Semua Cabang" kalau _selectedLaundryId == 'all'.
+  String get _selectedLaundryLabel {
+    if (_selectedLaundryId == 'all') return 'Semua Cabang';
+    final match = _laundriesList.where((l) => l.id == _selectedLaundryId);
+    return match.isNotEmpty ? match.first.name : 'Semua Cabang';
   }
 
   String _formatCurrency(double amount) {
@@ -299,6 +392,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     try {
       final doc = pw.Document();
       final periodLabel = _periods[_selectedPeriod];
+      final laundryLabel = _selectedLaundryLabel;
       final now = DateTime.now();
       final generatedAt = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} '
           '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
@@ -320,7 +414,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
               pw.SizedBox(height: 4),
               pw.Text(
-                'Periode: $periodLabel   |   Dibuat: $generatedAt',
+                'Periode: $periodLabel   |   Cabang: $laundryLabel   |   Dibuat: $generatedAt',
                 style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
               ),
               pw.SizedBox(height: 12),
@@ -340,7 +434,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 _pdfTableRow(['Rata-rata Order', _formatCurrency(_avgOrderValue)]),
                 _pdfTableRow(['Pertumbuhan', '+${_growthRate.toStringAsFixed(1)}% dari periode sebelumnya']),
                 _pdfTableRow(['Completion Rate', '${_completionRate.toStringAsFixed(1)}%']),
-                _pdfTableRow(['Customer Rating', '${_customerRating.toStringAsFixed(1)}/5.0']),
               ],
             ),
             pw.SizedBox(height: 20),
@@ -486,6 +579,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         _buildHeader(context),
                         const SizedBox(height: 22),
                         _buildPeriodChips(context),
+                        if (_showLaundryFilter) ...[
+                          const SizedBox(height: AppTheme.md),
+                          _buildLaundryFilterChips(context),
+                        ],
                         const SizedBox(height: AppTheme.lg),
                         if (_isLoading)
                           const Padding(
@@ -566,52 +663,67 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  /// Build header — sama persis gayanya dengan PickupDeliveryScreen/OrdersListScreen
+  /// Build header — Row luar dibungkus Expanded di sisi judul & Flexible
+  /// implicit di tombol Export, biar gak overflow pas layar sempit
+  /// (mobile). Label tombol Export disembunyikan di mobile, cuma nyisain
+  /// icon-nya, karena ruang horizontal terbatas.
   Widget _buildHeader(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 800;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Icon(
-                Icons.bar_chart_rounded,
-                color: AppTheme.primaryColor,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Laporan',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
-                  ),
+        Expanded(
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(13),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Pantau performa bisnis laundry Anda',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w400,
-                    color: AppTheme.textSecondary,
-                  ),
+                child: Icon(
+                  Icons.bar_chart_rounded,
+                  color: AppTheme.primaryColor,
+                  size: 22,
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Laporan',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Pantau performa bisnis laundry Anda',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w400,
+                        color: AppTheme.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
+        const SizedBox(width: 8),
         OutlinedButton.icon(
           onPressed: _isExporting ? null : () => _exportToPdf(context),
           icon: _isExporting
@@ -622,14 +734,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 )
               : const Icon(Icons.file_download_outlined, size: 18),
           label: Text(
-            _isExporting ? 'Membuat PDF...' : 'Export',
+            isMobile ? '' : (_isExporting ? 'Membuat PDF...' : 'Export'),
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
           ),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppTheme.primaryColor,
             side: BorderSide(color: AppTheme.primaryColor),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.lg,
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? AppTheme.md : AppTheme.lg,
               vertical: AppTheme.md,
             ),
             shape: RoundedRectangleBorder(
@@ -673,6 +785,75 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Build filter chip CABANG - baris terpisah di bawah filter periode,
+  /// cuma dirender kalau _showLaundryFilter true (cabang > 1). Chip
+  /// pertama selalu "Semua Cabang", sisanya sesuai nama cabang aktif.
+  /// Pola sama persis dengan OrdersListScreen/CustomersListScreen.
+  Widget _buildLaundryFilterChips(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: AppTheme.md),
+            child: _buildLaundryChip(
+              label: 'Semua Cabang',
+              isSelected: _selectedLaundryId == 'all',
+              onTap: () {
+                setState(() => _selectedLaundryId = 'all');
+                _fetchReportsData();
+              },
+            ),
+          ),
+          ..._laundriesList.map((laundry) {
+            final isLast = laundry.id == _laundriesList.last.id;
+            return Padding(
+              padding: EdgeInsets.only(right: isLast ? 0 : AppTheme.md),
+              child: _buildLaundryChip(
+                label: laundry.name,
+                isSelected: _selectedLaundryId == laundry.id,
+                onTap: () {
+                  setState(() => _selectedLaundryId = laundry.id);
+                  _fetchReportsData();
+                },
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLaundryChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return FilterChip(
+      selected: isSelected,
+      onSelected: (_) => onTap(),
+      showCheckmark: false,
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.storefront_outlined, size: 15),
+          const SizedBox(width: AppTheme.sm),
+          Text(label),
+        ],
+      ),
+      backgroundColor: AppTheme.cardColor,
+      selectedColor: AppTheme.primaryColor.withOpacity(0.12),
+      side: BorderSide(
+        color: isSelected ? AppTheme.primaryColor.withOpacity(0.4) : AppTheme.borderColor,
+      ),
+      labelStyle: GoogleFonts.poppins(
+        fontSize: 12.5,
+        color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
@@ -972,7 +1153,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  /// Build additional metrics — dirampingkan
+  /// Build additional metrics — sekarang cuma Completion Rate (rating dihapus,
+  /// fitur customer rating belum ada di app)
   Widget _buildAdditionalMetrics(BuildContext context) {
     return Row(
       children: [
@@ -983,16 +1165,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
             value: '${_completionRate.toStringAsFixed(1)}%',
             caption: 'dari seluruh pesanan',
             color: const Color(0xFF51CF66),
-          ),
-        ),
-        const SizedBox(width: AppTheme.md),
-        Expanded(
-          child: _MetricCard(
-            icon: Icons.star_outline_rounded,
-            label: 'Customer Rating',
-            value: '${_customerRating.toStringAsFixed(1)}/5.0',
-            caption: 'dari $_totalOrders review',
-            color: AppTheme.primaryColor,
           ),
         ),
       ],
@@ -1062,7 +1234,7 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-/// Kartu metrik tambahan (completion rate, rating) — ringkas & konsisten
+/// Kartu metrik tambahan (completion rate) — ringkas & konsisten
 class _MetricCard extends StatelessWidget {
   final IconData icon;
   final String label;
