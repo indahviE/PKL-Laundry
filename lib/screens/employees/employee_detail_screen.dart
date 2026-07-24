@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/themes/app_theme.dart'; // Menggunakan AppTheme yang sama dengan Customer
 import '../../models/employee.dart'; // Sesuaikan path model
 import '../../repositories/employee_repository.dart';
+import '../../repositories/laundry_repository.dart';
 
 // Gunakan ConsumerWidget untuk mengakses Riverpod Provider secara efisien
 class EmployeeDetailScreen extends ConsumerWidget {
@@ -30,9 +31,13 @@ class EmployeeDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Ambil data karyawan dari StreamProvider
     final employeeAsync = ref.watch(employeeDetailProvider(employeeId));
+    final laundriesAsync = ref.watch(laundriesStreamProvider);
+    final laundryNames = <String, String>{
+      for (final l in laundriesAsync.value ?? const []) l.id: l.name,
+    };
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor, // Tema latar belakang dari Customer Screen
+      backgroundColor: const Color(0xFFFBF9F8), // Disamakan dengan latar order_list_screen
       appBar: AppBar(
         backgroundColor: AppTheme.cardColor,
         elevation: 0,
@@ -67,7 +72,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
             if (employee == null) {
               return _buildErrorState('Data karyawan tidak ditemukan.');
             }
-            return _buildContent(context, ref, employee);
+            return _buildContent(context, ref, employee, laundryNames);
           },
           error: (err, stack) => _buildErrorState('Terjadi kesalahan: $err'),
           loading: () => Center(
@@ -80,7 +85,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, WidgetRef ref, Employee employee) {
+  Widget _buildContent(BuildContext context, WidgetRef ref, Employee employee, Map<String, String> laundryNames) {
     final displayName = employee.fullName.isNotEmpty
         ? employee.fullName
         : (employee.employeeCode.isNotEmpty ? 'Karyawan ${employee.employeeCode}' : 'Staf Laundry');
@@ -131,42 +136,63 @@ class EmployeeDetailScreen extends ConsumerWidget {
                           children: [
                             Text(
                               displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 16,
                                 color: AppTheme.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              employee.position.toUpperCase(), // Menampilkan posisi/role
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textSecondary,
-                              ),
+                            const SizedBox(height: 6),
+                            // Role/jabatan dipindah ke bawah nama (bukan sebaris dengan
+                            // badge status) supaya tidak lagi berebut ruang horizontal
+                            // dan tumpang tindih dengan badge "Aktif" saat nama pendek.
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    employee.position.isNotEmpty ? employee.position.toUpperCase() : '-',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                                // Status Badge (Aktif / Tidak Aktif) - sekarang di baris
+                                // sendiri bersama badge role, jadi keduanya bisa
+                                // wrap ke bawah kalau ruang sempit, tidak overflow lagi.
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: (employee.isActive ? const Color(0xFF51CF66) : Colors.grey)
+                                        .withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    employee.isActive ? 'Aktif' : 'Tidak Aktif',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: employee.isActive ? const Color(0xFF51CF66) : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                        ),
-                      ),
-                      // Status Badge (Aktif / Tidak Aktif)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppTheme.md,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: (employee.isActive ? const Color(0xFF51CF66) : Colors.grey)
-                              .withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                        ),
-                        child: Text(
-                          employee.isActive ? 'Aktif' : 'Tidak Aktif',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: employee.isActive ? const Color(0xFF51CF66) : Colors.grey.shade600,
-                          ),
                         ),
                       ),
                     ],
@@ -174,7 +200,50 @@ class EmployeeDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppTheme.xl),
 
-                // 2. Card Informasi Detail Finansial & Pekerjaan
+                // 2. Card Kontak & Penempatan (sesuai mockup "Detail Karyawan")
+                _buildSectionCard(
+                  title: 'Kontak & Penempatan',
+                  items: [
+                    _buildInfoRow(Icons.phone_outlined, 'Nomor Telepon', employee.phone.isNotEmpty ? employee.phone : '-'),
+                    _buildInfoRow(Icons.email_outlined, 'Email', employee.email.isNotEmpty ? employee.email : '-'),
+                    _buildInfoRow(Icons.storefront_outlined, 'Cabang Bertugas', laundryNames[employee.laundryId] ?? '-'),
+                    if (employee.hireDate != null)
+                      _buildInfoRow(
+                        Icons.calendar_today_outlined,
+                        'Tanggal Bergabung',
+                        '${employee.hireDate!.day}/${employee.hireDate!.month}/${employee.hireDate!.year}',
+                      ),
+                    if (employee.address.isNotEmpty) ...[
+                      const Divider(height: 24),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.location_on_outlined, size: 18, color: AppTheme.textTertiary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Alamat Lengkap',
+                                  style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  employee.address,
+                                  style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: AppTheme.lg),
+
+                // 3. Card Informasi Detail Finansial & Pekerjaan
                 _buildSectionCard(
                   title: 'Informasi Pekerjaan',
                   items: [
@@ -183,12 +252,6 @@ class EmployeeDetailScreen extends ConsumerWidget {
                     _buildInfoRow(Icons.work_outline, 'Posisi Kerja', employee.position),
                     _buildInfoRow(Icons.payments_outlined, 'Gaji Pokok', _formatCurrency(employee.salary)),
                     _buildInfoRow(Icons.percent_outlined, 'Komisi', '${employee.commissionRate}%'),
-                    if (employee.hireDate != null)
-                      _buildInfoRow(
-                        Icons.calendar_today_outlined, 
-                        'Tanggal Masuk', 
-                        '${employee.hireDate!.day}/${employee.hireDate!.month}/${employee.hireDate!.year}'
-                      ),
                   ],
                 ),
                 const SizedBox(height: AppTheme.lg),
@@ -202,9 +265,33 @@ class EmployeeDetailScreen extends ConsumerWidget {
                     _buildPermissionRow(Icons.bar_chart_outlined, 'Melihat Laporan', employee.permissions.canViewReport),
                   ],
                 ),
+                const SizedBox(height: AppTheme.lg),
+
+                // 4. Menu tambahan sesuai mockup - Riwayat Aktivitas & Reset
+                // Password. Belum ada route/repository untuk ini, jadi
+                // sementara di-wire ke placeholder snackbar dulu. Statistik
+                // Kinerja (Pesanan Ditangani/Transaksi Sukses) SENGAJA belum
+                // ditambahkan karena datanya belum ada di model Employee.
+                _buildMenuRow(
+                  context,
+                  icon: Icons.history,
+                  label: 'Riwayat Aktivitas',
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Riwayat aktivitas belum tersedia.')),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.md),
+                _buildMenuRow(
+                  context,
+                  icon: Icons.lock_reset_outlined,
+                  label: 'Reset Password',
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Reset password belum tersedia.')),
+                  ),
+                ),
                 const SizedBox(height: AppTheme.xxl),
 
-                // 4. Tombol Berhenti / Pecat Karyawan (Soft Delete)
+                // 5. Tombol Berhenti / Pecat Karyawan (Soft Delete)
                 if (employee.isActive)
                   SizedBox(
                     width: double.infinity,
@@ -271,27 +358,41 @@ class EmployeeDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
+    // Sebelumnya label & value ditaruh di kiri-kanan Row dengan Spacer tanpa
+    // batas lebar, jadi value yang panjang (ID dokumen, email, dll) bisa
+    // overflow horizontal. Sekarang keduanya dibungkus Flexible + ellipsis
+    // supaya menyempit atau terpotong rapi, tidak pernah overflow.
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: AppTheme.textTertiary),
           const SizedBox(width: 12),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: AppTheme.textSecondary,
-              fontWeight: FontWeight.w500,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
             ),
           ),
         ],
@@ -306,21 +407,63 @@ class EmployeeDetailScreen extends ConsumerWidget {
         children: [
           Icon(icon, size: 18, color: AppTheme.textTertiary),
           const SizedBox(width: 12),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: AppTheme.textSecondary,
-              fontWeight: FontWeight.w500,
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
           Icon(
             hasPermission ? Icons.check_circle : Icons.cancel,
             color: hasPermission ? const Color(0xFF51CF66) : Colors.grey.shade400,
             size: 20,
           ),
         ],
+      ),
+    );
+  }
+
+  // Baris menu ala mockup (icon kiri, label, chevron kanan) - dipakai untuk
+  // "Riwayat Aktivitas" & "Reset Password".
+  Widget _buildMenuRow(BuildContext context, {required IconData icon, required String label, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: AppTheme.textSecondary),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+              ),
+            ),
+            Icon(Icons.chevron_right, size: 20, color: AppTheme.textTertiary),
+          ],
+        ),
       ),
     );
   }
