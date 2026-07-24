@@ -18,7 +18,7 @@ import '../employees/employees_list_screen.dart';
 const _kPrimary = Color(0xFF0061A4);
 const _kPrimaryContainer = Color(0xFF2196F3);
 const _kOnPrimaryContainer = Colors.white;
-const _kPageBg = Color(0xFFF5F7FA);
+const _kPageBg = Color(0xFFFBF9F8);
 const _kSurfaceContainerLowest = Color(0xFFFFFFFF);
 const _kOnSurface = Color(0xFF1B1C1C);
 const _kSecondary = Color(0xFF5B5F61);

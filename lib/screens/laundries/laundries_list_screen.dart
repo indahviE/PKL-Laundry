@@ -71,7 +71,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
 
     return Scaffold(
       // Disamakan background-nya dengan Detail Screen (#F5F7FA)
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFFBF9F8),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {

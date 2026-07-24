@@ -666,7 +666,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       // Disamakan dengan mockup: background abu kebiruan lembut (#F5F7FA)
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFFBF9F8),
       body: SafeArea(
         child: (_isLoading || _isLoadingInitialData)
             ? Center(
