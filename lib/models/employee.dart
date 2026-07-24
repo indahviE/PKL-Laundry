@@ -29,6 +29,7 @@ class Employee extends BaseModel {
   final String laundryId;
   final String profileId;
   final String employeeCode;
+  final String fullName;
   final String position;
   final double salary;
   final double commissionRate;
@@ -45,6 +46,7 @@ class Employee extends BaseModel {
     required this.laundryId,
     required this.profileId,
     this.employeeCode = '',
+    this.fullName = '',
     required this.position,
     this.salary = 0,
     this.commissionRate = 0,
@@ -63,6 +65,7 @@ class Employee extends BaseModel {
       laundryId: json['laundry_id'] ?? '',
       profileId: json['profile_id'] ?? '',
       employeeCode: json['employee_code'] ?? '',
+      fullName: json['full_name'] ?? '',
       position: json['position'] ?? 'cashier',
       salary: (json['salary'] ?? 0).toDouble(),
       commissionRate: (json['commission_rate'] ?? 0).toDouble(),
@@ -80,6 +83,7 @@ class Employee extends BaseModel {
       'laundry_id': laundryId,
       'profile_id': profileId,
       'employee_code': employeeCode,
+      'full_name': fullName,
       'position': position,
       'salary': salary,
       'commission_rate': commissionRate,

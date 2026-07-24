@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/themes/app_theme.dart';
 import '../../models/employee.dart';
+import '../../models/laundry.dart';
 import '../../repositories/employee_repository.dart';
+import '../../repositories/laundry_repository.dart';
 
 /// Provider untuk mengambil data karyawan secara real-time
 final employeesStreamProvider = StreamProvider<List<Employee>>((ref) {
@@ -22,6 +24,7 @@ class EmployeesListScreen extends ConsumerStatefulWidget {
 class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
   late TextEditingController _searchController;
   String _selectedFilter = 'all'; // all, active, inactive
+  String? _selectedLaundryId; // null = semua cabang
 
   @override
   void initState() {
@@ -46,7 +49,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Terminasi Karyawan', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Text('Apakah Anda yakin ingin menonaktifkan ${employee.position} ini?'),
+        content: Text('Apakah Anda yakin ingin menonaktifkan ${employee.fullName.isNotEmpty ? employee.fullName : employee.employeeCode} (${employee.position})?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
           TextButton(
@@ -70,6 +73,14 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
   @override
   Widget build(BuildContext context) {
     final employeesAsync = ref.watch(employeesStreamProvider);
+    final laundriesAsync = ref.watch(laundriesStreamProvider);
+
+    // Map laundry_id -> nama cabang, dipakai untuk nampilin & nyari
+    // berdasarkan cabang di kartu karyawan. Kalau data cabang belum/gagal
+    // dimuat, map ini kosong dan kartu jatuh ke fallback "-".
+    final laundryNames = <String, String>{
+      for (final l in laundriesAsync.value ?? const []) l.id: l.name,
+    };
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -97,20 +108,25 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
               bool statusMatch = _selectedFilter == 'all' ||
                   (_selectedFilter == 'active' && emp.isActive) ||
                   (_selectedFilter == 'inactive' && !emp.isActive);
-              bool searchMatch = _searchController.text.isEmpty ||
-                  emp.employeeCode.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-                  emp.position.toLowerCase().contains(_searchController.text.toLowerCase());
-              return statusMatch && searchMatch;
+              bool laundryMatch = _selectedLaundryId == null || emp.laundryId == _selectedLaundryId;
+              final query = _searchController.text.toLowerCase();
+              final laundryName = laundryNames[emp.laundryId] ?? '';
+              bool searchMatch = query.isEmpty ||
+                  emp.fullName.toLowerCase().contains(query) ||
+                  emp.employeeCode.toLowerCase().contains(query) ||
+                  emp.position.toLowerCase().contains(query) ||
+                  laundryName.toLowerCase().contains(query);
+              return statusMatch && laundryMatch && searchMatch;
             }).toList();
 
-            return _buildMainContent(context, filteredEmployees);
+            return _buildMainContent(context, filteredEmployees, laundryNames, laundriesAsync.value ?? const []);
           },
         ),
       ),
     );
   }
 
-  Widget _buildMainContent(BuildContext context, List<Employee> employees) {
+  Widget _buildMainContent(BuildContext context, List<Employee> employees, Map<String, String> laundryNames, List<Laundry> laundries) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 800;
@@ -128,13 +144,19 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
                     const SizedBox(height: 22),
                     _buildSearchBar(),
                     const SizedBox(height: AppTheme.lg),
-                    _buildFilterButtons(),
+                    Row(
+                      children: [
+                        Expanded(child: _buildFilterButtons()),
+                        const SizedBox(width: 8),
+                        _buildLaundryFilterDropdown(laundries),
+                      ],
+                    ),
                     const SizedBox(height: AppTheme.xl),
                     _buildStatsSummary(employees),
                     const SizedBox(height: AppTheme.xl),
                     employees.isEmpty
                         ? _buildEmptyState()
-                        : _buildEmployeesList(employees),
+                        : _buildEmployeesList(employees, laundryNames),
                     // Spacer biar list terakhir gak ketutupan FAB, sama
                     // kayak yang dipakai di LaundriesListScreen.
                     const SizedBox(height: 88),
@@ -220,7 +242,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
         controller: _searchController,
         onChanged: (_) => setState(() {}),
         decoration: InputDecoration(
-          hintText: 'Cari Kode atau Jabatan...',
+          hintText: 'Cari Nama, Kode, Jabatan, atau Cabang...',
           prefixIcon: const Icon(Icons.search),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(16),
@@ -255,6 +277,43 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     );
   }
 
+  Widget _buildLaundryFilterDropdown(List<Laundry> laundries) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppTheme.borderColor.withOpacity(0.6)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedLaundryId,
+          isDense: true,
+          icon: const Icon(Icons.expand_more, size: 18),
+          hint: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.storefront_outlined, size: 16, color: AppTheme.textSecondary),
+              const SizedBox(width: 6),
+              Text('Semua Cabang', style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary)),
+            ],
+          ),
+          items: [
+            DropdownMenuItem<String>(
+              value: null,
+              child: Text('Semua Cabang', style: GoogleFonts.poppins(fontSize: 12.5)),
+            ),
+            ...laundries.map((l) => DropdownMenuItem<String>(
+                  value: l.id,
+                  child: Text(l.name, style: GoogleFonts.poppins(fontSize: 12.5)),
+                )),
+          ],
+          onChanged: (val) => setState(() => _selectedLaundryId = val),
+        ),
+      ),
+    );
+  }
+
   Widget _buildStatsSummary(List<Employee> employees) {
     final activeCount = employees.where((e) => e.isActive).length;
     return Row(
@@ -266,7 +325,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     );
   }
 
-  Widget _buildEmployeesList(List<Employee> employees) {
+  Widget _buildEmployeesList(List<Employee> employees, Map<String, String> laundryNames) {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -277,6 +336,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
         return _EmployeeCard(
           employee: emp,
           formattedSalary: _formatCurrency(emp.salary),
+          laundryName: laundryNames[emp.laundryId] ?? '-',
           onTerminate: () => _terminateEmployee(emp),
           onTap: () => context.push('/employees/${emp.id}'),
         );
@@ -326,10 +386,17 @@ class _StatBox extends StatelessWidget {
 class _EmployeeCard extends StatelessWidget {
   final Employee employee;
   final String formattedSalary;
+  final String laundryName;
   final VoidCallback onTerminate;
   final VoidCallback onTap;
 
-  const _EmployeeCard({required this.employee, required this.formattedSalary, required this.onTerminate, required this.onTap});
+  const _EmployeeCard({
+    required this.employee,
+    required this.formattedSalary,
+    required this.laundryName,
+    required this.onTerminate,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -349,15 +416,28 @@ class _EmployeeCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                  child: Text(employee.position[0].toUpperCase(), style: TextStyle(color: AppTheme.primaryColor)),
+                  child: Text(
+                    employee.fullName.isNotEmpty ? employee.fullName[0].toUpperCase() : '?',
+                    style: TextStyle(color: AppTheme.primaryColor),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(employee.employeeCode, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-                      Text(employee.position, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+                      Text(
+                        employee.fullName.isNotEmpty ? employee.fullName : 'Tanpa Nama',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '${employee.employeeCode} • ${employee.position}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                      ),
                     ],
                   ),
                 ),
@@ -369,6 +449,8 @@ class _EmployeeCard extends StatelessWidget {
                   ),
               ],
             ),
+            const SizedBox(height: 10),
+            _buildInfoItem(Icons.storefront_outlined, laundryName),
             const Divider(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

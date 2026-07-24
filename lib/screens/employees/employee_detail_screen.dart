@@ -81,12 +81,10 @@ class EmployeeDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildContent(BuildContext context, WidgetRef ref, Employee employee) {
-    // Sebagai placeholder karena nama lengkap berada di model Profile terpisah,
-    // kita tampilkan kode karyawan (employeeCode) atau posisi sebagai pengenal utama.
-    final displayName = employee.employeeCode.isNotEmpty 
-        ? 'Karyawan ${employee.employeeCode}' 
-        : 'Staf Laundry';
-    final initials = _getInitials(employee.position);
+    final displayName = employee.fullName.isNotEmpty
+        ? employee.fullName
+        : (employee.employeeCode.isNotEmpty ? 'Karyawan ${employee.employeeCode}' : 'Staf Laundry');
+    final initials = _getInitials(employee.fullName.isNotEmpty ? employee.fullName : employee.position);
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -181,6 +179,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
                   title: 'Informasi Pekerjaan',
                   items: [
                     _buildInfoRow(Icons.badge_outlined, 'ID Dokumen', employee.id),
+                    _buildInfoRow(Icons.qr_code_outlined, 'Kode Karyawan', employee.employeeCode),
                     _buildInfoRow(Icons.work_outline, 'Posisi Kerja', employee.position),
                     _buildInfoRow(Icons.payments_outlined, 'Gaji Pokok', _formatCurrency(employee.salary)),
                     _buildInfoRow(Icons.percent_outlined, 'Komisi', '${employee.commissionRate}%'),
