@@ -104,6 +104,30 @@ class CreateOrderScreen extends StatefulWidget {
 }
 
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
+  // ============================================
+  // Radius lokal khusus layar ini, mengikuti pola desain baru
+  // (card 16px, chip/field 12-14px, tombol utama pill). Sengaja TIDAK
+  // mengubah AppTheme.radiusLg/radiusMd secara global supaya layar lain
+  // yang masih pakai AppTheme apa adanya tidak ikut berubah tampilannya.
+  // ============================================
+  static const double _cardRadius = 16.0;
+  static const double _chipRadius = 14.0;
+  static const double _fieldRadius = 14.0;
+
+  // ============================================
+  // Warna netral lokal khusus layar ini, mengikuti prinsip desain baru:
+  // biru cuma dipakai buat elemen "actionable" (tombol, chip aktif,
+  // total harga) - bukan buat background kartu/kotak info biasa.
+  // Sebelumnya banyak kotak (empty state, input fill, chip belum
+  // dipilih) numpang pakai AppTheme.primaryColor/backgroundColor yang
+  // sama-sama bernuansa biru, jadi kesannya "biru semua". Sekarang
+  // dipisah pakai abu-abu netral, cuma canvas & shadow yang disamakan
+  // sama HTML mockup (#F5F7FA, shadow hitam tipis).
+  // ============================================
+  static const Color _canvasColor = Color(0xFFF5F7FA);
+  static const Color _neutralFill = AppTheme.gray50;
+  static const Color _neutralSurface = AppTheme.gray100;
+
   // Controllers
   late TextEditingController _notesController;
   late TextEditingController _dpAmountController;
@@ -358,112 +382,24 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     return '${_formatCurrency(price)}$suffix';
   }
 
-  void _addOrderItem() {
-    final t = AppLocalizations.of(context)!;
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-            title: Text(
-              t.selectServiceLabel,
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-            ),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: _buildServiceDialogContent(context, setDialogState),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Tutup', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildServiceDialogContent(BuildContext context, StateSetter setDialogState) {
-    if (_isLoadingServices) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 32),
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      );
-    }
-
-    if (_servicesError != null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline_rounded, size: 32, color: AppTheme.errorColor),
-            const SizedBox(height: AppTheme.sm),
-            Text(
-              _servicesError!,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.errorColor),
-            ),
-            const SizedBox(height: AppTheme.sm),
-            TextButton(
-              onPressed: () async {
-                await _fetchServices();
-                setDialogState(() {});
-              },
-              child: Text('Coba lagi', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
-            ),
-          ],
+  /// Tambah satu layanan sebagai item pesanan baru. Dipanggil langsung
+  /// dari kartu layanan yang bisa di-scroll horizontal (bukan lewat
+  /// dialog terpisah lagi) - tap kartu layanan = 1 item baru ditambahkan
+  /// ke _orderItems, bisa dipanggil berkali-kali (termasuk layanan yang
+  /// sama) persis seperti perilaku "Tambah" yang lama.
+  void _addServiceToOrder(Service service) {
+    setState(() {
+      _orderItems.add(
+        OrderItemForm(
+          id: service.id,
+          name: service.name,
+          pricingType: service.pricingType,
+          quantity: 1,
+          weight: service.pricingType == PricingType.perKg ? 1.0 : 0,
+          price: _servicePrice(service),
         ),
       );
-    }
-
-    if (_services.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Text(
-          'Belum ada layanan aktif. Tambahkan layanan dulu di menu Layanan sebelum membuat pesanan.',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      shrinkWrap: true,
-      itemCount: _services.length,
-      itemBuilder: (context, index) {
-        final service = _services[index];
-        return ListTile(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-          title: Text(
-            service.name,
-            style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w500, color: AppTheme.textPrimary),
-          ),
-          subtitle: Text(
-            _servicePriceLabel(service),
-            style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
-          ),
-          onTap: () {
-            setState(() {
-              _orderItems.add(
-                OrderItemForm(
-                  id: service.id,
-                  name: service.name,
-                  pricingType: service.pricingType,
-                  quantity: 1,
-                  weight: service.pricingType == PricingType.perKg ? 1.0 : 0,
-                  price: _servicePrice(service),
-                ),
-              );
-            });
-            Navigator.pop(context);
-          },
-        );
-      },
-    );
+    });
   }
 
   void _removeOrderItem(int index) {
@@ -635,7 +571,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: _canvasColor,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -693,7 +629,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       padding: const EdgeInsets.all(AppTheme.md),
       decoration: BoxDecoration(
         color: AppTheme.errorColor.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        borderRadius: BorderRadius.circular(_chipRadius),
       ),
       child: Row(
         children: [
@@ -724,16 +660,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       children: [
         InkWell(
           onTap: () => Navigator.pop(context, false),
-          borderRadius: BorderRadius.circular(11),
+          borderRadius: BorderRadius.circular(_chipRadius),
           child: Container(
             width: 38,
             height: 38,
             decoration: BoxDecoration(
               color: AppTheme.cardColor,
-              borderRadius: BorderRadius.circular(11),
+              borderRadius: BorderRadius.circular(_chipRadius),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.06),
+                  color: Colors.black.withOpacity(0.05),
                   blurRadius: 12,
                   offset: const Offset(0, 3),
                 ),
@@ -776,11 +712,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppTheme.md),
       child: Text(
-        text,
+        text.toUpperCase(),
         style: GoogleFonts.poppins(
-          fontSize: 13,
+          fontSize: 11.5,
           fontWeight: FontWeight.w700,
-          color: AppTheme.textPrimary,
+          letterSpacing: 0.5,
+          color: AppTheme.textSecondary,
         ),
       ),
     );
@@ -801,10 +738,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        borderRadius: BorderRadius.circular(_cardRadius),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -874,14 +811,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           width: itemWidth,
                           child: InkWell(
                             onTap: () => setState(() => _selectedPaymentMethod = method['id']),
-                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                            borderRadius: BorderRadius.circular(_chipRadius),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.sm),
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? AppTheme.primaryColor.withOpacity(0.1)
-                                    : AppTheme.backgroundColor,
-                                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                    : _neutralFill,
+                                borderRadius: BorderRadius.circular(_chipRadius),
                                 border: Border.all(
                                   color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
                                   width: isSelected ? 1.5 : 1,
@@ -1031,17 +968,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
         prefixIcon: Icon(Icons.storefront_outlined, color: AppTheme.textTertiary),
         filled: true,
-        fillColor: AppTheme.backgroundColor,
+        fillColor: _neutralFill,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(_fieldRadius),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(_fieldRadius),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(_fieldRadius),
           borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
         ),
       ),
@@ -1061,13 +998,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      borderRadius: BorderRadius.circular(_chipRadius),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: AppTheme.sm),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : AppTheme.backgroundColor,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : _neutralFill,
+          borderRadius: BorderRadius.circular(_chipRadius),
           border: Border.all(
             color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
             width: isSelected ? 1.5 : 1,
@@ -1108,12 +1045,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 padding: EdgeInsets.only(right: index < options.length - 1 ? AppTheme.sm : 0),
                 child: InkWell(
                   onTap: () => onSelected(option['id'] as String),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  borderRadius: BorderRadius.circular(_chipRadius),
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: AppTheme.md, horizontal: AppTheme.sm),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : AppTheme.backgroundColor,
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                      color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : _neutralFill,
+                      borderRadius: BorderRadius.circular(_chipRadius),
                       border: Border.all(
                         color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
                         width: isSelected ? 1.5 : 1,
@@ -1171,7 +1108,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         padding: const EdgeInsets.all(AppTheme.md),
         decoration: BoxDecoration(
           color: AppTheme.errorColor.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          borderRadius: BorderRadius.circular(_chipRadius),
         ),
         child: Row(
           children: [
@@ -1198,8 +1135,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       return Container(
         padding: const EdgeInsets.all(AppTheme.md),
         decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          color: _neutralSurface,
+          borderRadius: BorderRadius.circular(_chipRadius),
         ),
         child: Text(
           'Belum ada pelanggan. Tambahkan pelanggan dulu sebelum membuat pesanan.',
@@ -1215,8 +1152,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       return Container(
         padding: const EdgeInsets.all(AppTheme.md),
         decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          color: _neutralSurface,
+          borderRadius: BorderRadius.circular(_chipRadius),
         ),
         child: Text(
           'Belum ada pelanggan yang terdaftar di cabang ini. Tambahkan pelanggan baru, atau cek penempatan cabang pelanggan yang sudah ada.',
@@ -1247,17 +1184,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
         prefixIcon: Icon(Icons.person_outline, color: AppTheme.textTertiary),
         filled: true,
-        fillColor: AppTheme.backgroundColor,
+        fillColor: _neutralFill,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(_fieldRadius),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(_fieldRadius),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(_fieldRadius),
           borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
         ),
       ),
@@ -1270,41 +1207,32 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Section item pesanan - sekarang bagian dari _buildMainCard, bukan
-  /// widget berdiri sendiri. Tiap item ditampilkan sebagai row tipis
-  /// (bukan card+shadow masing-masing) dipisah divider, jauh lebih
-  /// ringkas dibanding sebelumnya.
+  /// Section item pesanan - sekarang bagian dari _buildMainCard.
   ///
-  /// UPDATED: baris kontrol kuantitas sekarang kondisional. Item dengan
-  /// pricingType perKg menampilkan input berat (TextField desimal, kg)
-  /// alih-alih stepper +/- integer, karena harga per-kg dihitung dari
-  /// berat asli, bukan "banyaknya barang".
+  /// Alur baru mengikuti mockup: layanan dipilih lewat kartu yang bisa
+  /// di-scroll horizontal (tap kartu = 1 item baru ditambahkan), bukan
+  /// lewat dialog terpisah lagi. Multi-item tetap dipertahankan penuh -
+  /// bisa tap kartu yang sama atau kartu berbeda berkali-kali - hanya
+  /// bentuk pemilihannya yang berubah jadi kartu, sesuai desain baru.
+  ///
+  /// Tiap item yang sudah ditambahkan ditampilkan sebagai kartu
+  /// (border + shadow tipis) alih-alih row polos. Logic kontrol per
+  /// item TIDAK berubah: item perKg tetap pakai input berat (TextField
+  /// desimal, kg), item perItem tetap pakai stepper qty (+/-).
   Widget _buildOrderItemsSection(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Item Pesanan',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            TextButton.icon(
-              onPressed: !_isLoading ? _addOrderItem : null,
-              icon: const Icon(Icons.add, size: 16),
-              label: Text('Tambah', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5)),
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.primaryColor,
-                padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 4),
-              ),
-            ),
-          ],
+        _sectionLabel('Jenis Layanan'),
+        _buildServicePicker(context),
+        const SizedBox(height: AppTheme.lg),
+        Text(
+          'Item Pesanan',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
         ),
         const SizedBox(height: AppTheme.sm),
         if (_orderItems.isEmpty)
@@ -1312,11 +1240,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             padding: const EdgeInsets.all(AppTheme.md),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              color: _neutralSurface,
+              borderRadius: BorderRadius.circular(_chipRadius),
             ),
             child: Text(
-              'Belum ada item. Tekan "Tambah" untuk memilih layanan.',
+              'Belum ada item. Ketuk salah satu layanan di atas untuk menambahkannya.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
             ),
@@ -1333,8 +1261,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.md),
                 decoration: BoxDecoration(
-                  color: AppTheme.backgroundColor,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  color: AppTheme.cardColor,
+                  borderRadius: BorderRadius.circular(_cardRadius),
+                  border: Border.all(color: AppTheme.borderColor.withOpacity(0.7)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1409,7 +1345,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                     contentPadding:
                                         const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                     filled: true,
-                                    fillColor: AppTheme.cardColor,
+                                    fillColor: _neutralFill,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                       borderSide: BorderSide(color: AppTheme.borderColor),
@@ -1464,44 +1400,181 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  /// Ringkasan harga - sekarang cuma beberapa baris teks di dalam
-  /// _buildMainCard, bukan card terpisah lagi.
+  /// Kartu layanan yang bisa di-scroll horizontal, sesuai desain baru
+  /// ("Jenis Layanan" di mockup). Tap kartu -> panggil _addServiceToOrder,
+  /// yang menambahkan item baru ke _orderItems (logic sama persis dengan
+  /// dialog "Tambah" yang lama). Loading/error/empty state dipertahankan
+  /// dari implementasi sebelumnya, cuma dipindah supaya tampil inline
+  /// alih-alih di dalam dialog.
+  Widget _buildServicePicker(BuildContext context) {
+    if (_isLoadingServices) {
+      return Container(
+        height: 96,
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
+        ),
+      );
+    }
+
+    if (_servicesError != null) {
+      return Container(
+        padding: const EdgeInsets.all(AppTheme.md),
+        decoration: BoxDecoration(
+          color: AppTheme.errorColor.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(_chipRadius),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline_rounded, size: 18, color: AppTheme.errorColor),
+            const SizedBox(width: AppTheme.sm),
+            Expanded(
+              child: Text(
+                _servicesError!,
+                style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.errorColor),
+              ),
+            ),
+            TextButton(
+              onPressed: _fetchServices,
+              child: Text('Coba lagi', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_services.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(AppTheme.md),
+        decoration: BoxDecoration(
+          color: _neutralSurface,
+          borderRadius: BorderRadius.circular(_chipRadius),
+        ),
+        child: Text(
+          'Belum ada layanan aktif. Tambahkan layanan dulu di menu Layanan sebelum membuat pesanan.',
+          style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 104,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: _services.length,
+        separatorBuilder: (context, index) => const SizedBox(width: AppTheme.sm),
+        itemBuilder: (context, index) {
+          final service = _services[index];
+          return InkWell(
+            onTap: !_isLoading ? () => _addServiceToOrder(service) : null,
+            borderRadius: BorderRadius.circular(_cardRadius),
+            child: Container(
+              width: 148,
+              padding: const EdgeInsets.all(AppTheme.md),
+              decoration: BoxDecoration(
+                color: AppTheme.cardColor,
+                borderRadius: BorderRadius.circular(_cardRadius),
+                border: Border.all(color: AppTheme.borderColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 26,
+                    height: 26,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.add_rounded, size: 16, color: AppTheme.primaryColor),
+                  ),
+                  Text(
+                    service.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12.5,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    _servicePriceLabel(service),
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Ringkasan harga - kartu bertinta warna primary tipis, mengikuti
+  /// "Summary Card" pada desain baru (bg primary/5, border primary/20).
   Widget _buildPriceSummary(BuildContext context) {
     final total = _calculateTotal();
     final t = AppLocalizations.of(context)!;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(t.subtotalLabel, style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary)),
-            Text(
-              _formatCurrency(total),
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5, color: AppTheme.textPrimary),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppTheme.sm),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              t.totalLabel,
-              style: GoogleFonts.poppins(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
-            ),
-            Text(
-              _formatCurrency(total),
-              style: GoogleFonts.poppins(
-                fontSize: 19,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.primaryColor,
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.md),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(_cardRadius),
+        border: Border.all(color: AppTheme.primaryColor.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(t.subtotalLabel, style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary)),
+              Text(
+                _formatCurrency(total),
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5, color: AppTheme.textPrimary),
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+          const SizedBox(height: AppTheme.sm),
+          Divider(height: 1, color: AppTheme.primaryColor.withOpacity(0.12)),
+          const SizedBox(height: AppTheme.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                t.totalLabel,
+                style: GoogleFonts.poppins(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+              ),
+              Text(
+                _formatCurrency(total),
+                style: GoogleFonts.poppins(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -1516,9 +1589,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           backgroundColor: AppTheme.primaryColor,
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          ),
+          shape: const StadiumBorder(),
         ),
         child: _isLoading
             ? Row(
