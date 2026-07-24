@@ -34,6 +34,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Status dismiss checklist onboarding secara lokal
   bool _setupDismissed = false;
 
+  // Cabang yang lagi dipilih di selector atas. 'all' = tampilkan semua
+  // cabang (belum ada logic filter data per cabang di stream Firestore
+  // manapun di bawah, jadi utamanya dipakai buat tampilan/label saja).
+  String _selectedBranchId = 'all';
+  String _selectedBranchName = 'Semua Cabang';
+
   /// FIX: sebelumnya ini `final String _currentUserId = ...` yang dibaca
   /// SEKALI saat State dibuat. Kalau widget ini sempat ke-build sebelum
   /// FirebaseAuth kelar restore session (race condition umum saat startup),
@@ -60,6 +66,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  /// Format angka jadi "Rp X.XXX.XXX" - dipakai di kartu Pesanan Terbaru.
+  String _formatCurrency(double amount) {
+    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
@@ -79,16 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             constraints: BoxConstraints(maxWidth: maxContentWidth),
             child: CustomScrollView(
               slivers: [
-                SliverToBoxAdapter(child: _buildWaveHeader(context, isMobile, t)),
-                SliverToBoxAdapter(
-                  child: Transform.translate(
-                    offset: const Offset(0, -46),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: isMobile ? AppTheme.lg : AppTheme.xxl),
-                      child: _buildBalanceCardRealtime(t),
-                    ),
-                  ),
-                ),
+                SliverToBoxAdapter(child: _buildTopBar(context, isMobile, t)),
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(
                     isMobile ? AppTheme.lg : AppTheme.xxl,
@@ -98,6 +100,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
+                      _buildBalanceCardRealtime(t),
+                      const SizedBox(height: AppTheme.xl),
                       _buildSetupChecklistRealtime(t),
                       const SizedBox(height: AppTheme.xl),
                       _buildQuickActions(context, t),
@@ -121,99 +125,240 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ============================================
-  // WAVE HEADER
+  // TOP BAR (Cabang Selector + Notifikasi + Sapaan)
   // ============================================
-  Widget _buildWaveHeader(BuildContext context, bool isMobile, AppLocalizations t) {
+  Widget _buildTopBar(BuildContext context, bool isMobile, AppLocalizations t) {
     final hour = DateTime.now().hour;
     final greeting = hour < 12
         ? t.greetingMorning
         : (hour < 17 ? t.greetingAfternoon : t.greetingEvening);
 
-    return ClipPath(
-      clipper: _WaveClipper(),
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.fromLTRB(
-          isMobile ? AppTheme.lg : AppTheme.xxl,
-          AppTheme.lg + MediaQuery.of(context).padding.top,
-          isMobile ? AppTheme.lg : AppTheme.xxl,
-          80,
-        ),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [deepBlue, primaryBlue],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
+    return Container(
+      width: double.infinity,
+      color: bgColor,
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? AppTheme.lg : AppTheme.xxl,
+        AppTheme.md + MediaQuery.of(context).padding.top,
+        isMobile ? AppTheme.lg : AppTheme.xxl,
+        AppTheme.xl,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Selector cabang - tap membuka bottom sheet daftar cabang
+              // yang di-fetch dari users/{uid}/laundries.
+              InkWell(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                onTap: () => _showBranchSelector(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        // Putih solid (bukan transparan) supaya logo tetap
-                        // kontras dan tidak menyatu dengan gradient biru header,
-                        // konsisten dengan gaya badge logo di halaman login.
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      // Logo NetWash asli, disimpan di asset/icon/Netwash_Logo.png
-                      // Pastikan sudah didaftarkan di pubspec.yaml:
-                      //   flutter:
-                      //     assets:
-                      //       - asset/icon/Netwash_Logo.png
-                      child: Image.asset(
-                        'asset/icon/Netwash_Logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.local_laundry_service_rounded,
-                            color: textBlue,
-                            size: 20,
-                          );
-                        },
+                    Text(
+                      'CABANG AKTIF',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: textTertiary,
+                        letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(width: AppTheme.md),
-                    const Text(
-                      'Netwash',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Text(
+                          _selectedBranchName,
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textPrimary),
+                        ),
+                        Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: textPrimary),
+                      ],
                     ),
                   ],
                 ),
-                _buildNotificationBell(context, t),
-              ],
+              ),
+              _buildNotificationBell(context, t),
+            ],
+          ),
+          const SizedBox(height: AppTheme.xl),
+          Text(
+            greeting,
+            style: TextStyle(
+              color: textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 21,
+              letterSpacing: -0.3,
             ),
-            const SizedBox(height: AppTheme.xl),
-            Text(
-              greeting,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 22,
-                letterSpacing: -0.3,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            t.dashboardSubtitle,
+            style: TextStyle(color: textSecondary, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================
+  // BRANCH SELECTOR (Firestore Stream - users/{uid}/laundries)
+  // ============================================
+  void _showBranchSelector(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.55,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.radiusXl)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: borderColor,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(AppTheme.lg, AppTheme.lg, AppTheme.lg, AppTheme.md),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Pilih Cabang',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
+                        ),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () => Navigator.of(sheetContext).pop(),
+                          child: Icon(Icons.close_rounded, size: 20, color: textTertiary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(_currentUserId)
+                          .collection('laundries')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+
+                        final docs = snapshot.data?.docs ?? [];
+
+                        return ListView(
+                          controller: scrollController,
+                          padding: const EdgeInsets.fromLTRB(AppTheme.lg, 0, AppTheme.lg, AppTheme.xl),
+                          children: [
+                            _buildBranchOption(
+                              sheetContext,
+                              id: 'all',
+                              name: 'Semua Cabang',
+                              isSelected: _selectedBranchId == 'all',
+                            ),
+                            const SizedBox(height: AppTheme.sm),
+                            ...docs.map((doc) {
+                              final data = doc.data() as Map<String, dynamic>? ?? {};
+                              final name = (data['name'] ?? data['branch_name'] ?? 'Cabang') as String;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: AppTheme.sm),
+                                child: _buildBranchOption(
+                                  sheetContext,
+                                  id: doc.id,
+                                  name: name,
+                                  isSelected: _selectedBranchId == doc.id,
+                                ),
+                              );
+                            }),
+                            if (docs.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: AppTheme.xl),
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.storefront_outlined, size: 36, color: textTertiary),
+                                    const SizedBox(height: AppTheme.md),
+                                    Text(
+                                      'Belum ada cabang terdaftar',
+                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Satu baris opsi cabang di bottom sheet selector.
+  Widget _buildBranchOption(
+    BuildContext sheetContext, {
+    required String id,
+    required String name,
+    required bool isSelected,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      onTap: () {
+        setState(() {
+          _selectedBranchId = id;
+          _selectedBranchName = name;
+        });
+        Navigator.of(sheetContext).pop();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(AppTheme.md),
+        decoration: BoxDecoration(
+          color: isSelected ? primaryBlue.withOpacity(0.08) : bgColor,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          border: Border.all(color: isSelected ? primaryBlue.withOpacity(0.4) : borderColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: primaryBlue.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.storefront_outlined, size: 18, color: textBlue),
+            ),
+            const SizedBox(width: AppTheme.md),
+            Expanded(
+              child: Text(
+                name,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: textPrimary),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              t.dashboardSubtitle,
-              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
-            ),
+            if (isSelected) Icon(Icons.check_circle_rounded, size: 20, color: primaryBlue),
           ],
         ),
       ),
@@ -244,14 +389,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: primaryBlue.withOpacity(0.1),
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             ),
             child: Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
-                const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 20),
+                Icon(Icons.notifications_none_rounded, color: textBlue, size: 20),
                 if (pendingCount > 0)
                   Positioned(
                     top: -4,
@@ -262,7 +407,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       decoration: BoxDecoration(
                         color: Colors.redAccent,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: deepBlue, width: 1.5),
+                        border: Border.all(color: bgColor, width: 1.5),
                       ),
                       child: Text(
                         pendingCount > 9 ? '9+' : '$pendingCount',
@@ -485,91 +630,157 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: userRef.collection('orders').snapshots(),
       builder: (context, orderSnapshot) {
-        return StreamBuilder<QuerySnapshot>(
-          stream: userRef.collection('customers').snapshots(),
-          builder: (context, customerSnapshot) {
-            int totalCustomers = customerSnapshot.hasData ? customerSnapshot.data!.docs.length : 0;
-            int activeOrders = 0;
-            double totalRevenueThisMonth = 0;
+        int activeOrders = 0;
+        double totalRevenueThisMonth = 0;
+        double totalRevenueLastMonth = 0;
 
-            if (orderSnapshot.hasData) {
-              final now = DateTime.now();
-              final startOfMonth = DateTime(now.year, now.month, 1);
+        if (orderSnapshot.hasData) {
+          final now = DateTime.now();
+          final startOfThisMonth = DateTime(now.year, now.month, 1);
+          final startOfLastMonth = DateTime(now.year, now.month - 1, 1);
 
-              for (var doc in orderSnapshot.data!.docs) {
-                final data = doc.data() as Map<String, dynamic>;
-                String status = data['status'] ?? 'pending';
+          for (var doc in orderSnapshot.data!.docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            String status = data['status'] ?? 'pending';
 
-                // Menghitung pesanan yang belum selesai/dibatalkan
-                if (['pending', 'processing'].contains(status)) {
-                  activeOrders++;
-                }
-
-                // Menghitung pendapatan dari transaksi sukses (paid) bulan ini
-                Timestamp? orderDate = data['order_date'] as Timestamp?;
-                if (orderDate != null && orderDate.toDate().isAfter(startOfMonth)) {
-                  if (data['payment_status'] == 'paid') {
-                    totalRevenueThisMonth += (data['total_amount'] ?? 0).toDouble();
-                  }
-                }
-              }
+            // Menghitung pesanan yang belum selesai/dibatalkan
+            if (['pending', 'processing'].contains(status)) {
+              activeOrders++;
             }
 
-            // Memformat visual ke UI Card asli
-            return Container(
-              padding: const EdgeInsets.all(AppTheme.lg),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryBlue.withOpacity(0.15),
-                    blurRadius: 24,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+            // Menghitung pendapatan dari transaksi sukses (paid), dipisah
+            // bulan ini vs bulan lalu supaya bisa hitung persentase
+            // pertumbuhan (badge "+X% dari bln lalu").
+            Timestamp? orderDate = data['order_date'] as Timestamp?;
+            if (orderDate != null && data['payment_status'] == 'paid') {
+              final date = orderDate.toDate();
+              final amount = (data['total_amount'] ?? 0).toDouble();
+              if (!date.isBefore(startOfThisMonth)) {
+                totalRevenueThisMonth += amount;
+              } else if (!date.isBefore(startOfLastMonth) && date.isBefore(startOfThisMonth)) {
+                totalRevenueLastMonth += amount;
+              }
+            }
+          }
+        }
+
+        double? growthPercent;
+        if (totalRevenueLastMonth > 0) {
+          growthPercent = ((totalRevenueThisMonth - totalRevenueLastMonth) / totalRevenueLastMonth) * 100;
+        } else if (totalRevenueThisMonth > 0) {
+          growthPercent = 100;
+        }
+        final isPositiveGrowth = (growthPercent ?? 0) >= 0;
+
+        // Memformat visual ke UI Card asli — solid primary blue dengan
+        // elemen dekoratif lingkaran blur di pojok, sesuai code.html.
+        return Container(
+          decoration: BoxDecoration(
+            color: primaryBlue,
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+            boxShadow: [
+              BoxShadow(
+                color: primaryBlue.withOpacity(0.25),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
               ),
-              child: Row(
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Elemen dekoratif: lingkaran putih transparan di pojok
+              // kanan-atas, meniru "absolute -right-4 -top-4 ... blur-2xl"
+              Positioned(
+                right: -16,
+                top: -16,
+                child: Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppTheme.lg),
+                child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Text(
+                      t.revenueThisMonthLabel,
+                      style: const TextStyle(fontSize: 12.5, color: Colors.white, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
+                        const Icon(Icons.sync_rounded, size: 12, color: Colors.white),
+                        const SizedBox(width: 4),
                         Text(
-                          t.revenueThisMonthLabel,
-                          style: TextStyle(fontSize: 12, color: textSecondary, fontWeight: FontWeight.w500),
+                          t.autoSyncLabel,
+                          style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Rp ${totalRevenueThisMonth.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: textPrimary,
-                            letterSpacing: -0.3,
-                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(t.autoSyncLabel, style: TextStyle(fontSize: 11, color: textTertiary)),
                       ],
                     ),
                   ),
-                  Container(width: 1, height: 50, color: borderColor),
-                  const SizedBox(width: AppTheme.lg),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('$totalCustomers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textBlue)),
-                      Text(t.customersLabel, style: TextStyle(fontSize: 11, color: textSecondary)),
-                      const SizedBox(height: 10),
-                      Text('$activeOrders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textBlue)),
-                      Text(t.activeOrdersLabel, style: TextStyle(fontSize: 11, color: textSecondary)),
-                    ],
-                  ),
                 ],
               ),
-            );
-          },
+              const SizedBox(height: 10),
+              Text(
+                _formatCurrency(totalRevenueThisMonth),
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.4,
+                ),
+              ),
+              const SizedBox(height: AppTheme.lg),
+              Container(height: 1, color: Colors.white.withOpacity(0.2)),
+              const SizedBox(height: AppTheme.md),
+              Row(
+                children: [
+                  Icon(Icons.receipt_long_rounded, size: 16, color: Colors.white.withOpacity(0.85)),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$activeOrders ${t.activeOrdersLabel}',
+                    style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                  const Spacer(),
+                  if (growthPercent != null) ...[
+                    Icon(
+                      isPositiveGrowth ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                      size: 16,
+                      color: isPositiveGrowth ? const Color(0xFF7BE0A0) : const Color(0xFFFFB4B4),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${isPositiveGrowth ? '+' : ''}${growthPercent.toStringAsFixed(0)}% dari bln lalu',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: isPositiveGrowth ? const Color(0xFF7BE0A0) : const Color(0xFFFFB4B4),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -763,61 +974,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
       (Icons.settings_outlined, t.settingsAction, textSecondary, '/settings', '', 0),
     ];
 
-    return SizedBox(
-      height: 96,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: actions.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppTheme.lg),
-        itemBuilder: (context, i) {
-          final (icon, label, color, route, collectionToCheck, limit) = actions[i];
-          return InkWell(
-            onTap: () async {
-              if (collectionToCheck.isNotEmpty) {
-                final snap = await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(_currentUserId)
-                    .collection(collectionToCheck)
-                    .count()
-                    .get();
-
-                // Mengantisipasi nilai null safety pada properti count
-                if ((snap.count ?? 0) >= limit) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(t.quotaLimitReached(label.replaceAll('\n', ' '))),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                  return;
-                }
-              }
-              context.push(route);
-            },
-            borderRadius: BorderRadius.circular(40),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: actions.map((action) {
+          final (icon, label, color, route, collectionToCheck, limit) = action;
+          return Padding(
+            padding: const EdgeInsets.only(right: AppTheme.lg),
             child: SizedBox(
-              width: 64,
-              child: Column(
-                children: [
-                  Container(
-                    width: 52, height: 52,
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      shape: BoxShape.circle,
+              width: 68,
+              child: InkWell(
+                onTap: () async {
+                  if (collectionToCheck.isNotEmpty) {
+                    final snap = await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(_currentUserId)
+                        .collection(collectionToCheck)
+                        .count()
+                        .get();
+
+                    // Mengantisipasi nilai null safety pada properti count
+                    if ((snap.count ?? 0) >= limit) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(t.quotaLimitReached(label.replaceAll('\n', ' '))),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                      return;
+                    }
+                  }
+                  context.push(route);
+                },
+                borderRadius: BorderRadius.circular(40),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, color: color, size: 24),
                     ),
-                    child: Icon(icon, color: color, size: 24),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textPrimary, height: 1.15),
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textPrimary, height: 1.15),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
-        },
+        }).toList(),
       ),
     );
   }
@@ -1038,12 +1251,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return Column(
           children: List.generate(docs.length, (i) {
             final data = docs[i].data() as Map<String, dynamic>;
-            final id = data['order_number'] ?? '#ORD-UNKNOWN';
             final customerName = data['customer_name'] ?? t.defaultCustomerName;
             final detail = t.orderDetailSummary(
               '${data['total_items'] ?? 0}',
               (data['total_amount'] ?? 0).toString(),
             );
+            final amount = (data['total_amount'] ?? 0).toDouble();
             final status = data['status'] ?? 'pending';
             final isLast = i == docs.length - 1;
 
@@ -1073,66 +1286,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 statusLabel = status;
             }
 
-            return IntrinsicHeight(
+            // Kartu ala "Pesanan Terbaru": avatar bulat berisi huruf
+            // pertama nama pelanggan (bukan foto profil), nama + ringkasan
+            // item di kiri, badge status + nominal di kanan.
+            return Container(
+              margin: EdgeInsets.only(bottom: isLast ? 0 : AppTheme.md),
+              padding: const EdgeInsets.all(AppTheme.md),
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                border: Border.all(color: borderColor),
+              ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Column(
-                    children: [
-                      Container(
-                        width: 12, height: 12,
-                        margin: const EdgeInsets.only(top: 4),
-                        decoration: BoxDecoration(
-                          color: statusColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: statusColor.withOpacity(0.25), width: 4),
-                        ),
-                      ),
-                      if (!isLast)
-                        Expanded(
-                          child: Container(width: 2, color: borderColor, margin: const EdgeInsets.symmetric(vertical: 4)),
-                        ),
-                    ],
-                  ),
+                  _InitialAvatar(name: customerName, size: 42),
                   const SizedBox(width: AppTheme.md),
                   Expanded(
-                    child: Container(
-                      margin: EdgeInsets.only(bottom: isLast ? 0 : AppTheme.lg),
-                      padding: const EdgeInsets.all(AppTheme.md),
-                      decoration: BoxDecoration(
-                        color: cardColor,
-                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(customerName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary)),
-                                    const SizedBox(width: 6),
-                                    Text(id, style: TextStyle(fontSize: 11, color: textTertiary)),
-                                  ],
-                                ),
-                                const SizedBox(height: 3),
-                                Text(detail, style: TextStyle(fontSize: 11.5, color: textSecondary)),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(statusLabel, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: statusColor)),
-                          ),
-                        ],
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          customerName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: textPrimary),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          detail,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11.5, color: textSecondary),
+                        ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(width: AppTheme.sm),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          statusLabel.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _formatCurrency(amount),
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: textBlue),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1144,19 +1359,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-class _WaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height - 60);
-    path.quadraticBezierTo(size.width / 2, size.height, size.width, size.height - 60);
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
+/// Avatar bulat berisi huruf pertama nama pelanggan, dipakai sebagai
+/// pengganti foto profil di kartu "Pesanan Terbaru". Warna latar
+/// dipilih otomatis dari huruf pertama nama supaya tiap pelanggan
+/// terlihat sedikit berbeda tanpa perlu upload foto.
+class _InitialAvatar extends StatelessWidget {
+  final String name;
+  final double size;
+
+  const _InitialAvatar({required this.name, this.size = 42});
+
+  static const List<Color> _palette = [
+    Color(0xFF5DADE2),
+    Color(0xFFAF7AC5),
+    Color(0xFF48C9B0),
+    Color(0xFFF5B041),
+    Color(0xFFEC7063),
+    Color(0xFF5499C7),
+    Color(0xFF52BE80),
+    Color(0xFFEB74A8),
+  ];
 
   @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+  Widget build(BuildContext context) {
+    final trimmed = name.trim();
+    final initial = trimmed.isNotEmpty ? trimmed[0].toUpperCase() : '?';
+    final colorIndex = trimmed.isNotEmpty ? trimmed.codeUnitAt(0) % _palette.length : 0;
+
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: _palette[colorIndex],
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        initial,
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: size * 0.42,
+        ),
+      ),
+    );
+  }
 }
 
 class _SetupStep {

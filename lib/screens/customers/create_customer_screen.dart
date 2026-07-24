@@ -51,6 +51,11 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
   // State
   bool _isLoading = false;
 
+  // Status aktif pelanggan - toggle di form (default aktif). Sebelumnya
+  // field 'is_active' di Firestore selalu di-hardcode true tanpa kontrol
+  // dari user; sekarang benar-benar bisa diatur lewat switch di form.
+  bool _isActive = true;
+
   // Cabang - dropdown cuma ditampilkan kalau _laundriesList.length > 1,
   // pola sama persis dengan _showLaundryDropdown di CreateOrderScreen.
   bool _isLoadingLaundries = true;
@@ -181,7 +186,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
         'laundry_id': _selectedLaundryId,
         'customer_code': customerCode,
         'membership_type': 'reguler',
-        'is_active': true,
+        'is_active': _isActive,
         'total_orders': 0,
         'total_spent': 0,
         'created_at': FieldValue.serverTimestamp(),
@@ -514,6 +519,12 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
 
             const SizedBox(height: AppTheme.lg),
 
+            // Status Aktif - toggle switch, posisinya disamakan dengan
+            // code.html (setelah Alamat, sebelum tombol simpan).
+            _buildActiveStatusToggle(context),
+
+            const SizedBox(height: AppTheme.lg),
+
             // Catatan (opsional)
             AppInput(
               label: '${l10n.notesLabel}${l10n.optionalFieldSuffix}',
@@ -528,20 +539,62 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
     );
   }
 
-  /// Build Save Button
+  /// Toggle "Status Aktif" ala code.html — switch di kanan, label +
+  /// deskripsi kecil di kiri.
+  Widget _buildActiveStatusToggle(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: AppTheme.sm),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Status Aktif',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Pelanggan dapat melakukan order',
+                  style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _isActive,
+            onChanged: (value) => setState(() => _isActive = value),
+            activeColor: AppTheme.primaryColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build Save Button — pill-shape + ikon, meniru tombol
+  /// "Simpan Pelanggan" di code.html.
   Widget _buildSaveButton(BuildContext context, AppLocalizations l10n) {
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: 54,
       child: ElevatedButton(
         onPressed: !_isLoading ? () => _handleSaveCustomer(l10n) : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primaryColor,
           foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          ),
+          elevation: 2,
+          shadowColor: AppTheme.primaryColor.withOpacity(0.35),
+          shape: const StadiumBorder(),
         ),
         child: _isLoading
             ? Row(
@@ -564,12 +617,19 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
                   ),
                 ],
               )
-            : Text(
-                l10n.saveCustomerButton,
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.save_outlined, size: 18),
+                  const SizedBox(width: AppTheme.sm),
+                  Text(
+                    l10n.saveCustomerButton,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
               ),
       ),
     );
