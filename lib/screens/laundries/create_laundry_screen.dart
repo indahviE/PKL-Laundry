@@ -16,9 +16,13 @@ import '../../repositories/subscription_repository.dart';
 /// - laundryId != null  -> mode EDIT (data existing di-load & di-prefill,
 ///   quota TIDAK dicek ulang karena tidak menambah cabang baru)
 ///
-/// Styling disamakan dengan LaundriesListScreen: memakai AppTheme design
-/// system (warna, radius, spacing, Poppins) alih-alih warna hardcoded lokal,
-/// serta header custom (icon box + back button) & max-width layout yang sama.
+/// Styling disamakan dengan mockup referensi "Tambah Cabang": top bar
+/// sederhana (back + judul), kartu "Cabang Aktif" dengan switch di atas,
+/// lalu section-section bercard terpisah (Informasi Umum, Jam Operasional,
+/// Manajemen) dengan header label uppercase kecil, input polos tanpa ikon,
+/// dan tombol pill "Samakan untuk semua hari".
+const _kFieldFill = Color(0xFFF7F8FA);
+
 class CreateLaundryScreen extends StatefulWidget {
   final String? laundryId;
 
@@ -94,17 +98,19 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
   // Default jam operasional per hari
   late Map<String, Map<String, String>> _operatingHours;
 
-  // Toggle: pakai jam yang sama untuk semua hari (simplifikasi UX,
-  // datanya tetap disimpan penuh per hari sesuai skema blueprint)
-  bool _useSameHoursForAllDays = true;
-  String _uniformOpen = '08:00';
-  String _uniformClose = '20:00';
+  // Status buka/tutup per hari (switch di tiap baris). Tidak ada field
+  // eksplisit untuk ini di skema Firestore - dipakai murni sebagai kontrol
+  // UI untuk menonaktifkan input jam hari tertentu, sesuai mockup.
+  late Map<String, bool> _dayEnabled;
 
   @override
   void initState() {
     super.initState();
     _operatingHours = {
       for (final d in _days) d['key']!: {'open': '08:00', 'close': '20:00'},
+    };
+    _dayEnabled = {
+      for (final d in _days) d['key']!: true,
     };
     _fetchCompaniesData();
     _fetchEmployeesData();
@@ -182,20 +188,8 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
               'close': (rawHours[d['key']]?['close'] ?? '20:00') as String,
             },
         };
-        // Cek apakah semua hari punya jam yang sama -> pakai toggle uniform
-        final firstOpen = loadedHours[_days.first['key']]!['open'];
-        final firstClose = loadedHours[_days.first['key']]!['close'];
-        final allSame = loadedHours.values.every(
-          (h) => h['open'] == firstOpen && h['close'] == firstClose,
-        );
-
         setState(() {
           _operatingHours = loadedHours;
-          _useSameHoursForAllDays = allSame;
-          if (allSame) {
-            _uniformOpen = firstOpen!;
-            _uniformClose = firstClose!;
-          }
         });
       }
     } catch (e) {
@@ -418,18 +412,13 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       }
 
       // Susun operating_hours sesuai skema §3.2.3 (per hari, key monday..sunday)
-      final Map<String, dynamic> operatingHoursData = _useSameHoursForAllDays
-          ? {
-              for (final d in _days)
-                d['key']!: {'open': _uniformOpen, 'close': _uniformClose},
-            }
-          : {
-              for (final d in _days)
-                d['key']!: {
-                  'open': _operatingHours[d['key']]!['open'],
-                  'close': _operatingHours[d['key']]!['close'],
-                },
-            };
+      final Map<String, dynamic> operatingHoursData = {
+        for (final d in _days)
+          d['key']!: {
+            'open': _operatingHours[d['key']]!['open'],
+            'close': _operatingHours[d['key']]!['close'],
+          },
+      };
 
       // location bersifat opsional; hanya disertakan bila diisi
       Map<String, dynamic>? locationData;
@@ -497,6 +486,88 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Menonaktifkan cabang langsung dari layar edit (tombol "Nonaktifkan
+  /// Cabang" di bagian bawah, sesuai mockup). Menampilkan konfirmasi
+  /// sebelum menyimpan status is_active = false.
+  Future<void> _confirmDeactivate() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: AppTheme.cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.pause_circle_outline, color: Colors.redAccent, size: 26),
+              ),
+              const SizedBox(height: AppTheme.lg),
+              Text(
+                'Nonaktifkan Cabang?',
+                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+              ),
+              const SizedBox(height: AppTheme.sm),
+              Text(
+                'Cabang ini akan ditandai tutup sementara dan tidak menerima pesanan baru.',
+                style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary, height: 1.4),
+              ),
+              const SizedBox(height: AppTheme.xl),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => ctx.pop(false),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                      ),
+                      child: Text(
+                        l10n.cancel,
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textSecondary, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.md),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+                      ),
+                      onPressed: () => ctx.pop(true),
+                      child: Text(
+                        'Nonaktifkan',
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _isActive = false);
+      await _saveLaundry();
     }
   }
 
@@ -594,7 +665,8 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      // Disamakan dengan mockup: background abu kebiruan lembut (#F5F7FA)
+      backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: (_isLoading || _isLoadingInitialData)
             ? Center(
@@ -609,7 +681,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                     physics: const BouncingScrollPhysics(),
                     child: Center(
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 900),
+                        constraints: const BoxConstraints(maxWidth: 480),
                         child: Padding(
                           padding: EdgeInsets.fromLTRB(
                             isMobile ? 16 : 24,
@@ -622,264 +694,17 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildHeader(context, l10n),
-                                const SizedBox(height: 22),
-                                _buildInfoBanner(l10n),
-                                const SizedBox(height: AppTheme.xl),
-
-                                _sectionLabel(l10n.ownerCompanyLabel),
-                                const SizedBox(height: 8),
-                                _companiesList.isEmpty
-                                    ? TextButton(
-                                        onPressed: () => context.push('/companies/create'),
-                                        child: Text(
-                                          l10n.registerCompanyFirst,
-                                          style: GoogleFonts.poppins(color: AppTheme.primaryColor, fontSize: 13, fontWeight: FontWeight.w600),
-                                        ),
-                                      )
-                                    : DropdownButtonFormField<String>(
-                                        value: _companiesList.any((c) => c['id'] == _selectedCompanyId) ? _selectedCompanyId : null,
-                                        items: _companiesList.map((c) {
-                                          return DropdownMenuItem<String>(
-                                            value: c['id'],
-                                            child: Text(c['name'], style: GoogleFonts.poppins(fontSize: 13)),
-                                          );
-                                        }).toList(),
-                                        onChanged: (val) => setState(() => _selectedCompanyId = val),
-                                        decoration: _buildInputDecoration(l10n.selectCompanyHint, Icons.apartment_outlined),
-                                        validator: (v) => v == null ? l10n.companyRequiredValidator : null,
-                                      ),
-                                const SizedBox(height: AppTheme.lg),
-
-                                _sectionLabel(l10n.branchNameLabel),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _nameController,
-                                  textCapitalization: TextCapitalization.words,
-                                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
-                                  decoration: _buildInputDecoration(l10n.branchNameHint, Icons.storefront_outlined),
-                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.branchNameEmpty : null,
-                                ),
-                                const SizedBox(height: AppTheme.lg),
-
-                                _sectionLabel(l10n.branchCodeLabel),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _codeController,
-                                  textCapitalization: TextCapitalization.characters,
-                                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
-                                  decoration: _buildInputDecoration(l10n.branchCodeHint, Icons.qr_code_outlined),
-                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.branchCodeEmpty : null,
-                                ),
-                                const SizedBox(height: AppTheme.lg),
-
-                                _sectionLabel(l10n.addressLabel),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _addressController,
-                                  maxLines: 2,
-                                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
-                                  decoration: _buildInputDecoration(l10n.addressHint, Icons.location_on_outlined),
-                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.addressEmpty : null,
-                                ),
-                                const SizedBox(height: AppTheme.lg),
-
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          _sectionLabel(l10n.cityLabel),
-                                          const SizedBox(height: 8),
-                                          TextFormField(
-                                            controller: _cityController,
-                                            textCapitalization: TextCapitalization.words,
-                                            style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
-                                            decoration: _buildInputDecoration(l10n.cityHint, Icons.location_city_outlined),
-                                            validator: (v) => v == null || v.trim().isEmpty ? l10n.fieldRequired : null,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: AppTheme.md),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          _sectionLabel(l10n.provinceLabel),
-                                          const SizedBox(height: 8),
-                                          TextFormField(
-                                            controller: _provinceController,
-                                            textCapitalization: TextCapitalization.words,
-                                            style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
-                                            decoration: _buildInputDecoration(l10n.provinceHint, Icons.map_outlined),
-                                            validator: (v) => v == null || v.trim().isEmpty ? l10n.fieldRequired : null,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: AppTheme.lg),
-
-                                _sectionLabel(l10n.branchPhoneLabel),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _phoneController,
-                                  keyboardType: TextInputType.phone,
-                                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
-                                  decoration: _buildInputDecoration(l10n.branchPhoneHint, Icons.phone_outlined),
-                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.phoneEmpty : null,
-                                ),
-                                const SizedBox(height: AppTheme.lg),
-
-                                _sectionLabel(l10n.emailOptionalLabel),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _emailController,
-                                  keyboardType: TextInputType.emailAddress,
-                                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
-                                  decoration: _buildInputDecoration(l10n.branchEmailHint, Icons.email_outlined),
-                                ),
-                                const SizedBox(height: AppTheme.lg),
-
-                                _sectionLabel(l10n.managerOptionalLabel),
-                                const SizedBox(height: 8),
-                                _employeesList.isEmpty
-                                    ? Container(
-                                        padding: const EdgeInsets.all(AppTheme.md),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.cardColor,
-                                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                                          border: Border.all(color: AppTheme.borderColor),
-                                        ),
-                                        child: Text(
-                                          l10n.noEmployeeDataInfo,
-                                          style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
-                                        ),
-                                      )
-                                    : DropdownButtonFormField<String>(
-                                        value: _employeesList.any((e) => e['id'] == _selectedManagerId) ? _selectedManagerId : null,
-                                        items: _employeesList.map((e) {
-                                          return DropdownMenuItem<String>(
-                                            value: e['id'],
-                                            child: Text(e['name'], style: GoogleFonts.poppins(fontSize: 13)),
-                                          );
-                                        }).toList(),
-                                        onChanged: (val) => setState(() => _selectedManagerId = val),
-                                        decoration: _buildInputDecoration(l10n.selectManagerHint, Icons.badge_outlined),
-                                      ),
-                                const SizedBox(height: AppTheme.lg),
-
-                                _sectionLabel(l10n.dailyCapacityLabel),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _capacityController,
-                                  keyboardType: TextInputType.number,
-                                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
-                                  decoration: _buildInputDecoration(l10n.capacityHint, Icons.local_shipping_outlined),
-                                  validator: (v) => v == null || v.trim().isEmpty ? l10n.capacityEmpty : null,
-                                ),
-                                const SizedBox(height: AppTheme.lg),
-
-                                _sectionLabel(l10n.mapLocationLabel),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextFormField(
-                                        controller: _latController,
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                                        style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
-                                        decoration: _buildInputDecoration(l10n.latitudeHint, Icons.my_location_outlined),
-                                      ),
-                                    ),
-                                    const SizedBox(width: AppTheme.md),
-                                    Expanded(
-                                      child: TextFormField(
-                                        controller: _lngController,
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                                        style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
-                                        decoration: _buildInputDecoration(l10n.longitudeHint, Icons.my_location_outlined),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: AppTheme.lg),
-
-                                _sectionLabel(l10n.operatingHoursLabel),
-                                const SizedBox(height: 10),
-                                _buildToggleCard(
-                                  label: l10n.useSameHoursLabel,
-                                  value: _useSameHoursForAllDays,
-                                  onChanged: (v) => setState(() => _useSameHoursForAllDays = v),
-                                ),
-                                const SizedBox(height: AppTheme.md),
-
-                                _useSameHoursForAllDays
-                                    ? _buildHourPickerRow(
-                                        label: l10n.everyDayLabel,
-                                        openValue: _uniformOpen,
-                                        closeValue: _uniformClose,
-                                        onOpenTap: () => _pickTime(
-                                          initialValue: _uniformOpen,
-                                          onPicked: (v) => setState(() => _uniformOpen = v),
-                                        ),
-                                        onCloseTap: () => _pickTime(
-                                          initialValue: _uniformClose,
-                                          onPicked: (v) => setState(() => _uniformClose = v),
-                                        ),
-                                      )
-                                    : Column(
-                                        children: _days.map((d) {
-                                          final key = d['key']!;
-                                          return Padding(
-                                            padding: const EdgeInsets.only(bottom: 8.0),
-                                            child: _buildHourPickerRow(
-                                              label: _dayLabel(l10n, key),
-                                              openValue: _operatingHours[key]!['open']!,
-                                              closeValue: _operatingHours[key]!['close']!,
-                                              onOpenTap: () => _pickTime(
-                                                initialValue: _operatingHours[key]!['open']!,
-                                                onPicked: (v) => setState(() => _operatingHours[key]!['open'] = v),
-                                              ),
-                                              onCloseTap: () => _pickTime(
-                                                initialValue: _operatingHours[key]!['close']!,
-                                                onPicked: (v) => setState(() => _operatingHours[key]!['close'] = v),
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                      ),
-                                const SizedBox(height: AppTheme.lg),
-
-                                _buildToggleCard(
-                                  label: l10n.activeStatusLabel,
-                                  value: _isActive,
-                                  boldLabel: true,
-                                  onChanged: (v) => setState(() => _isActive = v),
-                                ),
-                                const SizedBox(height: AppTheme.xxl),
-
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 50,
-                                  child: ElevatedButton(
-                                    onPressed: _saveLaundry,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppTheme.primaryColor,
-                                      foregroundColor: Colors.white,
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-                                    ),
-                                    child: Text(
-                                      isEditMode ? l10n.updateBranchButton : l10n.saveBranchButton,
-                                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
-                                ),
+                                _buildTopBar(context, l10n),
+                                const SizedBox(height: 20),
+                                _buildStatusSwitchCard(l10n),
+                                const SizedBox(height: 20),
+                                _buildGeneralInfoSection(l10n),
+                                const SizedBox(height: 20),
+                                _buildOperatingHoursSection(l10n),
+                                const SizedBox(height: 20),
+                                _buildManagementSection(l10n),
+                                const SizedBox(height: 28),
+                                _buildPrimaryActions(l10n),
                               ],
                             ),
                           ),
@@ -893,228 +718,558 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
     );
   }
 
-  /// Header custom (icon box + judul + tombol back), mengikuti pola persis
-  /// di LaundriesListScreen._buildHeader agar kedua layar terasa satu tema.
-  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
+  /// Top bar sederhana: tombol back + judul, tanpa icon-box atau subtitle,
+  /// mengikuti mockup ("Tambah Cabang" / "Edit Cabang").
+  Widget _buildTopBar(BuildContext context, AppLocalizations l10n) {
     final canGoBack = context.canPop();
-
     return Row(
       children: [
-        if (canGoBack) ...[
+        if (canGoBack)
           InkWell(
             onTap: () => context.pop(),
-            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppTheme.cardColor,
-                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.06),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 20),
+            borderRadius: BorderRadius.circular(999),
+            child: const Padding(
+              padding: EdgeInsets.all(6),
+              child: Icon(Icons.arrow_back_rounded, size: 24, color: AppTheme.textPrimary),
             ),
           ),
-          const SizedBox(width: AppTheme.md),
-        ],
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: Icon(
-            isEditMode ? Icons.edit_outlined : Icons.storefront_rounded,
-            color: AppTheme.primaryColor,
-            size: 22,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                isEditMode ? l10n.editBranchTitle : l10n.addBranchTitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                isEditMode ? l10n.editBranchInfo : l10n.addBranchInfo,
-                style: GoogleFonts.poppins(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w400,
-                  color: AppTheme.textSecondary,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
+        SizedBox(width: canGoBack ? 8 : 0),
+        Text(
+          isEditMode ? l10n.editBranchTitle : l10n.addBranchTitle,
+          style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
         ),
       ],
     );
   }
 
-  /// Banner info kecil di bawah header, memakai kartu AppTheme (bukan lagi
-  /// warna biru lokal) supaya senada dengan card lain di layar list.
-  Widget _buildInfoBanner(AppLocalizations l10n) {
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.md),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      ),
+  /// Kartu "Cabang Aktif" dengan switch, persis mengikuti card status di
+  /// bagian paling atas mockup (icon bulat + judul + subtitle + switch).
+  Widget _buildStatusSwitchCard(AppLocalizations l10n) {
+    return _cardContainer(
+      padding: const EdgeInsets.all(AppTheme.lg),
       child: Row(
         children: [
-          Icon(
-            isEditMode ? Icons.edit_outlined : Icons.storefront_outlined,
-            color: AppTheme.primaryColor,
-            size: 20,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.storefront_rounded, color: AppTheme.primaryColor, size: 20),
           ),
           const SizedBox(width: AppTheme.md),
           Expanded(
-            child: Text(
-              isEditMode ? l10n.editBranchInfo : l10n.addBranchInfo,
-              style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary, height: 1.3),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-    );
-  }
-
-  /// Card toggle (switch) bergaya sama dengan card lain (shadow tipis,
-  /// radius AppTheme), dipakai untuk "jam sama tiap hari" & "status aktif".
-  Widget _buildToggleCard({
-    required String label,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-    bool boldLabel = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: boldLabel ? FontWeight.w600 : FontWeight.w400,
-                color: AppTheme.textPrimary,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.activeStatusLabel,
+                  style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Nonaktifkan untuk tutup sementara',
+                  style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textSecondary),
+                ),
+              ],
             ),
           ),
           Switch.adaptive(
-            value: value,
+            value: _isActive,
             activeColor: AppTheme.primaryColor,
-            onChanged: onChanged,
+            onChanged: (v) => setState(() => _isActive = v),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHourPickerRow({
-    required String label,
-    required String openValue,
-    required String closeValue,
-    required VoidCallback onOpenTap,
-    required VoidCallback onCloseTap,
-  }) {
+  /// Section "Informasi Umum": perusahaan, nama, kode+telepon, email,
+  /// alamat, kota+provinsi, kapasitas, dan koordinat lokasi.
+  Widget _buildGeneralInfoSection(AppLocalizations l10n) {
+    return _cardContainer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle('Informasi Umum'),
+
+          _fieldLabel(l10n.ownerCompanyLabel),
+          _companiesList.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () => context.push('/companies/create'),
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                      child: Text(
+                        l10n.registerCompanyFirst,
+                        style: GoogleFonts.poppins(color: AppTheme.primaryColor, fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                )
+              : DropdownButtonFormField<String>(
+                  value: _companiesList.any((c) => c['id'] == _selectedCompanyId) ? _selectedCompanyId : null,
+                  items: _companiesList.map((c) {
+                    return DropdownMenuItem<String>(
+                      value: c['id'],
+                      child: Text(c['name'], style: GoogleFonts.poppins(fontSize: 13)),
+                    );
+                  }).toList(),
+                  onChanged: (val) => setState(() => _selectedCompanyId = val),
+                  decoration: _buildInputDecoration(l10n.selectCompanyHint, null),
+                  validator: (v) => v == null ? l10n.companyRequiredValidator : null,
+                ),
+          const SizedBox(height: AppTheme.md),
+
+          _fieldLabel(l10n.branchNameLabel),
+          TextFormField(
+            controller: _nameController,
+            textCapitalization: TextCapitalization.words,
+            style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+            decoration: _buildInputDecoration(l10n.branchNameHint, null),
+            validator: (v) => v == null || v.trim().isEmpty ? l10n.branchNameEmpty : null,
+          ),
+          const SizedBox(height: AppTheme.md),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _fieldLabel(l10n.branchCodeLabel),
+                    TextFormField(
+                      controller: _codeController,
+                      textCapitalization: TextCapitalization.characters,
+                      style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                      decoration: _buildInputDecoration(l10n.branchCodeHint, null),
+                      validator: (v) => v == null || v.trim().isEmpty ? l10n.branchCodeEmpty : null,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppTheme.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _fieldLabel(l10n.branchPhoneLabel),
+                    TextFormField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                      decoration: _buildInputDecoration(l10n.branchPhoneHint, null),
+                      validator: (v) => v == null || v.trim().isEmpty ? l10n.phoneEmpty : null,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.md),
+
+          _fieldLabel(l10n.emailOptionalLabel),
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+            decoration: _buildInputDecoration(l10n.branchEmailHint, null),
+          ),
+          const SizedBox(height: AppTheme.md),
+
+          _fieldLabel(l10n.addressLabel),
+          TextFormField(
+            controller: _addressController,
+            maxLines: 3,
+            style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+            decoration: _buildInputDecoration(l10n.addressHint, null),
+            validator: (v) => v == null || v.trim().isEmpty ? l10n.addressEmpty : null,
+          ),
+          const SizedBox(height: AppTheme.md),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _fieldLabel(l10n.cityLabel),
+                    TextFormField(
+                      controller: _cityController,
+                      textCapitalization: TextCapitalization.words,
+                      style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                      decoration: _buildInputDecoration(l10n.cityHint, null),
+                      validator: (v) => v == null || v.trim().isEmpty ? l10n.fieldRequired : null,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppTheme.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _fieldLabel(l10n.provinceLabel),
+                    TextFormField(
+                      controller: _provinceController,
+                      textCapitalization: TextCapitalization.words,
+                      style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                      decoration: _buildInputDecoration(l10n.provinceHint, null),
+                      validator: (v) => v == null || v.trim().isEmpty ? l10n.fieldRequired : null,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.md),
+
+          _fieldLabel(l10n.dailyCapacityLabel),
+          TextFormField(
+            controller: _capacityController,
+            keyboardType: TextInputType.number,
+            style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+            decoration: _buildInputDecoration(l10n.capacityHint, null),
+            validator: (v) => v == null || v.trim().isEmpty ? l10n.capacityEmpty : null,
+          ),
+          const SizedBox(height: AppTheme.md),
+
+          _fieldLabel(l10n.mapLocationLabel),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _latController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                  decoration: _buildInputDecoration(l10n.latitudeHint, null),
+                ),
+              ),
+              const SizedBox(width: AppTheme.md),
+              Expanded(
+                child: TextFormField(
+                  controller: _lngController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                  decoration: _buildInputDecoration(l10n.longitudeHint, null),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Section "Jam Operasional": header + tombol pill "Samakan untuk semua
+  /// hari" (aksi sekali klik yang menyalin jam Senin ke semua hari lain),
+  /// lalu daftar 7 hari yang SELALU tampil, masing-masing dengan switch
+  /// aktif/nonaktif sendiri - persis mengikuti mockup.
+  ///
+  /// FIX OVERFLOW: header sebelumnya pakai `Row(spaceBetween)`, yang tidak
+  /// bisa membungkus ke baris baru. Di layar sempit (mis. 360px), judul
+  /// "JAM OPERASIONAL" + tombol pill "Gunakan jam yang sama untuk semua
+  /// hari" jadi lebih lebar dari layar dan overflow ke kanan. Diganti ke
+  /// `Wrap(alignment: WrapAlignment.spaceBetween)`: kalau keduanya masih
+  /// muat sebaris (layar lebar/tablet), tampilannya identik dengan Row.
+  /// Kalau tidak muat, tombol pill otomatis turun ke baris kedua alih-alih
+  /// overflow.
+  Widget _buildOperatingHoursSection(AppLocalizations l10n) {
+    return _cardContainer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 8,
+            children: [
+              Text(
+                'Jam Operasional'.toUpperCase(),
+                style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: AppTheme.textTertiary),
+              ),
+              InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: () => _applySameHoursToAllDays(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    l10n.useSameHoursLabel,
+                    textAlign: TextAlign.right,
+                    style: GoogleFonts.poppins(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Column(
+            children: _days.map((d) {
+              final key = d['key']!;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: _buildDayRow(key, l10n),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Menyalin jam Senin ke semua hari lain (aksi tombol "Samakan untuk
+  /// semua hari"). Hari yang sedang nonaktif tetap ikut disamakan jamnya,
+  /// tapi tetap nonaktif sampai switch-nya dinyalakan lagi.
+  void _applySameHoursToAllDays() {
+    final firstKey = _days.first['key']!;
+    final open = _operatingHours[firstKey]!['open']!;
+    final close = _operatingHours[firstKey]!['close']!;
+    setState(() {
+      for (final d in _days) {
+        _operatingHours[d['key']!] = {'open': open, 'close': close};
+      }
+    });
+  }
+
+  /// Satu baris hari: switch aktif/nonaktif + label hari + dua chip jam.
+  /// Saat switch dimatikan, chip jam ikut dinonaktifkan (tidak bisa ditekan)
+  /// sesuai perilaku pada mockup.
+  Widget _buildDayRow(String key, AppLocalizations l10n) {
+    final enabled = _dayEnabled[key] ?? true;
     return Row(
       children: [
-        SizedBox(
-          width: 64,
-          child: Text(label, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textPrimary)),
+        Transform.scale(
+          scale: 0.75,
+          child: Switch.adaptive(
+            value: enabled,
+            activeColor: AppTheme.primaryColor,
+            onChanged: (v) => setState(() => _dayEnabled[key] = v),
+          ),
         ),
-        const SizedBox(width: 8.0),
-        Expanded(child: _timeChip(openValue, onOpenTap)),
+        SizedBox(
+          width: 58,
+          child: Text(
+            _dayLabel(l10n, key),
+            style: GoogleFonts.poppins(fontSize: 12.5, fontWeight: FontWeight.w500, color: AppTheme.textPrimary),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: _timeChip(
+            _operatingHours[key]!['open']!,
+            enabled
+                ? () => _pickTime(
+                      initialValue: _operatingHours[key]!['open']!,
+                      onPicked: (v) => setState(() => _operatingHours[key]!['open'] = v),
+                    )
+                : null,
+            enabled: enabled,
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
           child: Text('—', style: GoogleFonts.poppins(color: AppTheme.textTertiary)),
         ),
-        Expanded(child: _timeChip(closeValue, onCloseTap)),
+        Expanded(
+          child: _timeChip(
+            _operatingHours[key]!['close']!,
+            enabled
+                ? () => _pickTime(
+                      initialValue: _operatingHours[key]!['close']!,
+                      onPicked: (v) => setState(() => _operatingHours[key]!['close'] = v),
+                    )
+                : null,
+            enabled: enabled,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _timeChip(String value, VoidCallback onTap) {
+  /// Section "Manajemen": pilih manajer cabang (opsional).
+  Widget _buildManagementSection(AppLocalizations l10n) {
+    return _cardContainer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle('Manajemen'),
+          _fieldLabel(l10n.managerOptionalLabel),
+          _employeesList.isEmpty
+              ? Container(
+                  padding: const EdgeInsets.all(AppTheme.md),
+                  decoration: BoxDecoration(
+                    color: _kFieldFill,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.borderColor),
+                  ),
+                  child: Text(
+                    l10n.noEmployeeDataInfo,
+                    style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                  ),
+                )
+              : DropdownButtonFormField<String>(
+                  value: _employeesList.any((e) => e['id'] == _selectedManagerId) ? _selectedManagerId : null,
+                  items: _employeesList.map((e) {
+                    return DropdownMenuItem<String>(
+                      value: e['id'],
+                      child: Text(e['name'], style: GoogleFonts.poppins(fontSize: 13)),
+                    );
+                  }).toList(),
+                  onChanged: (val) => setState(() => _selectedManagerId = val),
+                  decoration: _buildInputDecoration(l10n.selectManagerHint, null),
+                ),
+        ],
+      ),
+    );
+  }
+
+  /// Tombol simpan (full width, rounded besar) + tombol teks "Nonaktifkan
+  /// Cabang" berwarna merah di bawahnya (hanya muncul di mode edit),
+  /// sesuai mockup.
+  Widget _buildPrimaryActions(AppLocalizations l10n) {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _saveLaundry,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: Text(
+              isEditMode ? l10n.updateBranchButton : l10n.saveBranchButton,
+              style: GoogleFonts.poppins(fontSize: 14.5, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+        if (isEditMode) ...[
+          const SizedBox(height: 6),
+          Center(
+            child: TextButton(
+              onPressed: _confirmDeactivate,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 10),
+              ),
+              child: Text(
+                'Nonaktifkan Cabang',
+                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.redAccent),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ============================================
+  // HELPER STYLING
+  // ============================================
+
+  /// Kartu section dengan shadow tipis & radius besar, konsisten dipakai
+  /// untuk status card & tiap section form.
+  Widget _cardContainer({required Widget child, EdgeInsetsGeometry? padding}) {
+    return Container(
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.all(AppTheme.xl),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  /// Judul section uppercase kecil (mis. "INFORMASI UMUM").
+  Widget _sectionTitle(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Text(
+        text.toUpperCase(),
+        style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: AppTheme.textTertiary),
+      ),
+    );
+  }
+
+  /// Label kecil di atas tiap input field.
+  Widget _fieldLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        text,
+        style: GoogleFonts.poppins(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+      ),
+    );
+  }
+
+  /// Chip jam ringkas (kotak, tanpa ikon), mengikuti input time polos
+  /// di mockup. [onTap] null berarti chip nonaktif (hari sedang tutup),
+  /// tampilannya dibuat pudar dan tidak bisa ditekan.
+  Widget _timeChip(String value, VoidCallback? onTap, {bool enabled = true}) {
     return InkWell(
-      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      borderRadius: BorderRadius.circular(8),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 10),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
-          color: AppTheme.cardColor,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          color: _kFieldFill,
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: AppTheme.borderColor),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.access_time, color: AppTheme.textTertiary, size: 16),
-            const SizedBox(width: 6),
-            Text(value, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textPrimary)),
-          ],
+        child: Opacity(
+          opacity: enabled ? 1 : 0.4,
+          child: Text(value, style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textPrimary)),
         ),
       ),
     );
   }
 
-  InputDecoration _buildInputDecoration(String hint, IconData icon) {
+  /// Dekorasi input polos (tanpa border membulat penuh, fill abu muda),
+  /// mengikuti gaya input pada mockup. Ikon bersifat opsional.
+  InputDecoration _buildInputDecoration(String hint, IconData? icon) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
-      prefixIcon: Icon(icon, color: AppTheme.textTertiary, size: 20),
+      hintStyle: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textTertiary),
+      prefixIcon: icon != null ? Icon(icon, color: AppTheme.textTertiary, size: 18) : null,
+      isDense: true,
       filled: true,
-      fillColor: AppTheme.cardColor,
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 14),
+      fillColor: _kFieldFill,
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 13),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: AppTheme.borderColor),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: AppTheme.borderColor),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: Colors.redAccent),
       ),
     );
