@@ -4,11 +4,47 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/themes/app_theme.dart';
 import '../../core/providers/locale.provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/user_model.dart';
 import '../../repositories/user_repository.dart';
+
+// ============================================================
+// PALETTE — disamakan dengan code.html: biru (#2196F3) sebagai
+// primary, background & card putih bersih (bukan hijau/teal),
+// badge kategori warna-warni bentuk lingkaran seperti di mockup.
+// ============================================================
+class _Palette {
+  static const canvas = Colors.white;
+  static const surface = Colors.white;
+
+  static const primary = Color(0xFF2196F3);
+  static const primaryDark = Color(0xFF1769AA);
+  static const primaryContainer = Color(0xFFE3F2FD);
+
+  static const ink = Color(0xFF1B1C1C);
+  static const inkSoft = Color(0xFF404752);
+  static const inkFaint = Color(0xFF707883);
+  static const divider = Color(0xFFBFC7D4);
+
+  static const error = Color(0xFFBA1A1A);
+  static const errorContainer = Color(0xFFFFDAD6);
+
+  static const indigo = Color(0xFF4F46E5);
+  static const indigoSoft = Color(0xFFE0E7FF);
+  static const cyan = Color(0xFF0891B2);
+  static const cyanSoft = Color(0xFFCFFAFE);
+  static const orange = Color(0xFFEA580C);
+  static const orangeSoft = Color(0xFFFFEDD5);
+  static const green = Color(0xFF16A34A);
+  static const greenSoft = Color(0xFFDCFCE7);
+  static const purple = Color(0xFF9333EA);
+  static const purpleSoft = Color(0xFFF3E8FF);
+  static const gray = Color(0xFF4B5563);
+  static const graySoft = Color(0xFFF3F4F6);
+
+  static const radiusLg = 18.0;
+}
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -39,7 +75,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final photoUrl = user?.photoURL;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: _Palette.canvas,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -52,13 +88,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildHeader(
-                        context,
-                        t,
-                        displayName,
-                        user?.email,
-                        photoUrl,
-                        isMobile,
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          isMobile ? 8 : 12,
+                          isMobile ? 8 : 12,
+                          isMobile ? 8 : 12,
+                          4,
+                        ),
+                        child: _buildTopBar(context, t),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          isMobile ? 16 : 24,
+                          0,
+                          isMobile ? 16 : 24,
+                          4,
+                        ),
+                        child: _buildProfileCard(
+                          context,
+                          t,
+                          displayName,
+                          user?.email,
+                          photoUrl,
+                          isMobile,
+                        ),
                       ),
                       Padding(
                         padding: EdgeInsets.fromLTRB(
@@ -76,12 +129,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 icon: Icons.person_outline_rounded,
                                 title: t.editProfileTitle,
                                 subtitle: t.editProfileSubtitle,
+                                color: _Palette.primary,
+                                background: _Palette.primaryContainer,
                                 onTap: _openEditProfile,
                               ),
                               _buildTile(
                                 icon: Icons.lock_outline_rounded,
                                 title: t.changePasswordTitle,
                                 subtitle: t.changePasswordSubtitle,
+                                color: _Palette.indigo,
+                                background: _Palette.indigoSoft,
                                 onTap: () =>
                                     context.push('/settings/change-password'),
                                 showDivider: false,
@@ -94,6 +151,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 icon: Icons.notifications_outlined,
                                 title: t.notificationTitle,
                                 subtitle: t.notificationSubtitle,
+                                color: _Palette.orange,
+                                background: _Palette.orangeSoft,
                                 onTap: () =>
                                     context.push('/settings/notifications'),
                               ),
@@ -103,6 +162,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 subtitle: currentLocale.languageCode == 'id'
                                     ? 'Indonesia'
                                     : 'English',
+                                color: _Palette.purple,
+                                background: _Palette.purpleSoft,
                                 onTap: () => _showLanguagePicker(
                                     context, t, currentLocale),
                                 showDivider: false,
@@ -134,6 +195,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                           title: 'Kelola Chat CS',
                                           subtitle:
                                               'Balas percakapan dari semua user',
+                                          color: _Palette.cyan,
+                                          background: _Palette.cyanSoft,
                                           onTap: () =>
                                               context.push('/admin/support'),
                                           showDivider: false,
@@ -150,18 +213,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 icon: Icons.chat_bubble_outline_rounded,
                                 title: 'Chat',
                                 subtitle: 'Balasan',
+                                color: _Palette.cyan,
+                                background: _Palette.cyanSoft,
                                 onTap: () => context.push('/settings/chat-cs'),
                               ),
                               _buildTile(
                                 icon: Icons.help_outline_rounded,
                                 title: t.helpTitle,
                                 subtitle: t.helpSubtitle,
+                                color: _Palette.gray,
+                                background: _Palette.graySoft,
                                 onTap: () => context.push('/settings/help'),
                               ),
                               _buildTile(
                                 icon: Icons.info_outline_rounded,
                                 title: t.aboutTitle,
                                 subtitle: 'NetWash v1.0.0',
+                                color: _Palette.gray,
+                                background: _Palette.graySoft,
                                 onTap: () => context.push('/settings/about'),
                                 showDivider: false,
                               ),
@@ -193,14 +262,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        backgroundColor: _Palette.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(_Palette.radiusLg),
         ),
         title: Text(
           t.languageTitle,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
+            color: _Palette.ink,
           ),
         ),
         content: Column(
@@ -210,7 +280,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               value: 'id',
               groupValue: currentLocale.languageCode,
               title: Text('Indonesia', style: GoogleFonts.poppins()),
-              activeColor: AppTheme.primaryColor,
+              activeColor: _Palette.primary,
               onChanged: (value) {
                 ref.read(localeProvider.notifier).setLocale(const Locale('id'));
                 Navigator.pop(dialogContext);
@@ -220,7 +290,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               value: 'en',
               groupValue: currentLocale.languageCode,
               title: Text('English', style: GoogleFonts.poppins()),
-              activeColor: AppTheme.primaryColor,
+              activeColor: _Palette.primary,
               onChanged: (value) {
                 ref.read(localeProvider.notifier).setLocale(const Locale('en'));
                 Navigator.pop(dialogContext);
@@ -233,16 +303,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   // ==========================================================
-  // HEADER
+  // TOP BAR — putih polos, judul biru. Persis seperti header di
+  // code.html (bg-surface, bukan panel biru).
   // ==========================================================
-  // Dirapikan: sebelumnya padding horizontal fixed 24 di semua ukuran
-  // layar (nggak ngikutin `isMobile` kayak konten di bawahnya yang
-  // 16/24), radius sudut 32 dan avatar 76px juga kebesaran buat layar
-  // sempit -> keliatan "meleber"/terlalu lebar dibanding body di
-  // bawahnya. Sekarang padding, radius, avatar, dan spacing semua
-  // responsif + judul dikasih icon badge kecil (senada sama pola header
-  // di Dashboard/Orders/Customers) biar lebih proporsional dan rapi.
-  Widget _buildHeader(
+  Widget _buildTopBar(BuildContext context, AppLocalizations t) {
+    return Row(
+      children: [
+        IconButton(
+          onPressed: () {
+            final scaffold = Scaffold.maybeOf(context);
+            if (scaffold != null && scaffold.hasDrawer) {
+              scaffold.openDrawer();
+            }
+          },
+          icon: const Icon(Icons.menu_rounded, color: _Palette.primary),
+        ),
+        Expanded(
+          child: Text(
+            t.settingsTitle,
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: _Palette.primary,
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.notifications_outlined,
+              color: _Palette.primary),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================================
+  // PROFILE CARD — kartu putih (bukan panel gradient biru),
+  // avatar dengan cincin primary-container, badge role di
+  // sebelah nama, tombol "Edit Profil" di bawah. Avatar juga
+  // bisa ditekan langsung untuk ganti foto.
+  // ==========================================================
+  Widget _buildProfileCard(
     BuildContext context,
     AppLocalizations t,
     String name,
@@ -250,108 +351,151 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     String? photoUrl,
     bool isMobile,
   ) {
-    final horizontalPadding = isMobile ? 18.0 : 24.0;
-    final avatarSize = isMobile ? 58.0 : 64.0;
-    final cornerRadius = isMobile ? 20.0 : 26.0;
+    final avatarSize = isMobile ? 76.0 : 84.0;
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        horizontalPadding,
-        isMobile ? 16 : 20,
-        horizontalPadding,
-        isMobile ? 20 : 24,
-      ),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppTheme.brandGradient,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(cornerRadius),
-          bottomRight: Radius.circular(cornerRadius),
-        ),
+        color: _Palette.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: _Palette.primary.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          Text(
-            t.settingsTitle,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withOpacity(0.85),
-              letterSpacing: 0.3,
-            ),
-          ),
-          SizedBox(height: isMobile ? 12 : 16),
-          Container(
-            width: avatarSize,
-            height: avatarSize,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 16,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-              image: (photoUrl != null && photoUrl.isNotEmpty)
-                  ? DecorationImage(
-                      image: NetworkImage(photoUrl),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-            ),
-            child: (photoUrl == null || photoUrl.isEmpty)
-                ? Text(
-                    name.isNotEmpty ? name[0].toUpperCase() : '?',
-                    style: GoogleFonts.poppins(
-                      fontSize: avatarSize * 0.38,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.primaryColor,
+          GestureDetector(
+            onTap: _openEditProfile,
+            child: Container(
+              width: avatarSize,
+              height: avatarSize,
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: _Palette.primaryContainer, width: 2),
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: _Palette.primaryContainer,
+                      shape: BoxShape.circle,
+                      image: (photoUrl != null && photoUrl.isNotEmpty)
+                          ? DecorationImage(
+                              image: NetworkImage(photoUrl),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                     ),
-                  )
-                : null,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            name,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
-              fontSize: 15.5,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
+                    alignment: Alignment.center,
+                    child: (photoUrl == null || photoUrl.isEmpty)
+                        ? Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : '?',
+                            style: GoogleFonts.poppins(
+                              fontSize: avatarSize * 0.36,
+                              fontWeight: FontWeight.w700,
+                              color: _Palette.primary,
+                            ),
+                          )
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: _Palette.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(
+                        Icons.edit,
+                        size: 13,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: _Palette.ink,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _Palette.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  t.roleOwner.toUpperCase(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
+                    color: _Palette.primary,
+                  ),
+                ),
+              ),
+            ],
           ),
           if (email != null) ...[
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               email,
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.poppins(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w400,
-                color: Colors.white.withOpacity(0.85),
+                color: _Palette.inkSoft,
               ),
             ),
           ],
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              t.roleOwner,
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: OutlinedButton(
+              onPressed: _openEditProfile,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _Palette.primary,
+                side: const BorderSide(color: _Palette.primary, width: 1.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text(
+                t.editProfileTitle,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -368,7 +512,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         style: GoogleFonts.poppins(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: AppTheme.textTertiary,
+          color: _Palette.inkFaint,
           letterSpacing: 0.2,
         ),
       ),
@@ -378,11 +522,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildSectionCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        color: _Palette.surface,
+        borderRadius: BorderRadius.circular(_Palette.radiusLg),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
+            color: _Palette.primary.withOpacity(0.06),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -397,13 +541,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    Color color = _Palette.primary,
+    Color background = _Palette.primaryContainer,
     bool showDivider = true,
   }) {
     return Column(
       children: [
         InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(_Palette.radiusLg),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
@@ -412,10 +558,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(11),
+                    color: background,
+                    shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, color: AppTheme.primaryColor, size: 20),
+                  child: Icon(icon, color: color, size: 20),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -427,7 +573,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 14.5,
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.textPrimary,
+                          color: _Palette.ink,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -436,14 +582,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w400,
-                          color: AppTheme.textSecondary,
+                          color: _Palette.inkSoft,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded,
-                    color: AppTheme.textTertiary, size: 20),
+                const Icon(Icons.chevron_right_rounded,
+                    color: _Palette.inkFaint, size: 20),
               ],
             ),
           ),
@@ -452,7 +598,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Divider(
             height: 1,
             indent: 70,
-            color: AppTheme.borderColor.withOpacity(0.6),
+            color: _Palette.divider.withOpacity(0.5),
           ),
       ],
     );
@@ -472,10 +618,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.red,
-          side: const BorderSide(color: Colors.redAccent, width: 1.2),
+          foregroundColor: _Palette.error,
+          side: const BorderSide(color: _Palette.error, width: 1.2),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderRadius: BorderRadius.circular(_Palette.radiusLg),
           ),
         ),
       ),
@@ -486,26 +632,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        backgroundColor: _Palette.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(_Palette.radiusLg),
         ),
         title: Text(
           t.logoutDialogTitle,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
+            color: _Palette.ink,
           ),
         ),
         content: Text(
           t.logoutDialogContent,
-          style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+          style: GoogleFonts.poppins(color: _Palette.inkSoft),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               t.cancel,
-              style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+              style: GoogleFonts.poppins(color: _Palette.inkSoft),
             ),
           ),
           TextButton(
@@ -520,7 +667,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               t.logout,
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
-                color: Colors.red,
+                color: _Palette.error,
               ),
             ),
           ),
