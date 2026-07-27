@@ -29,8 +29,23 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   static const Color textBlue = Color(0xFF0288D1);
   static const Color primaryBlue = Color(0xFF8ED8F5);
 
+  // Pilihan jabatan standar sesuai mockup (dropdown, bukan free text lagi).
+  // Kalau data existing (mode edit) punya posisi custom yang tidak ada di
+  // daftar ini, posisi itu tetap ditambahkan sebagai item tambahan di
+  // dropdown supaya datanya tidak hilang/ke-reset.
+  static const List<String> _positionOptions = [
+    'Manajer',
+    'Kasir',
+    'Operator Cuci',
+    'Kurir',
+    'Staff Gudang',
+  ];
+
   // Controller input form
   final _fullNameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _addressController = TextEditingController();
   final _employeeCodeController = TextEditingController();
   final _positionController = TextEditingController();
   final _salaryController = TextEditingController();
@@ -64,6 +79,9 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   @override
   void dispose() {
     _fullNameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _addressController.dispose();
     _employeeCodeController.dispose();
     _positionController.dispose();
     _salaryController.dispose();
@@ -148,6 +166,9 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
 
       setState(() {
         _fullNameController.text = (data['full_name'] as String?) ?? '';
+        _phoneController.text = (data['phone'] as String?) ?? '';
+        _emailController.text = (data['email'] as String?) ?? '';
+        _addressController.text = (data['address'] as String?) ?? '';
         _employeeCodeController.text = (data['employee_code'] as String?) ?? '';
         _positionController.text = (data['position'] as String?) ?? '';
         _salaryController.text = ((data['salary'] as num?) ?? 0).toString();
@@ -312,6 +333,9 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
         // (blueprint mereferensikan nama lewat profile_id), namun disertakan
         // di sini agar data karyawan tetap mudah diidentifikasi di UI.
         'full_name': _fullNameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'email': _emailController.text.trim(),
+        'address': _addressController.text.trim(),
         'position': _positionController.text.trim(),
         'salary': double.tryParse(_salaryController.text.trim()) ?? 0.0,
         'commission_rate': double.tryParse(_commissionController.text.trim()) ?? 0.0,
@@ -360,7 +384,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FB),
+      backgroundColor: const Color(0xFFFBF9F8),
       appBar: AppBar(
         title: Text(
           _isEditMode ? 'Edit Data Karyawan' : 'Tambah Karyawan Baru',
@@ -417,27 +441,83 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                       ),
                       const SizedBox(height: AppTheme.lg),
 
-                      const Text('Kode Karyawan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const Text('Nomor Telepon', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
                       const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _employeeCodeController,
-                        textCapitalization: TextCapitalization.characters,
-                        decoration: _buildInputDecoration('Contoh: EMP01, KSR02', Icons.vpn_key_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Kode karyawan tidak boleh kosong' : null,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: 48,
+                            padding: const EdgeInsets.symmetric(horizontal: AppTheme.md),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                            ),
+                            child: const Text('+62', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          ),
+                          const SizedBox(width: AppTheme.md),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _phoneController,
+                              keyboardType: TextInputType.phone,
+                              decoration: _buildInputDecoration('8123456789', Icons.phone_outlined),
+                              validator: (v) => v == null || v.trim().isEmpty ? 'Nomor telepon wajib diisi' : null,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: AppTheme.lg),
 
-                      const Text('Jabatan / Posisi Kerja', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const Text('Email (Opsional)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
                       const SizedBox(height: 6),
                       TextFormField(
-                        controller: _positionController,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: _buildInputDecoration('Contoh: Kasir, Operator Cuci', Icons.assignment_ind_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Posisi atau jabatan wajib diisi' : null,
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: _buildInputDecoration('budi@netwash.com', Icons.email_outlined),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return null; // opsional
+                          final emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[\w\.\-]+$');
+                          return emailRegex.hasMatch(v.trim()) ? null : 'Format email tidak valid';
+                        },
                       ),
                       const SizedBox(height: AppTheme.lg),
 
-                      const Text('Penempatan Cabang Laundry', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const Text('Alamat', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _addressController,
+                        maxLines: 3,
+                        decoration: _buildInputDecoration('Masukkan alamat lengkap rumah', Icons.home_outlined),
+                      ),
+                      const SizedBox(height: AppTheme.lg),
+
+                      const Text('Role / Jabatan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const SizedBox(height: 6),
+                      // Diubah dari text field bebas ketik jadi dropdown pilihan
+                      // sesuai mockup. Kalau posisi existing (mode edit) tidak ada
+                      // di _positionOptions, posisi itu ditambahkan sebagai item
+                      // tambahan supaya data lama tidak hilang.
+                      DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        value: _positionController.text.isEmpty ? null : _positionController.text,
+                        items: [
+                          ..._positionOptions.map(
+                            (p) => DropdownMenuItem<String>(value: p, child: Text(p, style: const TextStyle(fontSize: 13))),
+                          ),
+                          if (_positionController.text.isNotEmpty && !_positionOptions.contains(_positionController.text))
+                            DropdownMenuItem<String>(
+                              value: _positionController.text,
+                              child: Text(_positionController.text, style: const TextStyle(fontSize: 13)),
+                            ),
+                        ],
+                        onChanged: (val) => setState(() => _positionController.text = val ?? ''),
+                        decoration: _buildInputDecoration('Pilih Jabatan', Icons.assignment_ind_outlined),
+                        validator: (v) => v == null || v.isEmpty ? 'Posisi atau jabatan wajib dipilih' : null,
+                      ),
+                      const SizedBox(height: AppTheme.lg),
+
+                      const Text('Cabang Bertugas', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
                       const SizedBox(height: 6),
                       _laundriesList.isEmpty
                           ? TextButton(
@@ -445,41 +525,32 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                               child: const Text('+ Daftarkan Cabang Baru Terlebih Dahulu', style: TextStyle(color: textBlue, fontSize: 13)),
                             )
                           : DropdownButtonFormField<String>(
+                              // isExpanded:true supaya field ikut lebar penuh dan nama
+                              // cabang yang panjang di-ellipsis, bukan overflow di
+                              // belakang ikon panah dropdown (bug klasik Flutter kalau
+                              // isExpanded dibiarkan default false).
+                              isExpanded: true,
                               value: _laundriesList.any((element) => element['id'] == _selectedLaundryId)
                                   ? _selectedLaundryId
                                   : null,
                               items: _laundriesList.map((laundry) {
                                 return DropdownMenuItem<String>(
                                   value: laundry['id'],
-                                  child: Text(laundry['name'], style: const TextStyle(fontSize: 13)),
+                                  child: Text(
+                                    laundry['name'],
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
                                 );
                               }).toList(),
                               onChanged: (val) => setState(() => _selectedLaundryId = val),
-                              decoration: _buildInputDecoration('Pilih cabang penempatan', Icons.storefront_outlined),
+                              decoration: _buildInputDecoration('Pilih Cabang', Icons.storefront_outlined),
                               validator: (v) => v == null ? 'Cabang penempatan wajib dipilih' : null,
                             ),
                       const SizedBox(height: AppTheme.lg),
 
-                      const Text('Gaji Pokok (IDR)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _salaryController,
-                        keyboardType: TextInputType.number,
-                        decoration: _buildInputDecoration('Contoh: 3000000', Icons.payments_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Gaji pokok wajib diisi' : null,
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      const Text('Komisi per Transaksi (%)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _commissionController,
-                        keyboardType: TextInputType.number,
-                        decoration: _buildInputDecoration('Contoh: 5.0', Icons.add_chart_outlined),
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      const Text('Tanggal Bergabung (Hire Date)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const Text('Tanggal Bergabung', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
                       const SizedBox(height: 6),
                       InkWell(
                         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -504,12 +575,110 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                               const Icon(Icons.calendar_today_outlined, color: Colors.grey, size: 20),
                               const SizedBox(width: AppTheme.md),
                               Text(
-                                '${_hireDate.year.toString().padLeft(4, '0')}-${_hireDate.month.toString().padLeft(2, '0')}-${_hireDate.day.toString().padLeft(2, '0')}',
+                                '${_hireDate.day.toString().padLeft(2, '0')}/${_hireDate.month.toString().padLeft(2, '0')}/${_hireDate.year.toString().padLeft(4, '0')}',
                                 style: const TextStyle(fontSize: 13),
                               ),
                             ],
                           ),
                         ),
+                      ),
+                      const SizedBox(height: AppTheme.lg),
+
+                      // "Akses Aplikasi" pada mockup dan "Status Karyawan" sama-sama
+                      // mengontrol field is_active - sengaja tidak dipisah jadi
+                      // field `canLogin` baru sesuai keputusan, jadi keduanya
+                      // di-bind ke _isActive yang sama.
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Akses Aplikasi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                                  Text('Berikan akses login aplikasi', style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500)),
+                                ],
+                              ),
+                            ),
+                            Switch.adaptive(
+                              value: _isActive,
+                              activeColor: textBlue,
+                              onChanged: (val) => setState(() => _isActive = val),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.lg),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Status Karyawan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                                  Text('Status saat ini: ${_isActive ? 'Aktif' : 'Tidak Aktif'}', style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500)),
+                                ],
+                              ),
+                            ),
+                            Switch.adaptive(
+                              value: _isActive,
+                              activeColor: textBlue,
+                              onChanged: (val) => setState(() => _isActive = val),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.xl),
+                      Divider(color: Colors.grey.shade200),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Detail Tambahan (gaji, kode, hak akses)',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade500),
+                      ),
+                      const SizedBox(height: AppTheme.lg),
+
+                      const Text('Kode Karyawan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _employeeCodeController,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: _buildInputDecoration('Contoh: EMP01, KSR02', Icons.vpn_key_outlined),
+                        validator: (v) => v == null || v.trim().isEmpty ? 'Kode karyawan tidak boleh kosong' : null,
+                      ),
+                      const SizedBox(height: AppTheme.lg),
+
+                      const Text('Gaji Pokok (IDR)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _salaryController,
+                        keyboardType: TextInputType.number,
+                        decoration: _buildInputDecoration('Contoh: 3000000', Icons.payments_outlined),
+                        validator: (v) => v == null || v.trim().isEmpty ? 'Gaji pokok wajib diisi' : null,
+                      ),
+                      const SizedBox(height: AppTheme.lg),
+
+                      const Text('Komisi per Transaksi (%)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _commissionController,
+                        keyboardType: TextInputType.number,
+                        decoration: _buildInputDecoration('Contoh: 5.0', Icons.add_chart_outlined),
                       ),
                       const SizedBox(height: AppTheme.lg),
 
@@ -546,27 +715,6 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Status Karyawan Aktif', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                            Switch.adaptive(
-                              value: _isActive,
-                              activeColor: textBlue,
-                              onChanged: (val) => setState(() => _isActive = val),
-                            ),
-                          ],
-                        ),
-                      ),
                       const SizedBox(height: AppTheme.xxl),
 
                       SizedBox(
@@ -586,12 +734,75 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                           ),
                         ),
                       ),
+                      if (_isEditMode && _isActive) ...[
+                        const SizedBox(height: AppTheme.md),
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: _confirmTerminate,
+                            icon: const Icon(Icons.person_off_outlined, size: 18, color: Colors.redAccent),
+                            label: const Text(
+                              'Nonaktifkan Karyawan',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.redAccent),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ),
       ),
     );
+  }
+
+  /// Dialog konfirmasi soft-terminate langsung dari layar edit, sesuai
+  /// link "Nonaktifkan Karyawan" pada mockup - konsisten dengan
+  /// EmployeeRepository.terminateEmployee (set is_active: false +
+  /// termination_date, dokumen tidak dihapus).
+  Future<void> _confirmTerminate() async {
+    if (widget.employeeId == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nonaktifkan Karyawan'),
+        content: const Text('Apakah Anda yakin ingin menonaktifkan karyawan ini? Riwayat transaksi lama akan tetap aman.'),
+        actions: [
+          TextButton(onPressed: () => ctx.pop(false), child: const Text('Batal', style: TextStyle(color: Colors.grey))),
+          TextButton(
+            onPressed: () => ctx.pop(true),
+            child: const Text('Ya, Nonaktifkan', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('employees')
+          .doc(widget.employeeId)
+          .update({
+        'is_active': false,
+        'termination_date': FieldValue.serverTimestamp(),
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Karyawan telah dinonaktifkan.'), backgroundColor: Colors.orangeAccent),
+        );
+        context.pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menonaktifkan karyawan: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    }
   }
 
   InputDecoration _buildInputDecoration(String hint, IconData icon) {

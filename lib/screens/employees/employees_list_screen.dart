@@ -25,6 +25,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
   late TextEditingController _searchController;
   String _selectedFilter = 'all'; // all, active, inactive
   String? _selectedLaundryId; // null = semua cabang
+  String? _selectedRole; // null = semua role/jabatan
 
   @override
   void initState() {
@@ -41,6 +42,25 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
   /// Format Mata Uang
   String _formatCurrency(double amount) {
     return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+  }
+
+  /// Warna badge per role/jabatan, dipakai konsisten di chip filter role
+  /// maupun badge role pada kartu karyawan (sesuai mockup: Manajer biru,
+  /// Kasir hijau, Operator Cuci oranye, Kurir ungu). Role di luar daftar ini
+  /// (jabatan custom) jatuh ke warna primary theme.
+  Color _roleColor(String position) {
+    switch (position.trim().toLowerCase()) {
+      case 'manajer':
+        return const Color(0xFF2F80ED);
+      case 'kasir':
+        return const Color(0xFF27AE60);
+      case 'operator cuci':
+        return const Color(0xFFF2994A);
+      case 'kurir':
+        return const Color(0xFF9B51E0);
+      default:
+        return AppTheme.primaryColor;
+    }
   }
 
   /// Fungsi untuk menonaktifkan karyawan (Terminasi)
@@ -83,7 +103,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     };
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFFFBF9F8), // Disamakan dengan latar order_list_screen
       // CTA "Karyawan Baru" dipindah ke FAB, sama persis polanya dengan
       // LaundriesListScreen ("Cabang Baru") biar konsisten se-app —
       // sebelumnya ini tombol ElevatedButton biasa di pojok kanan header.
@@ -109,24 +129,32 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
                   (_selectedFilter == 'active' && emp.isActive) ||
                   (_selectedFilter == 'inactive' && !emp.isActive);
               bool laundryMatch = _selectedLaundryId == null || emp.laundryId == _selectedLaundryId;
+              bool roleMatch = _selectedRole == null || emp.position.toLowerCase() == _selectedRole!.toLowerCase();
               final query = _searchController.text.toLowerCase();
               final laundryName = laundryNames[emp.laundryId] ?? '';
               bool searchMatch = query.isEmpty ||
                   emp.fullName.toLowerCase().contains(query) ||
                   emp.employeeCode.toLowerCase().contains(query) ||
                   emp.position.toLowerCase().contains(query) ||
+                  emp.phone.toLowerCase().contains(query) ||
                   laundryName.toLowerCase().contains(query);
-              return statusMatch && laundryMatch && searchMatch;
+              return statusMatch && laundryMatch && roleMatch && searchMatch;
             }).toList();
 
-            return _buildMainContent(context, filteredEmployees, laundryNames, laundriesAsync.value ?? const []);
+            return _buildMainContent(context, filteredEmployees, laundryNames, laundriesAsync.value ?? const [], allEmployees);
           },
         ),
       ),
     );
   }
 
-  Widget _buildMainContent(BuildContext context, List<Employee> employees, Map<String, String> laundryNames, List<Laundry> laundries) {
+  Widget _buildMainContent(BuildContext context, List<Employee> employees, Map<String, String> laundryNames, List<Laundry> laundries, List<Employee> allEmployees) {
+    // Daftar role untuk chip filter: diambil dari data karyawan yang benar-benar
+    // ada (supaya jabatan custom tetap muncul sebagai pilihan), dengan fallback
+    // ke daftar role standar kalau datanya masih kosong.
+    final rolesFromData = allEmployees.map((e) => e.position).where((p) => p.trim().isNotEmpty).toSet().toList()..sort();
+    final availableRoles = rolesFromData.isNotEmpty ? rolesFromData : ['Manajer', 'Kasir', 'Operator Cuci', 'Kurir'];
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 800;
@@ -144,15 +172,13 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
                     const SizedBox(height: 22),
                     _buildSearchBar(),
                     const SizedBox(height: AppTheme.lg),
-                    Row(
-                      children: [
-                        Expanded(child: _buildFilterButtons()),
-                        const SizedBox(width: 8),
-                        _buildLaundryFilterDropdown(laundries),
-                      ],
-                    ),
-                    const SizedBox(height: AppTheme.xl),
-                    _buildStatsSummary(employees),
+                    _buildTotalStat(allEmployees.length),
+                    const SizedBox(height: AppTheme.lg),
+                    _buildStatusChips(),
+                    const SizedBox(height: 10),
+                    _buildBranchChips(laundries),
+                    const SizedBox(height: 10),
+                    _buildRoleChips(availableRoles),
                     const SizedBox(height: AppTheme.xl),
                     employees.isEmpty
                         ? _buildEmptyState()
@@ -242,7 +268,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
         controller: _searchController,
         onChanged: (_) => setState(() {}),
         decoration: InputDecoration(
-          hintText: 'Cari Nama, Kode, Jabatan, atau Cabang...',
+          hintText: 'Cari nama atau nomor telepon karyawan...',
           prefixIcon: const Icon(Icons.search),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(16),
@@ -251,77 +277,117 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     );
   }
 
-  Widget _buildFilterButtons() {
+  /// Chip status Semua/Aktif/Tidak Aktif (baris pertama, sesuai mockup).
+  Widget _buildStatusChips() {
     final filters = [
       ('all', 'Semua', Icons.groups_outlined),
       ('active', 'Aktif', Icons.check_circle_outline),
-      ('inactive', 'Resign', Icons.cancel_outlined),
+      ('inactive', 'Tidak Aktif', Icons.cancel_outlined),
     ];
 
-    return Row(
-      children: filters.map((f) {
-        final isSelected = _selectedFilter == f.$1;
-        return Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: ChoiceChip(
-            label: Text(f.$2),
+    // Dibungkus scroll horizontal (bukan Row biasa) supaya tiap chip tetap
+    // dapat lebar aslinya dan tinggal di-scroll kalau tidak muat di layar
+    // sempit, tidak overflow atau bikin teks chip terpotong jadi 2 baris.
+    return SizedBox(
+      height: 34,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final f = filters[index];
+          final isSelected = _selectedFilter == f.$1;
+          return ChoiceChip(
+            label: Text(f.$2, overflow: TextOverflow.ellipsis),
             selected: isSelected,
             onSelected: (val) => setState(() => _selectedFilter = f.$1),
             avatar: Icon(f.$3, size: 16, color: isSelected ? Colors.white : AppTheme.primaryColor),
             showCheckmark: false,
             selectedColor: AppTheme.primaryColor,
             labelStyle: GoogleFonts.poppins(color: isSelected ? Colors.white : AppTheme.textSecondary, fontSize: 12),
-          ),
-        );
-      }).toList(),
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildLaundryFilterDropdown(List<Laundry> laundries) {
+  /// Chip filter cabang (baris kedua, menggantikan dropdown lama - sesuai
+  /// mockup "Semua Cabang | Sudirman | Menteng | ..."). Discroll horizontal
+  /// supaya nama cabang berapa pun banyaknya tidak pernah overflow.
+  Widget _buildBranchChips(List<Laundry> laundries) {
+    return SizedBox(
+      height: 34,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: laundries.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final isAll = index == 0;
+          final laundry = isAll ? null : laundries[index - 1];
+          final isSelected = isAll ? _selectedLaundryId == null : _selectedLaundryId == laundry!.id;
+          return ChoiceChip(
+            label: Text(isAll ? 'Semua Cabang' : laundry!.name, overflow: TextOverflow.ellipsis),
+            selected: isSelected,
+            onSelected: (val) => setState(() => _selectedLaundryId = isAll ? null : laundry!.id),
+            showCheckmark: false,
+            selectedColor: AppTheme.primaryColor,
+            backgroundColor: AppTheme.cardColor,
+            labelStyle: GoogleFonts.poppins(color: isSelected ? Colors.white : AppTheme.textSecondary, fontSize: 12),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Chip filter role/jabatan (baris ketiga, baru - sesuai mockup "Semua |
+  /// Manajer | Kasir | Operator Cuci"). Tiap chip diwarnai sesuai role,
+  /// pakai _roleColor supaya konsisten dengan badge role di kartu karyawan.
+  Widget _buildRoleChips(List<String> roles) {
+    return SizedBox(
+      height: 34,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: roles.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final isAll = index == 0;
+          final role = isAll ? null : roles[index - 1];
+          final isSelected = isAll ? _selectedRole == null : _selectedRole == role;
+          final color = isAll ? AppTheme.primaryColor : _roleColor(role!);
+          return ChoiceChip(
+            label: Text(isAll ? 'Semua' : role!, overflow: TextOverflow.ellipsis),
+            selected: isSelected,
+            onSelected: (val) => setState(() => _selectedRole = isAll ? null : role),
+            showCheckmark: false,
+            selectedColor: color,
+            backgroundColor: color.withOpacity(0.1),
+            side: BorderSide(color: color.withOpacity(0.4)),
+            labelStyle: GoogleFonts.poppins(color: isSelected ? Colors.white : color, fontSize: 12, fontWeight: FontWeight.w600),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Kartu "Total Karyawan" tunggal sesuai mockup (sebelumnya 2 kotak
+  /// Total Staf/Staf Aktif; angka staf aktif tetap bisa dilihat lewat chip
+  /// filter status "Aktif" di bawahnya).
+  Widget _buildTotalStat(int total) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(color: AppTheme.borderColor.withOpacity(0.6)),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Total Karyawan', style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary)),
+          const SizedBox(height: 6),
+          Text('$total', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+        ],
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedLaundryId,
-          isDense: true,
-          icon: const Icon(Icons.expand_more, size: 18),
-          hint: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.storefront_outlined, size: 16, color: AppTheme.textSecondary),
-              const SizedBox(width: 6),
-              Text('Semua Cabang', style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary)),
-            ],
-          ),
-          items: [
-            DropdownMenuItem<String>(
-              value: null,
-              child: Text('Semua Cabang', style: GoogleFonts.poppins(fontSize: 12.5)),
-            ),
-            ...laundries.map((l) => DropdownMenuItem<String>(
-                  value: l.id,
-                  child: Text(l.name, style: GoogleFonts.poppins(fontSize: 12.5)),
-                )),
-          ],
-          onChanged: (val) => setState(() => _selectedLaundryId = val),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsSummary(List<Employee> employees) {
-    final activeCount = employees.where((e) => e.isActive).length;
-    return Row(
-      children: [
-        Expanded(child: _StatBox(title: 'Total Staf', value: '${employees.length}', icon: Icons.badge, color: AppTheme.primaryColor)),
-        const SizedBox(width: 16),
-        Expanded(child: _StatBox(title: 'Staf Aktif', value: '$activeCount', icon: Icons.how_to_reg, color: Colors.green)),
-      ],
     );
   }
 
@@ -335,9 +401,8 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
         final emp = employees[index];
         return _EmployeeCard(
           employee: emp,
-          formattedSalary: _formatCurrency(emp.salary),
           laundryName: laundryNames[emp.laundryId] ?? '-',
-          onTerminate: () => _terminateEmployee(emp),
+          roleColor: _roleColor(emp.position),
           onTap: () => context.push('/employees/${emp.id}'),
         );
       },
@@ -358,43 +423,17 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
   }
 }
 
-class _StatBox extends StatelessWidget {
-  final String title, value;
-  final IconData icon;
-  final Color color;
-
-  const _StatBox({required this.title, required this.value, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 12),
-          Text(value, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-          Text(title, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
-        ],
-      ),
-    );
-  }
-}
 
 class _EmployeeCard extends StatelessWidget {
   final Employee employee;
-  final String formattedSalary;
   final String laundryName;
-  final VoidCallback onTerminate;
+  final Color roleColor;
   final VoidCallback onTap;
 
   const _EmployeeCard({
     required this.employee,
-    required this.formattedSalary,
     required this.laundryName,
-    required this.onTerminate,
+    required this.roleColor,
     required this.onTap,
   });
 
@@ -410,79 +449,90 @@ class _EmployeeCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppTheme.borderColor.withOpacity(0.5)),
         ),
-        child: Column(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                  child: Text(
-                    employee.fullName.isNotEmpty ? employee.fullName[0].toUpperCase() : '?',
-                    style: TextStyle(color: AppTheme.primaryColor),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    employee.fullName.isNotEmpty ? employee.fullName : 'Tanpa Nama',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14.5),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 6),
+                  // Badge role berwarna + nama cabang di sebelahnya, sesuai
+                  // kartu pada mockup ("MANAJER  Sudirman").
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
+                      if (employee.position.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: roleColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            employee.position.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(fontSize: 10.5, fontWeight: FontWeight.w700, color: roleColor),
+                          ),
+                        ),
                       Text(
-                        employee.fullName.isNotEmpty ? employee.fullName : 'Tanpa Nama',
+                        laundryName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '${employee.employeeCode} • ${employee.position}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                        style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
                       ),
                     ],
                   ),
-                ),
-                if (employee.isActive)
-                  IconButton(
-                    icon: const Icon(Icons.person_off_outlined, color: Colors.redAccent, size: 20),
-                    onPressed: onTerminate,
-                    tooltip: 'Terminasi',
-                  ),
-              ],
+                  if (employee.phone.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Icons.phone_outlined, size: 14, color: AppTheme.textTertiary),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            employee.phone,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
-            const SizedBox(height: 10),
-            _buildInfoItem(Icons.storefront_outlined, laundryName),
-            const Divider(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            const SizedBox(width: 8),
+            // Dot status (hijau=aktif, abu=tidak aktif) + chevron navigasi,
+            // sesuai kartu pada mockup.
+            Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _buildInfoItem(Icons.payments_outlined, formattedSalary),
-                _buildInfoItem(Icons.percent, '${employee.commissionRate}% Komisi'),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  width: 10,
+                  height: 10,
                   decoration: BoxDecoration(
-                    color: (employee.isActive ? Colors.green : Colors.grey).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    employee.isActive ? 'Aktif' : 'Resign',
-                    style: TextStyle(color: employee.isActive ? Colors.green : Colors.grey, fontSize: 10, fontWeight: FontWeight.bold),
+                    shape: BoxShape.circle,
+                    color: employee.isActive ? const Color(0xFF27AE60) : Colors.grey.shade400,
                   ),
                 ),
+                const SizedBox(height: 20),
+                Icon(Icons.chevron_right, size: 20, color: AppTheme.textTertiary),
               ],
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildInfoItem(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: AppTheme.textTertiary),
-        const SizedBox(width: 4),
-        Text(text, style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary)),
-      ],
     );
   }
 }
