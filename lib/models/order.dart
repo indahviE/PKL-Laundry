@@ -211,6 +211,12 @@ class Order extends BaseModel {
   /// Cara baju keluar. Default selfPickup dengan alasan yang sama.
   final DeliveryType deliveryType;
 
+  /// Kurir (karyawan posisi "Kurir") yang bertugas mengantar order ini.
+  /// Hanya relevan kalau deliveryType == delivery. Nullable karena owner
+  /// bisa saja menandai "sudah diantar" tanpa mencatat kurirnya.
+  final String? courierId;
+  final String? courierName;
+
   Order({
     required super.id,
     required super.createdAt,
@@ -244,6 +250,8 @@ class Order extends BaseModel {
     required this.priorityLevel,
     this.orderType = OrderType.walkIn,
     this.deliveryType = DeliveryType.selfPickup,
+    this.courierId,
+    this.courierName,
   });
 
   /// True kalau order ini butuh driver buat jemput baju ke lokasi pelanggan.
@@ -295,6 +303,8 @@ class Order extends BaseModel {
     PriorityLevel? priorityLevel,
     OrderType? orderType,
     DeliveryType? deliveryType,
+    String? courierId,
+    String? courierName,
   }) {
     return Order(
       id: id ?? this.id,
@@ -329,6 +339,8 @@ class Order extends BaseModel {
       priorityLevel: priorityLevel ?? this.priorityLevel,
       orderType: orderType ?? this.orderType,
       deliveryType: deliveryType ?? this.deliveryType,
+      courierId: courierId ?? this.courierId,
+      courierName: courierName ?? this.courierName,
     );
   }
 
@@ -366,6 +378,8 @@ class Order extends BaseModel {
       // CreateOrderScreen langsung ke Firestore ('walk_in', 'self_pickup').
       'order_type': _orderTypeToFirestore(orderType),
       'delivery_type': _deliveryTypeToFirestore(deliveryType),
+      'courier_id': courierId,
+      'courier_name': courierName,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };
@@ -416,6 +430,8 @@ class Order extends BaseModel {
       ),
       orderType: _orderTypeFromFirestore(json['order_type']),
       deliveryType: _deliveryTypeFromFirestore(json['delivery_type']),
+      courierId: json['courier_id'],
+      courierName: json['courier_name'],
     );
   }
 }
