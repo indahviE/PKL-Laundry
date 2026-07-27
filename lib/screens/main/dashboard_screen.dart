@@ -38,8 +38,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _setupDismissed = false;
 
   // Cabang yang lagi dipilih di selector atas. 'all' = tampilkan semua
-  // cabang (belum ada logic filter data per cabang di stream Firestore
-  // manapun di bawah, jadi utamanya dipakai buat tampilan/label saja).
+  // cabang. Dipakai buat filter query 'orders' lewat _ordersBaseQuery()
+  // di bawah (balance card, notifikasi, chart mingguan, & timeline).
   String _selectedBranchId = 'all';
   String _selectedBranchName = 'Semua Cabang';
 
@@ -51,6 +51,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// yang salah dan datanya keliatan kosong terus.
   /// Sekarang jadi getter, jadi selalu baca currentUser terbaru tiap dipakai.
   String get _currentUserId => FirebaseAuth.instance.currentUser?.uid ?? "placeholder_uid";
+
+  /// Base query buat collection 'orders' milik user aktif, otomatis
+  /// ke-filter sesuai cabang yang lagi dipilih (_selectedBranchId).
+  /// Kalau 'all', tidak ada filter tambahan (nampilin semua cabang).
+  ///
+  /// Dipakai di SEMUA tempat yang query 'orders' di dashboard ini
+  /// (balance card, notification bell, weekly chart, timeline) supaya
+  /// begitu user ganti cabang di selector atas, seluruh dashboard
+  /// ikut ke-filter secara konsisten — bukan cuma label-nya doang.
+  ///
+  /// CATATAN: field 'laundry_id' harus ada di tiap dokumen order
+  /// (diisi dari _selectedLaundryId saat order dibuat di
+  /// CreateOrderScreen). Kombinasi where('laundry_id', ...) dengan
+  /// where('status', ...) / where('order_date', ...) kemungkinan
+  /// butuh composite index baru di Firestore — kalau muncul error
+  /// FAILED_PRECONDITION di log/console, klik link yang disediakan
+  /// Firebase buat generate index-nya otomatis.
+  Query<Map<String, dynamic>> _ordersBaseQuery() {
+    Query<Map<String, dynamic>> q = FirebaseFirestore.instance
+        .collection('users')
+        .doc(_currentUserId)
+        .collection('orders');
+
+    if (_selectedBranchId != 'all') {
+      q = q.where('laundry_id', isEqualTo: _selectedBranchId);
+    }
+    return q;
+  }
 
   /// Mapping indeks filter ke status yang SAMA seperti OrdersListScreen
   /// (all, pending, processing, completed, cancelled).
@@ -369,16 +397,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ============================================
-  // NOTIFICATION BELL (Firestore Stream - pending orders)
+  // NOTIFICATION BELL (Firestore Stream - pending orders di cabang aktif)
   // ============================================
-  // Badge angka = jumlah pesanan berstatus 'pending' saat ini (real-time).
+  // Badge angka = jumlah pesanan berstatus 'pending' saat ini (real-time),
+  // sudah ke-filter sesuai cabang yang lagi dipilih lewat _ordersBaseQuery().
   // Tap => buka bottom sheet berisi list pesanan pending tsb.
   Widget _buildNotificationBell(BuildContext context, AppLocalizations t) {
-    final pendingQuery = FirebaseFirestore.instance
-        .collection('users')
-        .doc(_currentUserId)
-        .collection('orders')
-        .where('status', isEqualTo: 'pending');
+    final pendingQuery = _ordersBaseQuery().where('status', isEqualTo: 'pending');
 
     return StreamBuilder<QuerySnapshot>(
       stream: pendingQuery.snapshots(),
@@ -463,12 +488,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(AppTheme.lg, AppTheme.lg, AppTheme.lg, AppTheme.md),
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(_currentUserId)
-                          .collection('orders')
-                          .where('status', isEqualTo: 'pending')
-                          .snapshots(),
+                      stream: _ordersBaseQuery().where('status', isEqualTo: 'pending').snapshots(),
                       builder: (context, snapshot) {
                         final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
                         return Row(
@@ -490,12 +510,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(_currentUserId)
-                          .collection('orders')
-                          .where('status', isEqualTo: 'pending')
-                          .snapshots(),
+                      stream: _ordersBaseQuery().where('status', isEqualTo: 'pending').snapshots(),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const Center(child: CircularProgressIndicator());
@@ -625,13 +640,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ============================================
-  // REAL-TIME SUMMARY CARD (Firestore Stream)
+  // REAL-TIME SUMMARY CARD (Firestore Stream, ter-filter per cabang)
   // ============================================
   Widget _buildBalanceCardRealtime(AppLocalizations t) {
-    final userRef = FirebaseFirestore.instance.collection('users').doc(_currentUserId);
-
     return StreamBuilder<QuerySnapshot>(
-      stream: userRef.collection('orders').snapshots(),
+      stream: _ordersBaseQuery().snapshots(),
       builder: (context, orderSnapshot) {
         int activeOrders = 0;
         double totalRevenueThisMonth = 0;
@@ -1039,7 +1052,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ============================================
-  // REAL-TIME WEEKLY REVENUE CHART
+  // REAL-TIME WEEKLY REVENUE CHART (ter-filter per cabang)
   // ============================================
   /// FIX: sebelumnya `startOfWeek = DateTime.now().subtract(Duration(days: 7))`
   /// tidak dibulatkan ke tengah malam, jadi rentang 7-hari-nya kepotong di
@@ -1061,10 +1074,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final days = [t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun];
 
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(_currentUserId)
-          .collection('orders')
+      stream: _ordersBaseQuery()
           .where('order_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfWeek))
           .where('order_date', isLessThan: Timestamp.fromDate(endOfWeek))
           .snapshots(),
@@ -1221,14 +1231,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ============================================
-  // REAL-TIME TIMELINE PESANAN (Firestore Stream)
+  // REAL-TIME TIMELINE PESANAN (Firestore Stream, ter-filter per cabang)
   // ============================================
   Widget _buildTimelineRealtime(AppLocalizations t) {
-    var query = FirebaseFirestore.instance
-        .collection('users')
-        .doc(_currentUserId)
-        .collection('orders')
-        .orderBy('order_date', descending: true);
+    var query = _ordersBaseQuery().orderBy('order_date', descending: true);
 
     List<String>? statusFilter = _getStatusFilter(_filterIndex);
 
