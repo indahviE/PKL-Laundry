@@ -200,53 +200,97 @@ class EmployeeDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppTheme.xl),
 
-                // 2. Card Kontak & Penempatan (sesuai mockup "Detail Karyawan")
-                _buildSectionCard(
-                  title: 'Kontak & Penempatan',
-                  items: [
-                    _buildInfoRow(Icons.phone_outlined, 'Nomor Telepon', employee.phone.isNotEmpty ? employee.phone : '-'),
-                    _buildInfoRow(Icons.email_outlined, 'Email', employee.email.isNotEmpty ? employee.email : '-'),
-                    _buildInfoRow(Icons.storefront_outlined, 'Cabang Bertugas', laundryNames[employee.laundryId] ?? '-'),
-                    if (employee.hireDate != null)
-                      _buildInfoRow(
-                        Icons.calendar_today_outlined,
-                        'Tanggal Bergabung',
-                        '${employee.hireDate!.day}/${employee.hireDate!.month}/${employee.hireDate!.year}',
-                      ),
-                    if (employee.address.isNotEmpty) ...[
-                      const Divider(height: 24),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.location_on_outlined, size: 18, color: AppTheme.textTertiary),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Alamat Lengkap',
-                                  style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  employee.address,
-                                  style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                // 2. Card Kontak & Penempatan (disamain persis sama mockup:
+                // tiap baris punya icon dalam kotak bulat warna-warni
+                // (biru=telepon, ungu=email, oranye=cabang, teal=tanggal),
+                // label bold di atas, value di bawahnya - bukan lagi
+                // label-kiri value-kanan sebaris. Alamat tetap icon polos
+                // tanpa kotak warna, dipisah pakai divider seperti sebelumnya.
+                Container(
+                  padding: const EdgeInsets.all(AppTheme.lg),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardColor,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withOpacity(0.04),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
                       ),
                     ],
-                  ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildContactRow(
+                        icon: Icons.phone_outlined,
+                        label: 'Nomor Telepon',
+                        value: employee.phone.isNotEmpty ? employee.phone : '-',
+                        color: const Color(0xFF2F80ED),
+                      ),
+                      const SizedBox(height: 18),
+                      _buildContactRow(
+                        icon: Icons.email_outlined,
+                        label: 'Email',
+                        value: employee.email.isNotEmpty ? employee.email : '-',
+                        color: const Color(0xFFAB47BC),
+                      ),
+                      const SizedBox(height: 18),
+                      _buildContactRow(
+                        icon: Icons.storefront_outlined,
+                        label: 'Cabang Bertugas',
+                        value: laundryNames[employee.laundryId] ?? '-',
+                        color: const Color(0xFFF2994A),
+                      ),
+                      if (employee.hireDate != null) ...[
+                        const SizedBox(height: 18),
+                        _buildContactRow(
+                          icon: Icons.calendar_today_outlined,
+                          label: 'Tanggal Bergabung',
+                          value: '${employee.hireDate!.day}/${employee.hireDate!.month}/${employee.hireDate!.year}',
+                          color: const Color(0xFF2BB3A3),
+                        ),
+                      ],
+                      if (employee.address.isNotEmpty) ...[
+                        const Divider(height: 32),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.location_on_outlined, size: 20, color: AppTheme.textTertiary),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Alamat Lengkap',
+                                    style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textPrimary, fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    employee.address,
+                                    style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w400, color: AppTheme.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AppTheme.lg),
 
-                // 3. Card Informasi Detail Finansial & Pekerjaan
-                _buildSectionCard(
+                // 3 & 4. Informasi Pekerjaan & Hak Akses Sistem: tampilannya
+                // tetap ringkas kayak baris menu (icon + label + chevron),
+                // tapi detailnya buka ke bawah inline (accordion) pas
+                // di-tap - bukan lagi bottom sheet - biar alurnya kerasa
+                // nyambung sama section Kontak & Penempatan di atasnya.
+                _ExpandableInfoCard(
+                  icon: Icons.work_outline,
                   title: 'Informasi Pekerjaan',
-                  items: [
+                  children: [
                     _buildInfoRow(Icons.badge_outlined, 'ID Dokumen', employee.id),
                     _buildInfoRow(Icons.qr_code_outlined, 'Kode Karyawan', employee.employeeCode),
                     _buildInfoRow(Icons.work_outline, 'Posisi Kerja', employee.position),
@@ -254,20 +298,19 @@ class EmployeeDetailScreen extends ConsumerWidget {
                     _buildInfoRow(Icons.percent_outlined, 'Komisi', '${employee.commissionRate}%'),
                   ],
                 ),
-                const SizedBox(height: AppTheme.lg),
-
-                // 3. Card Izin / Hak Akses (Permissions)
-                _buildSectionCard(
+                const SizedBox(height: AppTheme.md),
+                _ExpandableInfoCard(
+                  icon: Icons.admin_panel_settings_outlined,
                   title: 'Hak Akses Sistem',
-                  items: [
+                  children: [
                     _buildPermissionRow(Icons.shopping_bag_outlined, 'Membuat Pesanan', employee.permissions.canCreateOrder),
                     _buildPermissionRow(Icons.people_outline, 'Mengelola Pelanggan', employee.permissions.canManageCustomer),
                     _buildPermissionRow(Icons.bar_chart_outlined, 'Melihat Laporan', employee.permissions.canViewReport),
                   ],
                 ),
-                const SizedBox(height: AppTheme.lg),
+                const SizedBox(height: AppTheme.md),
 
-                // 4. Menu tambahan sesuai mockup - Riwayat Aktivitas & Reset
+                // 5. Menu tambahan sesuai mockup - Riwayat Aktivitas & Reset
                 // Password. Belum ada route/repository untuk ini, jadi
                 // sementara di-wire ke placeholder snackbar dulu. Statistik
                 // Kinerja (Pesanan Ditangani/Transaksi Sukses) SENGAJA belum
@@ -291,7 +334,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppTheme.xxl),
 
-                // 5. Tombol Berhenti / Pecat Karyawan (Soft Delete)
+                // 6. Tombol Berhenti / Pecat Karyawan (Soft Delete)
                 if (employee.isActive)
                   SizedBox(
                     width: double.infinity,
@@ -322,38 +365,49 @@ class EmployeeDetailScreen extends ConsumerWidget {
     );
   }
 
-  // Widget Pembungkus Card Seksi (Mengadaptasi desain standard card agar seragam)
-  Widget _buildSectionCard({required String title, required List<Widget> items}) {
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.lg),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+  // Baris kontak ala mockup: icon dalam kotak bulat berwarna (beda warna
+  // tiap jenis kontak), label bold di atas, value di bawahnya. Dipakai
+  // khusus untuk Nomor Telepon, Email, Cabang Bertugas, & Tanggal Bergabung.
+  Widget _buildContactRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(11),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w700,
-              fontSize: 14.5,
-              color: AppTheme.textPrimary,
-            ),
+          child: Icon(icon, size: 19, color: color),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w400, color: AppTheme.textSecondary),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Divider(color: AppTheme.borderColor.withOpacity(0.5)),
-          const SizedBox(height: 6),
-          ...items,
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -525,6 +579,93 @@ class EmployeeDetailScreen extends ConsumerWidget {
             child: Text(
               'Ya, Nonaktifkan',
               style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Card accordion: tampilannya ringkas kayak baris menu (icon + label +
+// chevron), tapi kalau di-tap detailnya buka ke bawah inline di dalam card
+// yang sama (bukan bottom sheet/route baru). Dipakai untuk "Informasi
+// Pekerjaan" & "Hak Akses Sistem" supaya halaman detail karyawan tetap
+// ringkas secara default tapi detailnya gampang diakses.
+class _ExpandableInfoCard extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final List<Widget> children;
+
+  const _ExpandableInfoCard({
+    required this.icon,
+    required this.title,
+    required this.children,
+  });
+
+  @override
+  State<_ExpandableInfoCard> createState() => _ExpandableInfoCardState();
+}
+
+class _ExpandableInfoCardState extends State<_ExpandableInfoCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg, vertical: 14),
+              child: Row(
+                children: [
+                  Icon(widget.icon, size: 20, color: AppTheme.textSecondary),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.25 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(Icons.chevron_right, size: 20, color: AppTheme.textTertiary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 200),
+            sizeCurve: Curves.easeInOut,
+            crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            firstChild: const SizedBox(width: double.infinity, height: 0),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(AppTheme.lg, 0, AppTheme.lg, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Divider(height: 20, color: AppTheme.borderColor.withOpacity(0.5)),
+                  ...widget.children,
+                ],
+              ),
             ),
           ),
         ],

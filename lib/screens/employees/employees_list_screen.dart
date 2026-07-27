@@ -44,7 +44,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
   }
 
-  /// Warna badge per role/jabatan, dipakai konsisten di chip filter role
+  /// Warna badge per role/jabatan, dipakai konsisten di dropdown filter role
   /// maupun badge role pada kartu karyawan (sesuai mockup: Manajer biru,
   /// Kasir hijau, Operator Cuci oranye, Kurir ungu). Role di luar daftar ini
   /// (jabatan custom) jatuh ke warna primary theme.
@@ -61,6 +61,12 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
       default:
         return AppTheme.primaryColor;
     }
+  }
+
+  /// Buka Create Employee screen (disamakan pola dengan
+  /// LaundriesListScreen._openCreateLaundry)
+  Future<void> _openCreateEmployee(BuildContext context) async {
+    await context.push<bool>('/employees/create');
   }
 
   /// Fungsi untuk menonaktifkan karyawan (Terminasi)
@@ -104,20 +110,8 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F8), // Disamakan dengan latar order_list_screen
-      // CTA "Karyawan Baru" dipindah ke FAB, sama persis polanya dengan
-      // LaundriesListScreen ("Cabang Baru") biar konsisten se-app —
-      // sebelumnya ini tombol ElevatedButton biasa di pojok kanan header.
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/employees/create'),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        icon: const Icon(Icons.person_add_alt_1_outlined, size: 20),
-        label: Text(
-          'Karyawan Baru',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
-        ),
-      ),
+      // Tombol create dipindah ke header (lihat _buildHeader), FAB dihapus
+      // supaya polanya konsisten dengan LaundriesListScreen.
       body: SafeArea(
         child: employeesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -149,7 +143,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
   }
 
   Widget _buildMainContent(BuildContext context, List<Employee> employees, Map<String, String> laundryNames, List<Laundry> laundries, List<Employee> allEmployees) {
-    // Daftar role untuk chip filter: diambil dari data karyawan yang benar-benar
+    // Daftar role untuk dropdown filter: diambil dari data karyawan yang benar-benar
     // ada (supaya jabatan custom tetap muncul sebagai pilihan), dengan fallback
     // ke daftar role standar kalau datanya masih kosong.
     final rolesFromData = allEmployees.map((e) => e.position).where((p) => p.trim().isNotEmpty).toSet().toList()..sort();
@@ -176,16 +170,12 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
                     const SizedBox(height: AppTheme.lg),
                     _buildStatusChips(),
                     const SizedBox(height: 10),
-                    _buildBranchChips(laundries),
-                    const SizedBox(height: 10),
-                    _buildRoleChips(availableRoles),
+                    _buildFilterDropdowns(laundries, availableRoles),
                     const SizedBox(height: AppTheme.xl),
                     employees.isEmpty
                         ? _buildEmptyState()
                         : _buildEmployeesList(employees, laundryNames),
-                    // Spacer biar list terakhir gak ketutupan FAB, sama
-                    // kayak yang dipakai di LaundriesListScreen.
-                    const SizedBox(height: 88),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -196,61 +186,51 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     );
   }
 
-  /// Header: tombol back (conditional, hanya muncul kalau screen ini bisa
-  /// di-pop) + icon + judul. CTA "Baru" sekarang di FAB (lihat build()),
-  /// jadi header ini murni informasional, sama pola dengan
-  /// LaundriesListScreen.
+  /// Header: tombol back (conditional) + icon + judul + tombol create bulat
+  /// di kanan, disamakan persis dengan LaundriesListScreen._buildHeader.
   Widget _buildHeader(BuildContext context) {
     final canGoBack = context.canPop();
 
     return Row(
       children: [
+        // Tombol back disamakan persis dengan LaundriesListScreen._buildHeader
+        // (InkWell + Padding, tanpa background bulat berwarna).
         if (canGoBack) ...[
           InkWell(
             onTap: () => context.pop(),
-            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppTheme.cardColor,
-                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.06),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 20),
+            borderRadius: BorderRadius.circular(999),
+            child: const Padding(
+              padding: EdgeInsets.all(6),
+              child: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 22),
             ),
           ),
-          const SizedBox(width: AppTheme.md),
+          const SizedBox(width: 4),
         ],
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: Icon(Icons.badge_outlined, color: AppTheme.primaryColor, size: 22),
-        ),
-        const SizedBox(width: 14),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Karyawan',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-              Text('Kelola staf dan hak akses cabang',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
-            ],
+          child: Text(
+            'Kelola Karyawan',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+        ),
+        // Tombol create, disamakan persis dengan LaundriesListScreen (bulat,
+        // warna primary, icon add_rounded putih) — menggantikan FAB lama.
+        Material(
+          color: AppTheme.primaryColor,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: () => _openCreateEmployee(context),
+            customBorder: const CircleBorder(),
+            child: const Padding(
+              padding: EdgeInsets.all(8),
+              child: Icon(Icons.add_rounded, color: Colors.white, size: 22),
+            ),
           ),
         ),
       ],
@@ -262,22 +242,47 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: TextField(
         controller: _searchController,
         onChanged: (_) => setState(() {}),
+        style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
         decoration: InputDecoration(
           hintText: 'Cari nama atau nomor telepon karyawan...',
-          prefixIcon: const Icon(Icons.search),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(16),
+          hintStyle: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textTertiary),
+          prefixIcon: Icon(Icons.search, color: AppTheme.textTertiary),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
+          ),
+          filled: true,
+          fillColor: AppTheme.cardColor,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.lg,
+            vertical: AppTheme.md,
+          ),
         ),
       ),
     );
   }
 
-  /// Chip status Semua/Aktif/Tidak Aktif (baris pertama, sesuai mockup).
+  /// Chip status Semua/Aktif/Tidak Aktif (tetap chip sesuai mockup, karena
+  /// cuma 3 opsi jadi ga makan tempat).
   Widget _buildStatusChips() {
     final filters = [
       ('all', 'Semua', Icons.groups_outlined),
@@ -285,9 +290,6 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
       ('inactive', 'Tidak Aktif', Icons.cancel_outlined),
     ];
 
-    // Dibungkus scroll horizontal (bukan Row biasa) supaya tiap chip tetap
-    // dapat lebar aslinya dan tinggal di-scroll kalau tidak muat di layar
-    // sempit, tidak overflow atau bikin teks chip terpotong jadi 2 baris.
     return SizedBox(
       height: 34,
       child: ListView.separated(
@@ -312,74 +314,139 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     );
   }
 
-  /// Chip filter cabang (baris kedua, menggantikan dropdown lama - sesuai
-  /// mockup "Semua Cabang | Sudirman | Menteng | ..."). Discroll horizontal
-  /// supaya nama cabang berapa pun banyaknya tidak pernah overflow.
-  Widget _buildBranchChips(List<Laundry> laundries) {
-    return SizedBox(
-      height: 34,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: laundries.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final isAll = index == 0;
-          final laundry = isAll ? null : laundries[index - 1];
-          final isSelected = isAll ? _selectedLaundryId == null : _selectedLaundryId == laundry!.id;
-          return ChoiceChip(
-            label: Text(isAll ? 'Semua Cabang' : laundry!.name, overflow: TextOverflow.ellipsis),
-            selected: isSelected,
-            onSelected: (val) => setState(() => _selectedLaundryId = isAll ? null : laundry!.id),
-            showCheckmark: false,
-            selectedColor: AppTheme.primaryColor,
-            backgroundColor: AppTheme.cardColor,
-            labelStyle: GoogleFonts.poppins(color: isSelected ? Colors.white : AppTheme.textSecondary, fontSize: 12),
-          );
-        },
+  /// Filter Cabang & Role sekarang jadi dropdown berdampingan (menggantikan
+  /// 2 baris chip yang bisa kepanjangan kalau datanya banyak). Cabang di
+  /// kiri, Role di kanan, masing-masing setengah lebar.
+  Widget _buildFilterDropdowns(List<Laundry> laundries, List<String> roles) {
+    return Row(
+      children: [
+        Expanded(child: _buildBranchDropdown(laundries)),
+        const SizedBox(width: 10),
+        Expanded(child: _buildRoleDropdown(roles)),
+      ],
+    );
+  }
+
+  /// Dropdown filter cabang, menggantikan _buildBranchChips lama (sesuai
+  /// mockup "Semua Cabang | Sudirman | Menteng | ..." tapi dalam bentuk
+  /// dropdown biar ga makan tempat kalau cabangnya banyak).
+  Widget _buildBranchDropdown(List<Laundry> laundries) {
+    final validIds = laundries.map((l) => l.id).toSet();
+    final value = (_selectedLaundryId != null && validIds.contains(_selectedLaundryId)) ? _selectedLaundryId : null;
+
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppTheme.borderColor.withOpacity(0.6)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String?>(
+          value: value,
+          isExpanded: true,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textTertiary, size: 20),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textPrimary),
+          onChanged: (val) => setState(() => _selectedLaundryId = val),
+          items: [
+            DropdownMenuItem<String?>(
+              value: null,
+              child: Row(
+                children: [
+                  Icon(Icons.storefront_outlined, size: 15, color: AppTheme.primaryColor),
+                  const SizedBox(width: 6),
+                  const Flexible(child: Text('Semua Cabang', overflow: TextOverflow.ellipsis)),
+                ],
+              ),
+            ),
+            ...laundries.map(
+              (l) => DropdownMenuItem<String?>(
+                value: l.id,
+                child: Text(l.name, overflow: TextOverflow.ellipsis),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// Chip filter role/jabatan (baris ketiga, baru - sesuai mockup "Semua |
-  /// Manajer | Kasir | Operator Cuci"). Tiap chip diwarnai sesuai role,
-  /// pakai _roleColor supaya konsisten dengan badge role di kartu karyawan.
-  Widget _buildRoleChips(List<String> roles) {
-    return SizedBox(
-      height: 34,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: roles.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final isAll = index == 0;
-          final role = isAll ? null : roles[index - 1];
-          final isSelected = isAll ? _selectedRole == null : _selectedRole == role;
-          final color = isAll ? AppTheme.primaryColor : _roleColor(role!);
-          return ChoiceChip(
-            label: Text(isAll ? 'Semua' : role!, overflow: TextOverflow.ellipsis),
-            selected: isSelected,
-            onSelected: (val) => setState(() => _selectedRole = isAll ? null : role),
-            showCheckmark: false,
-            selectedColor: color,
-            backgroundColor: color.withOpacity(0.1),
-            side: BorderSide(color: color.withOpacity(0.4)),
-            labelStyle: GoogleFonts.poppins(color: isSelected ? Colors.white : color, fontSize: 12, fontWeight: FontWeight.w600),
-          );
-        },
+  /// Dropdown filter role/jabatan, menggantikan _buildRoleChips lama (sesuai
+  /// mockup "Semua | Manajer | Kasir | Operator Cuci"). Tiap opsi tetap
+  /// dikasih titik warna sesuai _roleColor supaya konsisten dengan badge
+  /// role di kartu karyawan.
+  Widget _buildRoleDropdown(List<String> roles) {
+    final validRoles = roles.map((r) => r.toLowerCase()).toSet();
+    final value = (_selectedRole != null && validRoles.contains(_selectedRole!.toLowerCase())) ? _selectedRole : null;
+
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppTheme.borderColor.withOpacity(0.6)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String?>(
+          value: value,
+          isExpanded: true,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textTertiary, size: 20),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textPrimary),
+          onChanged: (val) => setState(() => _selectedRole = val),
+          items: [
+            DropdownMenuItem<String?>(
+              value: null,
+              child: Row(
+                children: [
+                  Icon(Icons.badge_outlined, size: 15, color: AppTheme.primaryColor),
+                  const SizedBox(width: 6),
+                  const Flexible(child: Text('Semua Role', overflow: TextOverflow.ellipsis)),
+                ],
+              ),
+            ),
+            ...roles.map(
+              (r) => DropdownMenuItem<String?>(
+                value: r,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: _roleColor(r)),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(child: Text(r, overflow: TextOverflow.ellipsis)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// Kartu "Total Karyawan" tunggal sesuai mockup (sebelumnya 2 kotak
-  /// Total Staf/Staf Aktif; angka staf aktif tetap bisa dilihat lewat chip
-  /// filter status "Aktif" di bawahnya).
+  /// Kartu "Total Karyawan" tunggal sesuai mockup (angka staf aktif tetap
+  /// bisa dilihat lewat chip filter status "Aktif" di atasnya).
   Widget _buildTotalStat(int total) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppTheme.cardColor, borderRadius: BorderRadius.circular(16)),
+      padding: const EdgeInsets.all(AppTheme.lg),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -411,18 +478,61 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          Icon(Icons.badge_outlined, size: 64, color: AppTheme.textTertiary),
-          const SizedBox(height: 16),
-          Text('Data karyawan tidak ditemukan', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
+        child: Column(
+          children: [
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.badge_outlined,
+                size: 40,
+                color: AppTheme.primaryColor.withOpacity(0.6),
+              ),
+            ),
+            const SizedBox(height: AppTheme.lg),
+            Text(
+              'Data karyawan tidak ditemukan',
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppTheme.sm),
+            Text(
+              'Coba ubah filter atau tambahkan karyawan baru',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppTheme.xl),
+            ElevatedButton.icon(
+              onPressed: () => _openCreateEmployee(context),
+              icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+              label: Text('Karyawan Baru', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.xl, vertical: AppTheme.md),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
-
 
 class _EmployeeCard extends StatelessWidget {
   final Employee employee;
@@ -463,8 +573,6 @@ class _EmployeeCard extends StatelessWidget {
                     style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14.5),
                   ),
                   const SizedBox(height: 6),
-                  // Badge role berwarna + nama cabang di sebelahnya, sesuai
-                  // kartu pada mockup ("MANAJER  Sudirman").
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
@@ -513,8 +621,6 @@ class _EmployeeCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // Dot status (hijau=aktif, abu=tidak aktif) + chevron navigasi,
-            // sesuai kartu pada mockup.
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
