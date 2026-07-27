@@ -300,10 +300,46 @@ class OrderRepository {
   });
 }
 
-  Future<void> markDelivered(String orderId, {String? driverNote}) async {
+Future<void> markDelivered(
+    String orderId, {
+    String? driverNote,
+    String? courierId,
+    String? courierName,
+  }) async {
     await _ordersRef.doc(orderId).update({
       'delivery_date': DateTime.now(),
+      'courier_id': courierId,
+      'courier_name': courierName,
       'updated_at': DateTime.now(),
+    });
+  }
+
+  /// Menyimpan rencana jadwal jemput/antar untuk 1 order (tanggal+jam,
+  /// alamat, kurir, catatan) - TERPISAH dari pickup_date/delivery_date yang
+  /// artinya "sudah beneran dijemput/diantar" dan dipakai kategorisasi di
+  /// PickupDeliveryScreen. Disimpan sebagai map di field `logistics_schedule`
+  /// supaya tidak menyentuh field lain / tidak perlu ubah Order model.
+  Future<void> scheduleLogistics(
+    String orderId, {
+    required String mode, // 'penjemputan' | 'pengantaran'
+    required DateTime scheduledAt,
+    required String address,
+    String? courierId,
+    String? courierName,
+    String? notes,
+  }) async {
+    final now = DateTime.now();
+    await _ordersRef.doc(orderId).update({
+      'logistics_schedule': {
+        'mode': mode,
+        'scheduled_at': scheduledAt,
+        'address': address,
+        'courier_id': courierId,
+        'courier_name': courierName,
+        'notes': notes,
+        'created_at': now,
+      },
+      'updated_at': now,
     });
   }
 
