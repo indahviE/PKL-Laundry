@@ -6,6 +6,11 @@ import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/app_input.dart';
 
+// Disamain persis dengan _cSurface di order_list_screen.dart /
+// customer_detail_screen.dart (#FBF9F8) — sebelumnya pakai
+// AppTheme.backgroundColor (getter) yang keliatan agak kebiruan.
+const Color _cSurface = Color(0xFFFBF9F8);
+
 /// Opsi cabang buat dropdown, di-fetch dari users/{uid}/laundries
 /// (sesuai Blueprint §3.2.3).
 class _LaundryOption {
@@ -220,7 +225,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: _cSurface,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -403,7 +408,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
         hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
         prefixIcon: Icon(Icons.storefront_outlined, color: AppTheme.textTertiary),
         filled: true,
-        fillColor: AppTheme.backgroundColor,
+        fillColor: _cSurface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           borderSide: BorderSide.none,
@@ -545,7 +550,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: AppTheme.sm),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundColor,
+        color: _cSurface,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Row(

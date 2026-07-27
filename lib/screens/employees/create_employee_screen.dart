@@ -381,13 +381,36 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
     }
   }
 
+  /// Bungkus sekelompok field ke dalam kartu putih membulat dengan shadow
+  /// tipis, supaya form terlihat tersegmentasi rapi seperti pada mockup
+  /// (Nama/Telepon/Email/Alamat dalam satu kartu, Role/Cabang/Tanggal/Toggle
+  /// pada kartu berikutnya), tanpa mengubah/menghapus field apa pun.
+  Widget _sectionCard(List<Widget> children) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppTheme.lg),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd + 4),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F8),
       appBar: AppBar(
         title: Text(
-          _isEditMode ? 'Edit Data Karyawan' : 'Tambah Karyawan Baru',
+          _isEditMode ? 'Edit Data Karyawan' : 'Tambah Karyawan',
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 16),
         ),
         backgroundColor: Colors.white,
@@ -396,6 +419,29 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 20),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          // Ikon dekoratif di kanan AppBar sesuai mockup - konsisten dengan
+          // gaya header "tambah data" di layar lain. Tap membawa ke form
+          // tambah karyawan baru yang bersih (berguna saat sedang di mode
+          // edit dan ingin langsung menambah karyawan lain).
+          Padding(
+            padding: const EdgeInsets.only(right: AppTheme.lg),
+            child: Center(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => context.push('/employees/create'),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: primaryBlue.withOpacity(0.25),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person_add_alt_1_rounded, color: textBlue, size: 18),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: DefaultTextStyle.merge(
         style: GoogleFonts.plusJakartaSans(),
@@ -431,219 +477,223 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                       ),
                       const SizedBox(height: AppTheme.xl),
 
-                      const Text('Nama Lengkap Karyawan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _fullNameController,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: _buildInputDecoration('Contoh: Siti Aminah', Icons.person_outline),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Nama karyawan wajib diisi' : null,
-                      ),
-                      const SizedBox(height: AppTheme.lg),
+                      _sectionCard([
+                        const Text('Nama Lengkap', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _fullNameController,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: _buildInputDecoration('Contoh: Siti Aminah', Icons.person_outline),
+                          validator: (v) => v == null || v.trim().isEmpty ? 'Nama karyawan wajib diisi' : null,
+                        ),
+                        const SizedBox(height: AppTheme.lg),
 
-                      const Text('Nomor Telepon', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 6),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            height: 48,
-                            padding: const EdgeInsets.symmetric(horizontal: AppTheme.md),
-                            alignment: Alignment.center,
+                        const Text('Nomor Telepon', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        const SizedBox(height: 6),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              height: 48,
+                              padding: const EdgeInsets.symmetric(horizontal: AppTheme.md),
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              ),
+                              child: const Text('+62', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                            ),
+                            const SizedBox(width: AppTheme.md),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _phoneController,
+                                keyboardType: TextInputType.phone,
+                                decoration: _buildInputDecoration('8123456789', Icons.phone_outlined),
+                                validator: (v) => v == null || v.trim().isEmpty ? 'Nomor telepon wajib diisi' : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppTheme.lg),
+
+                        const Text('Email (Opsional)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: _buildInputDecoration('budi@netwash.com', Icons.email_outlined),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return null; // opsional
+                            final emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[\w\.\-]+$');
+                            return emailRegex.hasMatch(v.trim()) ? null : 'Format email tidak valid';
+                          },
+                        ),
+                        const SizedBox(height: AppTheme.lg),
+
+                        const Text('Alamat', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _addressController,
+                          maxLines: 3,
+                          decoration: _buildInputDecoration('Masukkan alamat lengkap rumah', Icons.home_outlined),
+                        ),
+                      ]),
+                      const SizedBox(height: AppTheme.xl),
+
+                      _sectionCard([
+                        const Text('Role / Jabatan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        const SizedBox(height: 6),
+                        // Diubah dari text field bebas ketik jadi dropdown pilihan
+                        // sesuai mockup. Kalau posisi existing (mode edit) tidak ada
+                        // di _positionOptions, posisi itu ditambahkan sebagai item
+                        // tambahan supaya data lama tidak hilang.
+                        DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          value: _positionController.text.isEmpty ? null : _positionController.text,
+                          items: [
+                            ..._positionOptions.map(
+                              (p) => DropdownMenuItem<String>(value: p, child: Text(p, style: const TextStyle(fontSize: 13))),
+                            ),
+                            if (_positionController.text.isNotEmpty && !_positionOptions.contains(_positionController.text))
+                              DropdownMenuItem<String>(
+                                value: _positionController.text,
+                                child: Text(_positionController.text, style: const TextStyle(fontSize: 13)),
+                              ),
+                          ],
+                          onChanged: (val) => setState(() => _positionController.text = val ?? ''),
+                          decoration: _buildInputDecoration('Pilih Jabatan', Icons.assignment_ind_outlined),
+                          validator: (v) => v == null || v.isEmpty ? 'Posisi atau jabatan wajib dipilih' : null,
+                        ),
+                        const SizedBox(height: AppTheme.lg),
+
+                        const Text('Cabang Bertugas', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        const SizedBox(height: 6),
+                        _laundriesList.isEmpty
+                            ? TextButton(
+                                onPressed: () => context.push('/laundries/create'),
+                                child: const Text('+ Daftarkan Cabang Baru Terlebih Dahulu', style: TextStyle(color: textBlue, fontSize: 13)),
+                              )
+                            : DropdownButtonFormField<String>(
+                                // isExpanded:true supaya field ikut lebar penuh dan nama
+                                // cabang yang panjang di-ellipsis, bukan overflow di
+                                // belakang ikon panah dropdown (bug klasik Flutter kalau
+                                // isExpanded dibiarkan default false).
+                                isExpanded: true,
+                                value: _laundriesList.any((element) => element['id'] == _selectedLaundryId)
+                                    ? _selectedLaundryId
+                                    : null,
+                                items: _laundriesList.map((laundry) {
+                                  return DropdownMenuItem<String>(
+                                    value: laundry['id'],
+                                    child: Text(
+                                      laundry['name'],
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (val) => setState(() => _selectedLaundryId = val),
+                                decoration: _buildInputDecoration('Pilih Cabang', Icons.storefront_outlined),
+                                validator: (v) => v == null ? 'Cabang penempatan wajib dipilih' : null,
+                              ),
+                        const SizedBox(height: AppTheme.lg),
+
+                        const Text('Tanggal Bergabung', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        const SizedBox(height: 6),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: _hireDate,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2100),
+                            );
+                            if (picked != null) setState(() => _hireDate = picked);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 14),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              border: Border.all(color: Colors.grey.shade200),
                             ),
-                            child: const Text('+62', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_today_outlined, color: Colors.grey, size: 20),
+                                const SizedBox(width: AppTheme.md),
+                                Text(
+                                  '${_hireDate.day.toString().padLeft(2, '0')}/${_hireDate.month.toString().padLeft(2, '0')}/${_hireDate.year.toString().padLeft(4, '0')}',
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(width: AppTheme.md),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _phoneController,
-                              keyboardType: TextInputType.phone,
-                              decoration: _buildInputDecoration('8123456789', Icons.phone_outlined),
-                              validator: (v) => v == null || v.trim().isEmpty ? 'Nomor telepon wajib diisi' : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppTheme.lg),
+                        ),
+                        const SizedBox(height: AppTheme.lg),
 
-                      const Text('Email (Opsional)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: _buildInputDecoration('budi@netwash.com', Icons.email_outlined),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return null; // opsional
-                          final emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[\w\.\-]+$');
-                          return emailRegex.hasMatch(v.trim()) ? null : 'Format email tidak valid';
-                        },
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      const Text('Alamat', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _addressController,
-                        maxLines: 3,
-                        decoration: _buildInputDecoration('Masukkan alamat lengkap rumah', Icons.home_outlined),
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      const Text('Role / Jabatan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 6),
-                      // Diubah dari text field bebas ketik jadi dropdown pilihan
-                      // sesuai mockup. Kalau posisi existing (mode edit) tidak ada
-                      // di _positionOptions, posisi itu ditambahkan sebagai item
-                      // tambahan supaya data lama tidak hilang.
-                      DropdownButtonFormField<String>(
-                        isExpanded: true,
-                        value: _positionController.text.isEmpty ? null : _positionController.text,
-                        items: [
-                          ..._positionOptions.map(
-                            (p) => DropdownMenuItem<String>(value: p, child: Text(p, style: const TextStyle(fontSize: 13))),
-                          ),
-                          if (_positionController.text.isNotEmpty && !_positionOptions.contains(_positionController.text))
-                            DropdownMenuItem<String>(
-                              value: _positionController.text,
-                              child: Text(_positionController.text, style: const TextStyle(fontSize: 13)),
-                            ),
-                        ],
-                        onChanged: (val) => setState(() => _positionController.text = val ?? ''),
-                        decoration: _buildInputDecoration('Pilih Jabatan', Icons.assignment_ind_outlined),
-                        validator: (v) => v == null || v.isEmpty ? 'Posisi atau jabatan wajib dipilih' : null,
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      const Text('Cabang Bertugas', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 6),
-                      _laundriesList.isEmpty
-                          ? TextButton(
-                              onPressed: () => context.push('/laundries/create'),
-                              child: const Text('+ Daftarkan Cabang Baru Terlebih Dahulu', style: TextStyle(color: textBlue, fontSize: 13)),
-                            )
-                          : DropdownButtonFormField<String>(
-                              // isExpanded:true supaya field ikut lebar penuh dan nama
-                              // cabang yang panjang di-ellipsis, bukan overflow di
-                              // belakang ikon panah dropdown (bug klasik Flutter kalau
-                              // isExpanded dibiarkan default false).
-                              isExpanded: true,
-                              value: _laundriesList.any((element) => element['id'] == _selectedLaundryId)
-                                  ? _selectedLaundryId
-                                  : null,
-                              items: _laundriesList.map((laundry) {
-                                return DropdownMenuItem<String>(
-                                  value: laundry['id'],
-                                  child: Text(
-                                    laundry['name'],
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (val) => setState(() => _selectedLaundryId = val),
-                              decoration: _buildInputDecoration('Pilih Cabang', Icons.storefront_outlined),
-                              validator: (v) => v == null ? 'Cabang penempatan wajib dipilih' : null,
-                            ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      const Text('Tanggal Bergabung', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 6),
-                      InkWell(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _hireDate,
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2100),
-                          );
-                          if (picked != null) setState(() => _hireDate = picked);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 14),
+                        // "Akses Aplikasi" pada mockup dan "Status Karyawan" sama-sama
+                        // mengontrol field is_active - sengaja tidak dipisah jadi
+                        // field `canLogin` baru sesuai keputusan, jadi keduanya
+                        // di-bind ke _isActive yang sama.
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Colors.grey.shade50,
                             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                             border: Border.all(color: Colors.grey.shade200),
                           ),
                           child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Icon(Icons.calendar_today_outlined, color: Colors.grey, size: 20),
-                              const SizedBox(width: AppTheme.md),
-                              Text(
-                                '${_hireDate.day.toString().padLeft(2, '0')}/${_hireDate.month.toString().padLeft(2, '0')}/${_hireDate.year.toString().padLeft(4, '0')}',
-                                style: const TextStyle(fontSize: 13),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Akses Aplikasi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                                    Text('Berikan akses login aplikasi', style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500)),
+                                  ],
+                                ),
+                              ),
+                              Switch.adaptive(
+                                value: _isActive,
+                                activeColor: textBlue,
+                                onChanged: (val) => setState(() => _isActive = val),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: AppTheme.lg),
+                        const SizedBox(height: AppTheme.lg),
 
-                      // "Akses Aplikasi" pada mockup dan "Status Karyawan" sama-sama
-                      // mengontrol field is_active - sengaja tidak dipisah jadi
-                      // field `canLogin` baru sesuai keputusan, jadi keduanya
-                      // di-bind ke _isActive yang sama.
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Akses Aplikasi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                                  Text('Berikan akses login aplikasi', style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500)),
-                                ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Status Karyawan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                                    Text('Status saat ini: ${_isActive ? 'Aktif' : 'Tidak Aktif'}', style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500)),
+                                  ],
+                                ),
                               ),
-                            ),
-                            Switch.adaptive(
-                              value: _isActive,
-                              activeColor: textBlue,
-                              onChanged: (val) => setState(() => _isActive = val),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Status Karyawan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                                  Text('Status saat ini: ${_isActive ? 'Aktif' : 'Tidak Aktif'}', style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500)),
-                                ],
+                              Switch.adaptive(
+                                value: _isActive,
+                                activeColor: textBlue,
+                                onChanged: (val) => setState(() => _isActive = val),
                               ),
-                            ),
-                            Switch.adaptive(
-                              value: _isActive,
-                              activeColor: textBlue,
-                              onChanged: (val) => setState(() => _isActive = val),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
+                      ]),
                       const SizedBox(height: AppTheme.xl),
                       Divider(color: Colors.grey.shade200),
                       const SizedBox(height: 6),
@@ -653,74 +703,76 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                       ),
                       const SizedBox(height: AppTheme.lg),
 
-                      const Text('Kode Karyawan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _employeeCodeController,
-                        textCapitalization: TextCapitalization.characters,
-                        decoration: _buildInputDecoration('Contoh: EMP01, KSR02', Icons.vpn_key_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Kode karyawan tidak boleh kosong' : null,
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      const Text('Gaji Pokok (IDR)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _salaryController,
-                        keyboardType: TextInputType.number,
-                        decoration: _buildInputDecoration('Contoh: 3000000', Icons.payments_outlined),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Gaji pokok wajib diisi' : null,
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      const Text('Komisi per Transaksi (%)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _commissionController,
-                        keyboardType: TextInputType.number,
-                        decoration: _buildInputDecoration('Contoh: 5.0', Icons.add_chart_outlined),
-                      ),
-                      const SizedBox(height: AppTheme.lg),
-
-                      const Text('Hak Akses Fitur Karyawan (Permissions)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                          border: Border.all(color: Colors.grey.shade200),
+                      _sectionCard([
+                        const Text('Kode Karyawan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _employeeCodeController,
+                          textCapitalization: TextCapitalization.characters,
+                          decoration: _buildInputDecoration('Contoh: EMP01, KSR02', Icons.vpn_key_outlined),
+                          validator: (v) => v == null || v.trim().isEmpty ? 'Kode karyawan tidak boleh kosong' : null,
                         ),
-                        child: Column(
-                          children: [
-                            CheckboxListTile(
-                              title: const Text('Dapat Membuat Pesanan (Order)', style: TextStyle(fontSize: 13)),
-                              value: _canCreateOrder,
-                              activeColor: textBlue,
-                              onChanged: (v) => setState(() => _canCreateOrder = v ?? false),
-                            ),
-                            Divider(height: 1, color: Colors.grey.shade100),
-                            CheckboxListTile(
-                              title: const Text('Dapat Mengelola Data Pelanggan', style: TextStyle(fontSize: 13)),
-                              value: _canManageCustomer,
-                              activeColor: textBlue,
-                              onChanged: (v) => setState(() => _canManageCustomer = v ?? false),
-                            ),
-                            Divider(height: 1, color: Colors.grey.shade100),
-                            CheckboxListTile(
-                              title: const Text('Dapat Melihat Laporan Keuangan (Report)', style: TextStyle(fontSize: 13)),
-                              value: _canViewReport,
-                              activeColor: textBlue,
-                              onChanged: (v) => setState(() => _canViewReport = v ?? false),
-                            ),
-                          ],
+                        const SizedBox(height: AppTheme.lg),
+
+                        const Text('Gaji Pokok (IDR)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _salaryController,
+                          keyboardType: TextInputType.number,
+                          decoration: _buildInputDecoration('Contoh: 3000000', Icons.payments_outlined),
+                          validator: (v) => v == null || v.trim().isEmpty ? 'Gaji pokok wajib diisi' : null,
                         ),
-                      ),
+                        const SizedBox(height: AppTheme.lg),
+
+                        const Text('Komisi per Transaksi (%)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _commissionController,
+                          keyboardType: TextInputType.number,
+                          decoration: _buildInputDecoration('Contoh: 5.0', Icons.add_chart_outlined),
+                        ),
+                        const SizedBox(height: AppTheme.lg),
+
+                        const Text('Hak Akses Fitur Karyawan (Permissions)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            children: [
+                              CheckboxListTile(
+                                title: const Text('Dapat Membuat Pesanan (Order)', style: TextStyle(fontSize: 13)),
+                                value: _canCreateOrder,
+                                activeColor: textBlue,
+                                onChanged: (v) => setState(() => _canCreateOrder = v ?? false),
+                              ),
+                              Divider(height: 1, color: Colors.grey.shade200),
+                              CheckboxListTile(
+                                title: const Text('Dapat Mengelola Data Pelanggan', style: TextStyle(fontSize: 13)),
+                                value: _canManageCustomer,
+                                activeColor: textBlue,
+                                onChanged: (v) => setState(() => _canManageCustomer = v ?? false),
+                              ),
+                              Divider(height: 1, color: Colors.grey.shade200),
+                              CheckboxListTile(
+                                title: const Text('Dapat Melihat Laporan Keuangan (Report)', style: TextStyle(fontSize: 13)),
+                                value: _canViewReport,
+                                activeColor: textBlue,
+                                onChanged: (v) => setState(() => _canViewReport = v ?? false),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ]),
                       const SizedBox(height: AppTheme.xxl),
 
                       SizedBox(
                         width: double.infinity,
                         height: 48,
-                        child: ElevatedButton(
+                        child: ElevatedButton.icon(
                           onPressed: _saveEmployee,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: textBlue,
@@ -728,8 +780,9 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
                             elevation: 0,
                           ),
-                          child: Text(
-                            _isEditMode ? 'Simpan Perubahan' : 'Simpan Data Karyawan',
+                          icon: const Icon(Icons.save_outlined, size: 18),
+                          label: Text(
+                            _isEditMode ? 'Simpan Perubahan' : 'Simpan Karyawan',
                             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                         ),
