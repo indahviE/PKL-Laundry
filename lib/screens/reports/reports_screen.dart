@@ -8,6 +8,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
 
+// Disamain persis dengan _cSurface di order_list_screen.dart /
+// customer_detail_screen.dart (#FBF9F8) — sebelumnya pakai getter
+// AppTheme.backgroundColor yang keliatan agak kebiruan.
+const Color _cSurface = Color(0xFFFBF9F8);
+
 /// Model breakdown pendapatan per jenis layanan
 class _ServiceBreakdown {
   final String name;
@@ -554,7 +559,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: _cSurface,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -1140,7 +1145,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     child: LinearProgressIndicator(
                       value: maxRevenue > 0 ? service.revenue / maxRevenue : 0,
                       minHeight: 6,
-                      backgroundColor: AppTheme.backgroundColor,
+                      backgroundColor: _cSurface,
                       valueColor: AlwaysStoppedAnimation(service.color),
                     ),
                   ),

@@ -22,7 +22,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static Color get primaryBlue => AppTheme.primaryColor;
   static Color get deepBlue => AppTheme.primaryColor.withOpacity(0.85);
   static Color get textBlue => AppTheme.primaryColor;
-  static Color get bgColor => AppTheme.backgroundColor;
+  // Disamain persis dengan _cSurface di order_list_screen.dart (#FBF9F8),
+  // supaya warna canvas kedua layar konsisten — sebelumnya pakai
+  // AppTheme.backgroundColor yang keliatan agak kebiruan.
+  static const Color bgColor = Color(0xFFFBF9F8);
   static Color get cardColor => AppTheme.cardColor;
   static Color get textPrimary => AppTheme.textPrimary;
   static Color get textSecondary => AppTheme.textSecondary;

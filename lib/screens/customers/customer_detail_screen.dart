@@ -278,7 +278,9 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      // Disamain persis dengan _cSurface di order_list_screen.dart
+      // (#FBF9F8) — sebelumnya AppTheme.backgroundColor keliatan kebiruan.
+      backgroundColor: const Color(0xFFFBF9F8),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
