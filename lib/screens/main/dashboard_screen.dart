@@ -610,9 +610,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         children: [
                                           Row(
                                             children: [
-                                              Text(customerName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary)),
+                                              Expanded(
+                                                child: Text(
+                                                  customerName,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  maxLines: 1,
+                                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
+                                                ),
+                                              ),
                                               const SizedBox(width: 6),
-                                              Text(id, style: TextStyle(fontSize: 11, color: textTertiary)),
+                                              Text(
+                                                id,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(fontSize: 11, color: textTertiary),
+                                              ),
                                             ],
                                           ),
                                           const SizedBox(height: 3),
