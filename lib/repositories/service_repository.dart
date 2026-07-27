@@ -2,22 +2,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/service.dart';
 import '../providers/auth_provider.dart';
+
 class ServiceRepository {
   final FirebaseFirestore _firestore;
   final String userId;
 
   ServiceRepository({required this.userId}) : _firestore = FirebaseFirestore.instance;
 
-  // FIX: blueprint (§2.2, §3.3.3, Security Rules §4.5) names this
-  // collection `service_types`, not `services`. Security Rules only grant
-  // access to `service_types`, so writes to `services` would either be
-  // silently ignored by the rules-matching logic or rejected outright.
+  // Blueprint (§2.2, §3.3.3, Security Rules §4.5) names this collection
+  // `service_types`, not `services`.
   CollectionReference<Map<String, dynamic>> get _servicesRef =>
       _firestore.collection('users').doc(userId).collection('service_types');
 
-  /// FIX: previously constructed Service with `price`/`unit`, which no
-  /// longer exist - blueprint §3.3.3 splits pricing into `price_per_kg` /
-  /// `price_per_item` plus a `pricing_type` discriminator.
   Future<Service> addService(Service service) async {
     final docRef = _servicesRef.doc();
     final now = DateTime.now();
@@ -32,6 +28,10 @@ class ServiceRepository {
       pricePerItem: service.pricePerItem,
       pricingType: service.pricingType,
       estimatedDuration: service.estimatedDuration,
+      durationUnit: service.durationUnit,
+      expressFee: service.expressFee,
+      minWeight: service.minWeight,
+      branchIds: service.branchIds,
       isActive: service.isActive,
       sortOrder: service.sortOrder,
     );

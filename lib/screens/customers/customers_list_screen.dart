@@ -260,7 +260,9 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      // Disamain persis dengan _cSurface di order_list_screen.dart
+      // (#FBF9F8) — sebelumnya AppTheme.backgroundColor keliatan kebiruan.
+      backgroundColor: const Color(0xFFFBF9F8),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -280,7 +282,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildHeader(context, l10n, isMobile),
+                        _buildHeader(context, l10n),
                         const SizedBox(height: 22),
                         _buildSearchBar(context, l10n),
                         const SizedBox(height: AppTheme.lg),
@@ -321,7 +323,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   /// overflow. Sekarang blok judul dibungkus Expanded (otomatis ellipsis
   /// kalau kepanjangan), dan khusus mobile tombolnya diringkas jadi
   /// icon-only (bulat) biar nggak makan tempat.
-  Widget _buildHeader(BuildContext context, AppLocalizations l10n, bool isMobile) {
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -368,29 +370,22 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
           ),
         ),
         const SizedBox(width: AppTheme.md),
-        if (isMobile)
-          _CompactAddButton(onTap: () => _openCreateCustomer(context))
-        else
-          ElevatedButton.icon(
-            onPressed: () => _openCreateCustomer(context),
-            icon: const Icon(Icons.person_add_outlined, size: 18),
-            label: Text(
-              l10n.newCustomerButton,
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppTheme.lg,
-                vertical: AppTheme.md,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-              ),
+        // Disamain dengan laundries_list_screen.dart: tombol bulat
+        // berisi ikon "+" saja, konsisten di mobile maupun desktop
+        // (sebelumnya beda gaya: kotak-bulat di mobile, pill+teks di
+        // desktop).
+        Material(
+          color: AppTheme.primaryColor,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: () => _openCreateCustomer(context),
+            customBorder: const CircleBorder(),
+            child: const Padding(
+              padding: EdgeInsets.all(8),
+              child: Icon(Icons.add_rounded, color: Colors.white, size: 22),
             ),
           ),
+        ),
       ],
     );
   }
@@ -729,29 +724,6 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
 
 /// Tombol "+ Baru" versi ringkas (icon-only, bulat) khusus mobile,
 /// biar header nggak overflow saat layar sempit.
-class _CompactAddButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _CompactAddButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppTheme.primaryColor,
-      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        onTap: onTap,
-        child: const SizedBox(
-          width: 44,
-          height: 44,
-          child: Icon(Icons.person_add_outlined, color: Colors.white, size: 20),
-        ),
-      ),
-    );
-  }
-}
-
 /// Stat Box Widget
 class _StatBox extends StatelessWidget {
   final String title;
