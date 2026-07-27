@@ -1,7 +1,7 @@
 import 'base_model.dart';
- 
-enum PricingType { perKg, perItem }
- 
+
+enum PricingType { perKg, perItem, express }
+
 class Service extends BaseModel {
   final String companyId;
   final String name;
@@ -9,10 +9,14 @@ class Service extends BaseModel {
   final double? pricePerKg;
   final double? pricePerItem;
   final PricingType pricingType;
-  final int estimatedDuration; // in hours
+  final int estimatedDuration; // ALWAYS in hours (canonical unit for the rest of the app)
+  final String durationUnit; // 'hours' | 'days' — display unit only, used to re-populate the edit form
+  final double? expressFee; // additional fee for PricingType.express
+  final double? minWeight; // minimum kg for PricingType.perKg
+  final List<String> branchIds; // ids of Laundry (cabang) this service is available at
   final bool isActive;
   final int sortOrder;
- 
+
   Service({
     required super.id,
     required super.createdAt,
@@ -24,10 +28,14 @@ class Service extends BaseModel {
     this.pricePerItem,
     required this.pricingType,
     this.estimatedDuration = 24,
+    this.durationUnit = 'hours',
+    this.expressFee,
+    this.minWeight,
+    this.branchIds = const [],
     required this.isActive,
     this.sortOrder = 0,
   });
- 
+
   factory Service.fromJson(Map<String, dynamic> json, String documentId) {
     return Service(
       id: documentId,
@@ -47,11 +55,21 @@ class Service extends BaseModel {
         orElse: () => PricingType.perKg,
       ),
       estimatedDuration: json['estimated_duration'] ?? 24,
+      durationUnit: json['duration_unit'] ?? 'hours',
+      expressFee: json['express_fee'] != null
+          ? (json['express_fee'] as num).toDouble()
+          : null,
+      minWeight: json['min_weight'] != null
+          ? (json['min_weight'] as num).toDouble()
+          : null,
+      branchIds: json['branch_ids'] != null
+          ? List<String>.from(json['branch_ids'] as List)
+          : const [],
       isActive: json['is_active'] ?? true,
       sortOrder: json['sort_order'] ?? 0,
     );
   }
- 
+
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -62,6 +80,10 @@ class Service extends BaseModel {
       'price_per_item': pricePerItem,
       'pricing_type': pricingType.name,
       'estimated_duration': estimatedDuration,
+      'duration_unit': durationUnit,
+      'express_fee': expressFee,
+      'min_weight': minWeight,
+      'branch_ids': branchIds,
       'is_active': isActive,
       'sort_order': sortOrder,
       'created_at': createdAt,

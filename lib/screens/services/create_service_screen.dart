@@ -7,9 +7,72 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/service.dart';
+import '../../repositories/laundry_repository.dart';
 import '../../providers/auth_provider.dart';
 import '../../repositories/service_repository.dart';
-import '../../widgets/common/app_input.dart';
+
+/// Local design tokens matching the new "NetWash Utility System" design
+/// (see DESIGN.md / code.html). Kept local to this screen instead of
+/// touching the global AppTheme, so no other screen's look changes.
+class _DS {
+  static const canvas = Color(0xFFF5F7FA);
+  static const surface = Colors.white;
+  static const onSurface = Color(0xFF1B1C1C);
+  static const onSurfaceVariant = Color(0xFF404752);
+  static const outline = Color(0xFF707883);
+  static const outlineVariant = Color(0xFFBFC7D4);
+
+  static const primary = Color(0xFF0061A4);
+  static const primaryFixed = Color(0xFFD1E4FF);
+
+  static const tertiary = Color(0xFF526069);
+  static const tertiaryFixed = Color(0xFFD6E5EF);
+
+  static const error = Color(0xFFBA1A1A);
+  static const errorContainer = Color(0xFFFFDAD6);
+
+  static const secondaryContainer = Color(0xFFE0E3E6);
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static TextStyle headlineMd({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: color ?? onSurface,
+        letterSpacing: -0.1,
+      );
+
+  static TextStyle subtitleMd({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: color ?? onSurfaceVariant,
+      );
+
+  static TextStyle bodyMd({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: color ?? onSurface,
+      );
+
+  static TextStyle bodySm({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+        color: color ?? onSurfaceVariant,
+      );
+
+  static TextStyle labelBold({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: color ?? onSurfaceVariant,
+        letterSpacing: 0.3,
+      );
+}
 
 class CreateServiceScreen extends ConsumerStatefulWidget {
   const CreateServiceScreen({super.key});
@@ -24,9 +87,14 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _priceController;
+  late TextEditingController _expressFeeController;
+  late TextEditingController _minWeightController;
   late TextEditingController _durationController;
 
   PricingType _selectedPricingType = PricingType.perKg;
+  String _durationUnit = 'hours'; // 'hours' | 'days'
+  bool _isActive = true;
+  final Set<String> _selectedBranchIds = {};
   bool _isLoading = false;
 
   @override
@@ -35,7 +103,9 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
     _nameController = TextEditingController();
     _descriptionController = TextEditingController();
     _priceController = TextEditingController();
-    _durationController = TextEditingController(text: '24');
+    _expressFeeController = TextEditingController();
+    _minWeightController = TextEditingController();
+    _durationController = TextEditingController();
   }
 
   @override
@@ -43,8 +113,17 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
+    _expressFeeController.dispose();
+    _minWeightController.dispose();
     _durationController.dispose();
     super.dispose();
+  }
+
+  void _setDuration(int value, String unit) {
+    setState(() {
+      _durationController.text = value.toString();
+      _durationUnit = unit;
+    });
   }
 
   void _handleSubmit() async {
@@ -55,11 +134,9 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // FIX: authStateProvider berbasis Stream (authStateChanges), sehingga
-      // ref.read(...).value bisa sesaat null saat token sedang refresh /
-      // provider baru rebuild (race condition), walau user sebenarnya masih
-      // login. FirebaseAuth.instance.currentUser bersifat sinkron dan selalu
-      // mencerminkan sesi login terkini, jadi lebih aman dipakai di sini.
+      // FirebaseAuth.instance.currentUser bersifat sinkron dan selalu
+      // mencerminkan sesi login terkini, lebih aman dibanding authStateProvider
+      // yang bisa sesaat null saat token sedang refresh (race condition).
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
       if (userId.isEmpty) {
@@ -67,10 +144,9 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       }
 
       // Sesuai blueprint: setiap dokumen di users/{user_id}/service_types/
-      // wajib memiliki company_id (lihat 3.3.3 Manajemen Jenis Layanan).
-      // Karena MVP mengasumsikan 1 user = 1 company (alur onboarding
-      // setup_company_screen), company_id diambil dari
-      // users/{user_id}/companies/{company_id} yang pertama dibuat.
+      // wajib memiliki company_id. MVP mengasumsikan 1 user = 1 company,
+      // jadi company_id diambil dari users/{user_id}/companies/{company_id}
+      // yang pertama dibuat.
       final companySnapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
@@ -83,9 +159,35 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       }
 
       final companyId = companySnapshot.docs.first.id;
-
       final serviceRepository = ServiceRepository(userId: userId);
+
       final priceValue = double.parse(_priceController.text.trim());
+      final durationValue = int.parse(_durationController.text.trim());
+      final estimatedDurationHours =
+          _durationUnit == 'days' ? durationValue * 24 : durationValue;
+
+      double? pricePerKg;
+      double? pricePerItem;
+      double? expressFee;
+      double? minWeight;
+
+      switch (_selectedPricingType) {
+        case PricingType.perKg:
+          pricePerKg = priceValue;
+          final minWeightText = _minWeightController.text.trim();
+          minWeight = minWeightText.isNotEmpty ? double.tryParse(minWeightText) : null;
+          break;
+        case PricingType.perItem:
+          pricePerItem = priceValue;
+          break;
+        case PricingType.express:
+          // "Harga Dasar" express disimpan di pricePerItem karena sifatnya
+          // flat (bukan per-kg). expressFee adalah biaya tambahan di atasnya.
+          pricePerItem = priceValue;
+          final feeText = _expressFeeController.text.trim();
+          expressFee = feeText.isNotEmpty ? double.tryParse(feeText) : null;
+          break;
+      }
 
       final newService = Service(
         id: '',
@@ -95,10 +197,14 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         pricingType: _selectedPricingType,
-        pricePerKg: _selectedPricingType == PricingType.perKg ? priceValue : null,
-        pricePerItem: _selectedPricingType == PricingType.perItem ? priceValue : null,
-        estimatedDuration: int.parse(_durationController.text.trim()),
-        isActive: true,
+        pricePerKg: pricePerKg,
+        pricePerItem: pricePerItem,
+        expressFee: expressFee,
+        minWeight: minWeight,
+        estimatedDuration: estimatedDurationHours,
+        durationUnit: _durationUnit,
+        branchIds: _selectedBranchIds.toList(),
+        isActive: _isActive,
         sortOrder: 0,
       );
 
@@ -129,274 +235,659 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: _DS.canvas,
       body: SafeArea(
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 800;
-              return SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 640),
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        isMobile ? 16 : 24,
-                        isMobile ? 16 : 24,
-                        isMobile ? 16 : 24,
-                        24,
-                      ),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildTopBar(context),
-                            const SizedBox(height: AppTheme.xl),
-                            _buildHeader(context),
-                            const SizedBox(height: AppTheme.xxl),
-                            _buildForm(context),
-                            const SizedBox(height: AppTheme.xxl),
-                            _buildSaveButton(context),
-                            const SizedBox(height: AppTheme.lg),
-                          ],
+          child: Column(
+            children: [
+              _buildTopBar(context, l10n),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildNameField(l10n),
+                                  const SizedBox(height: AppTheme.xl),
+                                  _buildPricingTypeSelector(),
+                                  const SizedBox(height: AppTheme.xl),
+                                  ..._buildDynamicPriceFields(l10n),
+                                  const SizedBox(height: AppTheme.xl),
+                                  _buildDurationSection(l10n),
+                                  const SizedBox(height: AppTheme.xl),
+                                  _buildBranchSection(),
+                                  const SizedBox(height: AppTheme.xl),
+                                  _buildDescriptionField(l10n),
+                                  const SizedBox(height: AppTheme.xl),
+                                  _buildStatusToggle(),
+                                  const SizedBox(height: AppTheme.xxl),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+              _buildSaveBar(l10n),
+            ],
           ),
         ),
       ),
     );
   }
 
-  /// Build top bar (back button + title)
-  Widget _buildTopBar(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Row(
-      children: [
-        InkWell(
-          onTap: () => context.pop(),
-          borderRadius: BorderRadius.circular(11),
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppTheme.cardColor,
-              borderRadius: BorderRadius.circular(11),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: AppTheme.textPrimary),
-          ),
-        ),
-        const SizedBox(width: 14),
-        Text(
-          l10n.createServiceAppBarTitle,
-          style: GoogleFonts.poppins(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Build Header
-  Widget _buildHeader(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(AppTheme.lg),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          ),
-          child: Icon(
-            Icons.local_laundry_service_rounded,
-            color: AppTheme.primaryColor,
-            size: 34,
-          ),
-        ),
-        const SizedBox(height: AppTheme.xl),
-        Text(
-          l10n.createServiceSectionTitle,
-          style: GoogleFonts.poppins(
-            fontSize: 21,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        const SizedBox(height: AppTheme.sm),
-        Text(
-          l10n.createServiceSectionSubtitle,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Build Form
-  Widget _buildForm(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+  // ---------------------------------------------------------------------
+  // Top bar
+  // ---------------------------------------------------------------------
+  Widget _buildTopBar(BuildContext context, AppLocalizations l10n) {
     return Container(
-      padding: const EdgeInsets.all(AppTheme.lg),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+      color: _DS.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () => context.pop(),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.arrow_back_rounded, size: 22, color: _DS.primary),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            l10n.createServiceAppBarTitle,
+            style: _DS.headlineMd(color: _DS.primary),
           ),
         ],
       ),
-      child: Column(
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Nama Layanan
+  // ---------------------------------------------------------------------
+  Widget _buildNameField(AppLocalizations l10n) {
+    return _sectionColumn(
+      label: l10n.serviceNameLabel,
+      child: TextFormField(
+        controller: _nameController,
+        style: _DS.bodyMd(),
+        decoration: _inputDecoration(hintText: l10n.serviceNameHint),
+        validator: (val) =>
+            val == null || val.trim().isEmpty ? l10n.serviceNameError : null,
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Tipe Layanan — Kiloan / Satuan / Express
+  // ---------------------------------------------------------------------
+  Widget _buildPricingTypeSelector() {
+    return _sectionColumn(
+      label: 'Tipe Layanan',
+      child: Row(
         children: [
-          // Nama Layanan
-          AppInput(
-            label: '${l10n.serviceNameLabel} *',
-            controller: _nameController,
-            hintText: l10n.serviceNameHint,
-            prefixIcon: Icons.label_outline_rounded,
-            validator: (val) =>
-                val == null || val.trim().isEmpty ? l10n.serviceNameError : null,
-          ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Deskripsi (opsional)
-          AppInput(
-            label: l10n.serviceDescriptionLabel,
-            controller: _descriptionController,
-            hintText: l10n.serviceDescriptionHint,
-            prefixIcon: Icons.notes_rounded,
-            maxLines: 3,
-          ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Metode Perhitungan Harga
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              l10n.pricingMethodLabel,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textSecondary,
-              ),
+          Expanded(
+            child: _buildTypeCard(
+              type: PricingType.perKg,
+              label: 'Kiloan',
+              icon: Icons.monitor_weight_rounded,
+              iconBg: _DS.primaryFixed,
+              iconColor: _DS.primary,
             ),
           ),
-          const SizedBox(height: AppTheme.sm),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildTypeCard(
+              type: PricingType.perItem,
+              label: 'Satuan',
+              icon: Icons.checkroom_rounded,
+              iconBg: _DS.tertiaryFixed,
+              iconColor: _DS.tertiary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildTypeCard(
+              type: PricingType.express,
+              label: 'Express',
+              icon: Icons.bolt_rounded,
+              iconBg: _DS.errorContainer,
+              iconColor: _DS.error,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeCard({
+    required PricingType type,
+    required String label,
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+  }) {
+    final isSelected = _selectedPricingType == type;
+    return InkWell(
+      onTap: () => setState(() => _selectedPricingType = type),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? _DS.primaryFixed.withOpacity(0.35) : _DS.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? _DS.primary : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: isSelected ? [] : _DS.cardShadow,
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: _DS.labelBold(color: _DS.onSurface),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Dynamic price fields (harga, express fee, min weight)
+  // ---------------------------------------------------------------------
+  List<Widget> _buildDynamicPriceFields(AppLocalizations l10n) {
+    String priceLabel;
+    switch (_selectedPricingType) {
+      case PricingType.perKg:
+        priceLabel = 'Harga per Kg';
+        break;
+      case PricingType.perItem:
+        priceLabel = 'Harga per Item';
+        break;
+      case PricingType.express:
+        priceLabel = 'Harga Dasar';
+        break;
+    }
+
+    final widgets = <Widget>[
+      _sectionColumn(
+        label: priceLabel,
+        child: TextFormField(
+          controller: _priceController,
+          keyboardType: TextInputType.number,
+          style: _DS.bodyMd(),
+          decoration: _inputDecoration(hintText: '0', prefixText: 'Rp '),
+          validator: (val) {
+            if (val == null || val.trim().isEmpty) return l10n.priceEmptyError;
+            if (double.tryParse(val.trim()) == null) return l10n.priceInvalidError;
+            return null;
+          },
+        ),
+      ),
+    ];
+
+    if (_selectedPricingType == PricingType.express) {
+      widgets.add(const SizedBox(height: AppTheme.xl));
+      widgets.add(
+        _sectionColumn(
+          label: 'Biaya Tambahan Express',
+          child: TextFormField(
+            controller: _expressFeeController,
+            keyboardType: TextInputType.number,
+            style: _DS.bodyMd(),
+            decoration: _inputDecoration(hintText: '0', prefixText: 'Rp '),
+          ),
+        ),
+      );
+    }
+
+    if (_selectedPricingType == PricingType.perKg) {
+      widgets.add(const SizedBox(height: AppTheme.xl));
+      widgets.add(
+        _sectionColumn(
+          label: 'Berat Minimum (Kg)',
+          child: TextFormField(
+            controller: _minWeightController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: _DS.bodyMd(),
+            decoration: _inputDecoration(hintText: '1.0'),
+          ),
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
+  // ---------------------------------------------------------------------
+  // Estimasi Durasi
+  // ---------------------------------------------------------------------
+  Widget _buildDurationSection(AppLocalizations l10n) {
+    return _sectionColumn(
+      label: 'Estimasi Durasi',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(
             children: [
               Expanded(
-                child: _buildPricingTypeChip(
-                  label: l10n.pricingTypeKgFull,
-                  isSelected: _selectedPricingType == PricingType.perKg,
-                  onTap: () => setState(() => _selectedPricingType = PricingType.perKg),
+                child: TextFormField(
+                  controller: _durationController,
+                  keyboardType: TextInputType.number,
+                  style: _DS.bodyMd(),
+                  decoration: _inputDecoration(hintText: '0'),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) {
+                      return l10n.durationEmptyErrorFull;
+                    }
+                    if (int.tryParse(val.trim()) == null) {
+                      return l10n.durationInvalidErrorFull;
+                    }
+                    return null;
+                  },
                 ),
               ),
-              const SizedBox(width: AppTheme.md),
-              Expanded(
-                child: _buildPricingTypeChip(
-                  label: l10n.pricingTypeItemFull,
-                  isSelected: _selectedPricingType == PricingType.perItem,
-                  onTap: () => setState(() => _selectedPricingType = PricingType.perItem),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: _DS.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _DS.outlineVariant),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _durationUnit,
+                    style: _DS.bodyMd(),
+                    icon: const Icon(Icons.expand_more_rounded, color: _DS.onSurfaceVariant),
+                    items: const [
+                      DropdownMenuItem(value: 'hours', child: Text('Jam')),
+                      DropdownMenuItem(value: 'days', child: Text('Hari')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setState(() => _durationUnit = val);
+                    },
+                  ),
                 ),
               ),
             ],
           ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Harga
-          AppInput(
-            label: _selectedPricingType == PricingType.perKg
-                ? '${l10n.pricePerKgLabel} *'
-                : '${l10n.pricePerItemLabel} *',
-            controller: _priceController,
-            hintText: l10n.priceHint,
-            prefixIcon: Icons.payments_outlined,
-            keyboardType: TextInputType.number,
-            validator: (val) {
-              if (val == null || val.trim().isEmpty) return l10n.priceEmptyError;
-              if (double.tryParse(val.trim()) == null) return l10n.priceInvalidError;
-              return null;
-            },
-          ),
-
-          const SizedBox(height: AppTheme.lg),
-
-          // Estimasi Waktu Pengerjaan
-          AppInput(
-            label: '${l10n.durationLabelFull} *',
-            controller: _durationController,
-            hintText: l10n.durationHint,
-            prefixIcon: Icons.timelapse_rounded,
-            keyboardType: TextInputType.number,
-            validator: (val) {
-              if (val == null || val.trim().isEmpty) {
-                return l10n.durationEmptyErrorFull;
-              }
-              if (int.tryParse(val.trim()) == null) return l10n.durationInvalidErrorFull;
-              return null;
-            },
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _durationChip('3 Jam', 3, 'hours'),
+                const SizedBox(width: 8),
+                _durationChip('1 Hari', 1, 'days'),
+                const SizedBox(width: 8),
+                _durationChip('2 Hari', 2, 'days'),
+                const SizedBox(width: 8),
+                _durationChip('3 Hari', 3, 'days'),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// Chip pemilihan metode harga, dibuat manual (bukan ChoiceChip) supaya
-  /// stylingnya konsisten dengan AppTheme (radius, warna, shadow) seperti
-  /// komponen lain di layar ini.
-  Widget _buildPricingTypeChip({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
+  Widget _durationChip(String label, int value, String unit) {
+    final isActive =
+        _durationController.text == value.toString() && _durationUnit == unit;
     return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(vertical: 14),
+      onTap: () => _setDuration(value, unit),
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : AppTheme.backgroundColor,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          color: isActive ? _DS.primaryFixed : _DS.surface,
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300,
-            width: isSelected ? 1.5 : 1,
+            color: isActive ? _DS.primary : _DS.outlineVariant,
           ),
         ),
-        child: Center(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+        child: Text(
+          label,
+          style: _DS.labelBold(color: isActive ? _DS.primary : _DS.onSurfaceVariant),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Tersedia di Cabang — chip style selector
+  // ---------------------------------------------------------------------
+  Widget _buildBranchSection() {
+    final laundriesAsync = ref.watch(laundriesStreamProvider);
+
+    return _sectionColumn(
+      label: 'Tersedia di Cabang',
+      child: laundriesAsync.when(
+        data: (laundries) {
+          if (laundries.isEmpty) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _DS.surface,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: _DS.cardShadow,
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.store_mall_directory_outlined,
+                      color: _DS.outline, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Belum ada cabang. Tambahkan cabang terlebih dahulu di menu Cabang.',
+                      style: _DS.bodySm(),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final allSelected = _selectedBranchIds.length == laundries.length;
+          final noneSelected = _selectedBranchIds.isEmpty;
+
+          return Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _DS.surface,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: _DS.cardShadow,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Ringkasan + tombol pilih semua
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        noneSelected
+                            ? 'Belum ada cabang dipilih'
+                            : '${_selectedBranchIds.length} dari ${laundries.length} cabang dipilih',
+                        style: _DS.bodySm(),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          if (allSelected) {
+                            _selectedBranchIds.clear();
+                          } else {
+                            _selectedBranchIds
+                              ..clear()
+                              ..addAll(laundries.map((l) => l.id));
+                          }
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: allSelected ? _DS.primaryFixed : _DS.canvas,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              allSelected
+                                  ? Icons.remove_done_rounded
+                                  : Icons.done_all_rounded,
+                              size: 15,
+                              color: _DS.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              allSelected ? 'Batal Semua' : 'Pilih Semua',
+                              style: _DS.labelBold(color: _DS.primary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Chip list cabang
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: laundries.map((laundry) {
+                    final isSelected = _selectedBranchIds.contains(laundry.id);
+                    return InkWell(
+                      onTap: () {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedBranchIds.remove(laundry.id);
+                          } else {
+                            _selectedBranchIds.add(laundry.id);
+                          }
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(999),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.only(
+                            left: 10, right: 14, top: 8, bottom: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? _DS.primaryFixed.withOpacity(0.55)
+                              : _DS.canvas,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isSelected ? _DS.primary : _DS.outlineVariant,
+                            width: isSelected ? 1.4 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isSelected ? _DS.primary : Colors.transparent,
+                                border: Border.all(
+                                  color: isSelected ? _DS.primary : _DS.outline,
+                                  width: 1.4,
+                                ),
+                              ),
+                              child: isSelected
+                                  ? const Icon(Icons.check_rounded,
+                                      size: 13, color: Colors.white)
+                                  : null,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              laundry.name,
+                              style: _DS
+                                  .bodyMd(
+                                      color: isSelected
+                                          ? _DS.primary
+                                          : _DS.onSurface)
+                                  .copyWith(
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          );
+        },
+        loading: () => Container(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          decoration: BoxDecoration(
+            color: _DS.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: _DS.cardShadow,
+          ),
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        error: (err, stack) => Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _DS.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: _DS.cardShadow,
+          ),
+          child: Text('Gagal memuat cabang.', style: _DS.bodySm(color: _DS.error)),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Deskripsi
+  // ---------------------------------------------------------------------
+  Widget _buildDescriptionField(AppLocalizations l10n) {
+    return _sectionColumn(
+      label: l10n.serviceDescriptionLabel,
+      child: TextFormField(
+        controller: _descriptionController,
+        maxLines: 3,
+        style: _DS.bodyMd(),
+        decoration: _inputDecoration(hintText: l10n.serviceDescriptionHint),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Status toggle
+  // ---------------------------------------------------------------------
+  Widget _buildStatusToggle() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _DS.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: _DS.cardShadow,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Layanan Aktif', style: _DS.subtitleMd(color: _DS.onSurface)),
+                const SizedBox(height: 2),
+                Text('Matikan untuk menyembunyikan layanan', style: _DS.bodySm()),
+              ],
+            ),
+          ),
+          Switch(
+            value: _isActive,
+            onChanged: (val) => setState(() => _isActive = val),
+            activeColor: _DS.surface,
+            activeTrackColor: _DS.primary,
+            inactiveThumbColor: _DS.surface,
+            inactiveTrackColor: _DS.secondaryContainer,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Save bar (sticky bottom)
+  // ---------------------------------------------------------------------
+  Widget _buildSaveBar(AppLocalizations l10n) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _DS.surface,
+        border: const Border(top: BorderSide(color: _DS.outlineVariant)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: !_isLoading ? _handleSubmit : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _DS.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: _isLoading
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.md),
+                        Text(l10n.savingButtonLabel, style: _DS.headlineMd(color: Colors.white)),
+                      ],
+                    )
+                  : Text(l10n.saveServiceButton, style: _DS.headlineMd(color: Colors.white)),
             ),
           ),
         ),
@@ -404,51 +895,40 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
     );
   }
 
-  /// Build Save Button
-  Widget _buildSaveButton(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: !_isLoading ? _handleSubmit : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryColor,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          ),
-        ),
-        child: _isLoading
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.white.withOpacity(0.7),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppTheme.md),
-                  Text(
-                    l10n.savingButtonLabel,
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              )
-            : Text(
-                l10n.saveServiceButton,
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-              ),
-      ),
+  // ---------------------------------------------------------------------
+  // Shared helpers
+  // ---------------------------------------------------------------------
+  Widget _sectionColumn({required String label, required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: _DS.subtitleMd()),
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
+  }
+
+  InputDecoration _inputDecoration({required String hintText, String? prefixText}) {
+    OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: color, width: width),
+        );
+
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: _DS.bodyMd(color: _DS.outline),
+      prefixText: prefixText,
+      prefixStyle: _DS.subtitleMd(),
+      filled: true,
+      fillColor: _DS.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: border(_DS.outlineVariant, 1),
+      enabledBorder: border(_DS.outlineVariant, 1),
+      focusedBorder: border(_DS.primary, 1.5),
+      errorBorder: border(_DS.error, 1),
+      focusedErrorBorder: border(_DS.error, 1.5),
+      errorStyle: _DS.bodySm(color: _DS.error),
     );
   }
 }
