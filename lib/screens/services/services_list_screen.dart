@@ -223,14 +223,27 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
     );
   }
 
-  // ==========================================================
-  // HEADER — icon + judul + tombol tambah, sesuai desain baru
-  // ==========================================================
   Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      padding: const EdgeInsets.fromLTRB(12, 16, 20, 12),
       child: Row(
         children: [
+          InkWell(
+            onTap: () => context.canPop() ? context.pop() : context.go('/dashboard'),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _DS.surface,
+                shape: BoxShape.circle,
+                boxShadow: _DS.cardShadow,
+              ),
+              child: const Icon(Icons.arrow_back_rounded, size: 20, color: _DS.navy),
+            ),
+          ),
+          const SizedBox(width: 10),
           Container(
             width: 40,
             height: 40,
