@@ -76,53 +76,84 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 800;
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 900),
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      isMobile ? 16 : 24,
-                      isMobile ? 16 : 24,
-                      isMobile ? 16 : 24,
-                      24,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(context),
-                        const SizedBox(height: 22),
-                        _buildSearchBar(context),
-                        const SizedBox(height: AppTheme.lg),
-                        _buildFilterButtons(context),
-                        const SizedBox(height: AppTheme.xl),
-                        laundriesAsync.when(
-                          data: (laundries) {
-                            final filtered = _applyFiltersAndSearch(laundries);
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildStatsSummary(context, laundries),
-                                const SizedBox(height: AppTheme.xl),
-                                filtered.isEmpty
-                                    ? _buildEmptyState(context)
-                                    : _buildLaundriesList(context, filtered),
-                              ],
-                            );
-                          },
-                          loading: () => const Padding(
-                            padding: EdgeInsets.symmetric(vertical: AppTheme.xxl),
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                          error: (error, stack) => _buildErrorState(context, error),
-                        ),
-                        const SizedBox(height: 88),
-                      ],
+            final horizontalPadding = isMobile ? 16.0 : 24.0;
+
+            return Column(
+              children: [
+                // ==== Bagian yang TETAP (pinned) saat di-scroll ====
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 900),
+                    child: Container(
+                      // Beri warna background yang sama dengan Scaffold supaya
+                      // konten yang lewat di bawahnya tidak terlihat menembus.
+                      color: const Color(0xFFFBF9F8),
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        isMobile ? 16 : 24,
+                        horizontalPadding,
+                        0,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildHeader(context),
+                          const SizedBox(height: AppTheme.lg),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
+                // ==== Bagian yang BISA di-scroll ====
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            horizontalPadding,
+                            0,
+                            horizontalPadding,
+                            24,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSearchBar(context),
+                              const SizedBox(height: AppTheme.lg),
+                              _buildFilterButtons(context),
+                              const SizedBox(height: AppTheme.xl),
+                              laundriesAsync.when(
+                                data: (laundries) {
+                                  final filtered = _applyFiltersAndSearch(laundries);
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildStatsSummary(context, laundries),
+                                      const SizedBox(height: AppTheme.xl),
+                                      filtered.isEmpty
+                                          ? _buildEmptyState(context)
+                                          : _buildLaundriesList(context, filtered),
+                                      const SizedBox(height: 88),
+                                    ],
+                                  );
+                                },
+                                loading: () => const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: AppTheme.xxl),
+                                  child: Center(child: CircularProgressIndicator()),
+                                ),
+                                error: (error, stack) => _buildErrorState(context, error),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),

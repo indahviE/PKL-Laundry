@@ -157,58 +157,116 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 800;
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 700),
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      isMobile ? 16 : 24,
-                      isMobile ? 16 : 24,
-                      isMobile ? 16 : 24,
-                      24,
-                    ),
-                    child: laundryAsync.when(
-                      data: (laundry) {
-                        if (laundry == null) {
-                          return _buildNotFound(context, l10n);
-                        }
-                        final allEmployees = employeesAsync.value ?? const <Employee>[];
-                        final branchStaff = allEmployees.where((e) => e.laundryId == laundry.id).toList();
-                        Employee? manager;
-                        if (laundry.managerId != null && laundry.managerId!.isNotEmpty) {
-                          for (final e in allEmployees) {
-                            if (e.id == laundry.managerId) {
-                              manager = e;
-                              break;
-                            }
-                          }
-                        }
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildTopBar(context, ref, laundry, l10n),
-                            const SizedBox(height: AppTheme.lg),
-                            _buildIdentityHeader(context, ref, laundry, l10n),
-                            const SizedBox(height: AppTheme.lg),
-                            _buildStatsGrid(context, laundry, branchStaff, l10n),
-                            const SizedBox(height: AppTheme.lg),
-                            _buildInfoCard(context, laundry, manager, l10n),
-                            const SizedBox(height: AppTheme.lg),
-                            _buildStaffCard(context, branchStaff, employeesAsync.isLoading),
-                            const SizedBox(height: AppTheme.lg),
-                            _buildCapacityLocationCard(context, laundry, l10n),
-                            const SizedBox(height: AppTheme.lg),
-                            _buildMetaCard(context, laundry, l10n),
-                          ],
-                        );
-                      },
-                      loading: () => const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 120),
-                        child: Center(child: CircularProgressIndicator()),
+            final horizontalPadding = isMobile ? 16.0 : 24.0;
+
+            return laundryAsync.when(
+              data: (laundry) {
+                if (laundry == null) {
+                  return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 700),
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            horizontalPadding,
+                            isMobile ? 16 : 24,
+                            horizontalPadding,
+                            24,
+                          ),
+                          child: _buildNotFound(context, l10n),
+                        ),
                       ),
-                      error: (error, stack) => _buildErrorState(context, error, l10n),
+                    ),
+                  );
+                }
+                final allEmployees = employeesAsync.value ?? const <Employee>[];
+                final branchStaff = allEmployees.where((e) => e.laundryId == laundry.id).toList();
+                Employee? manager;
+                if (laundry.managerId != null && laundry.managerId!.isNotEmpty) {
+                  for (final e in allEmployees) {
+                    if (e.id == laundry.managerId) {
+                      manager = e;
+                      break;
+                    }
+                  }
+                }
+                return Column(
+                  children: [
+                    // ==== Top bar TETAP (pinned) saat konten di-scroll ====
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 700),
+                        child: Container(
+                          color: _kPageBg,
+                          padding: EdgeInsets.fromLTRB(
+                            horizontalPadding,
+                            isMobile ? 16 : 24,
+                            horizontalPadding,
+                            0,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildTopBar(context, ref, laundry, l10n),
+                              const SizedBox(height: AppTheme.lg),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // ==== Konten detail yang bisa di-scroll ====
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 700),
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                horizontalPadding,
+                                0,
+                                horizontalPadding,
+                                24,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildIdentityHeader(context, ref, laundry, l10n),
+                                  const SizedBox(height: AppTheme.lg),
+                                  _buildStatsGrid(context, laundry, branchStaff, l10n),
+                                  const SizedBox(height: AppTheme.lg),
+                                  _buildInfoCard(context, laundry, manager, l10n),
+                                  const SizedBox(height: AppTheme.lg),
+                                  _buildStaffCard(context, branchStaff, employeesAsync.isLoading),
+                                  const SizedBox(height: AppTheme.lg),
+                                  _buildCapacityLocationCard(context, laundry, l10n),
+                                  const SizedBox(height: AppTheme.lg),
+                                  _buildMetaCard(context, laundry, l10n),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stack) => SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 700),
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        isMobile ? 16 : 24,
+                        horizontalPadding,
+                        24,
+                      ),
+                      child: _buildErrorState(context, error, l10n),
                     ),
                   ),
                 ),

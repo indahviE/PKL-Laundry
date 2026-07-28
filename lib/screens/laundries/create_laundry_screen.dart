@@ -677,40 +677,69 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
             : LayoutBuilder(
                 builder: (context, constraints) {
                   final isMobile = constraints.maxWidth < 800;
-                  return SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 480),
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            isMobile ? 16 : 24,
-                            isMobile ? 16 : 24,
-                            isMobile ? 16 : 24,
-                            32,
-                          ),
-                          child: Form(
-                            key: _formKey,
+                  final horizontalPadding = isMobile ? 16.0 : 24.0;
+
+                  return Column(
+                    children: [
+                      // ==== Top bar TETAP (pinned) saat form di-scroll ====
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 480),
+                          child: Container(
+                            color: const Color(0xFFFBF9F8),
+                            padding: EdgeInsets.fromLTRB(
+                              horizontalPadding,
+                              isMobile ? 16 : 24,
+                              horizontalPadding,
+                              0,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _buildTopBar(context, l10n),
                                 const SizedBox(height: 20),
-                                _buildStatusSwitchCard(l10n),
-                                const SizedBox(height: 20),
-                                _buildGeneralInfoSection(l10n),
-                                const SizedBox(height: 20),
-                                _buildOperatingHoursSection(l10n),
-                                const SizedBox(height: 20),
-                                _buildManagementSection(l10n),
-                                const SizedBox(height: 28),
-                                _buildPrimaryActions(l10n),
                               ],
                             ),
                           ),
                         ),
                       ),
-                    ),
+                      // ==== Isi form yang bisa di-scroll ====
+                      Expanded(
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 480),
+                              child: Padding(
+                                padding: EdgeInsets.fromLTRB(
+                                  horizontalPadding,
+                                  0,
+                                  horizontalPadding,
+                                  32,
+                                ),
+                                child: Form(
+                                  key: _formKey,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildStatusSwitchCard(l10n),
+                                      const SizedBox(height: 20),
+                                      _buildGeneralInfoSection(l10n),
+                                      const SizedBox(height: 20),
+                                      _buildOperatingHoursSection(l10n),
+                                      const SizedBox(height: 20),
+                                      _buildManagementSection(l10n),
+                                      const SizedBox(height: 28),
+                                      _buildPrimaryActions(l10n),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),
