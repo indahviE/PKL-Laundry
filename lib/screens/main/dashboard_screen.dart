@@ -102,30 +102,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxContentWidth),
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(child: _buildTopBar(context, isMobile, t)),
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    isMobile ? AppTheme.lg : AppTheme.xxl,
-                    0,
-                    isMobile ? AppTheme.lg : AppTheme.xxl,
-                    AppTheme.xxl,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _buildBalanceCardRealtime(t),
-                      const SizedBox(height: AppTheme.xl),
-                      _buildSetupChecklistRealtime(t),
-                      const SizedBox(height: AppTheme.xl),
-                      _buildQuickActions(context, t),
-                      const SizedBox(height: AppTheme.xl),
-                      _buildWeeklyChartRealtime(t),
-                      const SizedBox(height: AppTheme.xl),
-                      _buildOrdersHeader(context, t),
-                      const SizedBox(height: AppTheme.md),
-                      _buildTimelineRealtime(t),
-                    ]),
+            child: Column(
+              children: [
+                // ==== Bagian TETAP (pinned) saat konten di-scroll ====
+                // Cuma selector cabang aktif + bell notifikasi.
+                _buildPinnedSelectorBar(context, isMobile, t),
+                // ==== Konten yang bisa di-scroll ====
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        isMobile ? AppTheme.lg : AppTheme.xxl,
+                        0,
+                        isMobile ? AppTheme.lg : AppTheme.xxl,
+                        AppTheme.xxl,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildGreeting(t),
+                          const SizedBox(height: AppTheme.xl),
+                          _buildBalanceCardRealtime(t),
+                          const SizedBox(height: AppTheme.xl),
+                          _buildSetupChecklistRealtime(t),
+                          const SizedBox(height: AppTheme.xl),
+                          _buildQuickActions(context, t),
+                          const SizedBox(height: AppTheme.xl),
+                          _buildWeeklyChartRealtime(t),
+                          const SizedBox(height: AppTheme.xl),
+                          _buildOrdersHeader(context, t),
+                          const SizedBox(height: AppTheme.md),
+                          _buildTimelineRealtime(t),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -137,14 +148,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ============================================
-  // TOP BAR (Cabang Selector + Notifikasi + Sapaan)
+  // PINNED SELECTOR BAR (Cabang Selector + Notifikasi) — TETAP saat scroll
   // ============================================
-  Widget _buildTopBar(BuildContext context, bool isMobile, AppLocalizations t) {
-    final hour = DateTime.now().hour;
-    final greeting = hour < 12
-        ? t.greetingMorning
-        : (hour < 17 ? t.greetingAfternoon : t.greetingEvening);
-
+  Widget _buildPinnedSelectorBar(BuildContext context, bool isMobile, AppLocalizations t) {
     return Container(
       width: double.infinity,
       color: bgColor,
@@ -152,65 +158,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
         isMobile ? AppTheme.lg : AppTheme.xxl,
         AppTheme.md + MediaQuery.of(context).padding.top,
         isMobile ? AppTheme.lg : AppTheme.xxl,
-        AppTheme.xl,
+        AppTheme.md,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Selector cabang - tap membuka bottom sheet daftar cabang
-              // yang di-fetch dari users/{uid}/laundries.
-              InkWell(
-                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                onTap: () => _showBranchSelector(context),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          // Selector cabang - tap membuka bottom sheet daftar cabang
+          // yang di-fetch dari users/{uid}/laundries.
+          InkWell(
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            onTap: () => _showBranchSelector(context),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'CABANG AKTIF',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: textTertiary,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
                   children: [
                     Text(
-                      'CABANG AKTIF',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: textTertiary,
-                        letterSpacing: 0.5,
-                      ),
+                      _selectedBranchName,
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textPrimary),
                     ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text(
-                          _selectedBranchName,
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textPrimary),
-                        ),
-                        Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: textPrimary),
-                      ],
-                    ),
+                    Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: textPrimary),
                   ],
                 ),
-              ),
-              _buildNotificationBell(context, t),
-            ],
-          ),
-          const SizedBox(height: AppTheme.xl),
-          Text(
-            greeting,
-            style: TextStyle(
-              color: textPrimary,
-              fontWeight: FontWeight.w800,
-              fontSize: 21,
-              letterSpacing: -0.3,
+              ],
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            t.dashboardSubtitle,
-            style: TextStyle(color: textSecondary, fontSize: 13),
-          ),
+          _buildNotificationBell(context, t),
         ],
       ),
+    );
+  }
+
+  // ============================================
+  // SAPAAN (Selamat Pagi/Siang/Malam) — ikut SCROLL
+  // ============================================
+  Widget _buildGreeting(AppLocalizations t) {
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? t.greetingMorning
+        : (hour < 17 ? t.greetingAfternoon : t.greetingEvening);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          greeting,
+          style: TextStyle(
+            color: textPrimary,
+            fontWeight: FontWeight.w800,
+            fontSize: 21,
+            letterSpacing: -0.3,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          t.dashboardSubtitle,
+          style: TextStyle(color: textSecondary, fontSize: 13),
+        ),
+      ],
     );
   }
 
@@ -218,6 +234,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // BRANCH SELECTOR (Firestore Stream - users/{uid}/laundries)
   // ============================================
   void _showBranchSelector(BuildContext context) {
+    // Query pencarian lokal buat bottom sheet ini aja (di-reset tiap kali
+    // sheet dibuka ulang). Berguna kalau jumlah cabang banyak (mis. paket
+    // dengan kuota cabang unlimited) supaya user nggak perlu scroll manual.
+    String branchSearchQuery = '';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -229,98 +250,164 @@ class _DashboardScreenState extends State<DashboardScreen> {
           maxChildSize: 0.9,
           expand: false,
           builder: (context, scrollController) {
-            return Container(
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.radiusXl)),
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: borderColor,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+            return StatefulBuilder(
+              builder: (context, setModalState) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.radiusXl)),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(AppTheme.lg, AppTheme.lg, AppTheme.lg, AppTheme.md),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Pilih Cabang',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 10),
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: borderColor,
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: () => Navigator.of(sheetContext).pop(),
-                          child: Icon(Icons.close_rounded, size: 20, color: textTertiary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(_currentUserId)
-                          .collection('laundries')
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-
-                        final docs = snapshot.data?.docs ?? [];
-
-                        return ListView(
-                          controller: scrollController,
-                          padding: const EdgeInsets.fromLTRB(AppTheme.lg, 0, AppTheme.lg, AppTheme.xl),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(AppTheme.lg, AppTheme.lg, AppTheme.lg, AppTheme.md),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildBranchOption(
-                              sheetContext,
-                              id: 'all',
-                              name: 'Semua Cabang',
-                              isSelected: _selectedBranchId == 'all',
+                            Text(
+                              'Pilih Cabang',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
                             ),
-                            const SizedBox(height: AppTheme.sm),
-                            ...docs.map((doc) {
-                              final data = doc.data() as Map<String, dynamic>? ?? {};
-                              final name = (data['name'] ?? data['branch_name'] ?? 'Cabang') as String;
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: AppTheme.sm),
-                                child: _buildBranchOption(
-                                  sheetContext,
-                                  id: doc.id,
-                                  name: name,
-                                  isSelected: _selectedBranchId == doc.id,
-                                ),
-                              );
-                            }),
-                            if (docs.isEmpty)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: AppTheme.xl),
-                                child: Column(
-                                  children: [
-                                    Icon(Icons.storefront_outlined, size: 36, color: textTertiary),
-                                    const SizedBox(height: AppTheme.md),
-                                    Text(
-                                      'Belum ada cabang terdaftar',
-                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: () => Navigator.of(sheetContext).pop(),
+                              child: Icon(Icons.close_rounded, size: 20, color: textTertiary),
+                            ),
                           ],
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                      // ==== Search cabang - biar gampang dicari kalau
+                      // cabangnya banyak (mis. paket cabang unlimited) ====
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(AppTheme.lg, 0, AppTheme.lg, AppTheme.md),
+                        child: TextField(
+                          onChanged: (value) => setModalState(() => branchSearchQuery = value),
+                          style: TextStyle(fontSize: 13.5, color: textPrimary),
+                          decoration: InputDecoration(
+                            hintText: 'Cari nama cabang...',
+                            hintStyle: TextStyle(fontSize: 13.5, color: textTertiary),
+                            prefixIcon: Icon(Icons.search, color: textTertiary, size: 20),
+                            isDense: true,
+                            filled: true,
+                            fillColor: bgColor,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              borderSide: BorderSide(color: primaryBlue, width: 1.5),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(_currentUserId)
+                              .collection('laundries')
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+
+                            final allDocs = snapshot.data?.docs ?? [];
+                            final query = branchSearchQuery.trim().toLowerCase();
+
+                            // "Semua Cabang" tetap muncul selama belum ada
+                            // pencarian aktif - begitu user ngetik, opsi ini
+                            // ikut ke-filter berdasarkan query juga.
+                            final showAllOption = query.isEmpty || 'semua cabang'.contains(query);
+
+                            final docs = query.isEmpty
+                                ? allDocs
+                                : allDocs.where((doc) {
+                                    final data = doc.data() as Map<String, dynamic>? ?? {};
+                                    final name = (data['name'] ?? data['branch_name'] ?? '') as String;
+                                    return name.toLowerCase().contains(query);
+                                  }).toList();
+
+                            final isEmptyResult = docs.isEmpty && !showAllOption;
+
+                            return ListView(
+                              controller: scrollController,
+                              padding: const EdgeInsets.fromLTRB(AppTheme.lg, 0, AppTheme.lg, AppTheme.xl),
+                              children: [
+                                if (showAllOption) ...[
+                                  _buildBranchOption(
+                                    sheetContext,
+                                    id: 'all',
+                                    name: 'Semua Cabang',
+                                    isSelected: _selectedBranchId == 'all',
+                                  ),
+                                  const SizedBox(height: AppTheme.sm),
+                                ],
+                                ...docs.map((doc) {
+                                  final data = doc.data() as Map<String, dynamic>? ?? {};
+                                  final name = (data['name'] ?? data['branch_name'] ?? 'Cabang') as String;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: AppTheme.sm),
+                                    child: _buildBranchOption(
+                                      sheetContext,
+                                      id: doc.id,
+                                      name: name,
+                                      isSelected: _selectedBranchId == doc.id,
+                                    ),
+                                  );
+                                }),
+                                if (allDocs.isEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: AppTheme.xl),
+                                    child: Column(
+                                      children: [
+                                        Icon(Icons.storefront_outlined, size: 36, color: textTertiary),
+                                        const SizedBox(height: AppTheme.md),
+                                        Text(
+                                          'Belum ada cabang terdaftar',
+                                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                else if (isEmptyResult)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: AppTheme.xl),
+                                    child: Column(
+                                      children: [
+                                        Icon(Icons.search_off_rounded, size: 36, color: textTertiary),
+                                        const SizedBox(height: AppTheme.md),
+                                        Text(
+                                          'Cabang tidak ditemukan',
+                                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
