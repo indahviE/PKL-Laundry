@@ -34,8 +34,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static Color get textTertiary => AppTheme.textTertiary;
   static Color get borderColor => AppTheme.borderColor;
 
-  int _filterIndex = 0;
-
   // Status dismiss checklist onboarding secara lokal
   bool _setupDismissed = false;
 
@@ -82,23 +80,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return q;
   }
 
-  /// Mapping indeks filter ke status yang SAMA seperti OrdersListScreen
-  /// (all, pending, processing, completed, cancelled).
-  List<String>? _getStatusFilter(int index) {
-    switch (index) {
-      case 1: // Menunggu
-        return ['pending'];
-      case 2: // Diproses
-        return ['processing'];
-      case 3: // Selesai
-        return ['completed'];
-      case 4: // Dibatalkan
-        return ['cancelled'];
-      default: // Semua
-        return null;
-    }
-  }
-
   /// Format angka jadi "Rp X.XXX.XXX" - dipakai di kartu Pesanan Terbaru.
   String _formatCurrency(double amount) {
     return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
@@ -143,8 +124,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: AppTheme.xl),
                       _buildOrdersHeader(context, t),
                       const SizedBox(height: AppTheme.md),
-                      _buildFilterChips(context, t),
-                      const SizedBox(height: AppTheme.lg),
                       _buildTimelineRealtime(t),
                     ]),
                   ),
@@ -1194,62 +1173,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ============================================
-  // FILTER CHIPS
+  // REAL-TIME TIMELINE PESANAN — "Pesanan Utama"
   // ============================================
-  // Disamakan persis dengan filter di OrdersListScreen:
-  // Semua, Menunggu, Diproses, Selesai, Dibatalkan.
-  Widget _buildFilterChips(BuildContext context, AppLocalizations t) {
-    final filters = [
-      ('Semua', Icons.all_inbox_outlined),
-      ('Menunggu', Icons.schedule_outlined),
-      ('Diproses', Icons.local_laundry_service_outlined),
-      ('Selesai', Icons.check_circle_outline),
-      ('Dibatalkan', Icons.cancel_outlined),
-    ];
+  // Dashboard cuma nunjukin pesanan yang MASIH BUTUH PERHATIAN: status
+  // menunggu (pending), baru dikonfirmasi (confirmed), atau baru mulai
+  // diproses (inProgress) — belum masuk tahap pencucian fisik (washing,
+  // drying, ironing, qualityCheck, ready). Begitu order masuk tahap
+  // pencucian atau lebih jauh, otomatis "lulus" dari list ini dan cuma
+  // bisa dipantau lewat halaman Pesanan (/orders) atau detail order.
+  //
+  // Kombinasi where('laundry_id', ...) + where('status', whereIn: ...)
+  // + orderBy('order_date') di bawah ini KEMUNGKINAN BESAR butuh
+  // composite index baru di Firestore — kalau muncul error
+  // FAILED_PRECONDITION di log/console, klik link yang disediakan
+  // Firebase buat generate index-nya otomatis.
+  static const List<String> _dashboardActiveStatuses = ['pending', 'confirmed', 'inProgress'];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(filters.length, (i) {
-          final selected = i == _filterIndex;
-          return Padding(
-            padding: EdgeInsets.only(right: i < filters.length - 1 ? AppTheme.md : 0),
-            child: FilterChip(
-              selected: selected,
-              onSelected: (_) => setState(() => _filterIndex = i),
-              showCheckmark: false,
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(filters[i].$2, size: 16),
-                  const SizedBox(width: AppTheme.sm),
-                  Text(filters[i].$1),
-                ],
-              ),
-              backgroundColor: cardColor,
-              selectedColor: primaryBlue.withOpacity(0.12),
-              side: BorderSide(
-                color: selected ? primaryBlue.withOpacity(0.4) : borderColor,
-              ),
-              labelStyle: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                color: selected ? textBlue : textSecondary,
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
-  // ============================================
-  // REAL-TIME TIMELINE PESANAN (Firestore Stream, ter-filter per cabang)
-  // ============================================
   Widget _buildTimelineRealtime(AppLocalizations t) {
-    var query = _ordersBaseQuery().orderBy('order_date', descending: true);
-
-    List<String>? statusFilter = _getStatusFilter(_filterIndex);
+    final query = _ordersBaseQuery()
+        .where('status', whereIn: _dashboardActiveStatuses)
+        .orderBy('order_date', descending: true)
+        .limit(5);
 
     return StreamBuilder<QuerySnapshot>(
       stream: query.snapshots(),
@@ -1257,18 +1201,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator()));
         }
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text('${snapshot.error}', style: TextStyle(fontSize: 12, color: textSecondary)),
+            ),
+          );
+        }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(child: Padding(padding: const EdgeInsets.all(16.0), child: Text(t.noOrdersData)));
         }
 
-        var docs = snapshot.data!.docs;
-        if (statusFilter != null) {
-          docs = docs.where((doc) => statusFilter.contains(doc['status'])).toList();
-        }
-
-        if (docs.isEmpty) {
-          return Center(child: Padding(padding: const EdgeInsets.all(16.0), child: Text(t.noOrdersForStatus)));
-        }
+        final docs = snapshot.data!.docs;
 
         return Column(
           children: List.generate(docs.length, (i) {
@@ -1282,8 +1227,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final status = data['status'] ?? 'pending';
             final isLast = i == docs.length - 1;
 
-            // Warna & label status disamakan persis dengan OrdersListScreen
-            // (_getStatusColor / _getStatusLabel).
+            // Warna & label status disamakan dengan istilah di
+            // OrderDetailScreen (_getStatusLabel) — hanya 3 status yang
+            // mungkin muncul di sini (lihat _dashboardActiveStatuses).
             Color statusColor;
             String statusLabel;
             switch (status) {
@@ -1291,17 +1237,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 statusColor = Colors.orange;
                 statusLabel = 'Menunggu';
                 break;
-              case 'processing':
+              case 'confirmed':
+                statusColor = primaryBlue;
+                statusLabel = 'Dikonfirmasi';
+                break;
+              case 'inProgress':
                 statusColor = primaryBlue;
                 statusLabel = 'Diproses';
-                break;
-              case 'completed':
-                statusColor = const Color(0xFF51CF66);
-                statusLabel = 'Selesai';
-                break;
-              case 'cancelled':
-                statusColor = Colors.red;
-                statusLabel = 'Dibatalkan';
                 break;
               default:
                 statusColor = textTertiary;
