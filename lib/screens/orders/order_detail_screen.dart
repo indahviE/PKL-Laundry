@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:gal/gal.dart';
 import 'dart:typed_data';
@@ -11,7 +12,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/themes/app_theme.dart';
 import '../../models/order.dart';
 import '../../models/transaction.dart';
+import '../../models/user_model.dart';
 import '../../repositories/order_repository.dart';
+import '../../repositories/user_repository.dart';
 
 // ============================================
 // DESIGN TOKENS (dari DESIGN.md / code.html referensi "Order Detail -
@@ -20,7 +23,7 @@ import '../../repositories/order_repository.dart';
 // AppTheme lama (yang sebelumnya dipakai screen ini, gaya Poppins/biru
 // generik).
 // ============================================
-const Color _cSurface = Color(0xFFFBF9F8);
+const Color _cSurface = Color(0xFFF5F7FA); // disamain sama _DS.canvas di services_list_screen.dart
 const Color _cSurfaceContainerLow = Color(0xFFF5F3F3);
 const Color _cSurfaceContainer = Color(0xFFF0EDED);
 const Color _cSurfaceContainerHighest = Color(0xFFE4E2E1);
@@ -84,6 +87,64 @@ class _StatusHistoryEntry {
   }
 }
 
+/// Data pengajuan pembatalan (users/{uid}/orders/{orderId}.cancellation_request).
+///
+/// Dipakai buat alur approval: kalau yang mengajukan role-nya 'employee',
+/// status pesanan TIDAK langsung berubah jadi 'cancelled' -- cuma nyimpen
+/// pengajuan ini dulu (status 'pending'), nunggu di-approve/reject sama
+/// Admin/Owner/Manager. Kalau yang mengajukan Admin/Owner/Manager sendiri,
+/// alur ini tetap dipakai buat jejak audit tapi statusnya langsung
+/// 'approved' bareng dengan update status pesanan jadi 'cancelled'.
+class _CancellationRequestData {
+  final String requestedByUid;
+  final String requestedByName;
+  final String requestedByRole;
+  final String reason;
+  final DateTime? requestedAt;
+  final String status; // 'pending' | 'approved' | 'rejected'
+  final String? reviewedByName;
+  final DateTime? reviewedAt;
+
+  _CancellationRequestData({
+    required this.requestedByUid,
+    required this.requestedByName,
+    required this.requestedByRole,
+    required this.reason,
+    required this.requestedAt,
+    required this.status,
+    this.reviewedByName,
+    this.reviewedAt,
+  });
+
+  bool get isPending => status == 'pending';
+
+  factory _CancellationRequestData.fromMap(Map<String, dynamic> map) {
+    final requestedAt = map['requested_at'];
+    final reviewedAt = map['reviewed_at'];
+    return _CancellationRequestData(
+      requestedByUid: (map['requested_by_uid'] ?? '') as String,
+      requestedByName: (map['requested_by_name'] ?? '') as String,
+      requestedByRole: (map['requested_by_role'] ?? '') as String,
+      reason: (map['reason'] ?? '') as String,
+      requestedAt: requestedAt is Timestamp ? requestedAt.toDate() : null,
+      status: (map['status'] ?? 'pending') as String,
+      reviewedByName: map['reviewed_by_name'] as String?,
+      reviewedAt: reviewedAt is Timestamp ? reviewedAt.toDate() : null,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'requested_by_uid': requestedByUid,
+      'requested_by_name': requestedByName,
+      'requested_by_role': requestedByRole,
+      'reason': reason,
+      'requested_at': FieldValue.serverTimestamp(),
+      'status': status,
+    };
+  }
+}
+
 /// Model data order lengkap untuk halaman detail, di-fetch dari
 /// users/{uid}/orders/{orderId}
 ///
@@ -121,6 +182,9 @@ class _OrderDetailData {
   // --- Cabang ---
   final String laundryId; // bisa kosong buat order lama sebelum fitur cabang ada
 
+  // --- Pembatalan ---
+  final _CancellationRequestData? cancellationRequest;
+
   _OrderDetailData({
     required this.orderNumber,
     required this.customerName,
@@ -139,7 +203,11 @@ class _OrderDetailData {
     required this.paidAmount,
     required this.deliveryType,
     required this.laundryId,
+    this.cancellationRequest,
   });
+
+  /// True kalau ada pengajuan pembatalan yang masih menunggu approval.
+  bool get hasPendingCancellationRequest => cancellationRequest?.isPending ?? false;
 
   /// Sisa tagihan yang belum dibayar. Tidak pernah negatif (dijaga dengan
   /// clamp di sini supaya UI tidak pernah menampilkan angka minus kalau
@@ -180,6 +248,7 @@ class _OrderDetailData {
     final orderDate = data['order_date'];
     final rawItems = (data['items'] as List?) ?? [];
     final rawHistory = (data['status_history'] as List?) ?? [];
+    final rawCancellationRequest = data['cancellation_request'];
 
     return _OrderDetailData(
       orderNumber: (data['order_number'] ?? doc.id) as String,
@@ -199,6 +268,9 @@ class _OrderDetailData {
       paidAmount: ((data['paid_amount'] ?? 0) as num).toDouble(),
       deliveryType: (data['delivery_type'] ?? 'self_pickup') as String,
       laundryId: (data['laundry_id'] ?? '') as String,
+      cancellationRequest: rawCancellationRequest is Map
+          ? _CancellationRequestData.fromMap(Map<String, dynamic>.from(rawCancellationRequest))
+          : null,
     );
   }
 }
@@ -217,6 +289,14 @@ const List<String> _statusFlow = [
   'ready',
   'completed',
 ];
+
+/// Pesanan cuma bisa dibatalkan (langsung atau lewat pengajuan) selama
+/// MASIH 'pending' (belum dikonfirmasi). Begitu dikonfirmasi (atau tahap
+/// manapun sesudahnya: inProgress, washing, ..., ready, completed),
+/// dikunci -- sudah tidak bisa dibatalkan lagi.
+bool _canCancelForStatus(String status) {
+  return status == 'pending';
+}
 
 /// Ikon per tahap status, dipetakan sedekat mungkin ke ikon di referensi
 /// desain (schedule, check_circle, sync, local_laundry_service, air,
@@ -321,6 +401,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String? _errorMessage;
   _OrderDetailData? _order;
 
+  // --- Role user yang lagi login, buat gating tombol batalkan/approval ---
+  // Dibaca dari users/{uid}.role (bukan custom claims), sama pola dengan
+  // AdminGuard. null selama masih loading -- selagi null, tombol batalkan
+  // langsung disembunyikan dulu (fail-closed) supaya nggak sempat kelihatan
+  // buat role yang harusnya butuh approval.
+  String? _currentUserRole;
+  String _currentUserName = '';
+  StreamSubscription<UserModel?>? _roleSub;
+  bool _isSubmittingCancelAction = false;
+
   // Nama cabang (resolved dari laundryId) - null selama masih loading
   // atau kalau order.laundryId kosong (order lama sebelum fitur cabang).
   String? _laundryName;
@@ -335,7 +425,36 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   void initState() {
     super.initState();
     _fetchOrder();
+    _listenToCurrentUserRole();
   }
+
+  @override
+  void dispose() {
+    _roleSub?.cancel();
+    super.dispose();
+  }
+
+  /// Dengerin role user yang lagi login dari profilnya sendiri
+  /// (users/{uid}.role) - dipakai buat mutuskan apakah "Batalkan Pesanan"
+  /// langsung mengubah status, atau cuma bikin pengajuan yang butuh
+  /// approval (kalau role-nya 'employee').
+  void _listenToCurrentUserRole() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    _roleSub = UserRepository(FirebaseFirestore.instance).getUserProfileStream(uid).listen((profile) {
+      if (!mounted) return;
+      setState(() {
+        _currentUserRole = profile?.role ?? 'owner';
+        _currentUserName = profile?.fullName ?? '';
+      });
+    });
+  }
+
+  /// Admin/Owner/Manager bisa langsung membatalkan pesanan. Karyawan
+  /// (employee) cuma bisa mengajukan, butuh persetujuan salah satu role
+  /// di atas.
+  bool get _canCancelDirectly =>
+      _currentUserRole == 'admin' || _currentUserRole == 'owner' || _currentUserRole == 'manager';
 
   CollectionReference get _ordersRef {
     final user = FirebaseAuth.instance.currentUser;
@@ -833,37 +952,212 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
+  /// Dialog batalkan pesanan - selalu minta alasan (dipakai baik buat
+  /// pembatalan langsung maupun pengajuan). Tombol konfirmasi & pesan
+  /// menyesuaikan role: Admin/Owner/Manager -> "Ya, Batalkan" (langsung),
+  /// Employee -> "Ajukan Pembatalan" (butuh approval).
   void _confirmCancelOrder() {
+    final directCancel = _canCancelDirectly;
+    final reasonController = TextEditingController();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rLg)),
-        title: Text(
-          'Batalkan Pesanan?',
-          style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cOnSurface),
-        ),
-        content: Text(
-          'Tindakan ini akan mengubah status pesanan menjadi Dibatalkan.',
-          style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Tidak', style: GoogleFonts.beVietnamPro(color: _cOnSurfaceVariant)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _handleUpdateStatus('cancelled', note: 'Pesanan dibatalkan');
-            },
-            child: Text(
-              'Ya, Batalkan',
-              style: GoogleFonts.beVietnamPro(color: _cError, fontWeight: FontWeight.w700),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rLg)),
+            title: Text(
+              directCancel ? 'Batalkan Pesanan?' : 'Ajukan Pembatalan?',
+              style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cOnSurface),
             ),
-          ),
-        ],
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  directCancel
+                      ? 'Tindakan ini akan mengubah status pesanan menjadi Dibatalkan.'
+                      : 'Pengajuan ini perlu disetujui Admin/Owner/Manager sebelum status pesanan berubah jadi Dibatalkan.',
+                  style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
+                ),
+                const SizedBox(height: AppTheme.md),
+                TextField(
+                  controller: reasonController,
+                  maxLines: 3,
+                  style: GoogleFonts.beVietnamPro(fontSize: 13.5),
+                  decoration: InputDecoration(
+                    labelText: 'Alasan pembatalan',
+                    labelStyle: GoogleFonts.beVietnamPro(fontSize: 12.5),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text('Tidak', style: GoogleFonts.beVietnamPro(color: _cOnSurfaceVariant)),
+              ),
+              TextButton(
+                onPressed: () {
+                  final reason = reasonController.text.trim();
+                  if (reason.isEmpty) {
+                    _showSnack('Alasan pembatalan wajib diisi', isError: true);
+                    return;
+                  }
+                  Navigator.pop(dialogContext);
+                  if (directCancel) {
+                    _cancelOrderDirectly(reason);
+                  } else {
+                    _submitCancellationRequest(reason);
+                  }
+                },
+                child: Text(
+                  directCancel ? 'Ya, Batalkan' : 'Ajukan Pembatalan',
+                  style: GoogleFonts.beVietnamPro(color: _cError, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
+  }
+
+  /// Admin/Owner/Manager membatalkan langsung: status pesanan berubah jadi
+  /// 'cancelled' saat itu juga. Tetap nyimpen cancellation_request (status
+  /// 'approved') buat jejak audit siapa & kenapa.
+  Future<void> _cancelOrderDirectly(String reason) async {
+    if (_order == null) return;
+    setState(() => _isSubmittingCancelAction = true);
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final requestData = _CancellationRequestData(
+        requestedByUid: uid,
+        requestedByName: _currentUserName,
+        requestedByRole: _currentUserRole ?? 'owner',
+        reason: reason,
+        requestedAt: DateTime.now(),
+        status: 'approved',
+      );
+      final requestMap = requestData.toMap();
+      requestMap['reviewed_by_name'] = _currentUserName;
+      requestMap['reviewed_at'] = FieldValue.serverTimestamp();
+
+      // 1 update atomik: cancellation_request DAN status berubah bareng,
+      // gak dipisah 2 write. Firestore rules (`allow update`) cuma
+      // meng-cek ada `status`/`status_history`/dst di antara affectedKeys
+      // -- kalau ini dipecah jadi write terpisah yang cuma nyentuh
+      // `cancellation_request`, tulisan itu bakal ditolak rules.
+      await _ordersRef.doc(widget.orderId).update({
+        'status': 'cancelled',
+        'status_history': FieldValue.arrayUnion([
+          {
+            'status': 'cancelled',
+            'timestamp': Timestamp.now(),
+            'note': 'Pesanan dibatalkan: $reason',
+          }
+        ]),
+        'updated_at': FieldValue.serverTimestamp(),
+        'cancellation_request': requestMap,
+      });
+
+      if (mounted) _showSnack('Status berhasil diubah menjadi ${_getStatusLabel('cancelled')}');
+      await _fetchOrder();
+    } catch (e) {
+      if (mounted) _showSnack('Gagal membatalkan pesanan: ${e.toString()}', isError: true);
+    } finally {
+      if (mounted) setState(() => _isSubmittingCancelAction = false);
+    }
+  }
+
+  /// Employee mengajukan pembatalan: TIDAK mengubah status pesanan, cuma
+  /// nyimpen pengajuan (status 'pending') menunggu di-review.
+  Future<void> _submitCancellationRequest(String reason) async {
+    if (_order == null) return;
+    setState(() => _isSubmittingCancelAction = true);
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final requestData = _CancellationRequestData(
+        requestedByUid: uid,
+        requestedByName: _currentUserName,
+        requestedByRole: _currentUserRole ?? 'employee',
+        reason: reason,
+        requestedAt: DateTime.now(),
+        status: 'pending',
+      );
+      await _ordersRef.doc(widget.orderId).update({
+        'cancellation_request': requestData.toMap(),
+        'status_history': FieldValue.arrayUnion([
+          {
+            'status': _order!.status,
+            'timestamp': Timestamp.now(),
+            'note': 'Pengajuan pembatalan oleh $_currentUserName: $reason',
+          }
+        ]),
+      });
+      if (mounted) _showSnack('Pengajuan pembatalan terkirim, menunggu persetujuan');
+      await _fetchOrder();
+    } catch (e) {
+      if (mounted) _showSnack('Gagal mengirim pengajuan: ${e.toString()}', isError: true);
+    } finally {
+      if (mounted) setState(() => _isSubmittingCancelAction = false);
+    }
+  }
+
+  /// Admin/Owner/Manager menyetujui pengajuan employee -> status pesanan
+  /// baru berubah jadi 'cancelled' di titik ini.
+  Future<void> _approveCancellationRequest(_OrderDetailData order) async {
+    setState(() => _isSubmittingCancelAction = true);
+    try {
+      // 1 update atomik, sama alasannya kayak _cancelOrderDirectly di atas.
+      await _ordersRef.doc(widget.orderId).update({
+        'status': 'cancelled',
+        'status_history': FieldValue.arrayUnion([
+          {
+            'status': 'cancelled',
+            'timestamp': Timestamp.now(),
+            'note': 'Pengajuan pembatalan disetujui oleh $_currentUserName',
+          }
+        ]),
+        'updated_at': FieldValue.serverTimestamp(),
+        'cancellation_request.status': 'approved',
+        'cancellation_request.reviewed_by_name': _currentUserName,
+        'cancellation_request.reviewed_at': FieldValue.serverTimestamp(),
+      });
+      if (mounted) _showSnack('Pengajuan pembatalan disetujui, pesanan dibatalkan');
+      await _fetchOrder();
+    } catch (e) {
+      if (mounted) _showSnack('Gagal menyetujui pengajuan: ${e.toString()}', isError: true);
+    } finally {
+      if (mounted) setState(() => _isSubmittingCancelAction = false);
+    }
+  }
+
+  /// Admin/Owner/Manager menolak pengajuan employee -> status pesanan
+  /// TETAP jalan seperti biasa, cuma pengajuannya ditandai ditolak.
+  Future<void> _rejectCancellationRequest(_OrderDetailData order) async {
+    setState(() => _isSubmittingCancelAction = true);
+    try {
+      await _ordersRef.doc(widget.orderId).update({
+        'cancellation_request.status': 'rejected',
+        'cancellation_request.reviewed_by_name': _currentUserName,
+        'cancellation_request.reviewed_at': FieldValue.serverTimestamp(),
+        'status_history': FieldValue.arrayUnion([
+          {
+            'status': order.status,
+            'timestamp': Timestamp.now(),
+            'note': 'Pengajuan pembatalan ditolak oleh $_currentUserName',
+          }
+        ]),
+      });
+      if (mounted) _showSnack('Pengajuan pembatalan ditolak');
+      await _fetchOrder();
+    } catch (e) {
+      if (mounted) _showSnack('Gagal menolak pengajuan: ${e.toString()}', isError: true);
+    } finally {
+      if (mounted) setState(() => _isSubmittingCancelAction = false);
+    }
   }
 
   @override
@@ -887,7 +1181,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           isMobile ? 16 : 24,
                           72, // ruang buat top bar fixed
                           isMobile ? 16 : 24,
-                          _order != null && _errorMessage == null && !_isLoading ? 110 : 24,
+                          _order != null && _errorMessage == null && !_isLoading ? 150 : 24,
                         ),
                         child: _isLoading
                             ? _buildLoadingState(context)
@@ -914,7 +1208,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                         const SizedBox(height: AppTheme.md),
                                         _buildNotes(context, _order!),
                                       ],
-                                      if (_order!.status != 'completed' && _order!.status != 'cancelled') ...[
+                                      if (_order!.hasPendingCancellationRequest) ...[
+                                        const SizedBox(height: AppTheme.md),
+                                        _buildCancellationRequestBanner(context, _order!),
+                                      ] else if (_canCancelForStatus(_order!.status)) ...[
                                         const SizedBox(height: AppTheme.lg),
                                         _buildCancelLink(context),
                                       ],
@@ -1939,11 +2236,94 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   /// dipakai buat aksi maju status), tampil di akhir konten kalau order
   /// masih bisa dibatalkan.
   Widget _buildCancelLink(BuildContext context) {
+    final busy = _isUpdatingStatus || _isSubmittingCancelAction;
     return Center(
       child: TextButton.icon(
-        onPressed: _isUpdatingStatus ? null : _confirmCancelOrder,
+        onPressed: busy ? null : _confirmCancelOrder,
         icon: const Icon(Icons.cancel_outlined, size: 18, color: _cError),
-        label: Text('Batalkan Pesanan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13.5, color: _cError)),
+        label: Text(
+          _canCancelDirectly ? 'Batalkan Pesanan' : 'Ajukan Pembatalan',
+          style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13.5, color: _cError),
+        ),
+      ),
+    );
+  }
+
+  /// Banner pengajuan pembatalan yang masih menunggu approval. Buat
+  /// Admin/Owner/Manager: tampil tombol Setujui/Tolak. Buat yang
+  /// mengajukan (employee) atau role lain: cuma info status, gak ada
+  /// tombol aksi.
+  Widget _buildCancellationRequestBanner(BuildContext context, _OrderDetailData order) {
+    final request = order.cancellationRequest;
+    if (request == null) return const SizedBox.shrink();
+    final busy = _isUpdatingStatus || _isSubmittingCancelAction;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cYellowBg,
+        borderRadius: BorderRadius.circular(_rLg),
+        border: Border.all(color: _cYellowText.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.hourglass_top_rounded, size: 18, color: _cYellowText),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Menunggu Persetujuan Pembatalan',
+                  style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13.5, color: _cYellowText),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Diajukan oleh ${request.requestedByName.isNotEmpty ? request.requestedByName : 'Karyawan'}',
+            style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600, color: _cOnSurfaceVariant),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Alasan: ${request.reason}',
+            style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant, height: 1.5),
+          ),
+          if (_canCancelDirectly) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: busy ? null : () => _rejectCancellationRequest(order),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _cOnSurfaceVariant,
+                      side: BorderSide(color: _cOutlineVariant),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rXl)),
+                    ),
+                    child: Text('Tolak', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: busy ? null : () => _approveCancellationRequest(order),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _cError,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rXl)),
+                    ),
+                    child: busy
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Text('Setujui', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -1954,7 +2334,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget _buildBottomActionBar(BuildContext context, _OrderDetailData order) {
     final nextStatus = _nextStatus(order.status);
     final nextLabel = _nextStatusButtonLabel(order.status);
-    final canCancel = order.status != 'completed' && order.status != 'cancelled';
 
     return Container(
       decoration: BoxDecoration(
@@ -1995,7 +2374,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton.icon(
-                      onPressed: _isUpdatingStatus ? null : () => _handleUpdateStatus(nextStatus, note: nextLabel),
+                      onPressed: (_isUpdatingStatus || order.hasPendingCancellationRequest)
+                          ? null
+                          : () => _handleUpdateStatus(nextStatus, note: nextLabel),
                       icon: _isUpdatingStatus
                           ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : const Icon(Icons.update, size: 18),
