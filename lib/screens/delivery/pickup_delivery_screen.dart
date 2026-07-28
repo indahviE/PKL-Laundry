@@ -20,72 +20,49 @@ import '../orders/create_order_screen.dart' show OrderItemForm;
 // TODO: sesuaikan path ini kalau lokasi filenya berbeda di project kamu.
 import 'create_delivery_screen.dart';
 
-// ============================================
-// DESIGN TOKENS (disamakan persis dengan OrdersListScreen / referensi
-// desain code.html) - di-hardcode di sini (bukan pakai AppTheme) supaya
-// layar Antar Jemput & layar Buat Jadwal (CreateDeliveryScheduleScreen)
-// terasa 1 tema yang sama, konsisten dengan daftar pesanan.
-// ============================================
-const Color _cSurface = Color(0xFFFBF9F8);
-const Color _cCard = Color(0xFFFFFFFF);
-const Color _cOnSurface = Color(0xFF1B1C1C);
-const Color _cOnSurfaceVariant = Color(0xFF404752);
-const Color _cOutline = Color(0xFF707883);
-const Color _cOutlineVariant = Color(0xFFBFC7D4);
-const Color _cPrimary = Color(0xFF0061A4);
-const Color _cPrimaryContainer = Color(0xFF2196F3);
-const Color _cSurfaceContainerHighest = Color(0xFFE4E2E1);
-const Color _cSecondaryContainer = Color(0xFFE0E3E6);
-const Color _cOnSecondaryContainer = Color(0xFF626567);
-const Color _cError = Color(0xFFBA1A1A);
+/// Local design tokens matching the new "NetWash Utility System" design.
+/// Disamakan dengan ServicesListScreen supaya seluruh alur Antar Jemput
+/// (daftar + jadwalkan) senada dengan Kelola Layanan: kanvas abu kebiruan,
+/// kartu putih dengan shadow lembut, dan font Be Vietnam Pro.
+class _DS {
+  static const canvas = Color(0xFFF5F7FA);
+  static const surface = Colors.white;
+  static const onSurface = Color(0xFF1B1C1C);
+  static const onSurfaceVariant = Color(0xFF404752);
+  static const outlineVariant = Color(0xFFBFC7D4);
 
-/// Palet warna per kategori logistik, memakai skema warna status yang
-/// sama seperti chip filter & pill status di OrdersListScreen (ungu/biru/
-/// hijau), supaya kedua layar terasa satu bahasa visual.
-class _CatStyle {
-  final Color chipBg;
-  final Color chipBorder;
-  final Color chipText;
-  final Color pillBg;
-  final Color pillText;
+  static const navy = Color(0xFF0B3B66);
+  static const primary = Color(0xFF0061A4);
+  static const error = Color(0xFFDC2626);
 
-  const _CatStyle({
-    required this.chipBg,
-    required this.chipBorder,
-    required this.chipText,
-    required this.pillBg,
-    required this.pillText,
-  });
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static TextStyle headlineMd({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
+        color: color ?? onSurface,
+        letterSpacing: -0.2,
+      );
+
+  static TextStyle bodyMd({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
+        fontSize: 14,
+        fontWeight: weight ?? FontWeight.w400,
+        color: color ?? onSurface,
+      );
+
+  static TextStyle bodySm({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
+        fontSize: 12.5,
+        fontWeight: weight ?? FontWeight.w400,
+        color: color ?? onSurfaceVariant,
+      );
 }
 
-const _catPurple = _CatStyle(
-  chipBg: Color(0xFFFAF5FF),
-  chipBorder: Color(0xFFE9D5FF),
-  chipText: Color(0xFF6B21A8),
-  pillBg: Color(0xFFF3E8FF),
-  pillText: Color(0xFF7E22CE),
-);
-const _catBlue = _CatStyle(
-  chipBg: Color(0xFFEFF6FF),
-  chipBorder: Color(0xFFBFDBFE),
-  chipText: Color(0xFF1E40AF),
-  pillBg: Color(0xFFDBEAFE),
-  pillText: Color(0xFF1D4ED8),
-);
-const _catGreen = _CatStyle(
-  chipBg: Color(0xFFF0FDF4),
-  chipBorder: Color(0xFFBBF7D0),
-  chipText: Color(0xFF166534),
-  pillBg: Color(0xFFDCFCE7),
-  pillText: Color(0xFF15803D),
-);
-const _catNeutral = _CatStyle(
-  chipBg: Color(0xFFE4E2E1),
-  chipBorder: Colors.transparent,
-  chipText: Color(0xFF404752),
-  pillBg: Color(0xFFE4E2E1),
-  pillText: Color(0xFF404752),
-);
 
 /// Kategori tampilan untuk 1 order di layar Antar Jemput.
 /// Ini turunan dari orderType/deliveryType/status/pickupDate/deliveryDate -
@@ -108,6 +85,13 @@ class PickupDeliveryScreen extends ConsumerStatefulWidget {
 }
 
 class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
+  // Warna aksen kategori - dipakai juga oleh CreateDeliveryScheduleScreen
+  // (mode toggle & ringkasan jadwal di sana pakai hex yang sama persis)
+  // supaya kedua layar terasa 1 tema: ungu = penjemputan, warna primer =
+  // pengantaran, hijau = self-service.
+  static const _pickupAccent = Color(0xFFB197FC);
+  static const _selfServiceAccent = Color(0xFF51CF66);
+
   late TextEditingController _searchController;
   String _selectedFilter = 'all';
   String? _updatingOrderId;
@@ -158,20 +142,18 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
     return _LogisticsCategory.other;
   }
 
-  _CatStyle _categoryStyle(_LogisticsCategory category) {
+  Color _categoryColor(_LogisticsCategory category) {
     switch (category) {
       case _LogisticsCategory.needsPickup:
-        return _catPurple;
+        return _pickupAccent;
       case _LogisticsCategory.needsDelivery:
-        return _catBlue;
+        return _DS.primary;
       case _LogisticsCategory.selfService:
-        return _catGreen;
+        return _selfServiceAccent;
       case _LogisticsCategory.other:
-        return _catNeutral;
+        return _DS.onSurfaceVariant;
     }
   }
-
-  Color _categoryColor(_LogisticsCategory category) => _categoryStyle(category).chipText;
 
   IconData _categoryIcon(_LogisticsCategory category) {
     switch (category) {
@@ -291,9 +273,9 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => const _AddScheduleModeSheet(
-        pickupAccent: _catPurple,
-        deliveryAccent: _catBlue,
+      builder: (ctx) => _AddScheduleModeSheet(
+        pickupAccent: _pickupAccent,
+        deliveryAccent: _DS.primary,
       ),
     );
 
@@ -309,7 +291,7 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message, style: GoogleFonts.beVietnamPro()),
-        backgroundColor: isError ? _cError : null,
+        backgroundColor: isError ? _DS.error : null,
       ),
     );
   }
@@ -338,10 +320,10 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
     final ordersAsync = ref.watch(_allOrdersStreamProvider);
 
     return Scaffold(
-      backgroundColor: _cSurface,
+      backgroundColor: _DS.canvas,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _handleAddSchedule,
-        backgroundColor: _cPrimaryContainer,
+        backgroundColor: _DS.primary,
         foregroundColor: Colors.white,
         elevation: 2,
         icon: const Icon(Icons.add_rounded),
@@ -378,7 +360,7 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
                           data: (orders) => _buildContent(context, isMobile, orders),
                           loading: () => const Padding(
                             padding: EdgeInsets.symmetric(vertical: AppTheme.xxl),
-                            child: Center(child: CircularProgressIndicator(color: _cPrimary)),
+                            child: Center(child: CircularProgressIndicator()),
                           ),
                           error: (e, _) => _buildErrorState(context, e.toString()),
                         ),
@@ -411,22 +393,39 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
     );
   }
 
-  /// Header - disamakan persis dengan LaundriesListScreen: tombol kembali
-  /// polos (InkWell + Icon arrow_back_rounded warna teks utama, bukan biru,
-  /// tanpa kotak/gradient), judul pakai warna teks utama (netral, bukan
-  /// primary), background halaman juga sama persis (_cSurface #FBF9F8).
+  /// Header - di mobile ditumpuk vertikal (icon+judul di atas, tombol full
+  /// width di bawah) supaya tidak overflow horizontal, karena subtitle
+  /// tidak punya ruang wrap saat berbagi baris dengan tombol di layar sempit.
   Widget _buildHeader(BuildContext context, bool isMobile) {
-    return Row(
+    final titleRow = Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         InkWell(
           onTap: () => Navigator.of(context).maybePop(),
-          borderRadius: BorderRadius.circular(999),
-          child: const Padding(
-            padding: EdgeInsets.all(6),
-            child: Icon(Icons.arrow_back_rounded, color: _cOnSurface, size: 22),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 40,
+            height: 40,
+            margin: const EdgeInsets.only(right: 12),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _DS.surface,
+              shape: BoxShape.circle,
+              boxShadow: _DS.cardShadow,
+            ),
+            child: const Icon(Icons.arrow_back_rounded, size: 20, color: _DS.navy),
           ),
         ),
-        const SizedBox(width: 4),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD1E4FF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.local_shipping_rounded, color: _DS.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,113 +435,108 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
                 'Antar Jemput',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.beVietnamPro(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: _cOnSurface),
+                style: _DS.headlineMd(color: _DS.navy),
               ),
               const SizedBox(height: 2),
               Text(
                 'Kelola jemput, antar & ambil sendiri',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w400, color: _cOnSurfaceVariant),
+                style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
               ),
             ],
           ),
         ),
       ],
     );
+
+    if (isMobile) {
+      return titleRow;
+    }
+
+    return titleRow;
   }
 
-  /// Search bar - senada dengan OrdersListScreen: border tipis outline-
-  /// variant, tanpa shadow, tinggi natural mengikuti TextField isDense.
   Widget _buildSearchBar(BuildContext context) {
     return Container(
-      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: _cCard,
-        border: Border.all(color: _cOutlineVariant),
-        borderRadius: BorderRadius.circular(12),
+        color: _DS.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: [BoxShadow(color: _DS.primary.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 4))],
       ),
       child: TextField(
         controller: _searchController,
-        cursorColor: _cPrimary,
-        style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _cOnSurface),
+        style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
         decoration: InputDecoration(
-          isDense: true,
           hintText: 'Cari nama pelanggan atau no. pesanan...',
-          hintStyle: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _cOutline),
-          prefixIcon: const Icon(Icons.search, size: 20, color: _cOutline),
-          prefixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 20),
+          hintStyle: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurfaceVariant),
+          prefixIcon: Icon(Icons.search, color: _DS.onSurfaceVariant),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 18, color: _cOutline),
+                  icon: Icon(Icons.close_rounded, size: 18, color: _DS.onSurfaceVariant),
                   onPressed: () => setState(() => _searchController.clear()),
                 )
               : null,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          disabledBorder: InputBorder.none,
-          filled: false,
-          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 0),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg), borderSide: BorderSide.none),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg), borderSide: BorderSide.none),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderSide: BorderSide(color: _DS.primary, width: 1.5),
+          ),
+          filled: true,
+          fillColor: _DS.surface,
+          contentPadding: const EdgeInsets.symmetric(horizontal: AppTheme.lg, vertical: AppTheme.md),
         ),
       ),
     );
   }
 
-  /// Filter chip - bertona warna sesuai kategori (persis pola chip status
-  /// di OrdersListScreen): "Semua" netral, sisanya pakai chipBg/chipBorder/
-  /// chipText dari _CatStyle masing-masing kategori.
   Widget _buildFilterChips(BuildContext context) {
-    final filters = <(String, String, IconData, _CatStyle)>[
-      ('all', 'Semua', Icons.all_inbox_outlined, _catNeutral),
-      ('needs_pickup', 'Perlu dijemput', Icons.call_received_rounded, _catPurple),
-      ('needs_delivery', 'Siap diantar', Icons.call_made_rounded, _catBlue),
-      ('self_service', 'Ambil sendiri', Icons.storefront_outlined, _catGreen),
-      ('other', 'Lainnya', Icons.more_horiz_rounded, _catNeutral),
+    final filters = [
+      ('all', 'Semua', Icons.all_inbox_outlined, _DS.onSurfaceVariant),
+      ('needs_pickup', 'Perlu dijemput', Icons.call_received_rounded, _pickupAccent),
+      ('needs_delivery', 'Siap diantar', Icons.call_made_rounded, _DS.primary),
+      ('self_service', 'Ambil sendiri', Icons.storefront_outlined, _selfServiceAccent),
+      ('other', 'Lainnya', Icons.more_horiz_rounded, _DS.onSurfaceVariant),
     ];
 
     return SizedBox(
       height: 38,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
         itemCount: filters.length,
         separatorBuilder: (_, __) => const SizedBox(width: AppTheme.sm),
         itemBuilder: (context, index) {
-          final (id, label, icon, style) = filters[index];
+          final (id, label, icon, accent) = filters[index];
           final isSelected = _selectedFilter == id;
-          final isNeutral = style == _catNeutral;
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => setState(() => _selectedFilter = id),
-              borderRadius: BorderRadius.circular(999),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: AppTheme.sm),
-                decoration: BoxDecoration(
-                  color: isSelected ? style.chipBg : _cCard,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: isSelected ? (isNeutral ? _cOutlineVariant : style.chipBorder) : _cOutlineVariant,
-                    width: isSelected ? 1.4 : 1,
-                  ),
+          return InkWell(
+            onTap: () => setState(() => _selectedFilter = id),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: AppTheme.sm),
+              decoration: BoxDecoration(
+                color: isSelected ? accent.withOpacity(0.12) : _DS.surface,
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                border: Border.all(
+                  color: isSelected ? accent.withOpacity(0.45) : _DS.outlineVariant,
+                  width: isSelected ? 1.4 : 1,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 15, color: isSelected ? style.chipText : _cOutline),
-                    const SizedBox(width: 6),
-                    Text(
-                      label,
-                      style: GoogleFonts.beVietnamPro(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? style.chipText : _cOnSurfaceVariant,
-                      ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 15, color: isSelected ? accent : _DS.onSurfaceVariant),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: GoogleFonts.beVietnamPro(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? accent : _DS.onSurfaceVariant,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
@@ -556,9 +550,9 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
   /// otomatis pindah baris kalau ruangnya kurang.
   Widget _buildStatsSummary(BuildContext context, int needsPickup, int needsDelivery, int selfService) {
     final stats = [
-      _StatCard(title: 'Perlu Dijemput', value: '$needsPickup', icon: Icons.call_received_rounded, color: _catPurple.chipText),
-      _StatCard(title: 'Siap Diantar', value: '$needsDelivery', icon: Icons.call_made_rounded, color: _catBlue.chipText),
-      _StatCard(title: 'Ambil Sendiri', value: '$selfService', icon: Icons.storefront_outlined, color: _catGreen.chipText),
+      _StatCard(title: 'Perlu Dijemput', value: '$needsPickup', icon: Icons.call_received_rounded, color: _pickupAccent),
+      _StatCard(title: 'Siap Diantar', value: '$needsDelivery', icon: Icons.call_made_rounded, color: _DS.primary),
+      _StatCard(title: 'Ambil Sendiri', value: '$selfService', icon: Icons.storefront_outlined, color: _selfServiceAccent),
     ];
 
     return LayoutBuilder(
@@ -587,24 +581,24 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
             Container(
               width: 84,
               height: 84,
-              decoration: const BoxDecoration(color: _cSecondaryContainer, shape: BoxShape.circle),
-              child: const Icon(Icons.local_shipping_outlined, size: 40, color: _cOnSecondaryContainer),
+              decoration: BoxDecoration(color: _DS.primary.withOpacity(0.08), shape: BoxShape.circle),
+              child: Icon(Icons.local_shipping_outlined, size: 40, color: _DS.primary.withOpacity(0.6)),
             ),
             const SizedBox(height: AppTheme.lg),
-            Text('Tidak ada pesanan', style: GoogleFonts.beVietnamPro(fontSize: 15, fontWeight: FontWeight.w600, color: _cOnSurface)),
+            Text('Tidak ada pesanan', style: GoogleFonts.beVietnamPro(fontSize: 15, fontWeight: FontWeight.w600, color: _DS.onSurface)),
             const SizedBox(height: AppTheme.sm),
             Text(
               'Belum ada pesanan yang cocok dengan filter ini',
               textAlign: TextAlign.center,
-              style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
+              style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
             ),
             const SizedBox(height: AppTheme.lg),
             OutlinedButton.icon(
               onPressed: _handleAddSchedule,
-              icon: const Icon(Icons.add_rounded, size: 18, color: _cPrimary),
-              label: Text('Tambah Jadwal', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13, color: _cPrimary)),
+              icon: Icon(Icons.add_rounded, size: 18, color: _DS.primary),
+              label: Text('Tambah Jadwal', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13, color: _DS.primary)),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: _cPrimary),
+                side: BorderSide(color: _DS.primary.withOpacity(0.4)),
                 padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg, vertical: AppTheme.sm),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
               ),
@@ -622,9 +616,9 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline_rounded, size: 40, color: _cError),
+            Icon(Icons.error_outline_rounded, size: 40, color: _DS.error),
             const SizedBox(height: AppTheme.md),
-            Text(message, textAlign: TextAlign.center, style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant)),
+            Text(message, textAlign: TextAlign.center, style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant)),
           ],
         ),
       ),
@@ -636,15 +630,12 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
       children: List.generate(orders.length, (index) {
         final order = orders[index];
         final category = _categorize(order);
-        final style = _categoryStyle(category);
         return Column(
           children: [
             _OrderLogisticsCard(
               order: order,
               category: category,
-              categoryColor: style.chipText,
-              categoryPillBg: style.pillBg,
-              categoryPillText: style.pillText,
+              categoryColor: _categoryColor(category),
               categoryIcon: _categoryIcon(category),
               categoryLabel: category == _LogisticsCategory.other ? _fallbackStatusLabel(order.status) : _categoryLabel(category),
               isUpdating: _updatingOrderId == order.id,
@@ -670,8 +661,8 @@ final _allOrdersStreamProvider = StreamProvider.autoDispose<List<Order>>((ref) {
 /// supaya pemanggil bisa langsung push ke CreateDeliveryScheduleScreen
 /// dengan initialMode yang sesuai.
 class _AddScheduleModeSheet extends StatelessWidget {
-  final _CatStyle pickupAccent;
-  final _CatStyle deliveryAccent;
+  final Color pickupAccent;
+  final Color deliveryAccent;
 
   const _AddScheduleModeSheet({required this.pickupAccent, required this.deliveryAccent});
 
@@ -684,9 +675,9 @@ class _AddScheduleModeSheet extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: _cCard,
-          borderRadius: BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: _DS.surface,
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
         ),
         padding: EdgeInsets.fromLTRB(24, 16, 24, 16 + MediaQuery.of(context).viewPadding.bottom),
         child: SingleChildScrollView(
@@ -699,24 +690,24 @@ class _AddScheduleModeSheet extends StatelessWidget {
                   width: 44,
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(color: _cOutlineVariant, borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(color: _DS.outlineVariant, borderRadius: BorderRadius.circular(4)),
                 ),
               ),
               Text(
                 'Jadwalkan Antar Jemput',
-                style: GoogleFonts.beVietnamPro(fontSize: 17, fontWeight: FontWeight.w700, color: _cOnSurface),
+                style: GoogleFonts.beVietnamPro(fontSize: 17, fontWeight: FontWeight.w700, color: _DS.onSurface),
               ),
               const SizedBox(height: 4),
               Text(
                 'Pilih mode jadwal yang mau dibuat',
-                style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
+                style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
               ),
               const SizedBox(height: AppTheme.lg),
               _modeTile(
                 context,
                 value: 'penjemputan',
                 icon: Icons.call_received_rounded,
-                style: pickupAccent,
+                accent: pickupAccent,
                 title: 'Jadwalkan Penjemputan',
                 subtitle: 'Untuk pesanan yang menunggu dijemput',
               ),
@@ -725,7 +716,7 @@ class _AddScheduleModeSheet extends StatelessWidget {
                 context,
                 value: 'pengantaran',
                 icon: Icons.call_made_rounded,
-                style: deliveryAccent,
+                accent: deliveryAccent,
                 title: 'Jadwalkan Pengantaran',
                 subtitle: 'Untuk pesanan yang sudah siap diantar',
               ),
@@ -740,7 +731,7 @@ class _AddScheduleModeSheet extends StatelessWidget {
     BuildContext context, {
     required String value,
     required IconData icon,
-    required _CatStyle style,
+    required Color accent,
     required String title,
     required String subtitle,
   }) {
@@ -750,29 +741,29 @@ class _AddScheduleModeSheet extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppTheme.md),
         decoration: BoxDecoration(
-          color: style.chipBg,
+          color: accent.withOpacity(0.08),
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          border: Border.all(color: style.chipBorder),
+          border: Border.all(color: accent.withOpacity(0.25)),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: style.pillBg, shape: BoxShape.circle),
-              child: Icon(icon, size: 20, color: style.chipText),
+              decoration: BoxDecoration(color: accent.withOpacity(0.15), shape: BoxShape.circle),
+              child: Icon(icon, size: 20, color: accent),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w700, color: _cOnSurface)),
+                  Text(title, style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w700, color: _DS.onSurface)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _cOnSurfaceVariant)),
+                  Text(subtitle, style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _DS.onSurfaceVariant)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: style.chipText),
+            Icon(Icons.chevron_right_rounded, color: accent),
           ],
         ),
       ),
@@ -850,7 +841,7 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: Text('Pilih Layanan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _cOnSurface)),
+        title: Text('Pilih Layanan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurface)),
         content: SizedBox(
           width: double.maxFinite,
           child: _services.isEmpty
@@ -859,7 +850,7 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                   child: Text(
                     'Belum ada layanan aktif.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
+                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
                   ),
                 )
               : ListView.builder(
@@ -871,7 +862,7 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                     final suffix = service.pricingType == PricingType.perKg ? '/kg' : '/item';
                     return ListTile(
                       title: Text(service.name, style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w500)),
-                      subtitle: Text('${_formatCurrency(price)}$suffix', style: GoogleFonts.beVietnamPro(fontSize: 12, color: _cOnSurfaceVariant)),
+                      subtitle: Text('${_formatCurrency(price)}$suffix', style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant)),
                       onTap: () {
                         setState(() {
                           _items.add(
@@ -915,7 +906,7 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
   Future<void> _handleConfirm() async {
     if (_items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tambahkan minimal 1 item', style: GoogleFonts.beVietnamPro()), backgroundColor: _cError),
+        SnackBar(content: Text('Tambahkan minimal 1 item', style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
       );
       return;
     }
@@ -925,7 +916,7 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Isi berat (kg) untuk "${item.name}"', style: GoogleFonts.beVietnamPro()),
-            backgroundColor: _cError,
+            backgroundColor: _DS.error,
           ),
         );
         return;
@@ -960,7 +951,7 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal konfirmasi: $e', style: GoogleFonts.beVietnamPro()), backgroundColor: _cError),
+          SnackBar(content: Text('Gagal konfirmasi: $e', style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
         );
       }
     } finally {
@@ -974,9 +965,9 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
-        decoration: const BoxDecoration(
-          color: _cCard,
-          borderRadius: BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: _DS.surface,
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         child: SingleChildScrollView(
@@ -989,17 +980,17 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                   width: 44,
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(color: _cOutlineVariant, borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(color: _DS.outlineVariant, borderRadius: BorderRadius.circular(4)),
                 ),
               ),
               Text(
                 'Konfirmasi Jemput',
-                style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _cOnSurface),
+                style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _DS.onSurface),
               ),
               const SizedBox(height: 4),
               Text(
                 'Catat item & berat cucian ${widget.order.customerName ?? "pelanggan"} (${widget.order.orderNumber})',
-                style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
+                style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
               ),
               const SizedBox(height: 22),
 
@@ -1008,13 +999,13 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                 children: [
                   Text(
                     'Item Cucian',
-                    style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _cOnSurface),
+                    style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.onSurface),
                   ),
                   TextButton.icon(
                     onPressed: _isLoadingServices || _isSaving ? null : _pickService,
                     icon: const Icon(Icons.add, size: 16),
                     label: Text('Tambah', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 12.5)),
-                    style: TextButton.styleFrom(foregroundColor: _cPrimary),
+                    style: TextButton.styleFrom(foregroundColor: _DS.primary),
                   ),
                 ],
               ),
@@ -1023,22 +1014,22 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
               if (_isLoadingServices)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: _cPrimary)),
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                 )
               else if (_servicesError != null)
-                Text(_servicesError!, style: GoogleFonts.beVietnamPro(fontSize: 12, color: _cError))
+                Text(_servicesError!, style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.error))
               else if (_items.isEmpty)
                 Container(
                   padding: const EdgeInsets.all(AppTheme.md),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: _cSurfaceContainerHighest.withOpacity(0.5),
+                    color: _DS.primary.withOpacity(0.06),
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Text(
                     'Belum ada item. Tekan "Tambah" untuk memilih layanan.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
+                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
                   ),
                 )
               else
@@ -1051,9 +1042,8 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.md),
                       decoration: BoxDecoration(
-                        color: _cSurface,
+                        color: _DS.canvas,
                         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                        border: Border.all(color: _cOutlineVariant.withOpacity(0.4)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1064,19 +1054,19 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                                 child: Text(
                                   item.name,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13, color: _cOnSurface),
+                                  style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13, color: _DS.onSurface),
                                 ),
                               ),
                               Text(
                                 _formatCurrency(item.subtotal),
-                                style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 12.5, color: _cPrimary),
+                                style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 12.5, color: _DS.primary),
                               ),
                               InkWell(
                                 onTap: !_isSaving ? () => _removeItem(index) : null,
                                 borderRadius: BorderRadius.circular(16),
-                                child: const Padding(
-                                  padding: EdgeInsets.only(left: 6),
-                                  child: Icon(Icons.close, size: 16, color: _cOutline),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: Icon(Icons.close, size: 16, color: _DS.onSurfaceVariant),
                                 ),
                               ),
                             ],
@@ -1087,7 +1077,7 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                             children: [
                               Text(
                                 isPerKg ? '${_formatCurrency(item.price)} / kg' : '${_formatCurrency(item.price)} / item',
-                                style: GoogleFonts.beVietnamPro(fontSize: 11, color: _cOutline),
+                                style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.onSurfaceVariant),
                               ),
                               isPerKg
                                   ? SizedBox(
@@ -1102,14 +1092,11 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                                         decoration: InputDecoration(
                                           isDense: true,
                                           suffixText: 'kg',
-                                          suffixStyle: GoogleFonts.beVietnamPro(fontSize: 11, color: _cOutline),
+                                          suffixStyle: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.onSurfaceVariant),
                                           contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                           filled: true,
-                                          fillColor: _cCard,
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                            borderSide: const BorderSide(color: _cOutlineVariant),
-                                          ),
+                                          fillColor: _DS.surface,
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                         ),
                                         onChanged: (val) {
                                           final parsed = double.tryParse(val.replaceAll(',', '.'));
@@ -1146,16 +1133,16 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                 }),
 
               const SizedBox(height: AppTheme.md),
-              Divider(color: _cOutlineVariant.withOpacity(0.6)),
+              Divider(color: _DS.outlineVariant.withOpacity(0.6)),
               const SizedBox(height: AppTheme.md),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Total', style: GoogleFonts.beVietnamPro(fontSize: 14.5, fontWeight: FontWeight.w700, color: _cOnSurface)),
+                  Text('Total', style: GoogleFonts.beVietnamPro(fontSize: 14.5, fontWeight: FontWeight.w700, color: _DS.onSurface)),
                   Text(
                     _formatCurrency(_subtotal),
-                    style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _cPrimary),
+                    style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _DS.primary),
                   ),
                 ],
               ),
@@ -1166,7 +1153,7 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _handleConfirm,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _cPrimaryContainer,
+                    backgroundColor: _DS.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
@@ -1256,7 +1243,7 @@ class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal konfirmasi: $e', style: GoogleFonts.beVietnamPro()), backgroundColor: _cError),
+          SnackBar(content: Text('Gagal konfirmasi: $e', style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
         );
       }
     } finally {
@@ -1269,9 +1256,9 @@ class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: _cCard,
-          borderRadius: BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: _DS.surface,
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         child: SingleChildScrollView(
@@ -1284,43 +1271,43 @@ class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
                   width: 44,
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(color: _cOutlineVariant, borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(color: _DS.outlineVariant, borderRadius: BorderRadius.circular(4)),
                 ),
               ),
               Text(
                 'Konfirmasi Antar',
-                style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _cOnSurface),
+                style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _DS.onSurface),
               ),
               const SizedBox(height: 4),
               Text(
                 'Antar cucian ${widget.order.customerName ?? "pelanggan"} (${widget.order.orderNumber})',
-                style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
+                style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
               ),
               const SizedBox(height: 22),
 
               Text(
                 'Kurir Bertugas (Opsional)',
-                style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _cOnSurface),
+                style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.onSurface),
               ),
               const SizedBox(height: AppTheme.sm),
 
               if (_isLoadingCouriers)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: _cPrimary)),
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                 )
               else if (_couriersError != null)
-                Text(_couriersError!, style: GoogleFonts.beVietnamPro(fontSize: 12, color: _cError))
+                Text(_couriersError!, style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.error))
               else if (_couriers.isEmpty)
                 Container(
                   padding: const EdgeInsets.all(AppTheme.md),
                   decoration: BoxDecoration(
-                    color: _cSurfaceContainerHighest.withOpacity(0.5),
+                    color: _DS.primary.withOpacity(0.06),
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Text(
                     'Belum ada karyawan dengan posisi "Kurir". Anda tetap bisa lanjut menandai order ini sudah diantar.',
-                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
+                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
                   ),
                 )
               else
@@ -1340,16 +1327,16 @@ class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
                   onChanged: _isSaving ? null : (val) => setState(() => _selectedCourier = val),
                   decoration: InputDecoration(
                     hintText: 'Pilih kurir',
-                    hintStyle: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _cOutline),
-                    prefixIcon: const Icon(Icons.two_wheeler_outlined, color: _cOutline, size: 20),
+                    hintStyle: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurfaceVariant),
+                    prefixIcon: Icon(Icons.two_wheeler_outlined, color: _DS.onSurfaceVariant, size: 20),
                     filled: true,
-                    fillColor: _cSurface,
+                    fillColor: _DS.canvas,
                     contentPadding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 14),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd), borderSide: const BorderSide(color: _cOutlineVariant)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd), borderSide: const BorderSide(color: _cOutlineVariant)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd), borderSide: BorderSide.none),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd), borderSide: BorderSide.none),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: const BorderSide(color: _cPrimary, width: 1.5),
+                      borderSide: BorderSide(color: _DS.primary, width: 1.5),
                     ),
                   ),
                 ),
@@ -1361,7 +1348,7 @@ class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _handleConfirm,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _cPrimaryContainer,
+                    backgroundColor: _DS.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
@@ -1402,18 +1389,17 @@ class _MiniQtyButton extends StatelessWidget {
         width: 22,
         height: 22,
         decoration: BoxDecoration(
-          color: isEnabled ? _cPrimaryContainer.withOpacity(0.12) : _cCard,
+          color: isEnabled ? _DS.primary.withOpacity(0.1) : _DS.surface,
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 13, color: isEnabled ? _cPrimaryContainer : _cOutline),
+        child: Icon(icon, size: 13, color: isEnabled ? _DS.primary : _DS.onSurfaceVariant),
       ),
     );
   }
 }
 
 /// Kartu ringkasan angka (perlu dijemput / siap diantar / ambil sendiri).
-/// Dibuat compact & modern dengan aksen warna lembut di ikon, shadow
-/// hitam tipis senada dengan _OrderCard di OrdersListScreen.
+/// Dibuat compact & modern dengan aksen warna lembut di ikon.
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
@@ -1427,10 +1413,9 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppTheme.md),
       decoration: BoxDecoration(
-        color: _cCard,
+        color: _DS.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: Colors.white.withOpacity(0.5)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: _DS.primary.withOpacity(0.06), blurRadius: 18, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1441,13 +1426,13 @@ class _StatCard extends StatelessWidget {
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(height: AppTheme.sm),
-          Text(value, style: GoogleFonts.beVietnamPro(fontSize: 18, fontWeight: FontWeight.w700, color: _cOnSurface)),
+          Text(value, style: GoogleFonts.beVietnamPro(fontSize: 18, fontWeight: FontWeight.w700, color: _DS.onSurface)),
           const SizedBox(height: 2),
           Text(
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _cOutline),
+            style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _DS.onSurfaceVariant),
           ),
         ],
       ),
@@ -1484,14 +1469,11 @@ class _Pill extends StatelessWidget {
 /// delivery_type (cuma menampilkan, tidak bisa diedit dari sini). Semua
 /// Text yang bisa panjang (nama pelanggan, order number, no. telepon)
 /// dibungkus Expanded/Flexible + ellipsis supaya tidak overflow di layar
-/// sempit. Ada aksen strip warna di kiri kartu sesuai kategori logistik,
-/// senada dengan shadow & radius card di OrdersListScreen.
+/// sempit. Ada aksen strip warna di kiri kartu sesuai kategori logistik.
 class _OrderLogisticsCard extends StatelessWidget {
   final Order order;
   final _LogisticsCategory category;
   final Color categoryColor;
-  final Color categoryPillBg;
-  final Color categoryPillText;
   final IconData categoryIcon;
   final String categoryLabel;
   final bool isUpdating;
@@ -1502,8 +1484,6 @@ class _OrderLogisticsCard extends StatelessWidget {
     required this.order,
     required this.category,
     required this.categoryColor,
-    required this.categoryPillBg,
-    required this.categoryPillText,
     required this.categoryIcon,
     required this.categoryLabel,
     required this.isUpdating,
@@ -1529,11 +1509,11 @@ class _OrderLogisticsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final typeLabel = order.needsPickup ? 'Jemput' : 'Walk-in';
     final typeIcon = order.needsPickup ? Icons.call_received_rounded : Icons.storefront_outlined;
-    final typeColor = order.needsPickup ? _catPurple.chipText : _cOutline;
+    final typeColor = order.needsPickup ? const Color(0xFFB197FC) : _DS.onSurfaceVariant;
 
     final deliveryLabel = order.needsDelivery ? 'Antar' : 'Ambil Sendiri';
     final deliveryIcon = order.needsDelivery ? Icons.call_made_rounded : Icons.storefront_outlined;
-    final deliveryColor = order.needsDelivery ? _catBlue.chipText : _catGreen.chipText;
+    final deliveryColor = order.needsDelivery ? _DS.primary : const Color(0xFF51CF66);
 
     final hasPhone = (order.customerPhone ?? '').isNotEmpty;
     final hasCourier = (order.courierName ?? '').isNotEmpty;
@@ -1542,10 +1522,9 @@ class _OrderLogisticsCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppTheme.radiusLg),
       child: Container(
         decoration: BoxDecoration(
-          color: _cCard,
+          color: _DS.surface,
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          border: Border.all(color: Colors.white.withOpacity(0.5)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: _DS.primary.withOpacity(0.06), blurRadius: 20, offset: const Offset(0, 6))],
         ),
         child: IntrinsicHeight(
           child: Row(
@@ -1571,14 +1550,14 @@ class _OrderLogisticsCard extends StatelessWidget {
                                   (order.customerName?.isNotEmpty ?? false) ? order.customerName! : 'Pelanggan',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14.5, color: _cOnSurface),
+                                  style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14.5, color: _DS.onSurface),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   order.orderNumber,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _cOutline),
+                                  style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _DS.onSurfaceVariant),
                                 ),
                               ],
                             ),
@@ -1587,19 +1566,19 @@ class _OrderLogisticsCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 6),
                             decoration: BoxDecoration(
-                              color: categoryPillBg,
-                              borderRadius: BorderRadius.circular(999),
+                              color: categoryColor.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(categoryIcon, size: 12, color: categoryPillText),
+                                Icon(categoryIcon, size: 12, color: categoryColor),
                                 const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
                                     categoryLabel,
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.beVietnamPro(fontSize: 10.5, fontWeight: FontWeight.w700, color: categoryPillText),
+                                    style: GoogleFonts.beVietnamPro(fontSize: 10.5, fontWeight: FontWeight.w700, color: categoryColor),
                                   ),
                                 ),
                               ],
@@ -1611,13 +1590,13 @@ class _OrderLogisticsCard extends StatelessWidget {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.phone_outlined, size: 13, color: _cOutline),
+                            Icon(Icons.phone_outlined, size: 13, color: _DS.onSurfaceVariant),
                             const SizedBox(width: 5),
                             Flexible(
                               child: Text(
                                 order.customerPhone!,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.beVietnamPro(fontSize: 12, color: _cOnSurfaceVariant),
+                                style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant),
                               ),
                             ),
                           ],
@@ -1631,15 +1610,15 @@ class _OrderLogisticsCard extends StatelessWidget {
                           _Pill(icon: typeIcon, label: typeLabel, color: typeColor),
                           _Pill(icon: deliveryIcon, label: deliveryLabel, color: deliveryColor),
                           if (hasCourier)
-                            _Pill(icon: Icons.two_wheeler_outlined, label: order.courierName!, color: _catGreen.chipText),
+                            _Pill(icon: Icons.two_wheeler_outlined, label: order.courierName!, color: const Color(0xFF51CF66)),
                         ],
                       ),
                       const SizedBox(height: AppTheme.md),
-                      Divider(height: 1, color: _cOutlineVariant.withOpacity(0.4)),
+                      Divider(height: 1, color: _DS.outlineVariant.withOpacity(0.6)),
                       const SizedBox(height: AppTheme.md),
                       Row(
                         children: [
-                          const Icon(Icons.schedule_outlined, size: 15, color: _cOutline),
+                          Icon(Icons.schedule_outlined, size: 15, color: _DS.onSurfaceVariant),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
@@ -1651,7 +1630,7 @@ class _OrderLogisticsCard extends StatelessWidget {
                               },
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _cOutline),
+                              style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _DS.onSurfaceVariant),
                             ),
                           ),
                         ],
@@ -1679,7 +1658,10 @@ class _OrderLogisticsCard extends StatelessWidget {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.check_circle_outline, size: 16),
+                                      Icon(
+                                        category == _LogisticsCategory.needsPickup ? Icons.check_circle_outline : Icons.check_circle_outline,
+                                        size: 16,
+                                      ),
                                       const SizedBox(width: 6),
                                       Flexible(
                                         child: Text(
