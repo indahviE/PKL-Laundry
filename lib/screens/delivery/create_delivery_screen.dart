@@ -12,6 +12,50 @@ import '../../repositories/order_repository.dart';
 // project kamu berbeda dari asumsi berikut.
 import '../customers/create_customer_screen.dart';
 
+/// Local design tokens matching the new "NetWash Utility System" design.
+/// Disamakan dengan ServicesListScreen supaya seluruh alur Antar Jemput
+/// (daftar + jadwalkan) senada dengan Kelola Layanan: kanvas abu kebiruan,
+/// kartu putih dengan shadow lembut, dan font Be Vietnam Pro.
+class _DS {
+  static const canvas = Color(0xFFF5F7FA);
+  static const surface = Colors.white;
+  static const onSurface = Color(0xFF1B1C1C);
+  static const onSurfaceVariant = Color(0xFF404752);
+  static const outlineVariant = Color(0xFFBFC7D4);
+
+  static const navy = Color(0xFF0B3B66);
+  static const primary = Color(0xFF0061A4);
+  static const error = Color(0xFFDC2626);
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static TextStyle headlineMd({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
+        color: color ?? onSurface,
+        letterSpacing: -0.2,
+      );
+
+  static TextStyle bodyMd({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
+        fontSize: 14,
+        fontWeight: weight ?? FontWeight.w400,
+        color: color ?? onSurface,
+      );
+
+  static TextStyle bodySm({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
+        fontSize: 12.5,
+        fontWeight: weight ?? FontWeight.w400,
+        color: color ?? onSurfaceVariant,
+      );
+}
+
+
 /// "Jadwalkan Antar Jemput" - layar untuk membuat RENCANA jadwal jemput
 /// atau antar untuk order yang sudah ada (dipilih dari daftar), lengkap
 /// dengan cabang, alamat, tanggal, jam & kurir. Ini BEDA dari
@@ -29,12 +73,12 @@ class CreateDeliveryScheduleScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliveryScheduleScreen> {
-  // Sama persis dengan warna kategori "Perlu Dijemput" / "Siap Diantar" di
-  // PickupDeliveryScreen, supaya kedua layar terasa 1 tema yang sama:
-  // ungu = penjemputan, warna primer = pengantaran.
+  // Sama persis dengan warna kategori "Perlu Dijemput" di PickupDeliveryScreen
+  // (ungu = penjemputan). Warna "pengantaran" sekarang ikut token _DS.primary
+  // di atas, sama seperti aksen biru yang dipakai OrdersListScreen.
   static const _pickupAccent = Color(0xFFB197FC);
 
-  Color get _modeAccent => _mode == 'penjemputan' ? _pickupAccent : AppTheme.primaryColor;
+  Color get _modeAccent => _mode == 'penjemputan' ? _pickupAccent : _DS.primary;
 
   late String _mode; // 'penjemputan' | 'pengantaran'
   final _addressController = TextEditingController();
@@ -132,11 +176,11 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: Text('Pilih Pesanan', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+        title: Text('Pilih Pesanan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurface)),
         content: SizedBox(
           width: double.maxFinite,
           child: error != null
-              ? Text(error, style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.errorColor))
+              ? Text(error, style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.error))
               : orders.isEmpty
                   ? Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -145,7 +189,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                             ? 'Tidak ada pesanan yang menunggu dijemput.'
                             : 'Tidak ada pesanan yang siap diantar.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+                        style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
                       ),
                     )
                   : ListView.builder(
@@ -156,9 +200,9 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                         return ListTile(
                           title: Text(
                             (order.customerName?.isNotEmpty ?? false) ? order.customerName! : 'Pelanggan',
-                            style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600),
+                            style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w600),
                           ),
-                          subtitle: Text(order.orderNumber, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+                          subtitle: Text(order.orderNumber, style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant)),
                           onTap: () {
                             setState(() => _selectedOrder = order);
                             Navigator.pop(dialogContext);
@@ -168,7 +212,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                     ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text('Tutup', style: GoogleFonts.poppins())),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text('Tutup', style: GoogleFonts.beVietnamPro())),
         ],
       ),
     );
@@ -261,8 +305,8 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: GoogleFonts.poppins()),
-        backgroundColor: isError ? AppTheme.errorColor : null,
+        content: Text(message, style: GoogleFonts.beVietnamPro()),
+        backgroundColor: isError ? _DS.error : null,
       ),
     );
   }
@@ -270,7 +314,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: _DS.canvas,
       body: SafeArea(
         child: Column(
           children: [
@@ -317,8 +361,8 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
 
   Widget _buildHeader(BuildContext context) {
     return Container(
-      color: AppTheme.cardColor,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      color: _DS.canvas,
+      padding: const EdgeInsets.fromLTRB(12, 16, 20, 12),
       child: Row(
         children: [
           InkWell(
@@ -328,14 +372,29 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
               width: 40,
               height: 40,
               alignment: Alignment.center,
-              child: Icon(Icons.arrow_back_rounded, size: 22, color: AppTheme.primaryColor),
+              decoration: BoxDecoration(
+                color: _DS.surface,
+                shape: BoxShape.circle,
+                boxShadow: _DS.cardShadow,
+              ),
+              child: const Icon(Icons.arrow_back_rounded, size: 20, color: _DS.navy),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 10),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD1E4FF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.event_available_rounded, color: _DS.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Jadwalkan Antar Jemput',
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
+              style: _DS.headlineMd(color: _DS.navy),
             ),
           ),
         ],
@@ -347,13 +406,14 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundColor,
+        color: _DS.canvas,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(color: _DS.outlineVariant.withOpacity(0.5)),
       ),
       child: Row(
         children: [
           Expanded(child: _modeButton('penjemputan', 'Penjemputan', Icons.call_received_rounded, _pickupAccent)),
-          Expanded(child: _modeButton('pengantaran', 'Pengantaran', Icons.call_made_rounded, AppTheme.primaryColor)),
+          Expanded(child: _modeButton('pengantaran', 'Pengantaran', Icons.call_made_rounded, _DS.primary)),
         ],
       ),
     );
@@ -378,14 +438,14 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: isSelected ? Colors.white : AppTheme.textSecondary),
+            Icon(icon, size: 15, color: isSelected ? Colors.white : _DS.onSurfaceVariant),
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.beVietnamPro(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
-                color: isSelected ? Colors.white : AppTheme.textSecondary,
+                color: isSelected ? Colors.white : _DS.onSurfaceVariant,
               ),
             ),
           ],
@@ -397,14 +457,14 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
   Widget _fieldLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 6),
-      child: Text(text, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondary)),
+      child: Text(text, style: GoogleFonts.beVietnamPro(fontSize: 12, fontWeight: FontWeight.w700, color: _DS.onSurfaceVariant)),
     );
   }
 
   BoxDecoration get _fieldBoxDecoration => BoxDecoration(
-        color: AppTheme.cardColor,
+        color: _DS.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: AppTheme.borderColor),
+        border: Border.all(color: _DS.outlineVariant),
       );
 
   Widget _buildOrderPicker() {
@@ -424,7 +484,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                   decoration: _fieldBoxDecoration,
                   child: Row(
                     children: [
-                      Icon(Icons.search_rounded, size: 20, color: AppTheme.textTertiary),
+                      Icon(Icons.search_rounded, size: 20, color: _DS.onSurfaceVariant),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -432,9 +492,9 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                               ? 'Cari pesanan...'
                               : '${_selectedOrder!.orderNumber} (${_selectedOrder!.customerName ?? "Pelanggan"})',
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.beVietnamPro(
                             fontSize: 13.5,
-                            color: _selectedOrder == null ? AppTheme.textTertiary : AppTheme.textPrimary,
+                            color: _selectedOrder == null ? _DS.onSurfaceVariant : _DS.onSurface,
                             fontWeight: _selectedOrder == null ? FontWeight.w400 : FontWeight.w600,
                           ),
                         ),
@@ -442,7 +502,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                       if (_isLoadingOrders)
                         const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                       else
-                        Icon(Icons.expand_more_rounded, color: AppTheme.textTertiary),
+                        Icon(Icons.expand_more_rounded, color: _DS.onSurfaceVariant),
                     ],
                   ),
                 ),
@@ -460,17 +520,17 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                   height: 52,
                   padding: const EdgeInsets.symmetric(horizontal: AppTheme.md),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    color: _DS.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.person_add_alt_1_rounded, size: 18, color: AppTheme.primaryColor),
+                      Icon(Icons.person_add_alt_1_rounded, size: 18, color: _DS.primary),
                       const SizedBox(width: 6),
                       Text(
                         'Baru',
-                        style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
+                        style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.primary),
                       ),
                     ],
                   ),
@@ -499,12 +559,12 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
           Container(
             padding: const EdgeInsets.all(AppTheme.md),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.06),
+              color: _DS.primary.withOpacity(0.06),
               borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             ),
             child: Text(
               'Belum ada cabang aktif. Tambahkan cabang terlebih dahulu di menu Cabang.',
-              style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+              style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant),
             ),
           )
         else
@@ -520,7 +580,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                           child: Text(
                             l.name,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(fontSize: 13.5),
+                            style: GoogleFonts.beVietnamPro(fontSize: 13.5),
                           ),
                         ))
                     .toList(),
@@ -532,8 +592,8 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                 }),
                 decoration: InputDecoration(
                   hintText: 'Pilih cabang',
-                  hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
-                  prefixIcon: Icon(Icons.storefront_outlined, size: 20, color: AppTheme.textTertiary),
+                  hintStyle: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
+                  prefixIcon: Icon(Icons.storefront_outlined, size: 20, color: _DS.onSurfaceVariant),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 14),
                 ),
@@ -555,13 +615,13 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
               padding: const EdgeInsets.only(left: 4, bottom: 6),
               child: Text(
                 'Alamat',
-                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondary),
+                style: GoogleFonts.beVietnamPro(fontSize: 12, fontWeight: FontWeight.w700, color: _DS.onSurfaceVariant),
               ),
             ),
             TextButton.icon(
               onPressed: () => _showSnack('Fitur pilih lokasi peta akan segera hadir'),
-              icon: Icon(Icons.location_on_outlined, size: 15, color: AppTheme.primaryColor),
-              label: Text('Pakai lokasi peta', style: GoogleFonts.poppins(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+              icon: Icon(Icons.location_on_outlined, size: 15, color: _DS.primary),
+              label: Text('Pakai lokasi peta', style: GoogleFonts.beVietnamPro(fontSize: 11.5, fontWeight: FontWeight.w700, color: _DS.primary)),
               style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
             ),
           ],
@@ -572,11 +632,11 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
           child: TextField(
             controller: _addressController,
             maxLines: 3,
-            style: GoogleFonts.poppins(fontSize: 13.5),
+            style: GoogleFonts.beVietnamPro(fontSize: 13.5),
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
               hintText: 'Jl. Kebayoran Lama No. 123, Jakarta Selatan...',
-              hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
+              hintStyle: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(AppTheme.md),
             ),
@@ -605,13 +665,13 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                       Expanded(
                         child: Text(
                           _formatDate(_selectedDate),
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.beVietnamPro(
                             fontSize: 13,
-                            color: _selectedDate == null ? AppTheme.textTertiary : AppTheme.textPrimary,
+                            color: _selectedDate == null ? _DS.onSurfaceVariant : _DS.onSurface,
                           ),
                         ),
                       ),
-                      Icon(Icons.calendar_today_outlined, size: 16, color: AppTheme.textTertiary),
+                      Icon(Icons.calendar_today_outlined, size: 16, color: _DS.onSurfaceVariant),
                     ],
                   ),
                 ),
@@ -636,13 +696,13 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                       Expanded(
                         child: Text(
                           _formatTime(_selectedTime),
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.beVietnamPro(
                             fontSize: 13,
-                            color: _selectedTime == null ? AppTheme.textTertiary : AppTheme.textPrimary,
+                            color: _selectedTime == null ? _DS.onSurfaceVariant : _DS.onSurface,
                           ),
                         ),
                       ),
-                      Icon(Icons.schedule_outlined, size: 16, color: AppTheme.textTertiary),
+                      Icon(Icons.schedule_outlined, size: 16, color: _DS.onSurfaceVariant),
                     ],
                   ),
                 ),
@@ -670,12 +730,12 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
           Container(
             padding: const EdgeInsets.all(AppTheme.md),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.06),
+              color: _DS.primary.withOpacity(0.06),
               borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             ),
             child: Text(
               'Belum ada karyawan dengan posisi "Kurir". Anda tetap bisa menyimpan jadwal tanpa memilih kurir.',
-              style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+              style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant),
             ),
           )
         else
@@ -691,15 +751,15 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                           child: Text(
                             c.fullName.isNotEmpty ? c.fullName : c.employeeCode,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(fontSize: 13.5),
+                            style: GoogleFonts.beVietnamPro(fontSize: 13.5),
                           ),
                         ))
                     .toList(),
                 onChanged: (val) => setState(() => _selectedCourier = val),
                 decoration: InputDecoration(
                   hintText: 'Cari kurir terdekat...',
-                  hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
-                  prefixIcon: Icon(Icons.delivery_dining_outlined, size: 20, color: AppTheme.textTertiary),
+                  hintStyle: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
+                  prefixIcon: Icon(Icons.delivery_dining_outlined, size: 20, color: _DS.onSurfaceVariant),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 14),
                 ),
@@ -711,7 +771,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
           padding: const EdgeInsets.only(left: 4),
           child: Text(
             'Kurir aktif dengan posisi "Kurir" ditampilkan di daftar ini.',
-            style: GoogleFonts.poppins(fontSize: 11, fontStyle: FontStyle.italic, color: AppTheme.textTertiary),
+            style: GoogleFonts.beVietnamPro(fontSize: 11, fontStyle: FontStyle.italic, color: _DS.onSurfaceVariant),
           ),
         ),
       ],
@@ -728,10 +788,10 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
           child: TextField(
             controller: _notesController,
             maxLines: 3,
-            style: GoogleFonts.poppins(fontSize: 13.5),
+            style: GoogleFonts.beVietnamPro(fontSize: 13.5),
             decoration: InputDecoration(
               hintText: 'Contoh: Titipkan di satpam, pagar warna hitam...',
-              hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
+              hintStyle: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(AppTheme.md),
             ),
@@ -755,9 +815,9 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     return Container(
       padding: const EdgeInsets.all(AppTheme.md),
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
+        color: _DS.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: AppTheme.borderColor.withOpacity(0.5)),
+        border: Border.all(color: _DS.outlineVariant.withOpacity(0.5)),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Column(
@@ -765,7 +825,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
         children: [
           Text(
             'RINGKASAN JADWAL',
-            style: GoogleFonts.poppins(fontSize: 11.5, fontWeight: FontWeight.w700, color: _modeAccent, letterSpacing: 0.4),
+            style: GoogleFonts.beVietnamPro(fontSize: 11.5, fontWeight: FontWeight.w700, color: _modeAccent, letterSpacing: 0.4),
           ),
           const SizedBox(height: AppTheme.md),
           Row(
@@ -777,16 +837,16 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                    Text(name, style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w600, color: _DS.onSurface)),
                     const SizedBox(height: 2),
-                    Text(address, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+                    Text(address, style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant)),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppTheme.md),
-          Divider(color: AppTheme.borderColor.withOpacity(0.6), height: 1),
+          Divider(color: _DS.outlineVariant.withOpacity(0.6), height: 1),
           const SizedBox(height: AppTheme.md),
           Row(
             children: [
@@ -796,11 +856,11 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(schedule, style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                    Text(schedule, style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w600, color: _DS.onSurface)),
                     const SizedBox(height: 2),
                     Text(
                       branchLabel != null ? 'Mode: $modeLabel • $branchLabel' : 'Mode: $modeLabel',
-                      style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                      style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -813,7 +873,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
   }
 
   Widget _summaryIcon(IconData icon, {Color? color}) {
-    final accent = color ?? AppTheme.primaryColor;
+    final accent = color ?? _DS.primary;
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(color: accent.withOpacity(0.1), shape: BoxShape.circle),
@@ -825,8 +885,8 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        border: Border(top: BorderSide(color: AppTheme.borderColor)),
+        color: _DS.surface,
+        border: Border(top: BorderSide(color: _DS.outlineVariant)),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, -4))],
       ),
       child: Center(
@@ -838,14 +898,14 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
             child: ElevatedButton(
               onPressed: _isSaving ? null : _handleSave,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: _DS.primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
               ),
               child: _isSaving
                   ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('Simpan Jadwal', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700)),
+                  : Text('Simpan Jadwal', style: GoogleFonts.beVietnamPro(fontSize: 15, fontWeight: FontWeight.w700)),
             ),
           ),
         ),

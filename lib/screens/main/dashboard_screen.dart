@@ -22,11 +22,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static Color get primaryBlue => AppTheme.primaryColor;
   static Color get deepBlue => AppTheme.primaryColor.withOpacity(0.85);
   static Color get textBlue => AppTheme.primaryColor;
-  // Disamain persis dengan _cSurface di order_list_screen.dart (#FBF9F8),
-  // supaya warna canvas kedua layar konsisten — sebelumnya pakai
-  // AppTheme.backgroundColor yang keliatan agak kebiruan.
-  static const Color bgColor = Color(0xFFFBF9F8);
-  static Color get cardColor => AppTheme.cardColor;
+  // Disamain dengan _DS.canvas di services_list_screen.dart (#F5F7FA),
+  // supaya warna canvas dashboard konsisten sama halaman Layanan —
+  // sebelumnya pakai #FBF9F8 yang keliatan agak krem/beda nuansa.
+  static const Color bgColor = Color(0xFFF5F7FA);
+  // Disamain dengan _DS.surface di services_list_screen.dart (Colors.white),
+  // supaya card di dashboard & halaman Layanan senada persis.
+  static const Color cardColor = Colors.white;
   static Color get textPrimary => AppTheme.textPrimary;
   static Color get textSecondary => AppTheme.textSecondary;
   static Color get textTertiary => AppTheme.textTertiary;
