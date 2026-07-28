@@ -8,6 +8,34 @@ import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../customers/create_customer_screen.dart';
 
+// ============================================
+// DESIGN TOKENS — disalin persis dari order_list_screen.dart supaya
+// filter cabang & filter status di sini punya bentuk dan warna yang
+// sama persis dengan halaman Order List.
+// ============================================
+const Color _cCard = Color(0xFFFFFFFF);
+const Color _cOnSurface = Color(0xFF1B1C1C);
+const Color _cOnSurfaceVariant = Color(0xFF404752);
+const Color _cOutlineVariant = Color(0xFFBFC7D4);
+// FIX: sebelumnya sempat kepakai _cPrimaryContainer (#2196F3, terlalu
+// terang). Chip cabang terpilih di order_list_screen.dart pakai _cPrimary
+// (#0061A4, lebih gelap/pekat) — disamain ke situ.
+const Color _cPrimary = Color(0xFF0061A4);
+const Color _cSurfaceContainerHighest = Color(0xFFE4E2E1); // chip "Semua"
+
+/// Warna chip status "Aktif" — hijau, sama persis dengan _statusGreen
+/// (status Selesai) di order_list_screen.dart.
+const Color _cActiveChipBg = Color(0xFFF0FDF4);
+const Color _cActiveChipBorder = Color(0xFFBBF7D0);
+const Color _cActiveChipText = Color(0xFF166534);
+
+/// Warna chip status "Tidak Aktif" — merah, sama persis dengan
+/// _statusRed (status Dibatalkan) di order_list_screen.dart. Selaras
+/// dengan DESIGN.md: "Red: ... or inactive accounts."
+const Color _cInactiveChipBg = Color(0xFFFEF2F2);
+const Color _cInactiveChipBorder = Color(0xFFFECACA);
+const Color _cInactiveChipText = Color(0xFF991B1B);
+
 /// Opsi cabang buat filter, di-fetch dari users/{uid}/laundries
 /// (sesuai Blueprint §3.2.3). Pola sama persis dengan _LaundryOption di
 /// CreateOrderScreen / CreateCustomerScreen.
@@ -260,9 +288,10 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      // Disamain persis dengan _cSurface di order_list_screen.dart
-      // (#FBF9F8) — sebelumnya AppTheme.backgroundColor keliatan kebiruan.
-      backgroundColor: const Color(0xFFFBF9F8),
+      // Disamain persis dengan _DS.canvas di services_list_screen.dart
+      // (#F5F7FA) — sebelumnya sempat disamain ke #FBF9F8 (order_list),
+      // sekarang diganti ke referensi services sesuai permintaan terbaru.
+      backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -286,11 +315,11 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                         const SizedBox(height: 22),
                         _buildSearchBar(context, l10n),
                         const SizedBox(height: AppTheme.lg),
-                        _buildFilterButtons(context, l10n),
                         if (_showLaundryFilter) ...[
-                          const SizedBox(height: AppTheme.md),
                           _buildLaundryFilterButtons(context),
+                          const SizedBox(height: AppTheme.md),
                         ],
+                        _buildFilterButtons(context, l10n),
                         const SizedBox(height: AppTheme.xl),
                         _buildStatsSummary(context, l10n, isMobile),
                         const SizedBox(height: AppTheme.xl),
@@ -370,20 +399,21 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
           ),
         ),
         const SizedBox(width: AppTheme.md),
-        // Disamain dengan laundries_list_screen.dart: tombol bulat
-        // berisi ikon "+" saja, konsisten di mobile maupun desktop
-        // (sebelumnya beda gaya: kotak-bulat di mobile, pill+teks di
-        // desktop).
-        Material(
-          color: AppTheme.primaryColor,
-          shape: const CircleBorder(),
-          child: InkWell(
-            onTap: () => _openCreateCustomer(context),
-            customBorder: const CircleBorder(),
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(Icons.add_rounded, color: Colors.white, size: 22),
+        // Disamain dengan services_list_screen.dart: tombol bulat 40x40,
+        // background biru muda (#D1E4FF) + ikon warna navy (#0B3B66)
+        // (sebelumnya sempat disamain ke gaya laundries_list_screen.dart
+        // yang bg primaryColor solid + ikon putih).
+        InkWell(
+          onTap: () => _openCreateCustomer(context),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: Color(0xFFD1E4FF),
+              shape: BoxShape.circle,
             ),
+            child: const Icon(Icons.add_rounded, color: Color(0xFF0B3B66), size: 22),
           ),
         ),
       ],
@@ -438,6 +468,10 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   /// Build filter buttons (status: all/active/inactive) — sekarang
   /// bentuknya segmented control (tab pill di dalam 1 container abu-abu),
   /// meniru pola "Semua / Aktif / Tidak Aktif" di code.html.
+  /// Filter status "Semua/Aktif/Tidak Aktif" — disamain persis sama
+  /// _buildFilterButtons di order_list_screen.dart: chip persegi
+  /// (radius 8) bertona warna sesuai statusnya, "Semua" pakai netral
+  /// surface-container-highest.
   Widget _buildFilterButtons(BuildContext context, AppLocalizations l10n) {
     final filters = [
       ('all', l10n.filterAll),
@@ -445,56 +479,72 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
       ('inactive', l10n.customerInactiveLabel),
     ];
 
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppTheme.borderColor.withOpacity(0.35),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      ),
-      child: Row(
-        children: List.generate(filters.length, (index) {
-          final isSelected = _selectedFilter == filters[index].$1;
-          return Expanded(
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: AppTheme.sm),
+        itemBuilder: (context, index) {
+          final key = filters[index].$1;
+          final label = filters[index].$2;
+          final isSelected = _selectedFilter == key;
+          final isAll = key == 'all';
+
+          final Color bg;
+          final Color border;
+          final Color text;
+          if (isAll) {
+            bg = _cSurfaceContainerHighest;
+            border = Colors.transparent;
+            text = _cOnSurface;
+          } else if (key == 'active') {
+            bg = _cActiveChipBg;
+            border = _cActiveChipBorder;
+            text = _cActiveChipText;
+          } else {
+            bg = _cInactiveChipBg;
+            border = _cInactiveChipBorder;
+            text = _cInactiveChipText;
+          }
+
+          return Material(
+            color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd - 2),
+              borderRadius: BorderRadius.circular(8),
               onTap: () {
-                setState(() => _selectedFilter = filters[index].$1);
+                setState(() => _selectedFilter = key);
                 _applyFiltersAndSearch();
               },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(vertical: AppTheme.sm + 2),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.cardColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd - 2),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppTheme.primaryColor.withOpacity(0.08),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ]
-                      : null,
+                  color: bg,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: border,
+                    width: isSelected && !isAll ? 1.5 : 1,
+                  ),
                 ),
                 child: Text(
-                  filters[index].$2,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                  label,
+                  style: GoogleFonts.beVietnamPro(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.02,
+                    color: text,
                   ),
                 ),
               ),
             ),
           );
-        }),
+        },
       ),
     );
   }
 
-  /// Build filter chip CABANG - baris terpisah di bawah filter status,
+  /// Build filter chip CABANG - baris terpisah DI ATAS filter status,
   /// cuma dirender kalau _showLaundryFilter true (cabang > 1). Chip
   /// pertama selalu "Semua Cabang", sisanya sesuai nama cabang aktif.
   Widget _buildLaundryFilterButtons(BuildContext context) {
@@ -503,7 +553,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
       child: Row(
         children: [
           Padding(
-            padding: const EdgeInsets.only(right: AppTheme.md),
+            padding: const EdgeInsets.only(right: AppTheme.sm),
             child: _buildLaundryChip(
               label: 'Semua Cabang',
               isSelected: _selectedLaundryId == 'all',
@@ -516,7 +566,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
           ..._laundriesList.map((laundry) {
             final isLast = laundry.id == _laundriesList.last.id;
             return Padding(
-              padding: EdgeInsets.only(right: isLast ? 0 : AppTheme.md),
+              padding: EdgeInsets.only(right: isLast ? 0 : AppTheme.sm),
               child: _buildLaundryChip(
                 label: laundry.name,
                 isSelected: _selectedLaundryId == laundry.id,
@@ -532,32 +582,36 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
     );
   }
 
+  /// Chip pill cabang — disamain persis sama _buildLaundryChip di
+  /// order_list_screen.dart (bentuk pill penuh, warna solid _cPrimary
+  /// yang lebih gelap/pekat saat terpilih, putih+border saat tidak).
   Widget _buildLaundryChip({
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return FilterChip(
-      selected: isSelected,
-      onSelected: (_) => onTap(),
-      showCheckmark: false,
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.storefront_outlined, size: 15),
-          const SizedBox(width: AppTheme.sm),
-          Text(label),
-        ],
-      ),
-      backgroundColor: AppTheme.cardColor,
-      selectedColor: AppTheme.primaryColor.withOpacity(0.12),
-      side: BorderSide(
-        color: isSelected ? AppTheme.primaryColor.withOpacity(0.4) : AppTheme.borderColor,
-      ),
-      labelStyle: GoogleFonts.poppins(
-        fontSize: 12.5,
-        color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
-        fontWeight: FontWeight.w600,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? _cPrimary : _cCard,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: isSelected ? _cPrimary : _cOutlineVariant),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.beVietnamPro(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.02,
+              color: isSelected ? Colors.white : _cOnSurfaceVariant,
+            ),
+          ),
+        ),
       ),
     );
   }
