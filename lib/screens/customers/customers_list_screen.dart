@@ -909,19 +909,23 @@ class _CustomerCard extends StatelessWidget {
                   Row(
                     children: [
                       if (branchName != null) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            branchName!.toUpperCase(),
-                            style: GoogleFonts.poppins(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
-                              color: AppTheme.primaryColor,
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              branchName!.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
+                                color: AppTheme.primaryColor,
+                              ),
                             ),
                           ),
                         ),
@@ -929,11 +933,15 @@ class _CustomerCard extends StatelessWidget {
                       ],
                       Icon(Icons.receipt_long_outlined, size: 13, color: AppTheme.textTertiary),
                       const SizedBox(width: 3),
-                      Text(
-                        l10n.ordersCountLabel(customer.totalOrders),
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: AppTheme.textTertiary,
+                      Flexible(
+                        child: Text(
+                          l10n.ordersCountLabel(customer.totalOrders),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: AppTheme.textTertiary,
+                          ),
                         ),
                       ),
                     ],
@@ -942,43 +950,54 @@ class _CustomerCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppTheme.sm),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  'TOTAL SPENT',
-                  style: GoogleFonts.poppins(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                    color: AppTheme.textTertiary,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  formattedSpent,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.schedule_outlined, size: 11, color: AppTheme.textTertiary),
-                    const SizedBox(width: 3),
-                    Text(
-                      formattedLastOrder,
-                      style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        color: AppTheme.textTertiary,
-                      ),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'TOTAL SPENT',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                      color: AppTheme.textTertiary,
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    formattedSpent,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.schedule_outlined, size: 11, color: AppTheme.textTertiary),
+                      const SizedBox(width: 3),
+                      Flexible(
+                        child: Text(
+                          formattedLastOrder,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            color: AppTheme.textTertiary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
