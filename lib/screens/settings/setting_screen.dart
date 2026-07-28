@@ -80,170 +80,189 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 800;
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          isMobile ? 8 : 12,
-                          isMobile ? 8 : 12,
-                          isMobile ? 8 : 12,
-                          4,
-                        ),
-                        child: _buildTopBar(context, t),
+            return Column(
+              children: [
+                // ==== Top bar TETAP (pinned) saat konten di-scroll ====
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: Container(
+                      color: _Palette.canvas,
+                      padding: EdgeInsets.fromLTRB(
+                        isMobile ? 8 : 12,
+                        isMobile ? 8 : 12,
+                        isMobile ? 8 : 12,
+                        4,
                       ),
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          isMobile ? 16 : 24,
-                          0,
-                          isMobile ? 16 : 24,
-                          4,
-                        ),
-                        child: _buildProfileCard(
-                          context,
-                          t,
-                          displayName,
-                          user?.email,
-                          photoUrl,
-                          isMobile,
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          isMobile ? 16 : 24,
-                          0,
-                          isMobile ? 16 : 24,
-                          24,
-                        ),
+                      child: _buildTopBar(context, t),
+                    ),
+                  ),
+                ),
+                // ==== Konten yang bisa di-scroll ====
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 640),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _sectionLabel(t.sectionAccount),
-                            _buildSectionCard([
-                              _buildTile(
-                                icon: Icons.person_outline_rounded,
-                                title: t.editProfileTitle,
-                                subtitle: t.editProfileSubtitle,
-                                color: _Palette.primary,
-                                background: _Palette.primaryContainer,
-                                onTap: _openEditProfile,
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                isMobile ? 16 : 24,
+                                0,
+                                isMobile ? 16 : 24,
+                                4,
                               ),
-                              _buildTile(
-                                icon: Icons.lock_outline_rounded,
-                                title: t.changePasswordTitle,
-                                subtitle: t.changePasswordSubtitle,
-                                color: _Palette.indigo,
-                                background: _Palette.indigoSoft,
-                                onTap: () =>
-                                    context.push('/settings/change-password'),
-                                showDivider: false,
+                              child: _buildProfileCard(
+                                context,
+                                t,
+                                displayName,
+                                user?.email,
+                                photoUrl,
+                                isMobile,
                               ),
-                            ]),
-                            const SizedBox(height: 20),
-                            _sectionLabel(t.sectionPreference),
-                            _buildSectionCard([
-                              _buildTile(
-                                icon: Icons.notifications_outlined,
-                                title: t.notificationTitle,
-                                subtitle: t.notificationSubtitle,
-                                color: _Palette.orange,
-                                background: _Palette.orangeSoft,
-                                onTap: () =>
-                                    context.push('/settings/notifications'),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                isMobile ? 16 : 24,
+                                0,
+                                isMobile ? 16 : 24,
+                                24,
                               ),
-                              _buildTile(
-                                icon: Icons.language_outlined,
-                                title: t.languageTitle,
-                                subtitle: currentLocale.languageCode == 'id'
-                                    ? 'Indonesia'
-                                    : 'English',
-                                color: _Palette.purple,
-                                background: _Palette.purpleSoft,
-                                onTap: () => _showLanguagePicker(
-                                    context, t, currentLocale),
-                                showDivider: false,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _sectionLabel(t.sectionAccount),
+                                  _buildSectionCard([
+                                    _buildTile(
+                                      icon: Icons.person_outline_rounded,
+                                      title: t.editProfileTitle,
+                                      subtitle: t.editProfileSubtitle,
+                                      color: _Palette.primary,
+                                      background: _Palette.primaryContainer,
+                                      onTap: _openEditProfile,
+                                    ),
+                                    _buildTile(
+                                      icon: Icons.lock_outline_rounded,
+                                      title: t.changePasswordTitle,
+                                      subtitle: t.changePasswordSubtitle,
+                                      color: _Palette.indigo,
+                                      background: _Palette.indigoSoft,
+                                      onTap: () => context
+                                          .push('/settings/change-password'),
+                                      showDivider: false,
+                                    ),
+                                  ]),
+                                  const SizedBox(height: 20),
+                                  _sectionLabel(t.sectionPreference),
+                                  _buildSectionCard([
+                                    _buildTile(
+                                      icon: Icons.notifications_outlined,
+                                      title: t.notificationTitle,
+                                      subtitle: t.notificationSubtitle,
+                                      color: _Palette.orange,
+                                      background: _Palette.orangeSoft,
+                                      onTap: () => context
+                                          .push('/settings/notifications'),
+                                    ),
+                                    _buildTile(
+                                      icon: Icons.language_outlined,
+                                      title: t.languageTitle,
+                                      subtitle:
+                                          currentLocale.languageCode == 'id'
+                                              ? 'Indonesia'
+                                              : 'English',
+                                      color: _Palette.purple,
+                                      background: _Palette.purpleSoft,
+                                      onTap: () => _showLanguagePicker(
+                                          context, t, currentLocale),
+                                      showDivider: false,
+                                    ),
+                                  ]),
+                                  const SizedBox(height: 20),
+                                  // Section ini cuma nongol buat user dengan
+                                  // role 'admin' (tim CS platform NetWash) --
+                                  // owner/manager/employee biasa nggak lihat ini
+                                  // sama sekali. Role dibaca dari dokumen profil
+                                  // Firestore, bukan FirebaseAuth User.
+                                  if (_user != null)
+                                    StreamBuilder<UserModel?>(
+                                      stream: ref
+                                          .read(userRepositoryProvider)
+                                          .getUserProfileStream(_user!.uid),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.data?.role != 'admin') {
+                                          return const SizedBox.shrink();
+                                        }
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            _sectionLabel('Tim CS'),
+                                            _buildSectionCard([
+                                              _buildTile(
+                                                icon: Icons
+                                                    .support_agent_rounded,
+                                                title: 'Kelola Chat CS',
+                                                subtitle:
+                                                    'Balas percakapan dari semua user',
+                                                color: _Palette.cyan,
+                                                background: _Palette.cyanSoft,
+                                                onTap: () => context
+                                                    .push('/admin/support'),
+                                                showDivider: false,
+                                              ),
+                                            ]),
+                                            const SizedBox(height: 20),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  _sectionLabel(t.sectionOther),
+                                  _buildSectionCard([
+                                    _buildTile(
+                                      icon: Icons.chat_bubble_outline_rounded,
+                                      title: 'Chat',
+                                      subtitle: 'Balasan',
+                                      color: _Palette.cyan,
+                                      background: _Palette.cyanSoft,
+                                      onTap: () =>
+                                          context.push('/settings/chat-cs'),
+                                    ),
+                                    _buildTile(
+                                      icon: Icons.help_outline_rounded,
+                                      title: t.helpTitle,
+                                      subtitle: t.helpSubtitle,
+                                      color: _Palette.gray,
+                                      background: _Palette.graySoft,
+                                      onTap: () =>
+                                          context.push('/settings/help'),
+                                    ),
+                                    _buildTile(
+                                      icon: Icons.info_outline_rounded,
+                                      title: t.aboutTitle,
+                                      subtitle: 'NetWash v1.0.0',
+                                      color: _Palette.gray,
+                                      background: _Palette.graySoft,
+                                      onTap: () =>
+                                          context.push('/settings/about'),
+                                      showDivider: false,
+                                    ),
+                                  ]),
+                                  const SizedBox(height: 28),
+                                  _buildLogoutButton(context, t),
+                                ],
                               ),
-                            ]),
-                            const SizedBox(height: 20),
-                            // Section ini cuma nongol buat user dengan
-                            // role 'admin' (tim CS platform NetWash) --
-                            // owner/manager/employee biasa nggak lihat ini
-                            // sama sekali. Role dibaca dari dokumen profil
-                            // Firestore, bukan FirebaseAuth User.
-                            if (_user != null)
-                              StreamBuilder<UserModel?>(
-                                stream: ref
-                                    .read(userRepositoryProvider)
-                                    .getUserProfileStream(_user!.uid),
-                                builder: (context, snapshot) {
-                                  if (snapshot.data?.role != 'admin') {
-                                    return const SizedBox.shrink();
-                                  }
-                                  return Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      _sectionLabel('Tim CS'),
-                                      _buildSectionCard([
-                                        _buildTile(
-                                          icon: Icons.support_agent_rounded,
-                                          title: 'Kelola Chat CS',
-                                          subtitle:
-                                              'Balas percakapan dari semua user',
-                                          color: _Palette.cyan,
-                                          background: _Palette.cyanSoft,
-                                          onTap: () =>
-                                              context.push('/admin/support'),
-                                          showDivider: false,
-                                        ),
-                                      ]),
-                                      const SizedBox(height: 20),
-                                    ],
-                                  );
-                                },
-                              ),
-                            _sectionLabel(t.sectionOther),
-                            _buildSectionCard([
-                              _buildTile(
-                                icon: Icons.chat_bubble_outline_rounded,
-                                title: 'Chat',
-                                subtitle: 'Balasan',
-                                color: _Palette.cyan,
-                                background: _Palette.cyanSoft,
-                                onTap: () => context.push('/settings/chat-cs'),
-                              ),
-                              _buildTile(
-                                icon: Icons.help_outline_rounded,
-                                title: t.helpTitle,
-                                subtitle: t.helpSubtitle,
-                                color: _Palette.gray,
-                                background: _Palette.graySoft,
-                                onTap: () => context.push('/settings/help'),
-                              ),
-                              _buildTile(
-                                icon: Icons.info_outline_rounded,
-                                title: t.aboutTitle,
-                                subtitle: 'NetWash v1.0.0',
-                                color: _Palette.gray,
-                                background: _Palette.graySoft,
-                                onTap: () => context.push('/settings/about'),
-                                showDivider: false,
-                              ),
-                            ]),
-                            const SizedBox(height: 28),
-                            _buildLogoutButton(context, t),
+                            ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             );
           },
         ),
