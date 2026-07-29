@@ -40,8 +40,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Cabang yang lagi dipilih di selector atas. 'all' = tampilkan semua
   // cabang. Dipakai buat filter query 'orders' lewat _ordersBaseQuery()
   // di bawah (balance card, notifikasi, chart mingguan, & timeline).
+  //
+  // CATATAN LOKALISASI: nama cabang "Semua Cabang" TIDAK lagi disimpan
+  // sebagai string statis di _selectedBranchName. Kalau _selectedBranchId
+  // == 'all', kita simpan _selectedBranchName = null dan resolve label-nya
+  // dari t.allBranchesLabel saat build — supaya kalau user ganti bahasa
+  // aplikasi, label "All Branches" / "Semua Cabang" ikut berubah juga
+  // (bukan nyangkut ke bahasa yang aktif waktu cabang dipilih).
   String _selectedBranchId = 'all';
-  String _selectedBranchName = 'Semua Cabang';
+  String? _selectedBranchName;
 
   /// FIX: sebelumnya ini `final String _currentUserId = ...` yang dibaca
   /// SEKALI saat State dibuat. Kalau widget ini sempat ke-build sebelum
@@ -104,6 +111,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             constraints: BoxConstraints(maxWidth: maxContentWidth),
             child: Column(
               children: [
+                // FIX: guard tak-terlihat yang mantau apakah cabang yang lagi
+                // dipilih (_selectedBranchId) masih aktif. Kalau ternyata
+                // dinonaktifkan (is_active == false) atau dokumennya sudah
+                // dihapus, otomatis reset selector balik ke 'all' supaya
+                // dashboard nggak nyangkut nge-filter ke cabang yang mati.
+                _buildActiveBranchGuard(),
                 // ==== Bagian TETAP (pinned) saat konten di-scroll ====
                 // Cuma selector cabang aktif + bell notifikasi.
                 _buildPinnedSelectorBar(context, isMobile, t),
@@ -148,6 +161,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // ============================================
+  // FIX: GUARD CABANG AKTIF (auto-reset kalau cabang terpilih dinonaktifkan)
+  // ============================================
+  // Widget ini nggak render apa-apa (SizedBox.shrink) — cuma dengerin
+  // dokumen cabang yang lagi dipilih. Kalau 'all' dipilih, nggak perlu
+  // dengerin apa-apa. Kalau cabang spesifik dipilih tapi field is_active
+  // == false (atau dokumennya udah dihapus), otomatis setState balik ke
+  // 'all' + reset nama cabang, supaya semua query di dashboard (balance
+  // card, chart, timeline) nggak kejebak nge-filter ke cabang yang sudah
+  // nonaktif/dihapus.
+  Widget _buildActiveBranchGuard() {
+    if (_selectedBranchId == 'all') return const SizedBox.shrink();
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentUserId)
+          .collection('laundries')
+          .doc(_selectedBranchId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox.shrink();
+        }
+
+        final data = snapshot.data?.data() as Map<String, dynamic>?;
+        final stillActive = snapshot.data?.exists == true && (data?['is_active'] ?? true) == true;
+
+        if (!stillActive) {
+          // Dijalankan setelah frame ini selesai supaya nggak setState()
+          // di tengah-tengah proses build.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _selectedBranchId != 'all') {
+              setState(() {
+                _selectedBranchId = 'all';
+                _selectedBranchName = null;
+              });
+            }
+          });
+        }
+
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  // ============================================
   // PINNED SELECTOR BAR (Cabang Selector + Notifikasi) — TETAP saat scroll
   // ============================================
   Widget _buildPinnedSelectorBar(BuildContext context, bool isMobile, AppLocalizations t) {
@@ -168,12 +227,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // yang di-fetch dari users/{uid}/laundries.
           InkWell(
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-            onTap: () => _showBranchSelector(context),
+            onTap: () => _showBranchSelector(context, t),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'CABANG AKTIF',
+                  t.activeBranchLabel,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -185,7 +244,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Row(
                   children: [
                     Text(
-                      _selectedBranchName,
+                      _selectedBranchName ?? t.allBranchesLabel,
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textPrimary),
                     ),
                     Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: textPrimary),
@@ -233,7 +292,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ============================================
   // BRANCH SELECTOR (Firestore Stream - users/{uid}/laundries)
   // ============================================
-  void _showBranchSelector(BuildContext context) {
+  void _showBranchSelector(BuildContext context, AppLocalizations t) {
     // Query pencarian lokal buat bottom sheet ini aja (di-reset tiap kali
     // sheet dibuka ulang). Berguna kalau jumlah cabang banyak (mis. paket
     // dengan kuota cabang unlimited) supaya user nggak perlu scroll manual.
@@ -274,7 +333,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Pilih Cabang',
+                              t.selectBranchTitle,
                               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
                             ),
                             InkWell(
@@ -293,7 +352,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           onChanged: (value) => setModalState(() => branchSearchQuery = value),
                           style: TextStyle(fontSize: 13.5, color: textPrimary),
                           decoration: InputDecoration(
-                            hintText: 'Cari nama cabang...',
+                            hintText: t.searchBranchHint,
                             hintStyle: TextStyle(fontSize: 13.5, color: textTertiary),
                             prefixIcon: Icon(Icons.search, color: textTertiary, size: 20),
                             isDense: true,
@@ -317,10 +376,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       Expanded(
                         child: StreamBuilder<QuerySnapshot>(
+                          // FIX: sebelumnya nggak ada filter sama sekali di sini,
+                          // jadi cabang yang sudah dinonaktifkan (is_active ==
+                          // false) tetap ikut muncul di dropdown selector.
+                          // Sekarang cuma cabang dengan is_active == true yang
+                          // ditampilkan sebagai opsi yang bisa dipilih.
                           stream: FirebaseFirestore.instance
                               .collection('users')
                               .doc(_currentUserId)
                               .collection('laundries')
+                              .where('is_active', isEqualTo: true)
                               .snapshots(),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -330,10 +395,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             final allDocs = snapshot.data?.docs ?? [];
                             final query = branchSearchQuery.trim().toLowerCase();
 
-                            // "Semua Cabang" tetap muncul selama belum ada
-                            // pencarian aktif - begitu user ngetik, opsi ini
-                            // ikut ke-filter berdasarkan query juga.
-                            final showAllOption = query.isEmpty || 'semua cabang'.contains(query);
+                            // "Semua Cabang" / "All Branches" tetap muncul selama
+                            // belum ada pencarian aktif - begitu user ngetik, opsi
+                            // ini ikut ke-filter berdasarkan query juga. Label-nya
+                            // diambil dari t.allBranchesLabel supaya ikut bahasa
+                            // aplikasi yang sedang aktif.
+                            final allBranchesLabelLower = t.allBranchesLabel.toLowerCase();
+                            final showAllOption = query.isEmpty || allBranchesLabelLower.contains(query);
 
                             final docs = query.isEmpty
                                 ? allDocs
@@ -353,7 +421,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   _buildBranchOption(
                                     sheetContext,
                                     id: 'all',
-                                    name: 'Semua Cabang',
+                                    name: t.allBranchesLabel,
                                     isSelected: _selectedBranchId == 'all',
                                   ),
                                   const SizedBox(height: AppTheme.sm),
@@ -379,7 +447,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         Icon(Icons.storefront_outlined, size: 36, color: textTertiary),
                                         const SizedBox(height: AppTheme.md),
                                         Text(
-                                          'Belum ada cabang terdaftar',
+                                          t.noBranchesRegistered,
                                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
                                         ),
                                       ],
@@ -393,7 +461,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         Icon(Icons.search_off_rounded, size: 36, color: textTertiary),
                                         const SizedBox(height: AppTheme.md),
                                         Text(
-                                          'Cabang tidak ditemukan',
+                                          t.branchNotFoundSearch,
                                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
                                         ),
                                       ],
@@ -427,7 +495,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onTap: () {
         setState(() {
           _selectedBranchId = id;
-          _selectedBranchName = name;
+          // Untuk opsi 'all', simpan null (bukan string statis) supaya
+          // labelnya selalu di-resolve ulang dari t.allBranchesLabel sesuai
+          // bahasa yang lagi aktif, bukan nyangkut ke bahasa saat dipilih.
+          _selectedBranchName = id == 'all' ? null : name;
         });
         Navigator.of(sheetContext).pop();
       },
@@ -1317,20 +1388,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // Warna & label status disamakan dengan istilah di
             // OrderDetailScreen (_getStatusLabel) — hanya 3 status yang
             // mungkin muncul di sini (lihat _dashboardActiveStatuses).
+            // Label diambil dari AppLocalizations supaya ikut bahasa
+            // aplikasi yang sedang aktif (bukan hardcoded 'Menunggu' dst).
             Color statusColor;
             String statusLabel;
             switch (status) {
               case 'pending':
                 statusColor = Colors.orange;
-                statusLabel = 'Menunggu';
+                statusLabel = t.orderStatusPending;
                 break;
               case 'confirmed':
                 statusColor = primaryBlue;
-                statusLabel = 'Dikonfirmasi';
+                statusLabel = t.orderStatusConfirmed;
                 break;
               case 'inProgress':
                 statusColor = primaryBlue;
-                statusLabel = 'Diproses';
+                statusLabel = t.orderStatusInProgress;
                 break;
               default:
                 statusColor = textTertiary;

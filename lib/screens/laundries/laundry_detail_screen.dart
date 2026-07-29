@@ -182,15 +182,6 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
                 }
                 final allEmployees = employeesAsync.value ?? const <Employee>[];
                 final branchStaff = allEmployees.where((e) => e.laundryId == laundry.id).toList();
-                Employee? manager;
-                if (laundry.managerId != null && laundry.managerId!.isNotEmpty) {
-                  for (final e in allEmployees) {
-                    if (e.id == laundry.managerId) {
-                      manager = e;
-                      break;
-                    }
-                  }
-                }
                 return Column(
                   children: [
                     // ==== Top bar TETAP (pinned) saat konten di-scroll ====
@@ -236,7 +227,7 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
                                   const SizedBox(height: AppTheme.lg),
                                   _buildStatsGrid(context, laundry, branchStaff, l10n),
                                   const SizedBox(height: AppTheme.lg),
-                                  _buildInfoCard(context, laundry, manager, l10n),
+                                  _buildInfoCard(context, laundry, l10n),
                                   const SizedBox(height: AppTheme.lg),
                                   _buildStaffCard(context, branchStaff, employeesAsync.isLoading),
                                   const SizedBox(height: AppTheme.lg),
@@ -463,8 +454,8 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
     );
   }
 
-  /// Kartu "Informasi Cabang": alamat, kontak, manajer, & jam operasional.
-  Widget _buildInfoCard(BuildContext context, Laundry laundry, Employee? manager, AppLocalizations l10n) {
+  /// Kartu "Informasi Cabang": alamat, kontak, & jam operasional.
+  Widget _buildInfoCard(BuildContext context, Laundry laundry, AppLocalizations l10n) {
     return Container(
       decoration: BoxDecoration(
         color: _kSurfaceContainerLowest,
@@ -496,14 +487,7 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
                   [laundry.address, laundry.city, laundry.province].where((s) => s.isNotEmpty).join(', '),
                 ),
                 const SizedBox(height: AppTheme.md),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _infoRow(Icons.call_outlined, l10n.phoneShortLabel, laundry.phone.isNotEmpty ? laundry.phone : '-')),
-                    const SizedBox(width: AppTheme.md),
-                    Expanded(child: _infoRow(Icons.badge_outlined, 'Manajer', manager != null ? manager.fullName : 'Belum ditentukan')),
-                  ],
-                ),
+                _infoRow(Icons.call_outlined, l10n.phoneShortLabel, laundry.phone.isNotEmpty ? laundry.phone : '-'),
                 const SizedBox(height: AppTheme.md),
                 _infoRow(Icons.email_outlined, l10n.emailLabel, laundry.email.isNotEmpty ? laundry.email : '-'),
                 Divider(height: AppTheme.lg * 2, color: _kOutlineVariant.withOpacity(0.4)),

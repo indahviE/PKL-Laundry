@@ -177,6 +177,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account is signed in with another provider (e.g. Google), so there\'s no password to change here.';
 
   @override
+  String get activeBranchLabel => 'ACTIVE BRANCH';
+
+  @override
+  String get allBranchesLabel => 'All Branches';
+
+  @override
+  String get selectBranchTitle => 'Select Branch';
+
+  @override
+  String get searchBranchHint => 'Search branch name...';
+
+  @override
+  String get noBranchesRegistered => 'No branches registered yet';
+
+  @override
+  String get branchNotFoundSearch => 'Branch not found';
+
+  @override
   String get greetingMorning => 'Good Morning';
 
   @override
@@ -659,6 +677,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderStatusPending => 'Pending';
+
+  @override
+  String get orderStatusConfirmed => 'Confirmed';
+
+  @override
+  String get orderStatusInProgress => 'In Progress';
 
   @override
   String get orderStatusProcessing => 'Processing';
