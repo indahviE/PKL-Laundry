@@ -255,52 +255,52 @@ class OrderRepository {
   }
 
   Future<void> confirmPickupWithItems(
-  String orderId, {
-  required List<OrderItem> items,
-  required double totalWeight,
-  required int totalItems,
-  required double subtotal,
-}) async {
-  if (items.isEmpty) {
-    throw Exception('Item cucian tidak boleh kosong.');
-  }
+    String orderId, {
+    required List<OrderItem> items,
+    required double totalWeight,
+    required int totalItems,
+    required double subtotal,
+  }) async {
+    if (items.isEmpty) {
+      throw Exception('Item cucian tidak boleh kosong.');
+    }
 
-  final orderRef = _ordersRef.doc(orderId);
+    final orderRef = _ordersRef.doc(orderId);
 
-  await _firestore.runTransaction((txn) async {
-    final orderSnap = await txn.get(orderRef);
-    if (!orderSnap.exists) throw Exception('Order tidak ditemukan.');
+    await _firestore.runTransaction((txn) async {
+      final orderSnap = await txn.get(orderRef);
+      if (!orderSnap.exists) throw Exception('Order tidak ditemukan.');
 
-    final order = Order.fromJson(orderSnap.data() as Map<String, dynamic>, orderSnap.id);
-    final now = DateTime.now();
-    final amountDelta = subtotal - order.totalAmount;
+      final order = Order.fromJson(orderSnap.data() as Map<String, dynamic>, orderSnap.id);
+      final now = DateTime.now();
+      final amountDelta = subtotal - order.totalAmount;
 
-    final updatedHistory = [
-      ...order.statusHistory,
-      StatusHistory(status: order.status, timestamp: now, note: 'Item & berat dicatat saat jemput'),
-    ];
+      final updatedHistory = [
+        ...order.statusHistory,
+        StatusHistory(status: order.status, timestamp: now, note: 'Item & berat dicatat saat jemput'),
+      ];
 
-    txn.update(orderRef, {
-      'items': items.map((e) => e.toJson()).toList(),
-      'total_weight': totalWeight,
-      'total_items': totalItems,
-      'total_amount': subtotal,
-      'pickup_date': now,
-      'status_history': updatedHistory.map((e) => e.toJson()).toList(),
-      'updated_at': now,
-    });
-
-    if (amountDelta != 0) {
-      final customerRef = _customersRef.doc(order.customerId);
-      txn.update(customerRef, {
-        'total_spent': FieldValue.increment(amountDelta),
+      txn.update(orderRef, {
+        'items': items.map((e) => e.toJson()).toList(),
+        'total_weight': totalWeight,
+        'total_items': totalItems,
+        'total_amount': subtotal,
+        'pickup_date': now,
+        'status_history': updatedHistory.map((e) => e.toJson()).toList(),
         'updated_at': now,
       });
-    }
-  });
-}
 
-Future<void> markDelivered(
+      if (amountDelta != 0) {
+        final customerRef = _customersRef.doc(order.customerId);
+        txn.update(customerRef, {
+          'total_spent': FieldValue.increment(amountDelta),
+          'updated_at': now,
+        });
+      }
+    });
+  }
+
+  Future<void> markDelivered(
     String orderId, {
     String? driverNote,
     String? courierId,
@@ -314,32 +314,57 @@ Future<void> markDelivered(
     });
   }
 
-  /// Menyimpan rencana jadwal jemput/antar untuk 1 order (tanggal+jam,
-  /// alamat, kurir, catatan) - TERPISAH dari pickup_date/delivery_date yang
-  /// artinya "sudah beneran dijemput/diantar" dan dipakai kategorisasi di
-  /// PickupDeliveryScreen. Disimpan sebagai map di field `logistics_schedule`
-  /// supaya tidak menyentuh field lain / tidak perlu ubah Order model.
+  /// Menyimpan/melengkapi rencana jadwal jemput/antar untuk 1 order -
+  /// TERPISAH dari pickup_date/delivery_date yang artinya "sudah beneran
+  /// dijemput/diantar" dan dipakai kategorisasi di PickupDeliveryScreen.
+  ///
+  /// UPSERT: kalau order sudah punya `logistics_schedule` dengan `mode`
+  /// yang SAMA (mis. dipanggil pertama kali saat CreateOrderScreen cuma
+  /// ngirim tanggal/jam, terus dipanggil lagi belakangan buat ngelengkapin
+  /// kurir & alamat), field yang tidak dikirim (null) TIDAK menimpa yang
+  /// sudah ada - jadi aman dipanggil bertahap tanpa saling menghapus data.
+  ///
+  /// Kalau `mode` BEDA dari yang tersimpan (mis. order sebelumnya punya
+  /// jadwal 'penjemputan', lalu sekarang dijadwalkan 'pengantaran'),
+  /// datanya sengaja DIMULAI BERSIH (tidak mewarisi kurir/alamat jadwal
+  /// jemput yang lama), karena itu dua kejadian logistik yang berbeda.
+  ///
+  /// `scheduledAt` & `address` sekarang OPSIONAL supaya bisa dipanggil dari
+  /// CreateOrderScreen dengan cuma tanggal+jam (tanpa alamat/kurir dulu).
   Future<void> scheduleLogistics(
     String orderId, {
     required String mode, // 'penjemputan' | 'pengantaran'
-    required DateTime scheduledAt,
-    required String address,
+    DateTime? scheduledAt,
+    String? address,
     String? courierId,
     String? courierName,
     String? notes,
   }) async {
+    final orderRef = _ordersRef.doc(orderId);
     final now = DateTime.now();
-    await _ordersRef.doc(orderId).update({
-      'logistics_schedule': {
+
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(orderRef);
+      if (!snap.exists) throw Exception('Order tidak ditemukan.');
+
+      final data = snap.data() as Map<String, dynamic>;
+      final existing = data['logistics_schedule'] as Map<String, dynamic>?;
+      final sameMode = existing != null && existing['mode'] == mode;
+
+      final merged = {
         'mode': mode,
-        'scheduled_at': scheduledAt,
-        'address': address,
-        'courier_id': courierId,
-        'courier_name': courierName,
-        'notes': notes,
-        'created_at': now,
-      },
-      'updated_at': now,
+        'scheduled_at': scheduledAt ?? (sameMode ? existing!['scheduled_at'] : null),
+        'address': address ?? (sameMode ? existing!['address'] : null),
+        'courier_id': courierId ?? (sameMode ? existing!['courier_id'] : null),
+        'courier_name': courierName ?? (sameMode ? existing!['courier_name'] : null),
+        'notes': notes ?? (sameMode ? existing!['notes'] : null),
+        'created_at': sameMode ? (existing!['created_at'] ?? now) : now,
+      };
+
+      txn.update(orderRef, {
+        'logistics_schedule': merged,
+        'updated_at': now,
+      });
     });
   }
 

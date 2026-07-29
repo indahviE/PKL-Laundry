@@ -1518,6 +1518,15 @@ class _OrderLogisticsCard extends StatelessWidget {
     final hasPhone = (order.customerPhone ?? '').isNotEmpty;
     final hasCourier = (order.courierName ?? '').isNotEmpty;
 
+    // Info kurir khusus kategori "Perlu Dijemput" - beda sumber data dari
+    // hasCourier di atas (itu dari order.courierName, cuma keisi setelah
+    // beneran diantar via markDelivered). Ini dari rencana jadwal
+    // (logisticsSchedule) yang bisa udah diisi sejak CreateOrderScreen,
+    // atau dilengkapi belakangan lewat CreateDeliveryScheduleScreen.
+    final pickupSchedule = order.logisticsSchedule;
+    final hasPickupCourier = category == _LogisticsCategory.needsPickup && (pickupSchedule?.hasCourier ?? false);
+    final needsCourierAssignment = category == _LogisticsCategory.needsPickup && !hasPickupCourier;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppTheme.radiusLg),
       child: Container(
@@ -1611,6 +1620,18 @@ class _OrderLogisticsCard extends StatelessWidget {
                           _Pill(icon: deliveryIcon, label: deliveryLabel, color: deliveryColor),
                           if (hasCourier)
                             _Pill(icon: Icons.two_wheeler_outlined, label: order.courierName!, color: const Color(0xFF51CF66)),
+                          if (hasPickupCourier)
+                            _Pill(
+                              icon: Icons.two_wheeler_outlined,
+                              label: pickupSchedule!.courierName ?? 'Kurir',
+                              color: const Color(0xFF51CF66),
+                            ),
+                          if (needsCourierAssignment)
+                            _Pill(
+                              icon: Icons.person_off_outlined,
+                              label: 'Kurir belum ditentukan',
+                              color: const Color(0xFFE8590C),
+                            ),
                         ],
                       ),
                       const SizedBox(height: AppTheme.md),
@@ -1623,7 +1644,9 @@ class _OrderLogisticsCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               switch (category) {
-                                _LogisticsCategory.needsPickup => 'Dijemput: ${_formatDate(order.pickupDate)}',
+                                _LogisticsCategory.needsPickup => pickupSchedule?.scheduledAt != null
+                                    ? 'Rencana jemput: ${_formatDate(pickupSchedule!.scheduledAt)}'
+                                    : 'Belum dijadwalkan',
                                 _LogisticsCategory.selfService => 'Diambil: ${_formatDate(order.deliveryDate)}',
                                 _ when order.needsDelivery => 'Diantar: ${_formatDate(order.deliveryDate)}',
                                 _ => 'Dijemput: ${_formatDate(order.pickupDate)}',

@@ -155,6 +155,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   // Cara baju KELUAR dari laundry: 'self_pickup' atau 'delivery'.
   String _selectedDeliveryType = 'self_pickup';
 
+  // Jadwal jemput opsional - cuma relevan kalau _selectedOrderType == 'pickup'.
+  // Diisi kasir kalau pelanggan udah kasih tau jam jemput dari awal; kalau
+  // dikosongin, tetap bisa dijadwalkan belakangan lewat
+  // CreateDeliveryScheduleScreen (menu Antar Jemput).
+  DateTime? _pickupScheduleDate;
+  TimeOfDay? _pickupScheduleTime;
+
+
   List<OrderItemForm> _orderItems = [];
   List<_CustomerOption> _customers = [];
 
@@ -540,7 +548,31 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       );
 
       final repository = OrderRepository(userId: user.uid);
-      await repository.createOrder(order);
+      final createdOrder = await repository.createOrder(order);
+
+      // Kalau kasir udah isi jadwal jemput, simpan sekalian sebagai rencana
+      // logistik (LogisticsSchedule mode 'penjemputan') - opsional. Kalau
+      // gagal, order utamanya tetap sukses; admin masih bisa melengkapi
+      // jadwal ini belakangan lewat menu Antar Jemput, jadi error di sini
+      // sengaja tidak menggagalkan seluruh alur simpan order.
+      if (_selectedOrderType == 'pickup' && _pickupScheduleDate != null && _pickupScheduleTime != null) {
+        final scheduledAt = DateTime(
+          _pickupScheduleDate!.year,
+          _pickupScheduleDate!.month,
+          _pickupScheduleDate!.day,
+          _pickupScheduleTime!.hour,
+          _pickupScheduleTime!.minute,
+        );
+        try {
+          await repository.scheduleLogistics(
+            createdOrder.id,
+            mode: 'penjemputan',
+            scheduledAt: scheduledAt,
+          );
+        } catch (_) {
+          // Sengaja diabaikan - lihat penjelasan di atas.
+        }
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -566,6 +598,36 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   String _formatCurrency(double amount) {
     return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+  }
+
+  Future<void> _pickPickupScheduleDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _pickupScheduleDate ?? now,
+      firstDate: now.subtract(const Duration(days: 1)),
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _pickupScheduleDate = picked);
+  }
+
+  Future<void> _pickPickupScheduleTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _pickupScheduleTime ?? TimeOfDay.now(),
+    );
+    if (picked != null) setState(() => _pickupScheduleTime = picked);
+  }
+
+  String _formatScheduleDate(DateTime? date) {
+    if (date == null) return 'Tanggal';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _formatScheduleTime(TimeOfDay? time) {
+    if (time == null) return 'Jam';
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -775,6 +837,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               onSelected: (id) => setState(() => _selectedOrderType = id),
             ),
 
+            // Field jadwal jemput cuma muncul kalau order type-nya pickup.
+            if (_selectedOrderType == 'pickup') ...[
+              const SizedBox(height: AppTheme.md),
+              _buildPickupScheduleFields(),
+            ],
+
             const SizedBox(height: AppTheme.lg),
 
             _buildToggleGroup(
@@ -783,6 +851,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               selectedId: _selectedDeliveryType,
               onSelected: (id) => setState(() => _selectedDeliveryType = id),
             ),
+
 
             const SizedBox(height: AppTheme.lg),
 
@@ -1086,6 +1155,109 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           }),
         ),
       ],
+    );
+  }
+
+  /// Field jadwal jemput - opsional, cuma tampil kalau order type-nya
+  /// pickup. Kalau diisi, disimpan sebagai LogisticsSchedule (mode
+  /// 'penjemputan') begitu order berhasil dibuat - lihat _handleSaveOrder.
+  /// Kalau dikosongin, admin/dispatcher tetap bisa melengkapinya belakangan
+  /// lewat CreateDeliveryScheduleScreen.
+  Widget _buildPickupScheduleFields() {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.md),
+      decoration: BoxDecoration(
+        color: _neutralFill,
+        borderRadius: BorderRadius.circular(_chipRadius),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.event_available_outlined, size: 15, color: AppTheme.textSecondary),
+              const SizedBox(width: 6),
+              Text(
+                'Jadwal Jemput (Opsional)',
+                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.sm),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: !_isLoading ? _pickPickupScheduleDate : null,
+                  borderRadius: BorderRadius.circular(_fieldRadius),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.cardColor,
+                      borderRadius: BorderRadius.circular(_fieldRadius),
+                      border: Border.all(color: AppTheme.borderColor),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today_outlined, size: 15, color: AppTheme.textTertiary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _formatScheduleDate(_pickupScheduleDate),
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.5,
+                              color: _pickupScheduleDate == null ? AppTheme.textTertiary : AppTheme.textPrimary,
+                              fontWeight: _pickupScheduleDate == null ? FontWeight.w400 : FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppTheme.sm),
+              Expanded(
+                child: InkWell(
+                  onTap: !_isLoading ? _pickPickupScheduleTime : null,
+                  borderRadius: BorderRadius.circular(_fieldRadius),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.cardColor,
+                      borderRadius: BorderRadius.circular(_fieldRadius),
+                      border: Border.all(color: AppTheme.borderColor),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.schedule_outlined, size: 15, color: AppTheme.textTertiary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _formatScheduleTime(_pickupScheduleTime),
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.5,
+                              color: _pickupScheduleTime == null ? AppTheme.textTertiary : AppTheme.textPrimary,
+                              fontWeight: _pickupScheduleTime == null ? FontWeight.w400 : FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Kosongkan kalau belum tau jamnya - bisa dijadwalkan belakangan di menu Antar Jemput.',
+            style: GoogleFonts.poppins(fontSize: 10.5, color: AppTheme.textTertiary),
+          ),
+        ],
+      ),
     );
   }
 

@@ -171,6 +171,61 @@ class OrderItem {
   }
 }
 
+/// Rencana jadwal jemput/antar untuk 1 order - TERPISAH dari
+/// pickup_date/delivery_date yang artinya "sudah beneran
+/// dijemput/diantar" (lihat OrderRepository.markPickedUp /
+/// confirmPickupWithItems / markDelivered).
+///
+/// Cuma nyimpen SATU jadwal aktif per order (bukan history). `mode`
+/// menentukan jadwal ini buat penjemputan atau pengantaran - begitu
+/// OrderRepository.scheduleLogistics() dipanggil dengan mode yang beda
+/// dari yang tersimpan, datanya di-replace (bukan digabung), karena
+/// jadwal jemput lama sudah tidak relevan lagi begitu order masuk fase
+/// jadwal antar.
+class LogisticsSchedule {
+  final String mode; // 'penjemputan' | 'pengantaran'
+  final DateTime? scheduledAt;
+  final String? address;
+  final String? courierId;
+  final String? courierName;
+  final String? notes;
+  final DateTime? createdAt;
+
+  LogisticsSchedule({
+    required this.mode,
+    this.scheduledAt,
+    this.address,
+    this.courierId,
+    this.courierName,
+    this.notes,
+    this.createdAt,
+  });
+
+  bool get hasCourier => (courierId ?? '').isNotEmpty;
+
+  Map<String, dynamic> toJson() => {
+    'mode': mode,
+    'scheduled_at': scheduledAt,
+    'address': address,
+    'courier_id': courierId,
+    'courier_name': courierName,
+    'notes': notes,
+    'created_at': createdAt,
+  };
+
+  factory LogisticsSchedule.fromJson(Map<String, dynamic> json) {
+    return LogisticsSchedule(
+      mode: json['mode'] ?? 'penjemputan',
+      scheduledAt: dateTimeFromSnapshotOrNull(json['scheduled_at']),
+      address: json['address'],
+      courierId: json['courier_id'],
+      courierName: json['courier_name'],
+      notes: json['notes'],
+      createdAt: dateTimeFromSnapshotOrNull(json['created_at']),
+    );
+  }
+}
+
 class Order extends BaseModel {
   final String companyId;
   final String laundryId;
@@ -217,6 +272,10 @@ class Order extends BaseModel {
   final String? courierId;
   final String? courierName;
 
+  /// Rencana jadwal jemput/antar (lihat dokumentasi di LogisticsSchedule).
+  /// Null kalau belum pernah dijadwalkan sama sekali.
+  final LogisticsSchedule? logisticsSchedule;
+
   Order({
     required super.id,
     required super.createdAt,
@@ -252,6 +311,7 @@ class Order extends BaseModel {
     this.deliveryType = DeliveryType.selfPickup,
     this.courierId,
     this.courierName,
+    this.logisticsSchedule,
   });
 
   /// True kalau order ini butuh driver buat jemput baju ke lokasi pelanggan.
@@ -305,6 +365,7 @@ class Order extends BaseModel {
     DeliveryType? deliveryType,
     String? courierId,
     String? courierName,
+    LogisticsSchedule? logisticsSchedule,
   }) {
     return Order(
       id: id ?? this.id,
@@ -341,6 +402,7 @@ class Order extends BaseModel {
       deliveryType: deliveryType ?? this.deliveryType,
       courierId: courierId ?? this.courierId,
       courierName: courierName ?? this.courierName,
+      logisticsSchedule: logisticsSchedule ?? this.logisticsSchedule,
     );
   }
 
@@ -380,6 +442,7 @@ class Order extends BaseModel {
       'delivery_type': _deliveryTypeToFirestore(deliveryType),
       'courier_id': courierId,
       'courier_name': courierName,
+      'logistics_schedule': logisticsSchedule?.toJson(),
       'created_at': createdAt,
       'updated_at': updatedAt,
     };
@@ -432,6 +495,9 @@ class Order extends BaseModel {
       deliveryType: _deliveryTypeFromFirestore(json['delivery_type']),
       courierId: json['courier_id'],
       courierName: json['courier_name'],
+      logisticsSchedule: json['logistics_schedule'] != null
+          ? LogisticsSchedule.fromJson(Map<String, dynamic>.from(json['logistics_schedule'] as Map))
+          : null,
     );
   }
 }

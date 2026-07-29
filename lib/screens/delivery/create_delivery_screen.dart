@@ -88,6 +88,11 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
 
+  // True kalau tanggal/jam/alamat/kurir di form ini ke-isi otomatis dari
+  // jadwal yang udah dibuat pas CreateOrderScreen (bukan diketik manual
+  // sekarang) - dipakai buat nampilin hint kecil ke admin.
+  bool _prefilledFromOrder = false;
+
   List<Employee> _couriers = [];
   bool _isLoadingCouriers = true;
   Employee? _selectedCourier;
@@ -203,8 +208,33 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                             style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w600),
                           ),
                           subtitle: Text(order.orderNumber, style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant)),
+                          
                           onTap: () {
-                            setState(() => _selectedOrder = order);
+                            setState(() {
+                              _selectedOrder = order;
+                              _prefilledFromOrder = false;
+
+                              // Kalau order ini udah punya jadwal jemput
+                              // (diisi pas CreateOrderScreen) dan mode-nya
+                              // sama kayak yang lagi dibuka di sini, isi
+                              // otomatis field yang relevan supaya admin
+                              // tinggal melengkapi kurir + alamat.
+                              final schedule = order.logisticsSchedule;
+                              if (schedule != null && schedule.mode == _mode) {
+                                if (schedule.scheduledAt != null) {
+                                  _selectedDate = schedule.scheduledAt;
+                                  _selectedTime = TimeOfDay.fromDateTime(schedule.scheduledAt!);
+                                  _prefilledFromOrder = true;
+                                }
+                                if ((schedule.address ?? '').isNotEmpty) {
+                                  _addressController.text = schedule.address!;
+                                }
+                                if ((schedule.courierId ?? '').isNotEmpty) {
+                                  final match = _couriers.where((c) => c.id == schedule.courierId);
+                                  if (match.isNotEmpty) _selectedCourier = match.first;
+                                }
+                              }
+                            });
                             Navigator.pop(dialogContext);
                           },
                         );
@@ -425,6 +455,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
       onTap: () => setState(() {
         _mode = value;
         _selectedOrder = null;
+        _prefilledFromOrder = false;
       }),
       borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       child: AnimatedContainer(
@@ -539,6 +570,21 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
             ],
           ],
         ),
+        if (_prefilledFromOrder) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, size: 12, color: _DS.primary),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  'Tanggal & jam terisi otomatis dari saat pesanan dibuat',
+                  style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.primary, fontStyle: FontStyle.italic),
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
