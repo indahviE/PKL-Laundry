@@ -79,6 +79,13 @@
   },
   "otherProviderNotice": "Akun kamu login pakai provider lain (misalnya Google), jadi gak ada password yang bisa diubah di sini.",
 
+  "activeBranchLabel": "CABANG AKTIF",
+  "allBranchesLabel": "Semua Cabang",
+  "selectBranchTitle": "Pilih Cabang",
+  "searchBranchHint": "Cari nama cabang...",
+  "noBranchesRegistered": "Belum ada cabang terdaftar",
+  "branchNotFoundSearch": "Cabang tidak ditemukan",
+
   "greetingMorning": "Selamat Pagi",
   "greetingAfternoon": "Selamat Sore",
   "greetingEvening": "Selamat Malam",
@@ -333,6 +340,8 @@
   "viewAllOrdersComingSoon": "Navigasi ke semua riwayat pesanan akan ditambahkan",
   "noOrderHistoryLabel": "Belum ada riwayat pesanan",
   "orderStatusPending": "Menunggu",
+  "orderStatusConfirmed": "Dikonfirmasi",
+  "orderStatusInProgress": "Diproses",
   "orderStatusProcessing": "Diproses",
   "orderStatusCompleted": "Selesai",
   "orderStatusCancelled": "Dibatalkan",

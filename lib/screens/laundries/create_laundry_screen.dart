@@ -50,16 +50,14 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
   final _lngController = TextEditingController();
 
   String? _selectedCompanyId;
-  String? _selectedManagerId;
   bool _isActive = true;
   bool _isLoading = false;
 
   // Loading khusus saat mengambil data existing di mode edit
   bool _isLoadingInitialData = false;
 
-  // List Perusahaan & Karyawan (untuk dropdown company_id & manager_id)
+  // List Perusahaan (untuk dropdown company_id)
   List<Map<String, dynamic>> _companiesList = [];
-  List<Map<String, dynamic>> _employeesList = [];
 
   // Hari operasional sesuai skema operating_hours (§3.2.3): key harus persis
   // "monday".."sunday" agar konsisten dengan blueprint. Label ditampilkan
@@ -113,7 +111,6 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       for (final d in _days) d['key']!: true,
     };
     _fetchCompaniesData();
-    _fetchEmployeesData();
     if (isEditMode) {
       _loadExistingLaundry();
     }
@@ -170,7 +167,6 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       _emailController.text = (data['email'] ?? '') as String;
       _capacityController.text = (data['capacity']?.toString() ?? '');
       _selectedCompanyId = data['company_id'] as String?;
-      _selectedManagerId = data['manager_id'] as String?;
       _isActive = (data['is_active'] as bool?) ?? true;
 
       final location = data['location'] as Map<String, dynamic>?;
@@ -273,33 +269,6 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       });
     } catch (e) {
       debugPrint("Gagal memuat data perusahaan: $e");
-    }
-  }
-
-  /// Mengambil data karyawan aktif, untuk opsi manager_id (opsional,
-  /// bisa kosong bila cabang baru dibuat sebelum ada karyawan)
-  Future<void> _fetchEmployeesData() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    try {
-      final employeeSnap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('employees')
-          .where('is_active', isEqualTo: true)
-          .get();
-
-      setState(() {
-        _employeesList = employeeSnap.docs.map((doc) => {
-          'id': doc.id,
-          'name': (doc.data()['full_name'] as String?)?.isNotEmpty == true
-              ? doc.data()['full_name']
-              : (doc.data()['employee_code'] ?? AppLocalizations.of(context)!.defaultEmployeeName),
-        }).toList();
-      });
-    } catch (e) {
-      debugPrint("Gagal memuat data karyawan: $e");
     }
   }
 
@@ -441,7 +410,6 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
         'province': _provinceController.text.trim(),
         'phone': _phoneController.text.trim(),
         'email': _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-        'manager_id': _selectedManagerId,
         'operating_hours': operatingHoursData,
         'capacity': int.tryParse(_capacityController.text.trim()) ?? 0,
         'is_active': _isActive,
@@ -727,8 +695,6 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                                       _buildGeneralInfoSection(l10n),
                                       const SizedBox(height: 20),
                                       _buildOperatingHoursSection(l10n),
-                                      const SizedBox(height: 20),
-                                      _buildManagementSection(l10n),
                                       const SizedBox(height: 28),
                                       _buildPrimaryActions(l10n),
                                     ],
@@ -1121,43 +1087,6 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  /// Section "Manajemen": pilih manajer cabang (opsional).
-  Widget _buildManagementSection(AppLocalizations l10n) {
-    return _cardContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionTitle('Manajemen'),
-          _fieldLabel(l10n.managerOptionalLabel),
-          _employeesList.isEmpty
-              ? Container(
-                  padding: const EdgeInsets.all(AppTheme.md),
-                  decoration: BoxDecoration(
-                    color: _kFieldFill,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.borderColor),
-                  ),
-                  child: Text(
-                    l10n.noEmployeeDataInfo,
-                    style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
-                  ),
-                )
-              : DropdownButtonFormField<String>(
-                  value: _employeesList.any((e) => e['id'] == _selectedManagerId) ? _selectedManagerId : null,
-                  items: _employeesList.map((e) {
-                    return DropdownMenuItem<String>(
-                      value: e['id'],
-                      child: Text(e['name'], style: GoogleFonts.poppins(fontSize: 13)),
-                    );
-                  }).toList(),
-                  onChanged: (val) => setState(() => _selectedManagerId = val),
-                  decoration: _buildInputDecoration(l10n.selectManagerHint, null),
-                ),
-        ],
-      ),
     );
   }
 

@@ -398,6 +398,42 @@ abstract class AppLocalizations {
   /// **'Akun kamu login pakai provider lain (misalnya Google), jadi gak ada password yang bisa diubah di sini.'**
   String get otherProviderNotice;
 
+  /// No description provided for @activeBranchLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'CABANG AKTIF'**
+  String get activeBranchLabel;
+
+  /// No description provided for @allBranchesLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua Cabang'**
+  String get allBranchesLabel;
+
+  /// No description provided for @selectBranchTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih Cabang'**
+  String get selectBranchTitle;
+
+  /// No description provided for @searchBranchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari nama cabang...'**
+  String get searchBranchHint;
+
+  /// No description provided for @noBranchesRegistered.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada cabang terdaftar'**
+  String get noBranchesRegistered;
+
+  /// No description provided for @branchNotFoundSearch.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang tidak ditemukan'**
+  String get branchNotFoundSearch;
+
   /// No description provided for @greetingMorning.
   ///
   /// In id, this message translates to:
@@ -1267,6 +1303,18 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Menunggu'**
   String get orderStatusPending;
+
+  /// No description provided for @orderStatusConfirmed.
+  ///
+  /// In id, this message translates to:
+  /// **'Dikonfirmasi'**
+  String get orderStatusConfirmed;
+
+  /// No description provided for @orderStatusInProgress.
+  ///
+  /// In id, this message translates to:
+  /// **'Diproses'**
+  String get orderStatusInProgress;
 
   /// No description provided for @orderStatusProcessing.
   ///

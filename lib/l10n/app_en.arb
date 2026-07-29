@@ -79,6 +79,13 @@
   },
   "otherProviderNotice": "Your account is signed in with another provider (e.g. Google), so there's no password to change here.",
 
+  "activeBranchLabel": "ACTIVE BRANCH",
+  "allBranchesLabel": "All Branches",
+  "selectBranchTitle": "Select Branch",
+  "searchBranchHint": "Search branch name...",
+  "noBranchesRegistered": "No branches registered yet",
+  "branchNotFoundSearch": "Branch not found",
+
   "greetingMorning": "Good Morning",
   "greetingAfternoon": "Good Afternoon",
   "greetingEvening": "Good Evening",
@@ -333,6 +340,8 @@
   "viewAllOrdersComingSoon": "Navigate to full order history will be added",
   "noOrderHistoryLabel": "No order history yet",
   "orderStatusPending": "Pending",
+  "orderStatusConfirmed": "Confirmed",
+  "orderStatusInProgress": "In Progress",
   "orderStatusProcessing": "Processing",
   "orderStatusCompleted": "Completed",
   "orderStatusCancelled": "Cancelled",

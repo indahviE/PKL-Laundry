@@ -177,6 +177,24 @@ class AppLocalizationsId extends AppLocalizations {
       'Akun kamu login pakai provider lain (misalnya Google), jadi gak ada password yang bisa diubah di sini.';
 
   @override
+  String get activeBranchLabel => 'CABANG AKTIF';
+
+  @override
+  String get allBranchesLabel => 'Semua Cabang';
+
+  @override
+  String get selectBranchTitle => 'Pilih Cabang';
+
+  @override
+  String get searchBranchHint => 'Cari nama cabang...';
+
+  @override
+  String get noBranchesRegistered => 'Belum ada cabang terdaftar';
+
+  @override
+  String get branchNotFoundSearch => 'Cabang tidak ditemukan';
+
+  @override
   String get greetingMorning => 'Selamat Pagi';
 
   @override
@@ -660,6 +678,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get orderStatusPending => 'Menunggu';
+
+  @override
+  String get orderStatusConfirmed => 'Dikonfirmasi';
+
+  @override
+  String get orderStatusInProgress => 'Diproses';
 
   @override
   String get orderStatusProcessing => 'Diproses';
