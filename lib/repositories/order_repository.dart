@@ -254,18 +254,42 @@ class OrderRepository {
     });
   }
 
+  /// Konfirmasi jemput sekaligus mencatat item, berat, DAN pembayaran -
+  /// dipanggil dari _ConfirmPickupSheet setelah barang beneran ditimbang.
+  ///
+  /// Order pickup dibuat di CreateOrderScreen TANPA item & TANPA pembayaran
+  /// (subtotal 0, paid_amount 0, payment_status pending) karena totalnya
+  /// belum bisa dihitung saat itu. Di sinilah baru pertama kali totalnya
+  /// diketahui, jadi payment_method/paid_amount/payment_status order
+  /// SETIAP KALI DITIMPA (bukan ditambah/increment seperti recordPayment)
+  /// dengan nilai final dari sheet konfirmasi - order pickup tidak pernah
+  /// punya paid_amount > 0 sebelum titik ini.
+  ///
+  /// paidAmount tetap divalidasi tidak boleh melebihi subtotal (toleransi
+  /// Rp1 buat pembulatan double), sama seperti guard overpay di
+  /// recordPayment().
   Future<void> confirmPickupWithItems(
     String orderId, {
     required List<OrderItem> items,
     required double totalWeight,
     required int totalItems,
     required double subtotal,
+    required PaymentMethod paymentMethod,
+    required double paidAmount,
+    required PaymentStatus paymentStatus,
   }) async {
     if (items.isEmpty) {
       throw Exception('Item cucian tidak boleh kosong.');
     }
+    if (paidAmount < 0) {
+      throw Exception('Nominal pembayaran tidak valid.');
+    }
+    if (paidAmount > subtotal + 1) {
+      throw Exception('Nominal pembayaran melebihi total pesanan.');
+    }
 
     final orderRef = _ordersRef.doc(orderId);
+    final transactionRef = _transactionsRef.doc();
 
     await _firestore.runTransaction((txn) async {
       final orderSnap = await txn.get(orderRef);
@@ -277,7 +301,7 @@ class OrderRepository {
 
       final updatedHistory = [
         ...order.statusHistory,
-        StatusHistory(status: order.status, timestamp: now, note: 'Item & berat dicatat saat jemput'),
+        StatusHistory(status: order.status, timestamp: now, note: 'Item, berat & pembayaran dicatat saat jemput'),
       ];
 
       txn.update(orderRef, {
@@ -285,6 +309,9 @@ class OrderRepository {
         'total_weight': totalWeight,
         'total_items': totalItems,
         'total_amount': subtotal,
+        'payment_method': paymentMethod.name,
+        'paid_amount': paidAmount,
+        'payment_status': paymentStatus.name,
         'pickup_date': now,
         'status_history': updatedHistory.map((e) => e.toJson()).toList(),
         'updated_at': now,
@@ -294,6 +321,23 @@ class OrderRepository {
         final customerRef = _customersRef.doc(order.customerId);
         txn.update(customerRef, {
           'total_spent': FieldValue.increment(amountDelta),
+          'updated_at': now,
+        });
+      }
+
+      // Catat transaksi pembayaran, sama pola-nya dengan createOrder() -
+      // supaya histori pembayaran (getPaymentsForOrder) tetap lengkap
+      // walau pembayaran order pickup baru terjadi di titik ini, bukan
+      // saat order pertama kali dibuat.
+      if (paidAmount > 0) {
+        txn.set(transactionRef, {
+          'order_id': orderId,
+          'amount': paidAmount,
+          'method': paymentMethod.name,
+          'type': TransactionType.orderPayment.name,
+          'note': 'Pembayaran saat konfirmasi jemput',
+          'recorded_by': null,
+          'created_at': now,
           'updated_at': now,
         });
       }
