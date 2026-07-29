@@ -8,6 +8,59 @@ import '../../models/laundry.dart';
 import '../../repositories/employee_repository.dart';
 import '../../repositories/laundry_repository.dart';
 
+/// Local design tokens matching the new "NetWash Utility System" design
+/// (samain persis dengan ServicesListScreen & CreateEmployeeScreen: canvas
+/// abu kebiruan, kartu putih shadow lembut, Be Vietnam Pro). Sengaja TIDAK
+/// menyentuh AppTheme global, biar layar lain gak ikut berubah.
+class _DS {
+  static const canvas = Color(0xFFF5F7FA);
+  static const surface = Colors.white;
+  static const onSurface = Color(0xFF1B1C1C);
+  static const onSurfaceVariant = Color(0xFF404752);
+  static const outline = Color(0xFF707883);
+  static const outlineVariant = Color(0xFFBFC7D4);
+
+  static const navy = Color(0xFF0B3B66);
+  static const primary = Color(0xFF0061A4);
+  static const primaryFixed = Color(0xFFD1E4FF);
+
+  static const error = Color(0xFFBA1A1A);
+  static const success = Color(0xFF27AE60);
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static TextStyle headlineMd({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
+        color: color ?? onSurface,
+        letterSpacing: -0.2,
+      );
+
+  static TextStyle bodyMd({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
+        fontSize: 14,
+        fontWeight: weight ?? FontWeight.w400,
+        color: color ?? onSurface,
+      );
+
+  static TextStyle bodySm({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
+        fontSize: 12.5,
+        fontWeight: weight ?? FontWeight.w400,
+        color: color ?? onSurfaceVariant,
+      );
+
+  static TextStyle labelBold({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: color ?? onSurfaceVariant,
+      );
+}
+
 /// Provider untuk mengambil data karyawan secara real-time
 final employeesStreamProvider = StreamProvider<List<Employee>>((ref) {
   final repo = ref.watch(employeeRepositoryProvider);
@@ -39,11 +92,6 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     super.dispose();
   }
 
-  /// Format Mata Uang
-  String _formatCurrency(double amount) {
-    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
-  }
-
   /// Warna badge per role/jabatan, dipakai konsisten di dropdown filter role
   /// maupun badge role pada kartu karyawan (sesuai mockup: Manajer biru,
   /// Kasir hijau, Operator Cuci oranye, Kurir ungu). Role di luar daftar ini
@@ -59,7 +107,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
       case 'kurir':
         return const Color(0xFF9B51E0);
       default:
-        return AppTheme.primaryColor;
+        return _DS.primary;
     }
   }
 
@@ -74,13 +122,17 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Terminasi Karyawan', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Text('Apakah Anda yakin ingin menonaktifkan ${employee.fullName.isNotEmpty ? employee.fullName : employee.employeeCode} (${employee.position})?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Terminasi Karyawan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+        content: Text(
+          'Apakah Anda yakin ingin menonaktifkan ${employee.fullName.isNotEmpty ? employee.fullName : employee.employeeCode} (${employee.position})?',
+          style: _DS.bodySm(color: _DS.onSurfaceVariant),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Batal', style: GoogleFonts.beVietnamPro())),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Ya, Nonaktifkan', style: TextStyle(color: Colors.red)),
+            child: Text('Ya, Nonaktifkan', style: GoogleFonts.beVietnamPro(color: _DS.error, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -90,7 +142,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
       await ref.read(employeeRepositoryProvider).terminateEmployee(employee.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Karyawan ${employee.employeeCode} telah dinonaktifkan')),
+          SnackBar(content: Text('Karyawan ${employee.employeeCode} telah dinonaktifkan', style: GoogleFonts.beVietnamPro())),
         );
       }
     }
@@ -109,13 +161,11 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     };
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFBF9F8), // Disamakan dengan latar order_list_screen
-      // Tombol create dipindah ke header (lihat _buildHeader), FAB dihapus
-      // supaya polanya konsisten dengan LaundriesListScreen.
+      backgroundColor: _DS.canvas,
       body: SafeArea(
         child: employeesAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Center(child: Text('Error: $err')),
+          loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2, color: _DS.primary)),
+          error: (err, stack) => Center(child: Text('Error: $err', style: GoogleFonts.beVietnamPro())),
           data: (allEmployees) {
             // Logika Filter & Search
             final filteredEmployees = allEmployees.where((emp) {
@@ -158,7 +208,12 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 900),
               child: Padding(
-                padding: EdgeInsets.all(isMobile ? 16 : 24),
+                padding: EdgeInsets.fromLTRB(
+                  isMobile ? 12 : 24,
+                  isMobile ? 16 : 24,
+                  isMobile ? 20 : 24,
+                  isMobile ? 16 : 24,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -169,7 +224,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
                     _buildTotalStat(allEmployees.length),
                     const SizedBox(height: AppTheme.lg),
                     _buildStatusChips(),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     _buildFilterDropdowns(laundries, availableRoles),
                     const SizedBox(height: AppTheme.xl),
                     employees.isEmpty
@@ -186,51 +241,61 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     );
   }
 
-  /// Header: tombol back (conditional) + icon + judul + tombol create bulat
-  /// di kanan, disamakan persis dengan LaundriesListScreen._buildHeader.
+  /// Header - samain persis dengan pola ServicesListScreen: tombol back
+  /// bulat (shadow), icon box badge biru muda, judul, tombol tambah bulat
+  /// biru muda di kanan.
   Widget _buildHeader(BuildContext context) {
     final canGoBack = context.canPop();
 
     return Row(
       children: [
-        // Tombol back disamakan persis dengan LaundriesListScreen._buildHeader
-        // (InkWell + Padding, tanpa background bulat berwarna).
         if (canGoBack) ...[
           InkWell(
             onTap: () => context.pop(),
-            borderRadius: BorderRadius.circular(999),
-            child: const Padding(
-              padding: EdgeInsets.all(6),
-              child: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 22),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _DS.surface,
+                shape: BoxShape.circle,
+                boxShadow: _DS.cardShadow,
+              ),
+              child: const Icon(Icons.arrow_back_rounded, size: 20, color: _DS.navy),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 10),
         ],
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: _DS.primaryFixed,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.badge_outlined, color: _DS.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             'Kelola Karyawan',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-              color: AppTheme.textPrimary,
-            ),
+            style: _DS.headlineMd(color: _DS.navy),
           ),
         ),
-        // Tombol create, disamakan persis dengan LaundriesListScreen (bulat,
-        // warna primary, icon add_rounded putih) — menggantikan FAB lama.
-        Material(
-          color: AppTheme.primaryColor,
-          shape: const CircleBorder(),
-          child: InkWell(
-            onTap: () => _openCreateEmployee(context),
-            customBorder: const CircleBorder(),
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(Icons.add_rounded, color: Colors.white, size: 22),
+        InkWell(
+          onTap: () => _openCreateEmployee(context),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: _DS.primaryFixed,
+              shape: BoxShape.circle,
             ),
+            child: const Icon(Icons.add_rounded, color: _DS.navy, size: 22),
           ),
         ),
       ],
@@ -238,51 +303,35 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
   }
 
   Widget _buildSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: _searchController,
-        onChanged: (_) => setState(() {}),
-        style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
-        decoration: InputDecoration(
-          hintText: 'Cari nama atau nomor telepon karyawan...',
-          hintStyle: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textTertiary),
-          prefixIcon: Icon(Icons.search, color: AppTheme.textTertiary),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
-          ),
-          filled: true,
-          fillColor: AppTheme.cardColor,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.lg,
-            vertical: AppTheme.md,
-          ),
+    return TextField(
+      controller: _searchController,
+      onChanged: (_) => setState(() {}),
+      style: _DS.bodyMd(),
+      decoration: InputDecoration(
+        hintText: 'Cari nama atau nomor telepon karyawan...',
+        hintStyle: _DS.bodyMd(color: _DS.onSurfaceVariant),
+        prefixIcon: const Icon(Icons.search_rounded, color: _DS.onSurfaceVariant),
+        filled: true,
+        fillColor: _DS.surface,
+        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: _DS.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: _DS.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: _DS.primary, width: 1.5),
         ),
       ),
     );
   }
 
-  /// Chip status Semua/Aktif/Tidak Aktif (tetap chip sesuai mockup, karena
-  /// cuma 3 opsi jadi ga makan tempat).
+  /// Chip status Semua/Aktif/Tidak Aktif - restyle jadi pill navy-selected
+  /// sesuai pola _filterChip di ServicesListScreen.
   Widget _buildStatusChips() {
     final filters = [
       ('all', 'Semua', Icons.groups_outlined),
@@ -291,32 +340,50 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     ];
 
     return SizedBox(
-      height: 34,
+      height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final f = filters[index];
           final isSelected = _selectedFilter == f.$1;
-          return ChoiceChip(
-            label: Text(f.$2, overflow: TextOverflow.ellipsis),
-            selected: isSelected,
-            onSelected: (val) => setState(() => _selectedFilter = f.$1),
-            avatar: Icon(f.$3, size: 16, color: isSelected ? Colors.white : AppTheme.primaryColor),
-            showCheckmark: false,
-            selectedColor: AppTheme.primaryColor,
-            labelStyle: GoogleFonts.poppins(color: isSelected ? Colors.white : AppTheme.textSecondary, fontSize: 12),
+          return InkWell(
+            onTap: () => setState(() => _selectedFilter = f.$1),
+            borderRadius: BorderRadius.circular(999),
+            child: Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isSelected ? _DS.navy : _DS.surface,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: isSelected ? _DS.navy : _DS.outlineVariant),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(f.$3, size: 15, color: isSelected ? Colors.white : _DS.onSurfaceVariant),
+                  const SizedBox(width: 6),
+                  Text(
+                    f.$2,
+                    style: _DS.bodySm(
+                      color: isSelected ? Colors.white : _DS.onSurfaceVariant,
+                      weight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         },
       ),
     );
   }
 
-  /// Filter Cabang & Role sekarang jadi dropdown berdampingan (menggantikan
-  /// 2 baris chip yang bisa kepanjangan kalau datanya banyak). Cabang di
-  /// kiri, Role di kanan, masing-masing setengah lebar.
+  /// Filter Cabang & Role berdampingan (Cabang di kiri, Role di kanan),
+  /// masing-masing setengah lebar - restyle pakai warna & radius _DS.
   Widget _buildFilterDropdowns(List<Laundry> laundries, List<String> roles) {
     return Row(
       children: [
@@ -327,44 +394,41 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     );
   }
 
-  /// Dropdown filter cabang, menggantikan _buildBranchChips lama (sesuai
-  /// mockup "Semua Cabang | Sudirman | Menteng | ..." tapi dalam bentuk
-  /// dropdown biar ga makan tempat kalau cabangnya banyak).
   Widget _buildBranchDropdown(List<Laundry> laundries) {
     final validIds = laundries.map((l) => l.id).toSet();
     final value = (_selectedLaundryId != null && validIds.contains(_selectedLaundryId)) ? _selectedLaundryId : null;
 
     return Container(
-      height: 40,
+      height: 42,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(color: AppTheme.borderColor.withOpacity(0.6)),
+        color: _DS.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _DS.outlineVariant),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
           value: value,
           isExpanded: true,
-          icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textTertiary, size: 20),
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textPrimary),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _DS.onSurfaceVariant, size: 20),
+          borderRadius: BorderRadius.circular(14),
+          style: _DS.bodySm(color: _DS.onSurface),
           onChanged: (val) => setState(() => _selectedLaundryId = val),
           items: [
             DropdownMenuItem<String?>(
               value: null,
               child: Row(
                 children: [
-                  Icon(Icons.storefront_outlined, size: 15, color: AppTheme.primaryColor),
+                  const Icon(Icons.storefront_outlined, size: 15, color: _DS.primary),
                   const SizedBox(width: 6),
-                  const Flexible(child: Text('Semua Cabang', overflow: TextOverflow.ellipsis)),
+                  Flexible(child: Text('Semua Cabang', overflow: TextOverflow.ellipsis, style: _DS.bodySm(color: _DS.onSurface))),
                 ],
               ),
             ),
             ...laundries.map(
               (l) => DropdownMenuItem<String?>(
                 value: l.id,
-                child: Text(l.name, overflow: TextOverflow.ellipsis),
+                child: Text(l.name, overflow: TextOverflow.ellipsis, style: _DS.bodySm(color: _DS.onSurface)),
               ),
             ),
           ],
@@ -373,38 +437,34 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     );
   }
 
-  /// Dropdown filter role/jabatan, menggantikan _buildRoleChips lama (sesuai
-  /// mockup "Semua | Manajer | Kasir | Operator Cuci"). Tiap opsi tetap
-  /// dikasih titik warna sesuai _roleColor supaya konsisten dengan badge
-  /// role di kartu karyawan.
   Widget _buildRoleDropdown(List<String> roles) {
     final validRoles = roles.map((r) => r.toLowerCase()).toSet();
     final value = (_selectedRole != null && validRoles.contains(_selectedRole!.toLowerCase())) ? _selectedRole : null;
 
     return Container(
-      height: 40,
+      height: 42,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(color: AppTheme.borderColor.withOpacity(0.6)),
+        color: _DS.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _DS.outlineVariant),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
           value: value,
           isExpanded: true,
-          icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textTertiary, size: 20),
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textPrimary),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _DS.onSurfaceVariant, size: 20),
+          borderRadius: BorderRadius.circular(14),
+          style: _DS.bodySm(color: _DS.onSurface),
           onChanged: (val) => setState(() => _selectedRole = val),
           items: [
             DropdownMenuItem<String?>(
               value: null,
               child: Row(
                 children: [
-                  Icon(Icons.badge_outlined, size: 15, color: AppTheme.primaryColor),
+                  const Icon(Icons.badge_outlined, size: 15, color: _DS.primary),
                   const SizedBox(width: 6),
-                  const Flexible(child: Text('Semua Role', overflow: TextOverflow.ellipsis)),
+                  Flexible(child: Text('Semua Role', overflow: TextOverflow.ellipsis, style: _DS.bodySm(color: _DS.onSurface))),
                 ],
               ),
             ),
@@ -419,7 +479,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
                       decoration: BoxDecoration(shape: BoxShape.circle, color: _roleColor(r)),
                     ),
                     const SizedBox(width: 8),
-                    Flexible(child: Text(r, overflow: TextOverflow.ellipsis)),
+                    Flexible(child: Text(r, overflow: TextOverflow.ellipsis, style: _DS.bodySm(color: _DS.onSurface))),
                   ],
                 ),
               ),
@@ -430,29 +490,22 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     );
   }
 
-  /// Kartu "Total Karyawan" tunggal sesuai mockup (angka staf aktif tetap
-  /// bisa dilihat lewat chip filter status "Aktif" di atasnya).
+  /// Kartu "Total Karyawan" - restyle pakai _DS.cardShadow & warna primary.
   Widget _buildTotalStat(int total) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppTheme.lg),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        color: _DS.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: _DS.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Total Karyawan', style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary)),
+          Text('Total Karyawan', style: _DS.bodySm()),
           const SizedBox(height: 6),
-          Text('$total', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+          Text('$total', style: _DS.headlineMd(color: _DS.primary).copyWith(fontSize: 22)),
         ],
       ),
     );
@@ -479,52 +532,33 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
+        padding: const EdgeInsets.symmetric(vertical: 48),
         child: Column(
           children: [
             Container(
-              width: 84,
-              height: 84,
+              width: 96,
+              height: 96,
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.08),
+                color: _DS.primary.withOpacity(0.08),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.badge_outlined,
-                size: 40,
-                color: AppTheme.primaryColor.withOpacity(0.6),
-              ),
+              child: Icon(Icons.badge_outlined, size: 44, color: _DS.primary.withOpacity(0.6)),
             ),
-            const SizedBox(height: AppTheme.lg),
-            Text(
-              'Data karyawan tidak ditemukan',
-              style: GoogleFonts.poppins(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppTheme.sm),
-            Text(
-              'Coba ubah filter atau tambahkan karyawan baru',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: AppTheme.xl),
+            const SizedBox(height: 20),
+            Text('Data karyawan tidak ditemukan', style: _DS.bodyMd(weight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Text('Coba ubah filter atau tambahkan karyawan baru', style: _DS.bodySm()),
+            const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () => _openCreateEmployee(context),
               icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
-              label: Text('Karyawan Baru', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              label: Text('Karyawan Baru', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: _DS.primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: AppTheme.xl, vertical: AppTheme.md),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
             ),
           ],
@@ -534,6 +568,9 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
   }
 }
 
+/// Kartu 1 karyawan - restyle mengikuti pola _ServiceCard di
+/// ServicesListScreen: icon avatar kiri, nama, badge role & cabang, telepon,
+/// titik status & chevron di kanan.
 class _EmployeeCard extends StatelessWidget {
   final Employee employee;
   final String laundryName;
@@ -547,30 +584,59 @@ class _EmployeeCard extends StatelessWidget {
     required this.onTap,
   });
 
+  String _getInitials(String name) {
+    final parts = name.trim().split(' ').where((p) => p.isNotEmpty).toList();
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.isNotEmpty ? name[0].toUpperCase() : '?';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isActive = employee.isActive;
+    final displayName = employee.fullName.isNotEmpty ? employee.fullName : 'Tanpa Nama';
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.borderColor.withOpacity(0.5)),
+          color: _DS.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: _DS.cardShadow,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isActive ? roleColor.withOpacity(0.12) : const Color(0xFFE9E9E9),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                _getInitials(employee.fullName.isNotEmpty ? employee.fullName : employee.position),
+                style: _DS.bodyMd(
+                  color: isActive ? roleColor : const Color(0xFF9CA3AF),
+                  weight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    employee.fullName.isNotEmpty ? employee.fullName : 'Tanpa Nama',
+                    displayName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14.5),
+                    style: _DS.bodyMd(
+                      color: isActive ? _DS.onSurface : const Color(0xFF9CA3AF),
+                      weight: FontWeight.w700,
+                    ).copyWith(fontSize: 14.5),
                   ),
                   const SizedBox(height: 6),
                   Wrap(
@@ -582,37 +648,30 @@ class _EmployeeCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: roleColor.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(6),
+                            color: isActive ? roleColor.withOpacity(0.12) : const Color(0xFFE9E9E9),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             employee.position.toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(fontSize: 10.5, fontWeight: FontWeight.w700, color: roleColor),
+                            style: _DS.bodySm(
+                              color: isActive ? roleColor : const Color(0xFF6B7280),
+                              weight: FontWeight.w700,
+                            ).copyWith(fontSize: 10.5),
                           ),
                         ),
-                      Text(
-                        laundryName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
-                      ),
+                      Text(laundryName, maxLines: 1, overflow: TextOverflow.ellipsis, style: _DS.bodySm()),
                     ],
                   ),
                   if (employee.phone.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.phone_outlined, size: 14, color: AppTheme.textTertiary),
+                        Icon(Icons.phone_outlined, size: 14, color: _DS.onSurfaceVariant.withOpacity(0.7)),
                         const SizedBox(width: 4),
                         Flexible(
-                          child: Text(
-                            employee.phone,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
-                          ),
+                          child: Text(employee.phone, maxLines: 1, overflow: TextOverflow.ellipsis, style: _DS.bodySm()),
                         ),
                       ],
                     ),
@@ -629,11 +688,11 @@ class _EmployeeCard extends StatelessWidget {
                   height: 10,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: employee.isActive ? const Color(0xFF27AE60) : Colors.grey.shade400,
+                    color: isActive ? _DS.success : Colors.grey.shade400,
                   ),
                 ),
                 const SizedBox(height: 20),
-                Icon(Icons.chevron_right, size: 20, color: AppTheme.textTertiary),
+                Icon(Icons.chevron_right_rounded, size: 20, color: _DS.onSurfaceVariant.withOpacity(0.6)),
               ],
             ),
           ],
