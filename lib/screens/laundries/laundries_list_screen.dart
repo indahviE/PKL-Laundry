@@ -7,6 +7,34 @@ import '../../models/laundry.dart';
 import '../../repositories/laundry_repository.dart';
 import '../../l10n/app_localizations.dart';
 
+/// Local design tokens matching the new "NetWash Utility System" design
+/// (samain persis dengan EmployeesListScreen: canvas abu kebiruan, kartu
+/// putih shadow lembut, Be Vietnam Pro, header navy + icon badge biru muda).
+/// Sengaja TIDAK menyentuh AppTheme global, biar layar lain gak ikut berubah.
+class _DS {
+  static const canvas = Color(0xFFF5F7FA);
+  static const surface = Colors.white;
+  static const onSurface = Color(0xFF1B1C1C);
+  static const onSurfaceVariant = Color(0xFF404752);
+  static const outline = Color(0xFF707883);
+  static const outlineVariant = Color(0xFFBFC7D4);
+
+  static const navy = Color(0xFF0B3B66);
+  static const primary = Color(0xFF0061A4);
+  static const primaryFixed = Color(0xFFD1E4FF);
+
+  static const error = Color(0xFFBA1A1A);
+  static const success = Color(0xFF27AE60);
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+}
+
 /// Warna badge status - disamakan persis dengan referensi visual
 const _kSuccessBg = Color(0xFFDCFCE7);
 const _kSuccessText = Color(0xFF15803D);
@@ -70,8 +98,8 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
     final laundriesAsync = ref.watch(laundriesStreamProvider);
 
     return Scaffold(
-      // Disamakan background-nya dengan Detail Screen (#F5F7FA)
-      backgroundColor: const Color(0xFFFBF9F8),
+      // Disamakan dengan EmployeesListScreen (canvas abu kebiruan)
+      backgroundColor: _DS.canvas,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -87,7 +115,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
                     child: Container(
                       // Beri warna background yang sama dengan Scaffold supaya
                       // konten yang lewat di bawahnya tidak terlihat menembus.
-                      color: const Color(0xFFFBF9F8),
+                      color: _DS.canvas,
                       padding: EdgeInsets.fromLTRB(
                         horizontalPadding,
                         isMobile ? 16 : 24,
@@ -171,49 +199,55 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
         if (canGoBack) ...[
           InkWell(
             onTap: () => context.pop(),
-            borderRadius: BorderRadius.circular(999),
-            child: const Padding(
-              padding: EdgeInsets.all(6),
-              child: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 22),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _DS.surface,
+                shape: BoxShape.circle,
+                boxShadow: _DS.cardShadow,
+              ),
+              child: const Icon(Icons.arrow_back_rounded, size: 20, color: _DS.navy),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 10),
         ],
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: _DS.primaryFixed,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.storefront_outlined, color: _DS.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.laundriesTitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                l10n.laundriesSubtitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w400,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-            ],
+          child: Text(
+            l10n.laundriesTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.beVietnamPro(
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+              color: _DS.navy,
+            ),
           ),
         ),
-        Material(
-          color: AppTheme.primaryColor,
-          shape: const CircleBorder(),
-          child: InkWell(
-            onTap: () => _openCreateLaundry(context),
-            customBorder: const CircleBorder(),
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(Icons.add_rounded, color: Colors.white, size: 22),
+        InkWell(
+          onTap: () => _openCreateLaundry(context),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: _DS.primaryFixed,
+              shape: BoxShape.circle,
             ),
+            child: const Icon(Icons.add_rounded, color: _DS.navy, size: 22),
           ),
         ),
       ],
@@ -225,11 +259,11 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
+        color: _DS.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
+            color: _DS.primary.withOpacity(0.06),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -237,11 +271,11 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
       ),
       child: TextField(
         controller: _searchController,
-        style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+        style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
         decoration: InputDecoration(
           hintText: l10n.searchLaundryHint,
-          hintStyle: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textTertiary),
-          prefixIcon: Icon(Icons.search, color: AppTheme.textTertiary),
+          hintStyle: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.outline),
+          prefixIcon: Icon(Icons.search, color: _DS.outline),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             borderSide: BorderSide.none,
@@ -252,10 +286,10 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
+            borderSide: BorderSide(color: _DS.primary, width: 1.5),
           ),
           filled: true,
-          fillColor: AppTheme.cardColor,
+          fillColor: _DS.surface,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AppTheme.lg,
             vertical: AppTheme.md,
@@ -279,56 +313,46 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
       ('inactive', l10n.filterInactiveLaundries, Icons.pause_circle_outline),
     ];
 
-    return Wrap(
-      spacing: AppTheme.md,
-      runSpacing: AppTheme.sm,
-      children: List.generate(
-        filters.length,
-        (index) => FilterChip(
-          selected: _selectedFilter == filters[index].$1,
-          onSelected: (selected) {
-            setState(() {
-              _selectedFilter = filters[index].$1;
-            });
-          },
-          showCheckmark: false,
-          // Mencegah overflow vertikal dan memberikan padding yang pas
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          visualDensity: VisualDensity.compact,
-          labelPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-          padding: EdgeInsets.zero,
-          label: Row(
-            mainAxisSize: MainAxisSize.min, // Menghindari horizontal/flex overflow
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(
-                filters[index].$3,
-                size: 15,
-                color: _selectedFilter == filters[index].$1
-                    ? AppTheme.primaryColor
-                    : AppTheme.textSecondary,
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final f = filters[index];
+          final isSelected = _selectedFilter == f.$1;
+          return InkWell(
+            onTap: () => setState(() => _selectedFilter = f.$1),
+            borderRadius: BorderRadius.circular(999),
+            child: Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isSelected ? _DS.navy : _DS.surface,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: isSelected ? _DS.navy : _DS.outlineVariant),
               ),
-              const SizedBox(width: 6),
-              Text(
-                filters[index].$2,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: _selectedFilter == filters[index].$1
-                      ? AppTheme.primaryColor
-                      : AppTheme.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(f.$3, size: 15, color: isSelected ? Colors.white : _DS.onSurfaceVariant),
+                  const SizedBox(width: 6),
+                  Text(
+                    f.$2,
+                    style: GoogleFonts.beVietnamPro(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : _DS.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          backgroundColor: AppTheme.cardColor,
-          selectedColor: AppTheme.primaryColor.withOpacity(0.12),
-          side: BorderSide(
-            color: _selectedFilter == filters[index].$1
-                ? AppTheme.primaryColor.withOpacity(0.4)
-                : AppTheme.borderColor,
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -346,7 +370,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
             title: l10n.totalLaundriesLabel,
             value: '$totalLaundries',
             icon: Icons.apartment_outlined,
-            color: AppTheme.primaryColor,
+            color: _DS.primary,
           ),
         ),
         const SizedBox(width: AppTheme.lg),
@@ -374,39 +398,39 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
               width: 84,
               height: 84,
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.08),
+                color: _DS.primary.withOpacity(0.08),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.storefront_outlined,
                 size: 40,
-                color: AppTheme.primaryColor.withOpacity(0.6),
+                color: _DS.primary.withOpacity(0.6),
               ),
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
               l10n.emptyLaundriesTitle,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.beVietnamPro(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
+                color: _DS.onSurface,
               ),
             ),
             const SizedBox(height: AppTheme.sm),
             Text(
               l10n.emptyLaundriesSubtitle,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.beVietnamPro(
                 fontSize: 13,
-                color: AppTheme.textSecondary,
+                color: _DS.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: AppTheme.xl),
             ElevatedButton.icon(
               onPressed: () => _openCreateLaundry(context),
               icon: const Icon(Icons.add_business_outlined, size: 18),
-              label: Text(l10n.addBranchButton, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              label: Text(l10n.addBranchButton, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: _DS.primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: AppTheme.xl, vertical: AppTheme.md),
@@ -445,19 +469,19 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
             const SizedBox(height: AppTheme.lg),
             Text(
               l10n.loadLaundriesError,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.beVietnamPro(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
+                color: _DS.onSurface,
               ),
             ),
             const SizedBox(height: AppTheme.sm),
             Text(
               '$error',
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.beVietnamPro(
                 fontSize: 12.5,
-                color: AppTheme.textSecondary,
+                color: _DS.onSurfaceVariant,
               ),
             ),
           ],
@@ -468,6 +492,7 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
 
   /// Build laundries list
   Widget _buildLaundriesList(BuildContext context, List<Laundry> laundries) {
+    final l10n = AppLocalizations.of(context)!;
     const previewCount = 3;
     final visible = _showAllList ? laundries : laundries.take(previewCount).toList();
     final hasMore = laundries.length > previewCount;
@@ -479,11 +504,11 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Daftar Cabang (${laundries.length})',
-              style: GoogleFonts.poppins(
+              l10n.branchListTitle(laundries.length),
+              style: GoogleFonts.beVietnamPro(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
+                color: _DS.onSurface,
               ),
             ),
             if (hasMore)
@@ -495,11 +520,11 @@ class _LaundriesListScreenState extends ConsumerState<LaundriesListScreen> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  _showAllList ? 'Sembunyikan' : 'Lihat Semua',
-                  style: GoogleFonts.poppins(
+                  _showAllList ? l10n.hideLabel : l10n.viewAllLabel,
+                  style: GoogleFonts.beVietnamPro(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.primaryColor,
+                    color: _DS.primary,
                   ),
                 ),
               ),
@@ -544,11 +569,11 @@ class _StatBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
+        color: _DS.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
+            color: _DS.primary.withOpacity(0.06),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -572,18 +597,18 @@ class _StatBox extends StatelessWidget {
           const SizedBox(height: AppTheme.md),
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.beVietnamPro(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+              color: _DS.onSurface,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.beVietnamPro(
               fontSize: 12,
-              color: AppTheme.textTertiary,
+              color: _DS.outline,
             ),
           ),
         ],
@@ -626,11 +651,11 @@ class _LaundryCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppTheme.lg),
         decoration: BoxDecoration(
-          color: AppTheme.cardColor,
+          color: _DS.surface,
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.06),
+              color: _DS.primary.withOpacity(0.06),
               blurRadius: 20,
               offset: const Offset(0, 6),
             ),
@@ -656,7 +681,7 @@ class _LaundryCard extends StatelessWidget {
                     ),
                     child: Text(
                       (laundry.isActive ? l10n.filterActiveLaundries : l10n.filterInactiveLaundries).toUpperCase(),
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.beVietnamPro(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
@@ -668,26 +693,26 @@ class _LaundryCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppTheme.md),
-            Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
+            Divider(height: 1, color: _DS.outlineVariant.withOpacity(0.6)),
             const SizedBox(height: AppTheme.md),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.inventory_2_outlined, size: 16, color: AppTheme.primaryColor),
+                    Icon(Icons.inventory_2_outlined, size: 16, color: _DS.primary),
                     const SizedBox(width: 6),
                     Text(
                       l10n.cardCapacityLabel(laundry.capacity),
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.beVietnamPro(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
+                        color: _DS.onSurface,
                       ),
                     ),
                   ],
                 ),
-                Icon(Icons.chevron_right_rounded, color: AppTheme.primaryColor, size: 20),
+                Icon(Icons.chevron_right_rounded, color: _DS.primary, size: 20),
               ],
             ),
           ],
@@ -704,12 +729,12 @@ class _LaundryCard extends StatelessWidget {
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.12),
+            color: _DS.primary.withOpacity(0.12),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
             Icons.storefront_rounded,
-            color: AppTheme.primaryColor,
+            color: _DS.primary,
             size: 24,
           ),
         ),
@@ -723,10 +748,10 @@ class _LaundryCard extends StatelessWidget {
                   Flexible(
                     child: Text(
                       laundry.name,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.beVietnamPro(
                         fontWeight: FontWeight.w600,
                         fontSize: 14.5,
-                        color: AppTheme.textPrimary,
+                        color: _DS.onSurface,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -735,15 +760,15 @@ class _LaundryCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppTheme.borderColor.withOpacity(0.4),
+                      color: _DS.outlineVariant.withOpacity(0.4),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       laundry.code,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.beVietnamPro(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondary,
+                        color: _DS.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -755,7 +780,7 @@ class _LaundryCard extends StatelessWidget {
                   Icon(
                     Icons.location_on_outlined,
                     size: 13,
-                    color: AppTheme.textSecondary,
+                    color: _DS.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
                   Expanded(
@@ -763,9 +788,9 @@ class _LaundryCard extends StatelessWidget {
                       laundry.city.isNotEmpty
                           ? '${laundry.address}, ${laundry.city}'
                           : laundry.address,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.beVietnamPro(
                         fontSize: 12.5,
-                        color: AppTheme.textSecondary,
+                        color: _DS.onSurfaceVariant,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -775,15 +800,15 @@ class _LaundryCard extends StatelessWidget {
               const SizedBox(height: 3),
               Row(
                 children: [
-                  Icon(Icons.schedule_outlined, size: 13, color: AppTheme.textSecondary),
+                  Icon(Icons.schedule_outlined, size: 13, color: _DS.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      laundry.isActive ? 'Buka • ${today.open} - ${today.close}' : 'Tutup Sementara',
-                      style: GoogleFonts.poppins(
+                      laundry.isActive ? l10n.openTodayStatus(today.open, today.close) : l10n.closedTemporarilyLabel,
+                      style: GoogleFonts.beVietnamPro(
                         fontSize: 12,
                         fontStyle: FontStyle.italic,
-                        color: AppTheme.textSecondary,
+                        color: _DS.onSurfaceVariant,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

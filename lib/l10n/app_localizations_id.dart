@@ -1102,6 +1102,56 @@ class AppLocalizationsId extends AppLocalizations {
   String get monthDec => 'Des';
 
   @override
+  String branchListTitle(int count) {
+    return 'Daftar Cabang ($count)';
+  }
+
+  @override
+  String get hideLabel => 'Sembunyikan';
+
+  @override
+  String openTodayStatus(String open, String close) {
+    return 'Buka • $open - $close';
+  }
+
+  @override
+  String get closedTemporarilyLabel => 'Tutup Sementara';
+
+  @override
+  String get totalStaffLabel => 'Total Staf';
+
+  @override
+  String get openTodayLabel => 'Jam Buka Hari Ini';
+
+  @override
+  String staffAtThisBranchLabel(int count) {
+    return 'Staf di Cabang Ini ($count)';
+  }
+
+  @override
+  String get noStaffAtBranch =>
+      'Belum ada karyawan yang ditempatkan di cabang ini.';
+
+  @override
+  String get resignedLabel => 'Resign';
+
+  @override
+  String get deactivateBranchTitle => 'Nonaktifkan Cabang?';
+
+  @override
+  String get deactivateBranchContent =>
+      'Cabang ini akan ditandai tutup sementara dan tidak menerima pesanan baru.';
+
+  @override
+  String get activeStatusSubtitle => 'Nonaktifkan untuk tutup sementara';
+
+  @override
+  String get generalInfoSection => 'Informasi Umum';
+
+  @override
+  String get deactivateBranchButton => 'Nonaktifkan Cabang';
+
+  @override
   String get ordersListTitle => 'Pesanan';
 
   @override

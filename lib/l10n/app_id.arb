@@ -523,7 +523,38 @@
   "monthSep": "Sep",
   "monthOct": "Okt",
   "monthNov": "Nov",
-  "monthDec": "Des"
+  "monthDec": "Des",
+
+  "branchListTitle": "Daftar Cabang ({count})",
+  "@branchListTitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "hideLabel": "Sembunyikan",
+  "openTodayStatus": "Buka • {open} - {close}",
+  "@openTodayStatus": {
+    "placeholders": {
+      "open": { "type": "String" },
+      "close": { "type": "String" }
+    }
+  },
+  "closedTemporarilyLabel": "Tutup Sementara",
+  "totalStaffLabel": "Total Staf",
+  "openTodayLabel": "Jam Buka Hari Ini",
+  "staffAtThisBranchLabel": "Staf di Cabang Ini ({count})",
+  "@staffAtThisBranchLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noStaffAtBranch": "Belum ada karyawan yang ditempatkan di cabang ini.",
+  "resignedLabel": "Resign",
+  "deactivateBranchTitle": "Nonaktifkan Cabang?",
+  "deactivateBranchContent": "Cabang ini akan ditandai tutup sementara dan tidak menerima pesanan baru.",
+  "activeStatusSubtitle": "Nonaktifkan untuk tutup sementara",
+  "generalInfoSection": "Informasi Umum",
+  "deactivateBranchButton": "Nonaktifkan Cabang"
 ,
   "ordersListTitle": "Pesanan",
   "ordersListSubtitle": "Kelola semua pesanan laundry Anda",

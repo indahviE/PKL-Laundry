@@ -1101,6 +1101,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get monthDec => 'Dec';
 
   @override
+  String branchListTitle(int count) {
+    return 'Branch List ($count)';
+  }
+
+  @override
+  String get hideLabel => 'Hide';
+
+  @override
+  String openTodayStatus(String open, String close) {
+    return 'Open • $open - $close';
+  }
+
+  @override
+  String get closedTemporarilyLabel => 'Temporarily Closed';
+
+  @override
+  String get totalStaffLabel => 'Total Staff';
+
+  @override
+  String get openTodayLabel => 'Open Today';
+
+  @override
+  String staffAtThisBranchLabel(int count) {
+    return 'Staff at This Branch ($count)';
+  }
+
+  @override
+  String get noStaffAtBranch => 'No employees assigned to this branch yet.';
+
+  @override
+  String get resignedLabel => 'Resigned';
+
+  @override
+  String get deactivateBranchTitle => 'Deactivate Branch?';
+
+  @override
+  String get deactivateBranchContent =>
+      'This branch will be marked as temporarily closed and will not accept new orders.';
+
+  @override
+  String get activeStatusSubtitle => 'Turn off to mark as temporarily closed';
+
+  @override
+  String get generalInfoSection => 'General Information';
+
+  @override
+  String get deactivateBranchButton => 'Deactivate Branch';
+
+  @override
   String get ordersListTitle => 'Pesanan';
 
   @override

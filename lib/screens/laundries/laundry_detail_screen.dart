@@ -15,18 +15,43 @@ import '../employees/employees_list_screen.dart';
 // (code.html), yang menggunakan palet Material 3 + font Be Vietnam Pro.
 // Token ini dipakai lokal di screen ini (bukan mengubah AppTheme global).
 // ---------------------------------------------------------------------------
-const _kPrimary = Color(0xFF0061A4);
-const _kPrimaryContainer = Color(0xFF2196F3);
-const _kOnPrimaryContainer = Colors.white;
-const _kPageBg = Color(0xFFFBF9F8);
-const _kSurfaceContainerLowest = Color(0xFFFFFFFF);
-const _kOnSurface = Color(0xFF1B1C1C);
-const _kSecondary = Color(0xFF5B5F61);
-const _kOutlineVariant = Color(0xFFBFC7D4);
+/// Local design tokens matching the new "NetWash Utility System" design
+/// (samain persis dengan EmployeesListScreen/EmployeeDetailScreen: canvas
+/// abu kebiruan #F5F7FA, kartu putih shadow lembut, Be Vietnam Pro, header
+/// navy + icon badge biru muda). Sengaja TIDAK menyentuh AppTheme global.
+class _DS {
+  static const canvas = Color(0xFFF5F7FA);
+  static const surface = Colors.white;
+  static const onSurface = Color(0xFF1B1C1C);
+  static const onSurfaceVariant = Color(0xFF404752);
+  static const outlineVariant = Color(0xFFBFC7D4);
+
+  static const navy = Color(0xFF0B3B66);
+  static const primary = Color(0xFF0061A4);
+  static const primaryFixed = Color(0xFFD1E4FF);
+
+  static const error = Color(0xFFBA1A1A);
+  static const success = Color(0xFF27AE60);
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+}
+
+const _kPrimary = _DS.primary;
+const _kPageBg = _DS.canvas;
+const _kSurfaceContainerLowest = _DS.surface;
+const _kOnSurface = _DS.onSurface;
+const _kSecondary = _DS.onSurfaceVariant;
+const _kOutlineVariant = _DS.outlineVariant;
 const _kActiveBg = Color(0xFFDCFCE7);
 const _kActiveText = Color(0xFF15803D);
-const _kInactiveBg = Color(0xFFFEE2E2);
-const _kInactiveText = Color(0xFFB91C1C);
+const _kInactiveBg = Color(0xFFF3F4F6);
+const _kInactiveText = Color(0xFF4B5563);
 
 /// Shadow kartu netral ala "card-shadow" pada referensi (bukan lagi tinted
 /// warna primary), supaya kartu terasa flat & bersih di atas [_kPageBg].
@@ -229,7 +254,7 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
                                   const SizedBox(height: AppTheme.lg),
                                   _buildInfoCard(context, laundry, l10n),
                                   const SizedBox(height: AppTheme.lg),
-                                  _buildStaffCard(context, branchStaff, employeesAsync.isLoading),
+                                  _buildStaffCard(context, branchStaff, employeesAsync.isLoading, l10n),
                                   const SizedBox(height: AppTheme.lg),
                                   _buildCapacityLocationCard(context, laundry, l10n),
                                   const SizedBox(height: AppTheme.lg),
@@ -269,19 +294,38 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
     );
   }
 
-  /// Top bar: tombol back + judul + aksi edit + aksi hapus.
+  /// Top bar: tombol back + judul + aksi edit + aksi hapus - disamakan
+  /// persis dengan pola EmployeeDetailScreen (tombol back bulat shadow,
+  /// icon badge biru muda, tombol aksi bulat biru muda di kanan).
   Widget _buildTopBar(BuildContext context, WidgetRef ref, Laundry laundry, AppLocalizations l10n) {
     return Row(
       children: [
         InkWell(
           onTap: () => context.pop(),
-          borderRadius: BorderRadius.circular(999),
-          child: const Padding(
-            padding: EdgeInsets.all(6),
-            child: Icon(Icons.arrow_back_rounded, color: _kOnSurface, size: 22),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _DS.surface,
+              shape: BoxShape.circle,
+              boxShadow: _DS.cardShadow,
+            ),
+            child: const Icon(Icons.arrow_back_rounded, size: 20, color: _DS.navy),
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 10),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: _DS.primaryFixed,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.storefront_outlined, color: _DS.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,10 +335,10 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.beVietnamPro(
-                  fontSize: 20,
+                  fontSize: 17,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
-                  color: _kOnSurface,
+                  color: _DS.navy,
                 ),
               ),
               Text(
@@ -311,19 +355,29 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
         ),
         InkWell(
           onTap: () => context.push('/laundries/${laundry.id}/edit'),
-          borderRadius: BorderRadius.circular(999),
-          child: const Padding(
-            padding: EdgeInsets.all(6),
-            child: Icon(Icons.edit_outlined, color: _kPrimary, size: 22),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: _DS.primaryFixed,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.edit_outlined, color: _DS.navy, size: 18),
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 8),
         InkWell(
           onTap: () => _confirmDelete(context, ref, laundry),
-          borderRadius: BorderRadius.circular(999),
-          child: const Padding(
-            padding: EdgeInsets.all(6),
-            child: Icon(Icons.delete_outline_rounded, color: _kInactiveText, size: 22),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _DS.error.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.delete_outline_rounded, color: _DS.error, size: 18),
           ),
         ),
       ],
@@ -419,7 +473,7 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
             child: _StatTile(
               icon: Icons.group_outlined,
               iconColor: _kPrimary,
-              label: 'Total Staf',
+              label: l10n.totalStaffLabel,
               value: '${branchStaff.length}',
               big: true,
             ),
@@ -441,7 +495,7 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
                   child: _StatTile(
                     icon: Icons.schedule_outlined,
                     iconColor: Colors.white,
-                    label: 'Jam Buka Hari Ini',
+                    label: l10n.openTodayLabel,
                     value: '${todayHours.open} - ${todayHours.close}',
                     filled: true,
                   ),
@@ -594,7 +648,7 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
   }
 
   /// Kartu manajer & staf cabang (daftar karyawan dengan laundry_id yang sama).
-  Widget _buildStaffCard(BuildContext context, List<Employee> staff, bool isLoading) {
+  Widget _buildStaffCard(BuildContext context, List<Employee> staff, bool isLoading, AppLocalizations l10n) {
     String displayNameOf(Employee e) => e.fullName.isNotEmpty ? e.fullName : (e.employeeCode.isNotEmpty ? e.employeeCode : '-');
 
     return Container(
@@ -611,7 +665,7 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
             children: [
               Icon(Icons.groups_outlined, color: _kPrimary, size: 20),
               const SizedBox(width: 8),
-              _sectionTitle('Staf di Cabang Ini (${staff.length})'),
+              _sectionTitle(l10n.staffAtThisBranchLabel(staff.length)),
             ],
           ),
           const SizedBox(height: AppTheme.md),
@@ -622,7 +676,7 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
             )
           else if (staff.isEmpty)
             Text(
-              'Belum ada karyawan yang ditempatkan di cabang ini.',
+              l10n.noStaffAtBranch,
               style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _kSecondary),
             )
           else
@@ -665,7 +719,7 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          e.isActive ? 'Aktif' : 'Resign',
+                          e.isActive ? l10n.filterActiveLaundries : l10n.resignedLabel,
                           style: TextStyle(color: e.isActive ? Colors.green : Colors.grey, fontSize: 9.5, fontWeight: FontWeight.bold),
                         ),
                       ),

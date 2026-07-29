@@ -7,20 +7,52 @@ import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../repositories/subscription_repository.dart';
 
-/// Create / Edit Laundry (Cabang) Screen - NetWash
-/// Skema data & feature gating mengikuti Blueprint §3.2.3 (Manajemen Cabang)
-/// dan §3.6.3 (Feature Gating - canAddLaundry).
-///
-/// Dual-mode:
-/// - laundryId == null  -> mode CREATE (form kosong, quota dicek sebelum simpan)
-/// - laundryId != null  -> mode EDIT (data existing di-load & di-prefill,
-///   quota TIDAK dicek ulang karena tidak menambah cabang baru)
-///
-/// Styling disamakan dengan mockup referensi "Tambah Cabang": top bar
-/// sederhana (back + judul), kartu "Cabang Aktif" dengan switch di atas,
-/// lalu section-section bercard terpisah (Informasi Umum, Jam Operasional,
-/// Manajemen) dengan header label uppercase kecil, input polos tanpa ikon,
-/// dan tombol pill "Samakan untuk semua hari".
+/// Local design tokens matching the new "NetWash Utility System" design
+/// (samain persis dengan CreateEmployeeScreen: canvas abu kebiruan, kartu
+/// putih shadow lembut, Be Vietnam Pro, warna primary #0061A4). Sengaja
+/// TIDAK menyentuh AppTheme global, biar layar lain gak ikut berubah.
+class _DS {
+  static const canvas = Color(0xFFF5F7FA);
+  static const surface = Colors.white;
+  static const onSurface = Color(0xFF1B1C1C);
+  static const onSurfaceVariant = Color(0xFF404752);
+  static const outline = Color(0xFF707883);
+  static const outlineVariant = Color(0xFFBFC7D4);
+
+  static const primary = Color(0xFF0061A4);
+  static const primaryFixed = Color(0xFFD1E4FF);
+
+  static const tertiary = Color(0xFF526069);
+  static const tertiaryFixed = Color(0xFFD6E5EF);
+
+  static const error = Color(0xFFBA1A1A);
+  static const errorContainer = Color(0xFFFFDAD6);
+
+  static const secondaryContainer = Color(0xFFE0E3E6);
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static TextStyle headlineMd({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: color ?? onSurface,
+        letterSpacing: -0.1,
+      );
+
+  static TextStyle labelBold({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: color ?? onSurfaceVariant,
+        letterSpacing: 0.3,
+      );
+}
+
 const _kFieldFill = Color(0xFFF7F8FA);
 
 class CreateLaundryScreen extends StatefulWidget {
@@ -336,7 +368,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       initialTime: initial,
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: Theme.of(ctx).colorScheme.copyWith(primary: AppTheme.primaryColor),
+          colorScheme: Theme.of(ctx).colorScheme.copyWith(primary: _DS.primary),
         ),
         child: child!,
       ),
@@ -465,7 +497,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => Dialog(
-        backgroundColor: AppTheme.cardColor,
+        backgroundColor: _DS.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
         child: Padding(
           padding: const EdgeInsets.all(AppTheme.xl),
@@ -484,13 +516,13 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
               ),
               const SizedBox(height: AppTheme.lg),
               Text(
-                'Nonaktifkan Cabang?',
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+                l10n.deactivateBranchTitle,
+                style: GoogleFonts.beVietnamPro(fontSize: 16, fontWeight: FontWeight.w700, color: _DS.onSurface),
               ),
               const SizedBox(height: AppTheme.sm),
               Text(
-                'Cabang ini akan ditandai tutup sementara dan tidak menerima pesanan baru.',
-                style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary, height: 1.4),
+                l10n.deactivateBranchContent,
+                style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant, height: 1.4),
               ),
               const SizedBox(height: AppTheme.xl),
               Row(
@@ -504,7 +536,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                       ),
                       child: Text(
                         l10n.cancel,
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textSecondary, fontSize: 13),
+                        style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurfaceVariant, fontSize: 13),
                       ),
                     ),
                   ),
@@ -520,8 +552,8 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                       ),
                       onPressed: () => ctx.pop(true),
                       child: Text(
-                        'Nonaktifkan',
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
+                        l10n.deactivateMenuItem,
+                        style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13),
                       ),
                     ),
                   ),
@@ -548,7 +580,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       builder: (ctx) {
         final dialogL10n = AppLocalizations.of(ctx)!;
         return Dialog(
-          backgroundColor: AppTheme.cardColor,
+          backgroundColor: _DS.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
           child: Padding(
             padding: const EdgeInsets.all(AppTheme.xl),
@@ -560,26 +592,26 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.12),
+                    color: _DS.primary.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(Icons.workspace_premium_outlined, color: AppTheme.primaryColor, size: 26),
+                  child: Icon(Icons.workspace_premium_outlined, color: _DS.primary, size: 26),
                 ),
                 const SizedBox(height: AppTheme.lg),
                 Text(
                   dialogL10n.quotaReachedTitle,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.beVietnamPro(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    color: _DS.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppTheme.sm),
                 Text(
                   dialogL10n.quotaReachedContent,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.beVietnamPro(
                     fontSize: 13,
-                    color: AppTheme.textSecondary,
+                    color: _DS.onSurfaceVariant,
                     height: 1.4,
                   ),
                 ),
@@ -595,7 +627,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                         ),
                         child: Text(
                           dialogL10n.cancel,
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textSecondary, fontSize: 13),
+                          style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurfaceVariant, fontSize: 13),
                         ),
                       ),
                     ),
@@ -603,7 +635,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
+                          backgroundColor: _DS.primary,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
@@ -615,7 +647,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                         },
                         child: Text(
                           dialogL10n.upgradePlanButton,
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
+                          style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13),
                         ),
                       ),
                     ),
@@ -633,13 +665,13 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      // Disamakan dengan mockup: background abu kebiruan lembut (#F5F7FA)
-      backgroundColor: const Color(0xFFFBF9F8),
+      // Disamakan dengan CreateEmployeeScreen: canvas abu kebiruan (#F5F7FA)
+      backgroundColor: _DS.canvas,
       body: SafeArea(
         child: (_isLoading || _isLoadingInitialData)
             ? Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
+                  valueColor: AlwaysStoppedAnimation(_DS.primary),
                 ),
               )
             : LayoutBuilder(
@@ -654,7 +686,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 480),
                           child: Container(
-                            color: const Color(0xFFFBF9F8),
+                            color: _DS.canvas,
                             padding: EdgeInsets.fromLTRB(
                               horizontalPadding,
                               isMobile ? 16 : 24,
@@ -713,27 +745,40 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
     );
   }
 
-  /// Top bar sederhana: tombol back + judul, tanpa icon-box atau subtitle,
-  /// mengikuti mockup ("Tambah Cabang" / "Edit Cabang").
+  /// Top bar - disamakan persis dengan pola CreateEmployeeScreen (bar putih,
+  /// tombol back bulat, judul warna primary).
   Widget _buildTopBar(BuildContext context, AppLocalizations l10n) {
     final canGoBack = context.canPop();
-    return Row(
-      children: [
-        if (canGoBack)
-          InkWell(
-            onTap: () => context.pop(),
-            borderRadius: BorderRadius.circular(999),
-            child: const Padding(
-              padding: EdgeInsets.all(6),
-              child: Icon(Icons.arrow_back_rounded, size: 24, color: AppTheme.textPrimary),
+    return Container(
+      decoration: BoxDecoration(
+        color: _DS.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: _DS.cardShadow,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Row(
+        children: [
+          if (canGoBack)
+            InkWell(
+              onTap: () => context.pop(),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(shape: BoxShape.circle),
+                child: const Icon(Icons.arrow_back_rounded, size: 22, color: _DS.primary),
+              ),
+            ),
+          SizedBox(width: canGoBack ? 4 : 12),
+          Expanded(
+            child: Text(
+              isEditMode ? l10n.editBranchTitle : l10n.addBranchTitle,
+              style: _DS.headlineMd(color: _DS.primary),
             ),
           ),
-        SizedBox(width: canGoBack ? 8 : 0),
-        Text(
-          isEditMode ? l10n.editBranchTitle : l10n.addBranchTitle,
-          style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -748,10 +793,10 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: _DS.primary.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.storefront_rounded, color: AppTheme.primaryColor, size: 20),
+            child: Icon(Icons.storefront_rounded, color: _DS.primary, size: 20),
           ),
           const SizedBox(width: AppTheme.md),
           Expanded(
@@ -760,19 +805,19 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
               children: [
                 Text(
                   l10n.activeStatusLabel,
-                  style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                  style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w600, color: _DS.onSurface),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Nonaktifkan untuk tutup sementara',
-                  style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textSecondary),
+                  l10n.activeStatusSubtitle,
+                  style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _DS.onSurfaceVariant),
                 ),
               ],
             ),
           ),
           Switch.adaptive(
             value: _isActive,
-            activeColor: AppTheme.primaryColor,
+            activeColor: _DS.primary,
             onChanged: (v) => setState(() => _isActive = v),
           ),
         ],
@@ -787,7 +832,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Informasi Umum'),
+          _sectionTitle(l10n.generalInfoSection),
 
           _fieldLabel(l10n.ownerCompanyLabel),
           _companiesList.isEmpty
@@ -800,7 +845,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                       style: TextButton.styleFrom(padding: EdgeInsets.zero),
                       child: Text(
                         l10n.registerCompanyFirst,
-                        style: GoogleFonts.poppins(color: AppTheme.primaryColor, fontSize: 13, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.beVietnamPro(color: _DS.primary, fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -810,7 +855,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                   items: _companiesList.map((c) {
                     return DropdownMenuItem<String>(
                       value: c['id'],
-                      child: Text(c['name'], style: GoogleFonts.poppins(fontSize: 13)),
+                      child: Text(c['name'], style: GoogleFonts.beVietnamPro(fontSize: 13)),
                     );
                   }).toList(),
                   onChanged: (val) => setState(() => _selectedCompanyId = val),
@@ -823,7 +868,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
           TextFormField(
             controller: _nameController,
             textCapitalization: TextCapitalization.words,
-            style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+            style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
             decoration: _buildInputDecoration(l10n.branchNameHint, null),
             validator: (v) => v == null || v.trim().isEmpty ? l10n.branchNameEmpty : null,
           ),
@@ -840,7 +885,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                     TextFormField(
                       controller: _codeController,
                       textCapitalization: TextCapitalization.characters,
-                      style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                      style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
                       decoration: _buildInputDecoration(l10n.branchCodeHint, null),
                       validator: (v) => v == null || v.trim().isEmpty ? l10n.branchCodeEmpty : null,
                     ),
@@ -856,7 +901,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                     TextFormField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
-                      style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                      style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
                       decoration: _buildInputDecoration(l10n.branchPhoneHint, null),
                       validator: (v) => v == null || v.trim().isEmpty ? l10n.phoneEmpty : null,
                     ),
@@ -871,7 +916,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+            style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
             decoration: _buildInputDecoration(l10n.branchEmailHint, null),
           ),
           const SizedBox(height: AppTheme.md),
@@ -880,7 +925,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
           TextFormField(
             controller: _addressController,
             maxLines: 3,
-            style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+            style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
             decoration: _buildInputDecoration(l10n.addressHint, null),
             validator: (v) => v == null || v.trim().isEmpty ? l10n.addressEmpty : null,
           ),
@@ -897,7 +942,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                     TextFormField(
                       controller: _cityController,
                       textCapitalization: TextCapitalization.words,
-                      style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                      style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
                       decoration: _buildInputDecoration(l10n.cityHint, null),
                       validator: (v) => v == null || v.trim().isEmpty ? l10n.fieldRequired : null,
                     ),
@@ -913,7 +958,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                     TextFormField(
                       controller: _provinceController,
                       textCapitalization: TextCapitalization.words,
-                      style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                      style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
                       decoration: _buildInputDecoration(l10n.provinceHint, null),
                       validator: (v) => v == null || v.trim().isEmpty ? l10n.fieldRequired : null,
                     ),
@@ -928,7 +973,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
           TextFormField(
             controller: _capacityController,
             keyboardType: TextInputType.number,
-            style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+            style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
             decoration: _buildInputDecoration(l10n.capacityHint, null),
             validator: (v) => v == null || v.trim().isEmpty ? l10n.capacityEmpty : null,
           ),
@@ -941,7 +986,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                 child: TextFormField(
                   controller: _latController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                  style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
                   decoration: _buildInputDecoration(l10n.latitudeHint, null),
                 ),
               ),
@@ -950,7 +995,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                 child: TextFormField(
                   controller: _lngController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+                  style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
                   decoration: _buildInputDecoration(l10n.longitudeHint, null),
                 ),
               ),
@@ -985,8 +1030,8 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
             runSpacing: 8,
             children: [
               Text(
-                'Jam Operasional'.toUpperCase(),
-                style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: AppTheme.textTertiary),
+                l10n.operatingHoursLabel.toUpperCase(),
+                style: GoogleFonts.beVietnamPro(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: _DS.outline),
               ),
               InkWell(
                 borderRadius: BorderRadius.circular(999),
@@ -994,13 +1039,13 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    color: _DS.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     l10n.useSameHoursLabel,
                     textAlign: TextAlign.right,
-                    style: GoogleFonts.poppins(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
+                    style: GoogleFonts.beVietnamPro(fontSize: 10.5, fontWeight: FontWeight.w700, color: _DS.primary),
                   ),
                 ),
               ),
@@ -1046,7 +1091,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
           scale: 0.75,
           child: Switch.adaptive(
             value: enabled,
-            activeColor: AppTheme.primaryColor,
+            activeColor: _DS.primary,
             onChanged: (v) => setState(() => _dayEnabled[key] = v),
           ),
         ),
@@ -1054,7 +1099,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
           width: 58,
           child: Text(
             _dayLabel(l10n, key),
-            style: GoogleFonts.poppins(fontSize: 12.5, fontWeight: FontWeight.w500, color: AppTheme.textPrimary),
+            style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w500, color: _DS.onSurface),
           ),
         ),
         const SizedBox(width: 6),
@@ -1072,7 +1117,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Text('—', style: GoogleFonts.poppins(color: AppTheme.textTertiary)),
+          child: Text('—', style: GoogleFonts.beVietnamPro(color: _DS.outline)),
         ),
         Expanded(
           child: _timeChip(
@@ -1102,7 +1147,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
           child: ElevatedButton(
             onPressed: _saveLaundry,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: _DS.primary,
               foregroundColor: Colors.white,
               elevation: 0,
               shadowColor: Colors.transparent,
@@ -1110,7 +1155,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
             ),
             child: Text(
               isEditMode ? l10n.updateBranchButton : l10n.saveBranchButton,
-              style: GoogleFonts.poppins(fontSize: 14.5, fontWeight: FontWeight.w700),
+              style: GoogleFonts.beVietnamPro(fontSize: 14.5, fontWeight: FontWeight.w700),
             ),
           ),
         ),
@@ -1123,8 +1168,8 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 10),
               ),
               child: Text(
-                'Nonaktifkan Cabang',
-                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.redAccent),
+                l10n.deactivateBranchButton,
+                style: GoogleFonts.beVietnamPro(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.redAccent),
               ),
             ),
           ),
@@ -1144,7 +1189,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       width: double.infinity,
       padding: padding ?? const EdgeInsets.all(AppTheme.xl),
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
+        color: _DS.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1164,7 +1209,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       padding: const EdgeInsets.only(bottom: 14),
       child: Text(
         text.toUpperCase(),
-        style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: AppTheme.textTertiary),
+        style: GoogleFonts.beVietnamPro(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: _DS.outline),
       ),
     );
   }
@@ -1175,7 +1220,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         text,
-        style: GoogleFonts.poppins(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+        style: GoogleFonts.beVietnamPro(fontSize: 11.5, fontWeight: FontWeight.w600, color: _DS.onSurfaceVariant),
       ),
     );
   }
@@ -1193,11 +1238,11 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
         decoration: BoxDecoration(
           color: _kFieldFill,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppTheme.borderColor),
+          border: Border.all(color: _DS.outlineVariant),
         ),
         child: Opacity(
           opacity: enabled ? 1 : 0.4,
-          child: Text(value, style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textPrimary)),
+          child: Text(value, style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _DS.onSurface)),
         ),
       ),
     );
@@ -1208,23 +1253,23 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
   InputDecoration _buildInputDecoration(String hint, IconData? icon) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textTertiary),
-      prefixIcon: icon != null ? Icon(icon, color: AppTheme.textTertiary, size: 18) : null,
+      hintStyle: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.outline),
+      prefixIcon: icon != null ? Icon(icon, color: _DS.outline, size: 18) : null,
       isDense: true,
       filled: true,
       fillColor: _kFieldFill,
       contentPadding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: 13),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: AppTheme.borderColor),
+        borderSide: BorderSide(color: _DS.outlineVariant),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: AppTheme.borderColor),
+        borderSide: BorderSide(color: _DS.outlineVariant),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
+        borderSide: BorderSide(color: _DS.primary, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),

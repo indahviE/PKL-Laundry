@@ -2090,6 +2090,90 @@ abstract class AppLocalizations {
   /// **'Des'**
   String get monthDec;
 
+  /// No description provided for @branchListTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar Cabang ({count})'**
+  String branchListTitle(int count);
+
+  /// No description provided for @hideLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Sembunyikan'**
+  String get hideLabel;
+
+  /// No description provided for @openTodayStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka • {open} - {close}'**
+  String openTodayStatus(String open, String close);
+
+  /// No description provided for @closedTemporarilyLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tutup Sementara'**
+  String get closedTemporarilyLabel;
+
+  /// No description provided for @totalStaffLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total Staf'**
+  String get totalStaffLabel;
+
+  /// No description provided for @openTodayLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam Buka Hari Ini'**
+  String get openTodayLabel;
+
+  /// No description provided for @staffAtThisBranchLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Staf di Cabang Ini ({count})'**
+  String staffAtThisBranchLabel(int count);
+
+  /// No description provided for @noStaffAtBranch.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada karyawan yang ditempatkan di cabang ini.'**
+  String get noStaffAtBranch;
+
+  /// No description provided for @resignedLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Resign'**
+  String get resignedLabel;
+
+  /// No description provided for @deactivateBranchTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Nonaktifkan Cabang?'**
+  String get deactivateBranchTitle;
+
+  /// No description provided for @deactivateBranchContent.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang ini akan ditandai tutup sementara dan tidak menerima pesanan baru.'**
+  String get deactivateBranchContent;
+
+  /// No description provided for @activeStatusSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Nonaktifkan untuk tutup sementara'**
+  String get activeStatusSubtitle;
+
+  /// No description provided for @generalInfoSection.
+  ///
+  /// In id, this message translates to:
+  /// **'Informasi Umum'**
+  String get generalInfoSection;
+
+  /// No description provided for @deactivateBranchButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Nonaktifkan Cabang'**
+  String get deactivateBranchButton;
+
   /// No description provided for @ordersListTitle.
   ///
   /// In id, this message translates to:
