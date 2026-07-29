@@ -963,7 +963,7 @@ class _CustomerCard extends StatelessWidget {
                   Row(
                     children: [
                       if (branchName != null) ...[
-                        Flexible(
+                        Flexible  (
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
