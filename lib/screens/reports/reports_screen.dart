@@ -8,10 +8,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
 
-// Disamain persis dengan _cSurface di order_list_screen.dart /
-// customer_detail_screen.dart (#FBF9F8) — sebelumnya pakai getter
-// AppTheme.backgroundColor yang keliatan agak kebiruan.
-const Color _cSurface = Color(0xFFFBF9F8);
+// Disamain persis dengan _DS.canvas di services_list_screen.dart
+// (#F5F7FA) — file upload ini kayaknya versi lama, dibenerin lagi.
+const Color _cSurface = Color(0xFFF5F7FA);
+
+/// Warna chip cabang — disalin persis dari order_list_screen.dart /
+/// customers_list_screen.dart supaya bentuknya seragam di ketiga layar.
+const Color _cCard = Color(0xFFFFFFFF);
+const Color _cOnSurfaceVariant = Color(0xFF404752);
+const Color _cOutlineVariant = Color(0xFFBFC7D4);
+const Color _cPrimary = Color(0xFF0061A4);
 
 /// Model breakdown pendapatan per jenis layanan
 class _ServiceBreakdown {
@@ -737,9 +743,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
                 )
-              : const Icon(Icons.file_download_outlined, size: 18),
+              : const Icon(Icons.print_outlined, size: 18),
           label: Text(
-            isMobile ? '' : (_isExporting ? 'Membuat PDF...' : 'Export'),
+            isMobile ? (_isExporting ? '...' : 'Cetak') : (_isExporting ? 'Membuat PDF...' : 'Cetak Laporan'),
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
           ),
           style: OutlinedButton.styleFrom(
@@ -804,7 +810,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: Row(
         children: [
           Padding(
-            padding: const EdgeInsets.only(right: AppTheme.md),
+            padding: const EdgeInsets.only(right: AppTheme.sm),
             child: _buildLaundryChip(
               label: 'Semua Cabang',
               isSelected: _selectedLaundryId == 'all',
@@ -817,7 +823,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ..._laundriesList.map((laundry) {
             final isLast = laundry.id == _laundriesList.last.id;
             return Padding(
-              padding: EdgeInsets.only(right: isLast ? 0 : AppTheme.md),
+              padding: EdgeInsets.only(right: isLast ? 0 : AppTheme.sm),
               child: _buildLaundryChip(
                 label: laundry.name,
                 isSelected: _selectedLaundryId == laundry.id,
@@ -833,32 +839,36 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  /// Chip pill cabang — disamain persis sama _buildLaundryChip di
+  /// order_list_screen.dart / customers_list_screen.dart (bentuk pill
+  /// penuh, warna solid _cPrimary saat terpilih, putih+border saat tidak).
   Widget _buildLaundryChip({
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return FilterChip(
-      selected: isSelected,
-      onSelected: (_) => onTap(),
-      showCheckmark: false,
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.storefront_outlined, size: 15),
-          const SizedBox(width: AppTheme.sm),
-          Text(label),
-        ],
-      ),
-      backgroundColor: AppTheme.cardColor,
-      selectedColor: AppTheme.primaryColor.withOpacity(0.12),
-      side: BorderSide(
-        color: isSelected ? AppTheme.primaryColor.withOpacity(0.4) : AppTheme.borderColor,
-      ),
-      labelStyle: GoogleFonts.poppins(
-        fontSize: 12.5,
-        color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
-        fontWeight: FontWeight.w600,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? _cPrimary : _cCard,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: isSelected ? _cPrimary : _cOutlineVariant),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.beVietnamPro(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.02,
+              color: isSelected ? Colors.white : _cOnSurfaceVariant,
+            ),
+          ),
+        ),
       ),
     );
   }
