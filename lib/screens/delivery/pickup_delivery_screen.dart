@@ -785,7 +785,7 @@ class _ConfirmPickupSheet extends StatefulWidget {
   State<_ConfirmPickupSheet> createState() => _ConfirmPickupSheetState();
 }
 
-class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
+  class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
   late final ServiceRepository _serviceRepository;
   List<Service> _services = [];
   List<OrderItemForm> _items = [];
@@ -793,11 +793,34 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
   String? _servicesError;
   bool _isSaving = false;
 
+  // === TAMBAHAN: payment, baru diisi di sini karena subtotal riil baru
+  // ketahuan setelah barang ditimbang. Polanya sama persis dengan
+  // CreateOrderScreen: transfer selalu mulai dari 0 dibayar (dikonfirmasi
+  // manual belakangan), method instan (cash/debit/ewallet) bisa Lunas
+  // atau DP.
+  String _selectedPaymentMethod = 'cash';
+  bool _isFullPayment = true;
+  late final TextEditingController _dpAmountController;
+
+  bool get _isInstantMethod =>
+      _selectedPaymentMethod == 'cash' ||
+      _selectedPaymentMethod == 'debit' ||
+      _selectedPaymentMethod == 'ewallet';
+
+  final List<Map<String, dynamic>> _paymentMethods = const [
+    {'id': 'cash', 'label': 'Tunai', 'icon': Icons.payments_outlined},
+    {'id': 'transfer', 'label': 'Transfer Bank', 'icon': Icons.account_balance_outlined},
+    {'id': 'debit', 'label': 'Kartu Debit', 'icon': Icons.credit_card_outlined},
+    {'id': 'ewallet', 'label': 'E-Wallet', 'icon': Icons.account_balance_wallet_outlined},
+  ];
+  // === END TAMBAHAN
+
   @override
   void initState() {
     super.initState();
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     _serviceRepository = ServiceRepository(userId: uid);
+    _dpAmountController = TextEditingController(); // TAMBAHAN
     _fetchServices();
   }
 
@@ -806,6 +829,7 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
     for (final item in _items) {
       item.dispose();
     }
+    _dpAmountController.dispose(); // TAMBAHAN
     super.dispose();
   }
 
@@ -903,6 +927,35 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
 
   int get _totalItems => _items.fold(0, (sum, item) => sum + item.quantity);
 
+  // === TAMBAHAN: hitung berapa yang dibayar sekarang, sama logikanya
+  // dengan CreateOrderScreen._handleSaveOrder(). Return null berarti
+  // validasi gagal (pesan errornya sudah ditampilkan di dalam).
+  double? _resolvePaidAmount() {
+    if (!_isInstantMethod) return 0;
+
+    if (_isFullPayment) return _subtotal;
+
+    final rawDp = _dpAmountController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final dp = double.tryParse(rawDp) ?? 0;
+    if (dp <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Isi nominal DP terlebih dahulu', style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
+      );
+      return null;
+    }
+    if (dp >= _subtotal) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Nominal DP harus lebih kecil dari total. Pilih "Lunas" kalau bayar penuh.', style: GoogleFonts.beVietnamPro()),
+          backgroundColor: _DS.error,
+        ),
+      );
+      return null;
+    }
+    return dp;
+  }
+  // === END TAMBAHAN
+
   Future<void> _handleConfirm() async {
     if (_items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -923,6 +976,10 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
       }
     }
 
+    // TAMBAHAN: validasi & hitung pembayaran sebelum mulai saving
+    final paidNow = _resolvePaidAmount();
+    if (paidNow == null) return;
+
     setState(() => _isSaving = true);
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -939,12 +996,21 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
               ))
           .toList();
 
+      // TAMBAHAN: method & status pembayaran
+      final paymentMethod = PaymentMethod.values.firstWhere((e) => e.name == _selectedPaymentMethod);
+      final paymentStatus = paidNow <= 0
+          ? PaymentStatus.pending
+          : (paidNow >= _subtotal - 1 ? PaymentStatus.paid : PaymentStatus.partial);
+
       await OrderRepository(userId: user.uid).confirmPickupWithItems(
         widget.order.id,
         items: orderItems,
         totalWeight: _totalWeight,
         totalItems: _totalItems,
         subtotal: _subtotal,
+        paymentMethod: paymentMethod, // TAMBAHAN
+        paidAmount: paidNow,          // TAMBAHAN
+        paymentStatus: paymentStatus, // TAMBAHAN
       );
 
       if (mounted) Navigator.pop(context, true);
@@ -957,6 +1023,130 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  // TAMBAHAN: chip kecil buat toggle Lunas/DP, style-nya nyaman disamain
+  // dengan _MiniQtyButton/_Pill yang sudah ada di file ini.
+  Widget _paymentOptionChip({required String label, required bool isSelected, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: _isSaving ? null : onTap,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: AppTheme.sm),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? _DS.primary.withOpacity(0.1) : _DS.canvas,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          border: Border.all(
+            color: isSelected ? _DS.primary : _DS.outlineVariant,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.beVietnamPro(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? _DS.primary : _DS.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // TAMBAHAN: section metode pembayaran, ditaruh di build() setelah
+  // ringkasan Total dan sebelum tombol konfirmasi.
+  Widget _buildPaymentSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Metode Pembayaran', style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.onSurface)),
+        const SizedBox(height: AppTheme.sm),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = (constraints.maxWidth - AppTheme.sm) / 2;
+            return Wrap(
+              spacing: AppTheme.sm,
+              runSpacing: AppTheme.sm,
+              children: _paymentMethods.map((method) {
+                final isSelected = _selectedPaymentMethod == method['id'];
+                return SizedBox(
+                  width: itemWidth,
+                  child: InkWell(
+                    onTap: _isSaving ? null : () => setState(() => _selectedPaymentMethod = method['id']),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.sm),
+                      decoration: BoxDecoration(
+                        color: isSelected ? _DS.primary.withOpacity(0.1) : _DS.canvas,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        border: Border.all(color: isSelected ? _DS.primary : _DS.outlineVariant, width: isSelected ? 1.5 : 1),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(method['icon'], size: 16, color: isSelected ? _DS.primary : _DS.onSurfaceVariant),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              method['label'],
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.beVietnamPro(fontSize: 11.5, fontWeight: FontWeight.w600, color: isSelected ? _DS.primary : _DS.onSurfaceVariant),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+        const SizedBox(height: 6),
+        Text(
+          _selectedPaymentMethod == 'transfer'
+              ? 'Status pembayaran akan "Belum Dibayar" sampai dikonfirmasi manual di halaman detail pesanan.'
+              : 'Metode ini dianggap dibayar langsung saat ini juga.',
+          style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.onSurfaceVariant),
+        ),
+        if (_isInstantMethod) ...[
+          const SizedBox(height: AppTheme.md),
+          Row(
+            children: [
+              Expanded(child: _paymentOptionChip(label: 'Lunas', isSelected: _isFullPayment, onTap: () => setState(() => _isFullPayment = true))),
+              const SizedBox(width: AppTheme.sm),
+              Expanded(child: _paymentOptionChip(label: 'DP (Sebagian)', isSelected: !_isFullPayment, onTap: () => setState(() => _isFullPayment = false))),
+            ],
+          ),
+          if (!_isFullPayment) ...[
+            const SizedBox(height: AppTheme.md),
+            TextField(
+              controller: _dpAmountController,
+              enabled: !_isSaving,
+              keyboardType: TextInputType.number,
+              style: GoogleFonts.beVietnamPro(fontSize: 13.5),
+              decoration: InputDecoration(
+                labelText: 'Nominal DP',
+                labelStyle: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
+                hintText: 'Contoh: 20000',
+                hintStyle: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
+                prefixIcon: Icon(Icons.payments_outlined, color: _DS.onSurfaceVariant),
+                filled: true,
+                fillColor: _DS.canvas,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.',
+              style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.onSurfaceVariant),
+            ),
+          ],
+        ],
+      ],
+    );
   }
 
   @override
@@ -983,10 +1173,7 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                   decoration: BoxDecoration(color: _DS.outlineVariant, borderRadius: BorderRadius.circular(4)),
                 ),
               ),
-              Text(
-                'Konfirmasi Jemput',
-                style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _DS.onSurface),
-              ),
+              Text('Konfirmasi Jemput', style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _DS.onSurface)),
               const SizedBox(height: 4),
               Text(
                 'Catat item & berat cucian ${widget.order.customerName ?? "pelanggan"} (${widget.order.orderNumber})',
@@ -997,10 +1184,7 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Item Cucian',
-                    style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.onSurface),
-                  ),
+                  Text('Item Cucian', style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.onSurface)),
                   TextButton.icon(
                     onPressed: _isLoadingServices || _isSaving ? null : _pickService,
                     icon: const Icon(Icons.add, size: 16),
@@ -1012,20 +1196,14 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
               const SizedBox(height: AppTheme.sm),
 
               if (_isLoadingServices)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                )
+                const Padding(padding: EdgeInsets.symmetric(vertical: 24), child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
               else if (_servicesError != null)
                 Text(_servicesError!, style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.error))
               else if (_items.isEmpty)
                 Container(
                   padding: const EdgeInsets.all(AppTheme.md),
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: _DS.primary.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                  ),
+                  decoration: BoxDecoration(color: _DS.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
                   child: Text(
                     'Belum ada item. Tekan "Tambah" untuk memilih layanan.',
                     textAlign: TextAlign.center,
@@ -1041,33 +1219,20 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                     padding: const EdgeInsets.only(bottom: AppTheme.sm),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.md),
-                      decoration: BoxDecoration(
-                        color: _DS.canvas,
-                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      ),
+                      decoration: BoxDecoration(color: _DS.canvas, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
                               Expanded(
-                                child: Text(
-                                  item.name,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13, color: _DS.onSurface),
-                                ),
+                                child: Text(item.name, overflow: TextOverflow.ellipsis, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13, color: _DS.onSurface)),
                               ),
-                              Text(
-                                _formatCurrency(item.subtotal),
-                                style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 12.5, color: _DS.primary),
-                              ),
+                              Text(_formatCurrency(item.subtotal), style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 12.5, color: _DS.primary)),
                               InkWell(
                                 onTap: !_isSaving ? () => _removeItem(index) : null,
                                 borderRadius: BorderRadius.circular(16),
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 6),
-                                  child: Icon(Icons.close, size: 16, color: _DS.onSurfaceVariant),
-                                ),
+                                child: Padding(padding: const EdgeInsets.only(left: 6), child: Icon(Icons.close, size: 16, color: _DS.onSurfaceVariant)),
                               ),
                             ],
                           ),
@@ -1106,22 +1271,9 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                                     )
                                   : Row(
                                       children: [
-                                        _MiniQtyButton(
-                                          icon: Icons.remove,
-                                          onTap: item.quantity > 1 ? () => setState(() => item.quantity--) : null,
-                                        ),
-                                        SizedBox(
-                                          width: 26,
-                                          child: Text(
-                                            '${item.quantity}',
-                                            textAlign: TextAlign.center,
-                                            style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w600),
-                                          ),
-                                        ),
-                                        _MiniQtyButton(
-                                          icon: Icons.add,
-                                          onTap: !_isSaving ? () => setState(() => item.quantity++) : null,
-                                        ),
+                                        _MiniQtyButton(icon: Icons.remove, onTap: item.quantity > 1 ? () => setState(() => item.quantity--) : null),
+                                        SizedBox(width: 26, child: Text('${item.quantity}', textAlign: TextAlign.center, style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w600))),
+                                        _MiniQtyButton(icon: Icons.add, onTap: !_isSaving ? () => setState(() => item.quantity++) : null),
                                       ],
                                     ),
                             ],
@@ -1140,12 +1292,14 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Total', style: GoogleFonts.beVietnamPro(fontSize: 14.5, fontWeight: FontWeight.w700, color: _DS.onSurface)),
-                  Text(
-                    _formatCurrency(_subtotal),
-                    style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _DS.primary),
-                  ),
+                  Text(_formatCurrency(_subtotal), style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _DS.primary)),
                 ],
               ),
+
+              // TAMBAHAN: section metode pembayaran
+              const SizedBox(height: AppTheme.lg),
+              _buildPaymentSection(),
+
               const SizedBox(height: AppTheme.xl),
 
               SizedBox(
@@ -1159,15 +1313,8 @@ class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
                   ),
                   child: _isSaving
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : Text(
-                          'Konfirmasi Sudah Dijemput',
-                          style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 15),
-                        ),
+                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Text('Konfirmasi Sudah Dijemput', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 15)),
                 ),
               ),
             ],

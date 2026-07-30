@@ -190,6 +190,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   bool get _showLaundryDropdown => _laundriesList.length > 1;
 
+  /// Order dijemput -> barang belum ada di tangan, jadi item pesanan
+  /// TIDAK BISA diisi sama sekali dari layar ini (baru diisi belakangan
+  /// pas konfirmasi jemput lewat PickupDeliveryScreen -> _ConfirmPickupSheet,
+  /// setelah barang beneran ditimbang). Dipakai buat nyembunyikan picker
+  /// layanan & daftar item, diganti box info kecil.
+  bool get _isPickupOrder => _selectedOrderType == 'pickup';
+
   /// Pelanggan yang ditampilkan di dropdown, di-filter KETAT sesuai
   /// cabang yang lagi dipilih (_selectedLaundryId). Pelanggan lama yang
   /// belum punya laundry_id (null) sengaja TIDAK ikut muncul di manapun -
@@ -352,7 +359,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       setState(() {
         _services = activeServices;
         _isLoadingServices = false;
-        if (_orderItems.isEmpty && activeServices.isNotEmpty) {
+        // Item default cuma di-auto-isi kalau order type-nya BUKAN pickup.
+        // Order pickup sengaja dibiarkan kosong terus (lihat _isPickupOrder)
+        // karena barangnya belum ada di tangan sama sekali saat order dibuat.
+        if (_orderItems.isEmpty && activeServices.isNotEmpty && !_isPickupOrder) {
           final first = activeServices.first;
           _orderItems = [
             OrderItemForm(
@@ -417,6 +427,38 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     });
   }
 
+  /// Handle ganti toggle "Baju Masuk". Dipisah dari onSelected biasa
+  /// karena sekarang ada efek samping ke _orderItems:
+  /// - Ganti KE 'pickup' -> kosongkan semua item (barang belum ada di
+  ///   tangan, jadi apapun yang udah keisi otomatis harus dibuang, bukan
+  ///   cuma disembunyikan doang - biar gak kesimpen data ngasal).
+  /// - Ganti BALIK ke 'walk_in' & item masih kosong -> isi ulang layanan
+  ///   pertama sebagai default, sama seperti behavior awal screen dibuka.
+  void _handleOrderTypeChanged(String id) {
+    setState(() {
+      _selectedOrderType = id;
+
+      if (id == 'pickup') {
+        for (final item in _orderItems) {
+          item.dispose();
+        }
+        _orderItems = [];
+      } else if (_orderItems.isEmpty && _services.isNotEmpty) {
+        final first = _services.first;
+        _orderItems = [
+          OrderItemForm(
+            id: first.id,
+            name: first.name,
+            pricingType: first.pricingType,
+            quantity: 1,
+            weight: first.pricingType == PricingType.perKg ? 1.0 : 0,
+            price: _servicePrice(first),
+          ),
+        ];
+      }
+    });
+  }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: AppTheme.errorColor),
@@ -432,7 +474,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       return;
     }
 
-    if (_selectedOrderType != 'pickup') {
+    if (!_isPickupOrder) {
       if (_orderItems.isEmpty) {
         _showError('Tambahkan minimal 1 item pesanan');
         return;
@@ -464,8 +506,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     final totalAmount = subtotal - discountAmount + taxAmount;
 
     // Tentukan berapa yang dibayar sekarang.
+    //
+    // Order pickup SENGAJA TIDAK lewat cabang ini sama sekali: totalnya
+    // masih 0 di titik ini (barang belum ditimbang, lihat _isPickupOrder),
+    // jadi metode pembayaran & toggle Lunas/DP di layar ini disembunyikan
+    // (lihat _buildPickupPaymentNotice) dan pembayaran baru betul-betul
+    // ditentukan belakangan lewat OrderRepository.confirmPickupWithItems()
+    // saat konfirmasi jemput (_ConfirmPickupSheet), setelah subtotal riil
+    // diketahui.
     double paidNow = 0;
-    if (_isInstantMethod) {
+    if (!_isPickupOrder && _isInstantMethod) {
       if (_isFullPayment) {
         paidNow = totalAmount;
       } else {
@@ -834,11 +884,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               label: 'Baju Masuk *',
               options: _orderTypes,
               selectedId: _selectedOrderType,
-              onSelected: (id) => setState(() => _selectedOrderType = id),
+              onSelected: _handleOrderTypeChanged,
             ),
 
             // Field jadwal jemput cuma muncul kalau order type-nya pickup.
-            if (_selectedOrderType == 'pickup') ...[
+            if (_isPickupOrder) ...[
               const SizedBox(height: AppTheme.md),
               _buildPickupScheduleFields(),
             ],
@@ -855,121 +905,129 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
             const SizedBox(height: AppTheme.lg),
 
-            // Payment Method
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Metode Pembayaran *',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: AppTheme.md),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final itemWidth = (constraints.maxWidth - AppTheme.sm) / 2;
-                    return Wrap(
-                      spacing: AppTheme.sm,
-                      runSpacing: AppTheme.sm,
-                      children: _paymentMethods.map((method) {
-                        final isSelected = _selectedPaymentMethod == method['id'];
-                        return SizedBox(
-                          width: itemWidth,
-                          child: InkWell(
-                            onTap: () => setState(() => _selectedPaymentMethod = method['id']),
-                            borderRadius: BorderRadius.circular(_chipRadius),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.sm),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppTheme.primaryColor.withOpacity(0.1)
-                                    : _neutralFill,
-                                borderRadius: BorderRadius.circular(_chipRadius),
-                                border: Border.all(
-                                  color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
-                                  width: isSelected ? 1.5 : 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    method['icon'],
-                                    size: 16,
-                                    color: isSelected ? AppTheme.primaryColor : AppTheme.textTertiary,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Flexible(
-                                    child: Text(
-                                      method['label'],
-                                      textAlign: TextAlign.center,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+            // Payment Method - disembunyikan total buat order pickup.
+            // Totalnya belum bisa dihitung di layar ini (barang belum
+            // ditimbang), jadi nanya metode & Lunas/DP di sini cuma bikin
+            // bingung (dan sempat bikin toggle DP gagal terus karena
+            // totalnya 0). Ganti box info kecil - metode & Lunas/DP yang
+            // beneran dipakai baru dipilih pas konfirmasi jemput
+            // (_ConfirmPickupSheet), setelah berat/qty riil diketahui.
+            _isPickupOrder
+                ? _buildPickupPaymentNotice()
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Metode Pembayaran *',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.md),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final itemWidth = (constraints.maxWidth - AppTheme.sm) / 2;
+                          return Wrap(
+                            spacing: AppTheme.sm,
+                            runSpacing: AppTheme.sm,
+                            children: _paymentMethods.map((method) {
+                              final isSelected = _selectedPaymentMethod == method['id'];
+                              return SizedBox(
+                                width: itemWidth,
+                                child: InkWell(
+                                  onTap: () => setState(() => _selectedPaymentMethod = method['id']),
+                                  borderRadius: BorderRadius.circular(_chipRadius),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.sm),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? AppTheme.primaryColor.withOpacity(0.1)
+                                          : _neutralFill,
+                                      borderRadius: BorderRadius.circular(_chipRadius),
+                                      border: Border.all(
+                                        color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+                                        width: isSelected ? 1.5 : 1,
                                       ),
                                     ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          method['icon'],
+                                          size: 16,
+                                          color: isSelected ? AppTheme.primaryColor : AppTheme.textTertiary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            method['label'],
+                                            textAlign: TextAlign.center,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w600,
+                                              color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ],
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: AppTheme.sm),
+                      Text(
+                        _selectedPaymentMethod == 'transfer'
+                            ? 'Status pembayaran akan "Belum Dibayar" sampai dikonfirmasi manual di halaman detail pesanan.'
+                            : 'Metode ini dianggap dibayar langsung di kasir/saat itu juga.',
+                        style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
+                      ),
+
+                      // Toggle Lunas / DP - hanya buat metode instan.
+                      if (_isInstantMethod) ...[
+                        const SizedBox(height: AppTheme.lg),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildPaymentOptionChip(
+                                label: 'Lunas',
+                                isSelected: _isFullPayment,
+                                onTap: () => setState(() => _isFullPayment = true),
                               ),
                             ),
+                            const SizedBox(width: AppTheme.sm),
+                            Expanded(
+                              child: _buildPaymentOptionChip(
+                                label: 'DP (Sebagian)',
+                                isSelected: !_isFullPayment,
+                                onTap: () => setState(() => _isFullPayment = false),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (!_isFullPayment) ...[
+                          const SizedBox(height: AppTheme.md),
+                          AppInput(
+                            label: 'Nominal DP',
+                            controller: _dpAmountController,
+                            hintText: 'Contoh: 20000',
+                            prefixIcon: Icons.payments_outlined,
                           ),
-                        );
-                      }).toList(),
-                    );
-                  },
-                ),
-                const SizedBox(height: AppTheme.sm),
-                Text(
-                  _selectedPaymentMethod == 'transfer'
-                      ? 'Status pembayaran akan "Belum Dibayar" sampai dikonfirmasi manual di halaman detail pesanan.'
-                      : 'Metode ini dianggap dibayar langsung di kasir/saat itu juga.',
-                  style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
-                ),
-
-                // Toggle Lunas / DP - hanya buat metode instan.
-                if (_isInstantMethod) ...[
-                  const SizedBox(height: AppTheme.lg),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildPaymentOptionChip(
-                          label: 'Lunas',
-                          isSelected: _isFullPayment,
-                          onTap: () => setState(() => _isFullPayment = true),
-                        ),
-                      ),
-                      const SizedBox(width: AppTheme.sm),
-                      Expanded(
-                        child: _buildPaymentOptionChip(
-                          label: 'DP (Sebagian)',
-                          isSelected: !_isFullPayment,
-                          onTap: () => setState(() => _isFullPayment = false),
-                        ),
-                      ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.',
+                            style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
+                          ),
+                        ],
+                      ],
                     ],
                   ),
-                  if (!_isFullPayment) ...[
-                    const SizedBox(height: AppTheme.md),
-                    AppInput(
-                      label: 'Nominal DP',
-                      controller: _dpAmountController,
-                      hintText: 'Contoh: 20000',
-                      prefixIcon: Icons.payments_outlined,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.',
-                      style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
-                    ),
-                  ],
-                ],
-              ],
-            ),
 
             const SizedBox(height: AppTheme.lg),
 
@@ -990,6 +1048,33 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             _buildPriceSummary(context),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Info box pengganti section Metode Pembayaran, khusus order pickup.
+  /// Menjelaskan kenapa pembayaran gak bisa ditentukan di layar ini -
+  /// akan diminta lagi pas konfirmasi jemput setelah barang ditimbang.
+  Widget _buildPickupPaymentNotice() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppTheme.md),
+      decoration: BoxDecoration(
+        color: _neutralSurface,
+        borderRadius: BorderRadius.circular(_chipRadius),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded, size: 16, color: AppTheme.textTertiary),
+          const SizedBox(width: AppTheme.sm),
+          Expanded(
+            child: Text(
+              'Metode & status pembayaran akan dikonfirmasi lagi setelah berat/jumlah cucian diketahui.',
+              style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1381,17 +1466,51 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   /// Section item pesanan - sekarang bagian dari _buildMainCard.
   ///
-  /// Alur baru mengikuti mockup: layanan dipilih lewat kartu yang bisa
-  /// di-scroll horizontal (tap kartu = 1 item baru ditambahkan), bukan
-  /// lewat dialog terpisah lagi. Multi-item tetap dipertahankan penuh -
-  /// bisa tap kartu yang sama atau kartu berbeda berkali-kali - hanya
-  /// bentuk pemilihannya yang berubah jadi kartu, sesuai desain baru.
+  /// KHUSUS order type 'pickup': picker layanan & daftar item TIDAK
+  /// ditampilkan sama sekali (bukan cuma disembunyikan kosong) - diganti
+  /// box info kecil. Ini disengaja: barang belum ada di tangan sama
+  /// sekali saat order dibuat, jadi gak masuk akal biarin karyawan
+  /// "asal pilih" layanan/qty di sini. Item baru bener-bener diisi
+  /// belakangan pas konfirmasi jemput (PickupDeliveryScreen ->
+  /// _ConfirmPickupSheet), setelah barang ketimbang.
   ///
-  /// Tiap item yang sudah ditambahkan ditampilkan sebagai kartu
-  /// (border + shadow tipis) alih-alih row polos. Logic kontrol per
-  /// item TIDAK berubah: item perKg tetap pakai input berat (TextField
-  /// desimal, kg), item perItem tetap pakai stepper qty (+/-).
+  /// Untuk order type lain (walk_in): alur tetap sama seperti
+  /// sebelumnya - layanan dipilih lewat kartu yang bisa di-scroll
+  /// horizontal (tap kartu = 1 item baru ditambahkan). Multi-item tetap
+  /// dipertahankan penuh. Logic kontrol per item TIDAK berubah: item
+  /// perKg tetap pakai input berat (TextField desimal, kg), item perItem
+  /// tetap pakai stepper qty (+/-).
   Widget _buildOrderItemsSection(BuildContext context) {
+    if (_isPickupOrder) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionLabel('Item Pesanan'),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppTheme.md),
+            decoration: BoxDecoration(
+              color: _neutralSurface,
+              borderRadius: BorderRadius.circular(_chipRadius),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline_rounded, size: 16, color: AppTheme.textTertiary),
+                const SizedBox(width: AppTheme.sm),
+                Expanded(
+                  child: Text(
+                    'Item akan diisi saat konfirmasi jemput',
+                    style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

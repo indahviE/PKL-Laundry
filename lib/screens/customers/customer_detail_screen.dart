@@ -421,9 +421,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppTheme.radiusMd),
               ),
-              onSelected: (value) {
+              onSelected: (value) async {
                 if (value == 'edit') {
-                  context.push('/customers/${widget.customerId}/edit');
+                  // FIX: sebelumnya push ke edit screen gak ditunggu, jadi
+                  // begitu balik ke sini datanya masih yang lama (baru
+                  // ke-refresh kalau sempat mampir ke customer list dulu).
+                  // Sekarang await hasil push-nya, terus fetch ulang.
+                  await context.push('/customers/${widget.customerId}/edit');
+                  _fetchCustomer();
                 } else if (value == 'delete') {
                   _showDeleteConfirmation(context, l10n);
                 }
