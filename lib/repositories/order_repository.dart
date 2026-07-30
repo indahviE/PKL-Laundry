@@ -344,18 +344,42 @@ class OrderRepository {
     });
   }
 
+  /// UPDATED: nambah `markAsCompleted` - kalau true, sekaligus mengubah
+  /// status order jadi 'completed' (dipakai alur pengantaran via kurir,
+  /// ConfirmDeliverySheet). Alur self-service ("Tandai Sudah Diambil")
+  /// TIDAK pernah pakai flag ini - status tetap harus ditandai manual
+  /// oleh kasir dari OrderDetailScreen.
   Future<void> markDelivered(
     String orderId, {
     String? driverNote,
     String? courierId,
     String? courierName,
+    bool markAsCompleted = false,
   }) async {
-    await _ordersRef.doc(orderId).update({
-      'delivery_date': DateTime.now(),
+    final now = DateTime.now();
+    final updateData = <String, dynamic>{
+      'delivery_date': now,
       'courier_id': courierId,
       'courier_name': courierName,
-      'updated_at': DateTime.now(),
-    });
+      'updated_at': now,
+    };
+
+    if (markAsCompleted) {
+      final orderSnap = await _ordersRef.doc(orderId).get();
+      if (!orderSnap.exists) throw Exception('Order tidak ditemukan.');
+
+      final order = Order.fromJson(orderSnap.data() as Map<String, dynamic>, orderSnap.id);
+      final updatedHistory = [
+        ...order.statusHistory,
+        StatusHistory(status: OrderStatus.completed, timestamp: now, note: 'Pesanan selesai diantar'),
+      ];
+
+      updateData['status'] = OrderStatus.completed.name;
+      updateData['status_history'] = updatedHistory.map((e) => e.toJson()).toList();
+      updateData['actual_completion'] = now;
+    }
+
+    await _ordersRef.doc(orderId).update(updateData);
   }
 
   /// Menyimpan/melengkapi rencana jadwal jemput/antar untuk 1 order -

@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../delivery/create_delivery_screen.dart' show CreateDeliveryScheduleScreen;
 import '../../core/themes/app_theme.dart';
 import '../../models/order.dart';
 import '../../models/transaction.dart';
@@ -557,8 +558,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return _cPrimary;
   }
 
-  /// Label tombol buat maju ke status berikutnya. null kalau sudah di
-  /// status terakhir (completed) atau sudah cancelled.
   String? _nextStatusButtonLabel(String currentStatus) {
     switch (currentStatus) {
       case 'pending':
@@ -2328,12 +2327,40 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  /// Action bar bawah (fixed): tombol utama primary (aksi maju status,
-  /// atau "Kabari Pelanggan" kalau sudah completed) + tombol sekunder
-  /// outline "Hubungi Pelanggan" - persis pola 2-tombol di referensi.
+  /// Buka CreateDeliveryScheduleScreen buat bikin RENCANA jadwal
+  /// pengantaran (tanggal, jam, kurir, alamat) untuk order ini - status
+  /// order TETAP 'ready', BELUM 'completed'. Order baru beneran ditandai
+  /// selesai nanti kalau kurir klik "Tandai Sudah Diantar" di
+  /// PickupDeliveryScreen (ConfirmDeliverySheet ->
+  /// markDelivered(markAsCompleted:true)), bukan di titik ini.
+  ///
+  /// Order-nya udah pasti (dari widget.orderId), jadi dikirim lewat
+  /// preselectedOrderId supaya CreateDeliveryScheduleScreen tidak perlu
+  /// nyari/milih order lagi dari daftar - mode juga otomatis terkunci ke
+  /// 'pengantaran'.
+  Future<void> _openScheduleDeliverySheet(_OrderDetailData order) async {
+    final scheduled = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => CreateDeliveryScheduleScreen(
+          preselectedOrderId: widget.orderId,
+        ),
+      ),
+    );
+
+    if (scheduled == true) {
+      _showSnack('Pengantaran berhasil dijadwalkan');
+      await _fetchOrder();
+    }
+  }
+
   Widget _buildBottomActionBar(BuildContext context, _OrderDetailData order) {
     final nextStatus = _nextStatus(order.status);
     final nextLabel = _nextStatusButtonLabel(order.status);
+    // Khusus ready + delivery: tombol maju status diganti "Jadwalkan
+    // Pengantaran" (buka CreateDeliveryScheduleScreen buat isi tanggal/jam
+    // rencana antar), bukan "Tandai Selesai" biasa - penyelesaiannya baru
+    // terjadi belakangan di PickupDeliveryScreen begitu kurir konfirmasi.
+    final showScheduleDeliveryButton = order.status == 'ready' && order.isDelivery;
 
     return Container(
       decoration: BoxDecoration(
@@ -2369,6 +2396,24 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       ),
                     ),
                   )
+                else if (showScheduleDeliveryButton)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: (_isUpdatingStatus || order.hasPendingCancellationRequest)
+                          ? null
+                          : () => _openScheduleDeliverySheet(order),
+                      icon: const Icon(Icons.local_shipping_outlined, size: 18),
+                      label: Text('Jadwalkan Pengantaran', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _cPrimaryContainer,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rXl)),
+                      ),
+                    ),
+                  )
                 else if (nextStatus != null && nextLabel != null)
                   SizedBox(
                     width: double.infinity,
@@ -2389,7 +2434,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       ),
                     ),
                   ),
-                if (nextLabel != null || order.status == 'completed') const SizedBox(height: AppTheme.sm),
+                if (nextLabel != null || order.status == 'completed' || showScheduleDeliveryButton)
+                  const SizedBox(height: AppTheme.sm),
                 SizedBox(
                   width: double.infinity,
                   height: 48,
