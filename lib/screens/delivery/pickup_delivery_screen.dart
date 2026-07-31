@@ -19,6 +19,9 @@ import '../orders/create_order_screen.dart' show OrderItemForm;
 // "Tambah Jadwal" di bawah supaya kedua alur bisa diakses dari 1 tempat.
 // TODO: sesuaikan path ini kalau lokasi filenya berbeda di project kamu.
 import 'create_delivery_screen.dart';
+// TODO: sesuaikan path ini kalau lokasi file l10n generated di project kamu
+// berbeda (biasanya hasil `flutter gen-l10n` dari app_en.arb / app_id.arb).
+import '../../l10n/app_localizations.dart';
 
 /// Local design tokens matching the new "NetWash Utility System" design.
 /// Disamakan dengan ServicesListScreen supaya seluruh alur Antar Jemput
@@ -171,11 +174,11 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
   String _categoryLabel(_LogisticsCategory category) {
     switch (category) {
       case _LogisticsCategory.needsPickup:
-        return 'Menunggu dijemput';
+        return AppLocalizations.of(context)!.waitingPickupStatus;
       case _LogisticsCategory.needsDelivery:
-        return 'Siap diantar';
+        return AppLocalizations.of(context)!.readyDeliveryStatus;
       case _LogisticsCategory.selfService:
-        return 'Siap diambil';
+        return AppLocalizations.of(context)!.readyPickupStatus;
       case _LogisticsCategory.other:
         return _fallbackStatusLabel(null);
     }
@@ -184,23 +187,23 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
   String _fallbackStatusLabel(OrderStatus? status) {
     switch (status) {
       case OrderStatus.pending:
-        return 'Menunggu konfirmasi';
+        return AppLocalizations.of(context)!.waitingConfirmationStatus;
       case OrderStatus.confirmed:
-        return 'Dikonfirmasi';
+        return AppLocalizations.of(context)!.confirmedStatus;
       case OrderStatus.inProgress:
       case OrderStatus.washing:
       case OrderStatus.drying:
       case OrderStatus.ironing:
       case OrderStatus.qualityCheck:
-        return 'Dalam proses';
+        return AppLocalizations.of(context)!.inProgressStatus;
       case OrderStatus.ready:
-        return 'Siap diambil';
+        return AppLocalizations.of(context)!.readyPickupStatus;
       case OrderStatus.completed:
-        return 'Selesai';
+        return AppLocalizations.of(context)!.orderStatusCompleted;
       case OrderStatus.cancelled:
-        return 'Dibatalkan';
+        return AppLocalizations.of(context)!.orderStatusCancelled;
       default:
-        return 'Dalam proses';
+        return AppLocalizations.of(context)!.inProgressStatus;
     }
   }
 
@@ -219,7 +222,7 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
     );
 
     if (confirmed == true) {
-      _showSnack('${order.orderNumber} ditandai sudah dijemput');
+      _showSnack(AppLocalizations.of(context)!.markedPickedUpSnackbar(order.orderNumber));
     }
   }
 
@@ -236,7 +239,7 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
         builder: (ctx) => _ConfirmDeliverySheet(order: order),
       );
       if (confirmed == true) {
-        _showSnack('${order.orderNumber} ditandai sudah diantar');
+        _showSnack(AppLocalizations.of(context)!.markedDeliveredSnackbar(order.orderNumber));
       }
     } else {
       await _markDelivered(order);
@@ -252,11 +255,11 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
             courierName: courierName,
           );
       if (mounted) {
-        _showSnack('${order.orderNumber} ditandai sudah diantar');
+        _showSnack(AppLocalizations.of(context)!.markedDeliveredSnackbar(order.orderNumber));
       }
     } catch (e) {
       if (mounted) {
-        _showSnack('Gagal update: $e', isError: true);
+        _showSnack(AppLocalizations.of(context)!.genericUpdateError(e.toString()), isError: true);
       }
     } finally {
       if (mounted) setState(() => _updatingOrderId = null);
@@ -327,7 +330,7 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
         foregroundColor: Colors.white,
         elevation: 2,
         icon: const Icon(Icons.add_rounded),
-        label: Text('Tambah Jadwal', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13.5)),
+        label: Text(AppLocalizations.of(context)!.addScheduleButton, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13.5)),
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -432,14 +435,14 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Antar Jemput',
+                AppLocalizations.of(context)!.pickupDeliveryTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: _DS.headlineMd(color: _DS.navy),
               ),
               const SizedBox(height: 2),
               Text(
-                'Kelola jemput, antar & ambil sendiri',
+                AppLocalizations.of(context)!.pickupDeliverySubtitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
@@ -468,7 +471,7 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
         controller: _searchController,
         style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
         decoration: InputDecoration(
-          hintText: 'Cari nama pelanggan atau no. pesanan...',
+          hintText: AppLocalizations.of(context)!.searchOrderCustomerHint,
           hintStyle: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurfaceVariant),
           prefixIcon: Icon(Icons.search, color: _DS.onSurfaceVariant),
           suffixIcon: _searchController.text.isNotEmpty
@@ -492,12 +495,13 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
   }
 
   Widget _buildFilterChips(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final filters = [
-      ('all', 'Semua', Icons.all_inbox_outlined, _DS.onSurfaceVariant),
-      ('needs_pickup', 'Perlu dijemput', Icons.call_received_rounded, _pickupAccent),
-      ('needs_delivery', 'Siap diantar', Icons.call_made_rounded, _DS.primary),
-      ('self_service', 'Ambil sendiri', Icons.storefront_outlined, _selfServiceAccent),
-      ('other', 'Lainnya', Icons.more_horiz_rounded, _DS.onSurfaceVariant),
+      ('all', l10n.filterAll, Icons.all_inbox_outlined, _DS.onSurfaceVariant),
+      ('needs_pickup', l10n.filterNeedsPickup, Icons.call_received_rounded, _pickupAccent),
+      ('needs_delivery', l10n.readyDeliveryStatus, Icons.call_made_rounded, _DS.primary),
+      ('self_service', l10n.filterSelfService, Icons.storefront_outlined, _selfServiceAccent),
+      ('other', l10n.filterOthers, Icons.more_horiz_rounded, _DS.onSurfaceVariant),
     ];
 
     return SizedBox(
@@ -549,10 +553,11 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
   /// pernah overflow di layar sempit; tiap kartu punya minWidth dan akan
   /// otomatis pindah baris kalau ruangnya kurang.
   Widget _buildStatsSummary(BuildContext context, int needsPickup, int needsDelivery, int selfService) {
+    final l10n = AppLocalizations.of(context)!;
     final stats = [
-      _StatCard(title: 'Perlu Dijemput', value: '$needsPickup', icon: Icons.call_received_rounded, color: _pickupAccent),
-      _StatCard(title: 'Siap Diantar', value: '$needsDelivery', icon: Icons.call_made_rounded, color: _DS.primary),
-      _StatCard(title: 'Ambil Sendiri', value: '$selfService', icon: Icons.storefront_outlined, color: _selfServiceAccent),
+      _StatCard(title: l10n.statNeedsPickupTitle, value: '$needsPickup', icon: Icons.call_received_rounded, color: _pickupAccent),
+      _StatCard(title: l10n.statReadyDeliveryTitle, value: '$needsDelivery', icon: Icons.call_made_rounded, color: _DS.primary),
+      _StatCard(title: l10n.statSelfServiceTitle, value: '$selfService', icon: Icons.storefront_outlined, color: _selfServiceAccent),
     ];
 
     return LayoutBuilder(
@@ -585,10 +590,10 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
               child: Icon(Icons.local_shipping_outlined, size: 40, color: _DS.primary.withOpacity(0.6)),
             ),
             const SizedBox(height: AppTheme.lg),
-            Text('Tidak ada pesanan', style: GoogleFonts.beVietnamPro(fontSize: 15, fontWeight: FontWeight.w600, color: _DS.onSurface)),
+            Text(AppLocalizations.of(context)!.noOrdersTitle, style: GoogleFonts.beVietnamPro(fontSize: 15, fontWeight: FontWeight.w600, color: _DS.onSurface)),
             const SizedBox(height: AppTheme.sm),
             Text(
-              'Belum ada pesanan yang cocok dengan filter ini',
+              AppLocalizations.of(context)!.noOrdersFilterSubtitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
             ),
@@ -596,7 +601,7 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
             OutlinedButton.icon(
               onPressed: _handleAddSchedule,
               icon: Icon(Icons.add_rounded, size: 18, color: _DS.primary),
-              label: Text('Tambah Jadwal', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13, color: _DS.primary)),
+              label: Text(AppLocalizations.of(context)!.addScheduleButton, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13, color: _DS.primary)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: _DS.primary.withOpacity(0.4)),
                 padding: const EdgeInsets.symmetric(horizontal: AppTheme.lg, vertical: AppTheme.sm),
@@ -694,12 +699,12 @@ class _AddScheduleModeSheet extends StatelessWidget {
                 ),
               ),
               Text(
-                'Jadwalkan Antar Jemput',
+                AppLocalizations.of(context)!.scheduleDeliveryScreenTitle,
                 style: GoogleFonts.beVietnamPro(fontSize: 17, fontWeight: FontWeight.w700, color: _DS.onSurface),
               ),
               const SizedBox(height: 4),
               Text(
-                'Pilih mode jadwal yang mau dibuat',
+                AppLocalizations.of(context)!.selectScheduleModeSubtitle,
                 style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
               ),
               const SizedBox(height: AppTheme.lg),
@@ -708,8 +713,8 @@ class _AddScheduleModeSheet extends StatelessWidget {
                 value: 'penjemputan',
                 icon: Icons.call_received_rounded,
                 accent: pickupAccent,
-                title: 'Jadwalkan Penjemputan',
-                subtitle: 'Untuk pesanan yang menunggu dijemput',
+                title: AppLocalizations.of(context)!.schedulePickupTileTitle,
+                subtitle: AppLocalizations.of(context)!.schedulePickupTileSubtitle,
               ),
               const SizedBox(height: AppTheme.sm),
               _modeTile(
@@ -717,8 +722,8 @@ class _AddScheduleModeSheet extends StatelessWidget {
                 value: 'pengantaran',
                 icon: Icons.call_made_rounded,
                 accent: deliveryAccent,
-                title: 'Jadwalkan Pengantaran',
-                subtitle: 'Untuk pesanan yang sudah siap diantar',
+                title: AppLocalizations.of(context)!.scheduleDeliveryTileTitle,
+                subtitle: AppLocalizations.of(context)!.scheduleDeliveryTileSubtitle,
               ),
             ],
           ),
@@ -807,12 +812,15 @@ class _ConfirmPickupSheet extends StatefulWidget {
       _selectedPaymentMethod == 'debit' ||
       _selectedPaymentMethod == 'ewallet';
 
-  final List<Map<String, dynamic>> _paymentMethods = const [
-    {'id': 'cash', 'label': 'Tunai', 'icon': Icons.payments_outlined},
-    {'id': 'transfer', 'label': 'Transfer Bank', 'icon': Icons.account_balance_outlined},
-    {'id': 'debit', 'label': 'Kartu Debit', 'icon': Icons.credit_card_outlined},
-    {'id': 'ewallet', 'label': 'E-Wallet', 'icon': Icons.account_balance_wallet_outlined},
-  ];
+  List<Map<String, dynamic>> _paymentMethods(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      {'id': 'cash', 'label': l10n.cashPaymentLabel, 'icon': Icons.payments_outlined},
+      {'id': 'transfer', 'label': l10n.bankTransferLabel, 'icon': Icons.account_balance_outlined},
+      {'id': 'debit', 'label': l10n.debitCardLabel, 'icon': Icons.credit_card_outlined},
+      {'id': 'ewallet', 'label': l10n.eWalletLabel, 'icon': Icons.account_balance_wallet_outlined},
+    ];
+  }
   // === END TAMBAHAN
 
   @override
@@ -865,14 +873,14 @@ class _ConfirmPickupSheet extends StatefulWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: Text('Pilih Layanan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurface)),
+        title: Text(AppLocalizations.of(context)!.selectServiceTitle, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurface)),
         content: SizedBox(
           width: double.maxFinite,
           child: _services.isEmpty
               ? Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Text(
-                    'Belum ada layanan aktif.',
+                    AppLocalizations.of(context)!.noActiveServicesHint,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
                   ),
@@ -907,7 +915,7 @@ class _ConfirmPickupSheet extends StatefulWidget {
                 ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text('Tutup', style: GoogleFonts.beVietnamPro())),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(AppLocalizations.of(context)!.closeButton, style: GoogleFonts.beVietnamPro())),
         ],
       ),
     );
@@ -939,14 +947,14 @@ class _ConfirmPickupSheet extends StatefulWidget {
     final dp = double.tryParse(rawDp) ?? 0;
     if (dp <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Isi nominal DP terlebih dahulu', style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
+        SnackBar(content: Text(AppLocalizations.of(context)!.dpAmountRequiredError, style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
       );
       return null;
     }
     if (dp >= _subtotal) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Nominal DP harus lebih kecil dari total. Pilih "Lunas" kalau bayar penuh.', style: GoogleFonts.beVietnamPro()),
+          content: Text(AppLocalizations.of(context)!.dpAmountTooLargeError, style: GoogleFonts.beVietnamPro()),
           backgroundColor: _DS.error,
         ),
       );
@@ -959,7 +967,7 @@ class _ConfirmPickupSheet extends StatefulWidget {
   Future<void> _handleConfirm() async {
     if (_items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tambahkan minimal 1 item', style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
+        SnackBar(content: Text(AppLocalizations.of(context)!.minOneItemError, style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
       );
       return;
     }
@@ -968,7 +976,7 @@ class _ConfirmPickupSheet extends StatefulWidget {
       if (item.pricingType == PricingType.perKg && item.weight <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Isi berat (kg) untuk "${item.name}"', style: GoogleFonts.beVietnamPro()),
+            content: Text(AppLocalizations.of(context)!.weightRequiredError(item.name), style: GoogleFonts.beVietnamPro()),
             backgroundColor: _DS.error,
           ),
         );
@@ -983,7 +991,7 @@ class _ConfirmPickupSheet extends StatefulWidget {
     setState(() => _isSaving = true);
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw 'Sesi tidak ditemukan, silakan login ulang.';
+      if (user == null) throw AppLocalizations.of(context)!.sessionNotFoundError;
 
       final orderItems = _items
           .map((item) => OrderItem(
@@ -1017,7 +1025,7 @@ class _ConfirmPickupSheet extends StatefulWidget {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal konfirmasi: $e', style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
+          SnackBar(content: Text(AppLocalizations.of(context)!.confirmFailedError(e.toString()), style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
         );
       }
     } finally {
@@ -1060,7 +1068,7 @@ class _ConfirmPickupSheet extends StatefulWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Metode Pembayaran', style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.onSurface)),
+        Text(AppLocalizations.of(context)!.paymentMethodLabel, style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.onSurface)),
         const SizedBox(height: AppTheme.sm),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -1068,7 +1076,7 @@ class _ConfirmPickupSheet extends StatefulWidget {
             return Wrap(
               spacing: AppTheme.sm,
               runSpacing: AppTheme.sm,
-              children: _paymentMethods.map((method) {
+              children: _paymentMethods(context).map((method) {
                 final isSelected = _selectedPaymentMethod == method['id'];
                 return SizedBox(
                   width: itemWidth,
@@ -1107,17 +1115,17 @@ class _ConfirmPickupSheet extends StatefulWidget {
         const SizedBox(height: 6),
         Text(
           _selectedPaymentMethod == 'transfer'
-              ? 'Status pembayaran akan "Belum Dibayar" sampai dikonfirmasi manual di halaman detail pesanan.'
-              : 'Metode ini dianggap dibayar langsung saat ini juga.',
+              ? AppLocalizations.of(context)!.transferPaymentPendingNotice
+              : AppLocalizations.of(context)!.instantPaymentNotice,
           style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.onSurfaceVariant),
         ),
         if (_isInstantMethod) ...[
           const SizedBox(height: AppTheme.md),
           Row(
             children: [
-              Expanded(child: _paymentOptionChip(label: 'Lunas', isSelected: _isFullPayment, onTap: () => setState(() => _isFullPayment = true))),
+              Expanded(child: _paymentOptionChip(label: AppLocalizations.of(context)!.fullPaymentLabel, isSelected: _isFullPayment, onTap: () => setState(() => _isFullPayment = true))),
               const SizedBox(width: AppTheme.sm),
-              Expanded(child: _paymentOptionChip(label: 'DP (Sebagian)', isSelected: !_isFullPayment, onTap: () => setState(() => _isFullPayment = false))),
+              Expanded(child: _paymentOptionChip(label: AppLocalizations.of(context)!.partialPaymentLabel, isSelected: !_isFullPayment, onTap: () => setState(() => _isFullPayment = false))),
             ],
           ),
           if (!_isFullPayment) ...[
@@ -1128,9 +1136,9 @@ class _ConfirmPickupSheet extends StatefulWidget {
               keyboardType: TextInputType.number,
               style: GoogleFonts.beVietnamPro(fontSize: 13.5),
               decoration: InputDecoration(
-                labelText: 'Nominal DP',
+                labelText: AppLocalizations.of(context)!.dpAmountLabel,
                 labelStyle: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
-                hintText: 'Contoh: 20000',
+                hintText: AppLocalizations.of(context)!.dpAmountHint,
                 hintStyle: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
                 prefixIcon: Icon(Icons.payments_outlined, color: _DS.onSurfaceVariant),
                 filled: true,
@@ -1140,7 +1148,7 @@ class _ConfirmPickupSheet extends StatefulWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.',
+              AppLocalizations.of(context)!.remainingBalanceHint,
               style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.onSurfaceVariant),
             ),
           ],
@@ -1173,10 +1181,10 @@ class _ConfirmPickupSheet extends StatefulWidget {
                   decoration: BoxDecoration(color: _DS.outlineVariant, borderRadius: BorderRadius.circular(4)),
                 ),
               ),
-              Text('Konfirmasi Jemput', style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _DS.onSurface)),
+              Text(AppLocalizations.of(context)!.confirmPickupTitle, style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _DS.onSurface)),
               const SizedBox(height: 4),
               Text(
-                'Catat item & berat cucian ${widget.order.customerName ?? "pelanggan"} (${widget.order.orderNumber})',
+                AppLocalizations.of(context)!.confirmPickupSubtitle(widget.order.customerName ?? AppLocalizations.of(context)!.customerFallbackLabel, widget.order.orderNumber),
                 style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
               ),
               const SizedBox(height: 22),
@@ -1184,11 +1192,11 @@ class _ConfirmPickupSheet extends StatefulWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Item Cucian', style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.onSurface)),
+                  Text(AppLocalizations.of(context)!.laundryItemsLabel, style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.onSurface)),
                   TextButton.icon(
                     onPressed: _isLoadingServices || _isSaving ? null : _pickService,
                     icon: const Icon(Icons.add, size: 16),
-                    label: Text('Tambah', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                    label: Text(AppLocalizations.of(context)!.addButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 12.5)),
                     style: TextButton.styleFrom(foregroundColor: _DS.primary),
                   ),
                 ],
@@ -1205,7 +1213,7 @@ class _ConfirmPickupSheet extends StatefulWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(color: _DS.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
                   child: Text(
-                    'Belum ada item. Tekan "Tambah" untuk memilih layanan.',
+                    AppLocalizations.of(context)!.noItemsAddHint,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
                   ),
@@ -1291,7 +1299,7 @@ class _ConfirmPickupSheet extends StatefulWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Total', style: GoogleFonts.beVietnamPro(fontSize: 14.5, fontWeight: FontWeight.w700, color: _DS.onSurface)),
+                  Text(AppLocalizations.of(context)!.totalLabel, style: GoogleFonts.beVietnamPro(fontSize: 14.5, fontWeight: FontWeight.w700, color: _DS.onSurface)),
                   Text(_formatCurrency(_subtotal), style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _DS.primary)),
                 ],
               ),
@@ -1314,7 +1322,7 @@ class _ConfirmPickupSheet extends StatefulWidget {
                   ),
                   child: _isSaving
                       ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Text('Konfirmasi Sudah Dijemput', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 15)),
+                      : Text(AppLocalizations.of(context)!.confirmPickedUpButton, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 15)),
                 ),
               ),
             ],
@@ -1390,7 +1398,7 @@ class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal konfirmasi: $e', style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
+          SnackBar(content: Text(AppLocalizations.of(context)!.confirmFailedError(e.toString()), style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
         );
       }
     } finally {
@@ -1422,18 +1430,18 @@ class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
                 ),
               ),
               Text(
-                'Konfirmasi Antar',
+                AppLocalizations.of(context)!.confirmDeliveryTitle,
                 style: GoogleFonts.beVietnamPro(fontSize: 19, fontWeight: FontWeight.w700, color: _DS.onSurface),
               ),
               const SizedBox(height: 4),
               Text(
-                'Antar cucian ${widget.order.customerName ?? "pelanggan"} (${widget.order.orderNumber})',
+                AppLocalizations.of(context)!.confirmDeliverySubtitle(widget.order.customerName ?? AppLocalizations.of(context)!.customerFallbackLabel, widget.order.orderNumber),
                 style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
               ),
               const SizedBox(height: 22),
 
               Text(
-                'Kurir Bertugas (Opsional)',
+                AppLocalizations.of(context)!.assignedCourierLabel,
                 style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.onSurface),
               ),
               const SizedBox(height: AppTheme.sm),
@@ -1453,7 +1461,7 @@ class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Text(
-                    'Belum ada karyawan dengan posisi "Kurir". Anda tetap bisa lanjut menandai order ini sudah diantar.',
+                    AppLocalizations.of(context)!.noCourierEmployeeDeliverHint,
                     style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
                   ),
                 )
@@ -1473,7 +1481,7 @@ class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
                       .toList(),
                   onChanged: _isSaving ? null : (val) => setState(() => _selectedCourier = val),
                   decoration: InputDecoration(
-                    hintText: 'Pilih kurir',
+                    hintText: AppLocalizations.of(context)!.selectCourierHint,
                     hintStyle: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurfaceVariant),
                     prefixIcon: Icon(Icons.two_wheeler_outlined, color: _DS.onSurfaceVariant, size: 20),
                     filled: true,
@@ -1507,7 +1515,7 @@ class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          'Konfirmasi Sudah Diantar',
+                          AppLocalizations.of(context)!.confirmDeliveredButton,
                           style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 15),
                         ),
                 ),
@@ -1638,10 +1646,12 @@ class _OrderLogisticsCard extends StatelessWidget {
     required this.onMarkDelivered,
   });
 
-  String _formatDate(DateTime? date) {
+  String _formatDate(BuildContext context, DateTime? date) {
     if (date == null) return '-';
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    final l10n = AppLocalizations.of(context)!;
+    final months = [
+      l10n.monthJan, l10n.monthFeb, l10n.monthMar, l10n.monthApr, l10n.monthMay, l10n.monthJun,
+      l10n.monthJul, l10n.monthAug, l10n.monthSep, l10n.monthOct, l10n.monthNov, l10n.monthDec,
     ];
     final time = '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     return '${date.day} ${months[date.month - 1]}, $time';
@@ -1654,11 +1664,12 @@ class _OrderLogisticsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typeLabel = order.needsPickup ? 'Jemput' : 'Walk-in';
+    final l10n = AppLocalizations.of(context)!;
+    final typeLabel = order.needsPickup ? l10n.pickupTypeLabel : l10n.walkInTypeLabel;
     final typeIcon = order.needsPickup ? Icons.call_received_rounded : Icons.storefront_outlined;
     final typeColor = order.needsPickup ? const Color(0xFFB197FC) : _DS.onSurfaceVariant;
 
-    final deliveryLabel = order.needsDelivery ? 'Antar' : 'Ambil Sendiri';
+    final deliveryLabel = order.needsDelivery ? l10n.deliveryTypeLabel : l10n.selfPickupTypeLabel;
     final deliveryIcon = order.needsDelivery ? Icons.call_made_rounded : Icons.storefront_outlined;
     final deliveryColor = order.needsDelivery ? _DS.primary : const Color(0xFF51CF66);
 
@@ -1703,7 +1714,7 @@ class _OrderLogisticsCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  (order.customerName?.isNotEmpty ?? false) ? order.customerName! : 'Pelanggan',
+                                  (order.customerName?.isNotEmpty ?? false) ? order.customerName! : l10n.customerFallbackLabel,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14.5, color: _DS.onSurface),
@@ -1770,13 +1781,13 @@ class _OrderLogisticsCard extends StatelessWidget {
                           if (hasPickupCourier)
                             _Pill(
                               icon: Icons.two_wheeler_outlined,
-                              label: pickupSchedule!.courierName ?? 'Kurir',
+                              label: pickupSchedule!.courierName ?? l10n.genericCourierLabel,
                               color: const Color(0xFF51CF66),
                             ),
                           if (needsCourierAssignment)
                             _Pill(
                               icon: Icons.person_off_outlined,
-                              label: 'Kurir belum ditentukan',
+                              label: l10n.courierNotAssignedLabel,
                               color: const Color(0xFFE8590C),
                             ),
                         ],
@@ -1792,11 +1803,11 @@ class _OrderLogisticsCard extends StatelessWidget {
                             child: Text(
                               switch (category) {
                                 _LogisticsCategory.needsPickup => pickupSchedule?.scheduledAt != null
-                                    ? 'Rencana jemput: ${_formatDate(pickupSchedule!.scheduledAt)}'
-                                    : 'Belum dijadwalkan',
-                                _LogisticsCategory.selfService => 'Diambil: ${_formatDate(order.deliveryDate)}',
-                                _ when order.needsDelivery => 'Diantar: ${_formatDate(order.deliveryDate)}',
-                                _ => 'Dijemput: ${_formatDate(order.pickupDate)}',
+                                    ? l10n.plannedPickupLabel(_formatDate(context, pickupSchedule!.scheduledAt))
+                                    : l10n.notScheduledLabel,
+                                _LogisticsCategory.selfService => l10n.selfServicePickedUpLabel(_formatDate(context, order.deliveryDate)),
+                                _ when order.needsDelivery => l10n.deliveredAtLabel(_formatDate(context, order.deliveryDate)),
+                                _ => l10n.pickedUpFromCustomerLabel(_formatDate(context, order.pickupDate)),
                               },
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1836,9 +1847,9 @@ class _OrderLogisticsCard extends StatelessWidget {
                                       Flexible(
                                         child: Text(
                                           switch (category) {
-                                            _LogisticsCategory.needsPickup => 'Tandai Sudah Dijemput',
-                                            _LogisticsCategory.selfService => 'Tandai Sudah Diambil',
-                                            _ => 'Tandai Sudah Diantar',
+                                            _LogisticsCategory.needsPickup => l10n.markPickedUpButton,
+                                            _LogisticsCategory.selfService => l10n.markSelfPickedUpButton,
+                                            _ => l10n.markDeliveredButton,
                                           },
                                           overflow: TextOverflow.ellipsis,
                                           style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13),

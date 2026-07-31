@@ -182,6 +182,36 @@ abstract class AppLocalizations {
   /// **'Bahasa'**
   String get languageTitle;
 
+  /// No description provided for @sectionCsTeam.
+  ///
+  /// In id, this message translates to:
+  /// **'Tim CS'**
+  String get sectionCsTeam;
+
+  /// No description provided for @manageCsChatTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola Chat CS'**
+  String get manageCsChatTitle;
+
+  /// No description provided for @manageCsChatSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Balas percakapan dari semua user'**
+  String get manageCsChatSubtitle;
+
+  /// No description provided for @chatTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Chat'**
+  String get chatTitle;
+
+  /// No description provided for @chatSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Balasan'**
+  String get chatSubtitle;
+
   /// No description provided for @sectionOther.
   ///
   /// In id, this message translates to:
@@ -481,6 +511,222 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Pesanan aktif'**
   String get activeOrdersLabel;
+
+  /// No description provided for @reportsTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Laporan'**
+  String get reportsTitle;
+
+  /// No description provided for @reportsSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pantau performa bisnis laundry Anda'**
+  String get reportsSubtitle;
+
+  /// No description provided for @periodToday.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari Ini'**
+  String get periodToday;
+
+  /// No description provided for @periodThisWeek.
+  ///
+  /// In id, this message translates to:
+  /// **'Minggu Ini'**
+  String get periodThisWeek;
+
+  /// No description provided for @periodThisMonth.
+  ///
+  /// In id, this message translates to:
+  /// **'Bulan Ini'**
+  String get periodThisMonth;
+
+  /// No description provided for @periodThisYear.
+  ///
+  /// In id, this message translates to:
+  /// **'Tahun Ini'**
+  String get periodThisYear;
+
+  /// No description provided for @printButtonShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Cetak'**
+  String get printButtonShort;
+
+  /// No description provided for @printReportButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Cetak Laporan'**
+  String get printReportButton;
+
+  /// No description provided for @generatingPdfButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Membuat PDF...'**
+  String get generatingPdfButton;
+
+  /// No description provided for @growthThisPeriodLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pertumbuhan Periode Ini'**
+  String get growthThisPeriodLabel;
+
+  /// No description provided for @growthUpLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Naik'**
+  String get growthUpLabel;
+
+  /// No description provided for @growthDownLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Turun'**
+  String get growthDownLabel;
+
+  /// No description provided for @fromPreviousPeriodLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'dari periode sebelumnya'**
+  String get fromPreviousPeriodLabel;
+
+  /// No description provided for @revenueTrendTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tren Pendapatan'**
+  String get revenueTrendTitle;
+
+  /// No description provided for @last7DaysLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'7 hari terakhir'**
+  String get last7DaysLabel;
+
+  /// No description provided for @revenuePerServiceTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pendapatan per Layanan'**
+  String get revenuePerServiceTitle;
+
+  /// No description provided for @noOrdersThisPeriod.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada data pesanan pada periode ini.'**
+  String get noOrdersThisPeriod;
+
+  /// No description provided for @completionRateLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tingkat Penyelesaian'**
+  String get completionRateLabel;
+
+  /// No description provided for @ofAllOrdersLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'dari seluruh pesanan'**
+  String get ofAllOrdersLabel;
+
+  /// No description provided for @exportPdfError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal membuat PDF: {error}'**
+  String exportPdfError(String error);
+
+  /// No description provided for @pdfReportTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Laporan Bisnis Laundry'**
+  String get pdfReportTitle;
+
+  /// No description provided for @pdfHeaderInfo.
+  ///
+  /// In id, this message translates to:
+  /// **'Periode: {period}   |   Cabang: {branch}   |   Dibuat: {date}'**
+  String pdfHeaderInfo(String period, String branch, String date);
+
+  /// No description provided for @pdfSummaryTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ringkasan'**
+  String get pdfSummaryTitle;
+
+  /// No description provided for @totalRevenueLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total Pendapatan'**
+  String get totalRevenueLabel;
+
+  /// No description provided for @newCustomersLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan Baru'**
+  String get newCustomersLabel;
+
+  /// No description provided for @avgOrderLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Rata-rata Order'**
+  String get avgOrderLabel;
+
+  /// No description provided for @growthLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pertumbuhan'**
+  String get growthLabel;
+
+  /// No description provided for @growthValueTemplate.
+  ///
+  /// In id, this message translates to:
+  /// **'+{rate}% dari periode sebelumnya'**
+  String growthValueTemplate(String rate);
+
+  /// No description provided for @pdfWeeklyTrendTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tren Pendapatan (7 hari terakhir)'**
+  String get pdfWeeklyTrendTitle;
+
+  /// No description provided for @pdfServiceColumn.
+  ///
+  /// In id, this message translates to:
+  /// **'Layanan'**
+  String get pdfServiceColumn;
+
+  /// No description provided for @pdfOrdersColumn.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan'**
+  String get pdfOrdersColumn;
+
+  /// No description provided for @pdfRevenueColumn.
+  ///
+  /// In id, this message translates to:
+  /// **'Pendapatan'**
+  String get pdfRevenueColumn;
+
+  /// No description provided for @pdfPercentageColumn.
+  ///
+  /// In id, this message translates to:
+  /// **'Persentase'**
+  String get pdfPercentageColumn;
+
+  /// No description provided for @pdfPageOfPages.
+  ///
+  /// In id, this message translates to:
+  /// **'Halaman {page} dari {total}'**
+  String pdfPageOfPages(int page, int total);
+
+  /// No description provided for @unnamedBranchLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang Tanpa Nama'**
+  String get unnamedBranchLabel;
+
+  /// No description provided for @otherServiceLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Lainnya'**
+  String get otherServiceLabel;
 
   /// No description provided for @setupBranchTitle.
   ///
@@ -1367,7 +1613,7 @@ abstract class AppLocalizations {
   /// No description provided for @phoneNumberLabel.
   ///
   /// In id, this message translates to:
-  /// **'No. Telepon'**
+  /// **'Nomor Telepon'**
   String get phoneNumberLabel;
 
   /// No description provided for @phoneNumberHint.
@@ -1607,7 +1853,7 @@ abstract class AppLocalizations {
   /// No description provided for @emailOptionalLabel.
   ///
   /// In id, this message translates to:
-  /// **'Email Cabang (Opsional)'**
+  /// **'Email (Opsional)'**
   String get emailOptionalLabel;
 
   /// No description provided for @managerOptionalLabel.
@@ -1847,7 +2093,7 @@ abstract class AppLocalizations {
   /// No description provided for @addressHint.
   ///
   /// In id, this message translates to:
-  /// **'Contoh: Jl. Merdeka No. 123'**
+  /// **'Masukkan alamat lengkap rumah'**
   String get addressHint;
 
   /// No description provided for @cityHint.
@@ -2195,7 +2441,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchOrderHint.
   ///
   /// In id, this message translates to:
-  /// **'Cari pesanan atau pelanggan...'**
+  /// **'Cari pesanan...'**
   String get searchOrderHint;
 
   /// No description provided for @orderWaitingStatus.
@@ -2437,6 +2683,1140 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'{count} item'**
   String orderItemLabel(int count);
+
+  /// No description provided for @closeButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Tutup'**
+  String get closeButton;
+
+  /// No description provided for @selectOrderTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih Pesanan'**
+  String get selectOrderTitle;
+
+  /// No description provided for @noOrdersWaitingPickupHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada pesanan yang menunggu dijemput.'**
+  String get noOrdersWaitingPickupHint;
+
+  /// No description provided for @noOrdersReadyDeliveryHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada pesanan yang siap diantar.'**
+  String get noOrdersReadyDeliveryHint;
+
+  /// No description provided for @customerFallbackLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan'**
+  String get customerFallbackLabel;
+
+  /// No description provided for @scheduleDeliveryScreenTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Jadwalkan Antar Jemput'**
+  String get scheduleDeliveryScreenTitle;
+
+  /// No description provided for @pickupModeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Penjemputan'**
+  String get pickupModeLabel;
+
+  /// No description provided for @deliveryModeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengantaran'**
+  String get deliveryModeLabel;
+
+  /// No description provided for @newCustomerButtonShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Baru'**
+  String get newCustomerButtonShort;
+
+  /// No description provided for @autoFilledScheduleHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanggal & jam terisi otomatis dari saat pesanan dibuat'**
+  String get autoFilledScheduleHint;
+
+  /// No description provided for @selectBranchLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih Cabang'**
+  String get selectBranchLabel;
+
+  /// No description provided for @noActiveBranchesScheduleHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada cabang aktif. Tambahkan cabang terlebih dahulu di menu Cabang.'**
+  String get noActiveBranchesScheduleHint;
+
+  /// No description provided for @selectBranchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih Cabang'**
+  String get selectBranchHint;
+
+  /// No description provided for @useMapLocationButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Pakai lokasi peta'**
+  String get useMapLocationButton;
+
+  /// No description provided for @mapLocationComingSoon.
+  ///
+  /// In id, this message translates to:
+  /// **'Fitur pilih lokasi peta akan segera hadir'**
+  String get mapLocationComingSoon;
+
+  /// No description provided for @addressFieldExampleHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Jl. Kebayoran Lama No. 123, Jakarta Selatan...'**
+  String get addressFieldExampleHint;
+
+  /// No description provided for @dateLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanggal'**
+  String get dateLabel;
+
+  /// No description provided for @timeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam'**
+  String get timeLabel;
+
+  /// No description provided for @selectCourierLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih Kurir'**
+  String get selectCourierLabel;
+
+  /// No description provided for @noCourierEmployeeScheduleHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada karyawan dengan posisi \"Kurir\". Anda tetap bisa menyimpan jadwal tanpa memilih kurir.'**
+  String get noCourierEmployeeScheduleHint;
+
+  /// No description provided for @searchCourierHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari kurir terdekat...'**
+  String get searchCourierHint;
+
+  /// No description provided for @courierListHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Kurir aktif dengan posisi \"Kurir\" ditampilkan di daftar ini.'**
+  String get courierListHint;
+
+  /// No description provided for @additionalNotesLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan Tambahan (Opsional)'**
+  String get additionalNotesLabel;
+
+  /// No description provided for @notesExampleHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: Titipkan di satpam, pagar warna hitam...'**
+  String get notesExampleHint;
+
+  /// No description provided for @scheduleSummaryTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'RINGKASAN JADWAL'**
+  String get scheduleSummaryTitle;
+
+  /// No description provided for @selectOrSearchOrderLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih atau Cari Pesanan'**
+  String get selectOrSearchOrderLabel;
+
+  /// No description provided for @addressNotSetLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat belum ditentukan'**
+  String get addressNotSetLabel;
+
+  /// No description provided for @notScheduledLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum dijadwalkan'**
+  String get notScheduledLabel;
+
+  /// No description provided for @modeWithBranchLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Mode: {mode} • {branch}'**
+  String modeWithBranchLabel(String mode, String branch);
+
+  /// No description provided for @modeOnlyLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Mode: {mode}'**
+  String modeOnlyLabel(String mode);
+
+  /// No description provided for @saveScheduleButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan Jadwal'**
+  String get saveScheduleButton;
+
+  /// No description provided for @selectOrderRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih pesanan terlebih dahulu'**
+  String get selectOrderRequiredError;
+
+  /// No description provided for @addressRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat wajib diisi'**
+  String get addressRequiredError;
+
+  /// No description provided for @dateTimeRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanggal dan jam wajib dipilih'**
+  String get dateTimeRequiredError;
+
+  /// No description provided for @scheduleSaveSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Jadwal berhasil disimpan'**
+  String get scheduleSaveSuccess;
+
+  /// No description provided for @scheduleSaveError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menyimpan jadwal: {error}'**
+  String scheduleSaveError(String error);
+
+  /// No description provided for @waitingPickupStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Menunggu dijemput'**
+  String get waitingPickupStatus;
+
+  /// No description provided for @readyDeliveryStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Siap diantar'**
+  String get readyDeliveryStatus;
+
+  /// No description provided for @readyPickupStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Siap diambil'**
+  String get readyPickupStatus;
+
+  /// No description provided for @waitingConfirmationStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Menunggu konfirmasi'**
+  String get waitingConfirmationStatus;
+
+  /// No description provided for @confirmedStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Dikonfirmasi'**
+  String get confirmedStatus;
+
+  /// No description provided for @inProgressStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Dalam proses'**
+  String get inProgressStatus;
+
+  /// No description provided for @markedPickedUpSnackbar.
+  ///
+  /// In id, this message translates to:
+  /// **'{orderNumber} ditandai sudah dijemput'**
+  String markedPickedUpSnackbar(String orderNumber);
+
+  /// No description provided for @markedDeliveredSnackbar.
+  ///
+  /// In id, this message translates to:
+  /// **'{orderNumber} ditandai sudah diantar'**
+  String markedDeliveredSnackbar(String orderNumber);
+
+  /// No description provided for @genericUpdateError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal update: {error}'**
+  String genericUpdateError(String error);
+
+  /// No description provided for @addScheduleButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah Jadwal'**
+  String get addScheduleButton;
+
+  /// No description provided for @pickupDeliveryTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Antar Jemput'**
+  String get pickupDeliveryTitle;
+
+  /// No description provided for @pickupDeliverySubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola jemput, antar & ambil sendiri'**
+  String get pickupDeliverySubtitle;
+
+  /// No description provided for @searchOrderCustomerHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari nama pelanggan atau no. pesanan...'**
+  String get searchOrderCustomerHint;
+
+  /// No description provided for @filterNeedsPickup.
+  ///
+  /// In id, this message translates to:
+  /// **'Perlu dijemput'**
+  String get filterNeedsPickup;
+
+  /// No description provided for @filterSelfService.
+  ///
+  /// In id, this message translates to:
+  /// **'Ambil sendiri'**
+  String get filterSelfService;
+
+  /// No description provided for @filterOthers.
+  ///
+  /// In id, this message translates to:
+  /// **'Lainnya'**
+  String get filterOthers;
+
+  /// No description provided for @statNeedsPickupTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Perlu Dijemput'**
+  String get statNeedsPickupTitle;
+
+  /// No description provided for @statReadyDeliveryTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Siap Diantar'**
+  String get statReadyDeliveryTitle;
+
+  /// No description provided for @statSelfServiceTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ambil Sendiri'**
+  String get statSelfServiceTitle;
+
+  /// No description provided for @noOrdersTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada pesanan'**
+  String get noOrdersTitle;
+
+  /// No description provided for @noOrdersFilterSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada pesanan yang cocok dengan filter ini'**
+  String get noOrdersFilterSubtitle;
+
+  /// No description provided for @selectScheduleModeSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih mode jadwal yang mau dibuat'**
+  String get selectScheduleModeSubtitle;
+
+  /// No description provided for @schedulePickupTileTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Jadwalkan Penjemputan'**
+  String get schedulePickupTileTitle;
+
+  /// No description provided for @schedulePickupTileSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Untuk pesanan yang menunggu dijemput'**
+  String get schedulePickupTileSubtitle;
+
+  /// No description provided for @scheduleDeliveryTileTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Jadwalkan Pengantaran'**
+  String get scheduleDeliveryTileTitle;
+
+  /// No description provided for @scheduleDeliveryTileSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Untuk pesanan yang sudah siap diantar'**
+  String get scheduleDeliveryTileSubtitle;
+
+  /// No description provided for @selectServiceTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih Layanan'**
+  String get selectServiceTitle;
+
+  /// No description provided for @noActiveServicesHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada layanan aktif.'**
+  String get noActiveServicesHint;
+
+  /// No description provided for @dpAmountRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Isi nominal DP terlebih dahulu'**
+  String get dpAmountRequiredError;
+
+  /// No description provided for @dpAmountTooLargeError.
+  ///
+  /// In id, this message translates to:
+  /// **'Nominal DP harus lebih kecil dari total. Pilih \"Lunas\" kalau bayar penuh.'**
+  String get dpAmountTooLargeError;
+
+  /// No description provided for @minOneItemError.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambahkan minimal 1 item'**
+  String get minOneItemError;
+
+  /// No description provided for @weightRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Isi berat (kg) untuk \"{itemName}\"'**
+  String weightRequiredError(String itemName);
+
+  /// No description provided for @confirmFailedError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal konfirmasi: {error}'**
+  String confirmFailedError(String error);
+
+  /// No description provided for @cashPaymentLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tunai'**
+  String get cashPaymentLabel;
+
+  /// No description provided for @bankTransferLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Transfer Bank'**
+  String get bankTransferLabel;
+
+  /// No description provided for @debitCardLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kartu Debit'**
+  String get debitCardLabel;
+
+  /// No description provided for @eWalletLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'E-Wallet'**
+  String get eWalletLabel;
+
+  /// No description provided for @paymentMethodLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Metode Pembayaran'**
+  String get paymentMethodLabel;
+
+  /// No description provided for @transferPaymentPendingNotice.
+  ///
+  /// In id, this message translates to:
+  /// **'Status pembayaran akan \"Belum Dibayar\" sampai dikonfirmasi manual di halaman detail pesanan.'**
+  String get transferPaymentPendingNotice;
+
+  /// No description provided for @instantPaymentNotice.
+  ///
+  /// In id, this message translates to:
+  /// **'Metode ini dianggap dibayar langsung saat ini juga.'**
+  String get instantPaymentNotice;
+
+  /// No description provided for @fullPaymentLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Lunas'**
+  String get fullPaymentLabel;
+
+  /// No description provided for @partialPaymentLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'DP (Sebagian)'**
+  String get partialPaymentLabel;
+
+  /// No description provided for @dpAmountLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Nominal DP'**
+  String get dpAmountLabel;
+
+  /// No description provided for @dpAmountHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: 20000'**
+  String get dpAmountHint;
+
+  /// No description provided for @remainingBalanceHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.'**
+  String get remainingBalanceHint;
+
+  /// No description provided for @confirmPickupTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Konfirmasi Jemput'**
+  String get confirmPickupTitle;
+
+  /// No description provided for @confirmPickupSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Catat item & berat cucian {customerName} ({orderNumber})'**
+  String confirmPickupSubtitle(String customerName, String orderNumber);
+
+  /// No description provided for @laundryItemsLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Item Cucian'**
+  String get laundryItemsLabel;
+
+  /// No description provided for @addButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah'**
+  String get addButtonLabel;
+
+  /// No description provided for @noItemsAddHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada item. Tekan \"Tambah\" untuk memilih layanan.'**
+  String get noItemsAddHint;
+
+  /// No description provided for @confirmPickedUpButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Konfirmasi Sudah Dijemput'**
+  String get confirmPickedUpButton;
+
+  /// No description provided for @confirmDeliveryTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Konfirmasi Antar'**
+  String get confirmDeliveryTitle;
+
+  /// No description provided for @confirmDeliverySubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Antar cucian {customerName} ({orderNumber})'**
+  String confirmDeliverySubtitle(String customerName, String orderNumber);
+
+  /// No description provided for @assignedCourierLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kurir Bertugas (Opsional)'**
+  String get assignedCourierLabel;
+
+  /// No description provided for @noCourierEmployeeDeliverHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada karyawan dengan posisi \"Kurir\". Anda tetap bisa lanjut menandai order ini sudah diantar.'**
+  String get noCourierEmployeeDeliverHint;
+
+  /// No description provided for @selectCourierHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih kurir'**
+  String get selectCourierHint;
+
+  /// No description provided for @confirmDeliveredButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Konfirmasi Sudah Diantar'**
+  String get confirmDeliveredButton;
+
+  /// No description provided for @pickupTypeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jemput'**
+  String get pickupTypeLabel;
+
+  /// No description provided for @walkInTypeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Walk-in'**
+  String get walkInTypeLabel;
+
+  /// No description provided for @deliveryTypeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Antar'**
+  String get deliveryTypeLabel;
+
+  /// No description provided for @selfPickupTypeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Ambil Sendiri'**
+  String get selfPickupTypeLabel;
+
+  /// No description provided for @genericCourierLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kurir'**
+  String get genericCourierLabel;
+
+  /// No description provided for @courierNotAssignedLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kurir belum ditentukan'**
+  String get courierNotAssignedLabel;
+
+  /// No description provided for @plannedPickupLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Rencana jemput: {date}'**
+  String plannedPickupLabel(String date);
+
+  /// No description provided for @selfServicePickedUpLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Diambil: {date}'**
+  String selfServicePickedUpLabel(String date);
+
+  /// No description provided for @deliveredAtLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Diantar: {date}'**
+  String deliveredAtLabel(String date);
+
+  /// No description provided for @pickedUpFromCustomerLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Dijemput: {date}'**
+  String pickedUpFromCustomerLabel(String date);
+
+  /// No description provided for @markPickedUpButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai Sudah Dijemput'**
+  String get markPickedUpButton;
+
+  /// No description provided for @markSelfPickedUpButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai Sudah Diambil'**
+  String get markSelfPickedUpButton;
+
+  /// No description provided for @markDeliveredButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai Sudah Diantar'**
+  String get markDeliveredButton;
+
+  /// No description provided for @employeeNotFoundError.
+  ///
+  /// In id, this message translates to:
+  /// **'Data karyawan tidak ditemukan.'**
+  String get employeeNotFoundError;
+
+  /// No description provided for @employeeLoadError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memuat data karyawan: {error}'**
+  String employeeLoadError(String error);
+
+  /// No description provided for @employeeGenericError.
+  ///
+  /// In id, this message translates to:
+  /// **'Terjadi kesalahan: {error}'**
+  String employeeGenericError(String error);
+
+  /// No description provided for @branchNotSelectedWarning.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang laundry belum dipilih atau belum dibuat!'**
+  String get branchNotSelectedWarning;
+
+  /// No description provided for @sessionExpiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Sesi user berakhir.'**
+  String get sessionExpiredError;
+
+  /// No description provided for @branchNotLinkedWarning.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang terpilih belum terhubung dengan data perusahaan. Periksa kembali data cabang.'**
+  String get branchNotLinkedWarning;
+
+  /// No description provided for @quotaLimitReachedTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Batas Kuota Tercapai'**
+  String get quotaLimitReachedTitle;
+
+  /// No description provided for @quotaLimitReachedContent.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah karyawan Anda telah mencapai batas maksimal kuota paket langganan saat ini. Silakan upgrade paket.'**
+  String get quotaLimitReachedContent;
+
+  /// No description provided for @employeeUpdateSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Data karyawan berhasil diperbarui!'**
+  String get employeeUpdateSuccess;
+
+  /// No description provided for @employeeAddSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Staf karyawan berhasil ditambahkan!'**
+  String get employeeAddSuccess;
+
+  /// No description provided for @employeeSaveError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menyimpan data karyawan: {error}'**
+  String employeeSaveError(String error);
+
+  /// No description provided for @deactivateEmployeeTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Nonaktifkan Karyawan'**
+  String get deactivateEmployeeTitle;
+
+  /// No description provided for @deactivateEmployeeConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Apakah Anda yakin ingin menonaktifkan karyawan ini? Riwayat transaksi lama akan tetap aman.'**
+  String get deactivateEmployeeConfirm;
+
+  /// No description provided for @deactivateEmployeeConfirmAlt.
+  ///
+  /// In id, this message translates to:
+  /// **'Apakah Anda yakin ingin menonaktifkan status aktif karyawan ini? Riwayat transaksi lama akan tetap aman.'**
+  String get deactivateEmployeeConfirmAlt;
+
+  /// No description provided for @yesDeactivateButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Ya, Nonaktifkan'**
+  String get yesDeactivateButton;
+
+  /// No description provided for @employeeDeactivatedSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Karyawan telah dinonaktifkan.'**
+  String get employeeDeactivatedSuccess;
+
+  /// No description provided for @employeeDeactivateError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menonaktifkan karyawan: {error}'**
+  String employeeDeactivateError(String error);
+
+  /// No description provided for @editEmployeeTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Edit Data Karyawan'**
+  String get editEmployeeTitle;
+
+  /// No description provided for @addEmployeeTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah Karyawan'**
+  String get addEmployeeTitle;
+
+  /// No description provided for @additionalDetailsDivider.
+  ///
+  /// In id, this message translates to:
+  /// **'DETAIL TAMBAHAN'**
+  String get additionalDetailsDivider;
+
+  /// No description provided for @editEmployeeInfoBanner.
+  ///
+  /// In id, this message translates to:
+  /// **'Perubahan akan langsung tersimpan pada data karyawan ini.'**
+  String get editEmployeeInfoBanner;
+
+  /// No description provided for @addEmployeeInfoBanner.
+  ///
+  /// In id, this message translates to:
+  /// **'Sistem akan memvalidasi limitasi kuota paket langganan Anda secara otomatis sebelum menyimpan data karyawan.'**
+  String get addEmployeeInfoBanner;
+
+  /// No description provided for @fullNameHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: Siti Aminah'**
+  String get fullNameHint;
+
+  /// No description provided for @employeeNameRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama karyawan wajib diisi'**
+  String get employeeNameRequiredError;
+
+  /// No description provided for @phoneNumberRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Nomor telepon wajib diisi'**
+  String get phoneNumberRequiredError;
+
+  /// No description provided for @invalidEmailFormatError.
+  ///
+  /// In id, this message translates to:
+  /// **'Format email tidak valid'**
+  String get invalidEmailFormatError;
+
+  /// No description provided for @roleLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Role / Jabatan'**
+  String get roleLabel;
+
+  /// No description provided for @selectPositionHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih Jabatan'**
+  String get selectPositionHint;
+
+  /// No description provided for @positionRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Posisi atau jabatan wajib dipilih'**
+  String get positionRequiredError;
+
+  /// No description provided for @assignedBranchLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang Bertugas'**
+  String get assignedBranchLabel;
+
+  /// No description provided for @registerNewBranchFirstButton.
+  ///
+  /// In id, this message translates to:
+  /// **'+ Daftarkan Cabang Baru Terlebih Dahulu'**
+  String get registerNewBranchFirstButton;
+
+  /// No description provided for @branchRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang penempatan wajib dipilih'**
+  String get branchRequiredError;
+
+  /// No description provided for @hireDateLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanggal Bergabung'**
+  String get hireDateLabel;
+
+  /// No description provided for @appAccessTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Akses Aplikasi'**
+  String get appAccessTitle;
+
+  /// No description provided for @appAccessSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Berikan akses login aplikasi'**
+  String get appAccessSubtitle;
+
+  /// No description provided for @employeeStatusTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Status Karyawan'**
+  String get employeeStatusTitle;
+
+  /// No description provided for @employeeStatusCurrent.
+  ///
+  /// In id, this message translates to:
+  /// **'Status saat ini: {status}'**
+  String employeeStatusCurrent(String status);
+
+  /// No description provided for @statusActive.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktif'**
+  String get statusActive;
+
+  /// No description provided for @statusInactive.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak Aktif'**
+  String get statusInactive;
+
+  /// No description provided for @employeeCodeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kode Karyawan'**
+  String get employeeCodeLabel;
+
+  /// No description provided for @employeeCodeHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: EMP01, KSR02'**
+  String get employeeCodeHint;
+
+  /// No description provided for @employeeCodeRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Kode karyawan tidak boleh kosong'**
+  String get employeeCodeRequiredError;
+
+  /// No description provided for @baseSalaryLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Gaji Pokok (IDR)'**
+  String get baseSalaryLabel;
+
+  /// No description provided for @baseSalaryRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gaji pokok wajib diisi'**
+  String get baseSalaryRequiredError;
+
+  /// No description provided for @commissionPerTransactionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Komisi per Transaksi (%)'**
+  String get commissionPerTransactionLabel;
+
+  /// No description provided for @commissionHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: 5.0'**
+  String get commissionHint;
+
+  /// No description provided for @employeePermissionsTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Hak Akses Fitur Karyawan'**
+  String get employeePermissionsTitle;
+
+  /// No description provided for @employeePermissionsSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Atur fitur apa saja yang boleh diakses karyawan ini'**
+  String get employeePermissionsSubtitle;
+
+  /// No description provided for @canCreateOrderPermission.
+  ///
+  /// In id, this message translates to:
+  /// **'Dapat Membuat Pesanan (Order)'**
+  String get canCreateOrderPermission;
+
+  /// No description provided for @canManageCustomerPermission.
+  ///
+  /// In id, this message translates to:
+  /// **'Dapat Mengelola Data Pelanggan'**
+  String get canManageCustomerPermission;
+
+  /// No description provided for @canViewReportPermission.
+  ///
+  /// In id, this message translates to:
+  /// **'Dapat Melihat Laporan Keuangan (Report)'**
+  String get canViewReportPermission;
+
+  /// No description provided for @savingButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyimpan...'**
+  String get savingButton;
+
+  /// No description provided for @saveEmployeeButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan Karyawan'**
+  String get saveEmployeeButton;
+
+  /// No description provided for @employeeDetailTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail Karyawan'**
+  String get employeeDetailTitle;
+
+  /// No description provided for @employeeCodeFallback.
+  ///
+  /// In id, this message translates to:
+  /// **'Karyawan {code}'**
+  String employeeCodeFallback(String code);
+
+  /// No description provided for @laundryStaffFallback.
+  ///
+  /// In id, this message translates to:
+  /// **'Staf Laundry'**
+  String get laundryStaffFallback;
+
+  /// No description provided for @addressFullLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat Lengkap'**
+  String get addressFullLabel;
+
+  /// No description provided for @employmentInfoTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Informasi Pekerjaan'**
+  String get employmentInfoTitle;
+
+  /// No description provided for @documentIdLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'ID Dokumen'**
+  String get documentIdLabel;
+
+  /// No description provided for @positionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Posisi Kerja'**
+  String get positionLabel;
+
+  /// No description provided for @baseSalaryShortLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Gaji Pokok'**
+  String get baseSalaryShortLabel;
+
+  /// No description provided for @commissionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Komisi'**
+  String get commissionLabel;
+
+  /// No description provided for @systemAccessTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Hak Akses Sistem'**
+  String get systemAccessTitle;
+
+  /// No description provided for @createOrdersPermissionShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Membuat Pesanan'**
+  String get createOrdersPermissionShort;
+
+  /// No description provided for @manageCustomersPermissionShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Mengelola Pelanggan'**
+  String get manageCustomersPermissionShort;
+
+  /// No description provided for @viewReportsPermissionShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Melihat Laporan'**
+  String get viewReportsPermissionShort;
+
+  /// No description provided for @activityHistoryLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat Aktivitas'**
+  String get activityHistoryLabel;
+
+  /// No description provided for @activityHistoryUnavailable.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat aktivitas belum tersedia.'**
+  String get activityHistoryUnavailable;
+
+  /// No description provided for @resetPasswordLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Reset Password'**
+  String get resetPasswordLabel;
+
+  /// No description provided for @resetPasswordUnavailable.
+  ///
+  /// In id, this message translates to:
+  /// **'Reset password belum tersedia.'**
+  String get resetPasswordUnavailable;
+
+  /// No description provided for @manageEmployeesTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola Karyawan'**
+  String get manageEmployeesTitle;
+
+  /// No description provided for @searchEmployeeHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari nama atau nomor telepon karyawan...'**
+  String get searchEmployeeHint;
+
+  /// No description provided for @filterAllLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua'**
+  String get filterAllLabel;
+
+  /// No description provided for @allRolesLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua Role'**
+  String get allRolesLabel;
+
+  /// No description provided for @totalEmployeesLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total Karyawan'**
+  String get totalEmployeesLabel;
+
+  /// No description provided for @noEmployeesFoundTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Data karyawan tidak ditemukan'**
+  String get noEmployeesFoundTitle;
+
+  /// No description provided for @noEmployeesFoundSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Coba ubah filter atau tambahkan karyawan baru'**
+  String get noEmployeesFoundSubtitle;
+
+  /// No description provided for @newEmployeeButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Karyawan Baru'**
+  String get newEmployeeButton;
+
+  /// No description provided for @noNameFallback.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanpa Nama'**
+  String get noNameFallback;
+
+  /// No description provided for @terminateEmployeeTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Terminasi Karyawan'**
+  String get terminateEmployeeTitle;
+
+  /// No description provided for @terminateEmployeeConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Apakah Anda yakin ingin menonaktifkan {name} ({position})?'**
+  String terminateEmployeeConfirm(String name, String position);
+
+  /// No description provided for @employeeDeactivatedWithCodeSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Karyawan {code} telah dinonaktifkan'**
+  String employeeDeactivatedWithCodeSuccess(String code);
+
+  /// No description provided for @unnamedBranchFallback.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang Tanpa Nama'**
+  String get unnamedBranchFallback;
 }
 
 class _AppLocalizationsDelegate

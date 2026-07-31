@@ -6,7 +6,7 @@ import '../../core/themes/app_theme.dart';
 import '../../models/employee.dart';
 import '../../repositories/employee_repository.dart';
 import '../../repositories/laundry_repository.dart';
-
+import '../../l10n/app_localizations.dart';
 /// Local design tokens matching the new "NetWash Utility System" design
 /// (samain persis dengan ServicesListScreen, EmployeesListScreen, dan
 /// CreateEmployeeScreen). Sengaja TIDAK menyentuh AppTheme global.
@@ -95,11 +95,11 @@ class EmployeeDetailScreen extends ConsumerWidget {
               child: employeeAsync.when(
                 data: (employee) {
                   if (employee == null) {
-                    return _buildErrorState('Data karyawan tidak ditemukan.');
+                    return _buildErrorState(AppLocalizations.of(context)!.employeeNotFoundError);
                   }
                   return _buildContent(context, ref, employee, laundryNames);
                 },
-                error: (err, stack) => _buildErrorState('Terjadi kesalahan: $err'),
+                error: (err, stack) => _buildErrorState(AppLocalizations.of(context)!.employeeGenericError(err.toString())),
                 loading: () => Center(
                   child: CircularProgressIndicator(strokeWidth: 2, color: _DS.primary),
                 ),
@@ -146,7 +146,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text('Detail Karyawan', style: _DS.headlineMd(color: _DS.navy)),
+            child: Text(AppLocalizations.of(context)!.employeeDetailTitle, style: _DS.headlineMd(color: _DS.navy)),
           ),
           if (employee != null)
             InkWell(
@@ -170,7 +170,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
   Widget _buildContent(BuildContext context, WidgetRef ref, Employee employee, Map<String, String> laundryNames) {
     final displayName = employee.fullName.isNotEmpty
         ? employee.fullName
-        : (employee.employeeCode.isNotEmpty ? 'Karyawan ${employee.employeeCode}' : 'Staf Laundry');
+        : (employee.employeeCode.isNotEmpty ? AppLocalizations.of(context)!.employeeCodeFallback(employee.employeeCode) : AppLocalizations.of(context)!.laundryStaffFallback);
     final initials = _getInitials(employee.fullName.isNotEmpty ? employee.fullName : employee.position);
 
     return SingleChildScrollView(
@@ -244,7 +244,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    employee.isActive ? 'Aktif' : 'Tidak Aktif',
+                                    employee.isActive ? AppLocalizations.of(context)!.statusActive : AppLocalizations.of(context)!.statusInactive,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: _DS.bodySm(
@@ -276,21 +276,21 @@ class EmployeeDetailScreen extends ConsumerWidget {
                     children: [
                       _buildContactRow(
                         icon: Icons.phone_outlined,
-                        label: 'Nomor Telepon',
+                        label: AppLocalizations.of(context)!.phoneNumberLabel,
                         value: employee.phone.isNotEmpty ? employee.phone : '-',
                         color: const Color(0xFF2F80ED),
                       ),
                       const SizedBox(height: 18),
                       _buildContactRow(
                         icon: Icons.email_outlined,
-                        label: 'Email',
+                        label: AppLocalizations.of(context)!.emailLabel,
                         value: employee.email.isNotEmpty ? employee.email : '-',
                         color: const Color(0xFFAB47BC),
                       ),
                       const SizedBox(height: 18),
                       _buildContactRow(
                         icon: Icons.storefront_outlined,
-                        label: 'Cabang Bertugas',
+                        label: AppLocalizations.of(context)!.assignedBranchLabel,
                         value: laundryNames[employee.laundryId] ?? '-',
                         color: const Color(0xFFF2994A),
                       ),
@@ -298,7 +298,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
                         const SizedBox(height: 18),
                         _buildContactRow(
                           icon: Icons.calendar_today_outlined,
-                          label: 'Tanggal Bergabung',
+                          label: AppLocalizations.of(context)!.hireDateLabel,
                           value: '${employee.hireDate!.day}/${employee.hireDate!.month}/${employee.hireDate!.year}',
                           color: const Color(0xFF2BB3A3),
                         ),
@@ -317,7 +317,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Alamat Lengkap', style: _DS.bodySm(color: _DS.onSurface, weight: FontWeight.w700)),
+                                  Text(AppLocalizations.of(context)!.addressFullLabel, style: _DS.bodySm(color: _DS.onSurface, weight: FontWeight.w700)),
                                   const SizedBox(height: 4),
                                   Text(employee.address, style: _DS.bodyMd(color: _DS.onSurfaceVariant).copyWith(fontSize: 13.5)),
                                 ],
@@ -334,23 +334,23 @@ class EmployeeDetailScreen extends ConsumerWidget {
                 // 3 & 4. Informasi Pekerjaan & Hak Akses Sistem (accordion)
                 _ExpandableInfoCard(
                   icon: Icons.work_outline,
-                  title: 'Informasi Pekerjaan',
+                  title: AppLocalizations.of(context)!.employmentInfoTitle,
                   children: [
-                    _buildInfoRow(Icons.badge_outlined, 'ID Dokumen', employee.id),
-                    _buildInfoRow(Icons.qr_code_outlined, 'Kode Karyawan', employee.employeeCode),
-                    _buildInfoRow(Icons.work_outline, 'Posisi Kerja', employee.position),
-                    _buildInfoRow(Icons.payments_outlined, 'Gaji Pokok', _formatCurrency(employee.salary)),
-                    _buildInfoRow(Icons.percent_outlined, 'Komisi', '${employee.commissionRate}%'),
+                    _buildInfoRow(Icons.badge_outlined, AppLocalizations.of(context)!.documentIdLabel, employee.id),
+                    _buildInfoRow(Icons.qr_code_outlined, AppLocalizations.of(context)!.employeeCodeLabel, employee.employeeCode),
+                    _buildInfoRow(Icons.work_outline, AppLocalizations.of(context)!.positionLabel, employee.position),
+                    _buildInfoRow(Icons.payments_outlined, AppLocalizations.of(context)!.baseSalaryShortLabel, _formatCurrency(employee.salary)),
+                    _buildInfoRow(Icons.percent_outlined, AppLocalizations.of(context)!.commissionLabel, '${employee.commissionRate}%'),
                   ],
                 ),
                 const SizedBox(height: 12),
                 _ExpandableInfoCard(
                   icon: Icons.admin_panel_settings_outlined,
-                  title: 'Hak Akses Sistem',
+                  title: AppLocalizations.of(context)!.systemAccessTitle,
                   children: [
-                    _buildPermissionRow(Icons.shopping_bag_outlined, 'Membuat Pesanan', employee.permissions.canCreateOrder),
-                    _buildPermissionRow(Icons.people_outline, 'Mengelola Pelanggan', employee.permissions.canManageCustomer),
-                    _buildPermissionRow(Icons.bar_chart_outlined, 'Melihat Laporan', employee.permissions.canViewReport),
+                    _buildPermissionRow(Icons.shopping_bag_outlined, AppLocalizations.of(context)!.createOrdersPermissionShort, employee.permissions.canCreateOrder),
+                    _buildPermissionRow(Icons.people_outline, AppLocalizations.of(context)!.manageCustomersPermissionShort, employee.permissions.canManageCustomer),
+                    _buildPermissionRow(Icons.bar_chart_outlined, AppLocalizations.of(context)!.viewReportsPermissionShort, employee.permissions.canViewReport),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -360,18 +360,18 @@ class EmployeeDetailScreen extends ConsumerWidget {
                 _buildMenuRow(
                   context,
                   icon: Icons.history,
-                  label: 'Riwayat Aktivitas',
+                  label: AppLocalizations.of(context)!.activityHistoryLabel,
                   onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Riwayat aktivitas belum tersedia.', style: GoogleFonts.beVietnamPro())),
+                    SnackBar(content: Text(AppLocalizations.of(context)!.activityHistoryUnavailable, style: GoogleFonts.beVietnamPro())),
                   ),
                 ),
                 const SizedBox(height: 12),
                 _buildMenuRow(
                   context,
                   icon: Icons.lock_reset_outlined,
-                  label: 'Reset Password',
+                  label: AppLocalizations.of(context)!.resetPasswordLabel,
                   onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Reset password belum tersedia.', style: GoogleFonts.beVietnamPro())),
+                    SnackBar(content: Text(AppLocalizations.of(context)!.resetPasswordUnavailable, style: GoogleFonts.beVietnamPro())),
                   ),
                 ),
                 const SizedBox(height: AppTheme.xxl),
@@ -384,7 +384,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
                       onPressed: () => _showTerminateDialog(context, ref, employee.id),
                       icon: Icon(Icons.person_off_outlined, size: 18, color: _DS.error),
                       label: Text(
-                        'Nonaktifkan Karyawan',
+                        AppLocalizations.of(context)!.deactivateEmployeeTitle,
                         style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13.5, color: _DS.error),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -564,15 +564,15 @@ class EmployeeDetailScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Nonaktifkan Karyawan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+        title: Text(AppLocalizations.of(context)!.deactivateEmployeeTitle, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
         content: Text(
-          'Apakah Anda yakin ingin menonaktifkan status aktif karyawan ini? Riwayat transaksi lama akan tetap aman.',
+          AppLocalizations.of(context)!.deactivateEmployeeConfirmAlt,
           style: _DS.bodySm(color: _DS.onSurfaceVariant).copyWith(fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Batal', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurfaceVariant)),
+            child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () async {
@@ -583,7 +583,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
                 context.pop(); // Kembali ke daftar karyawan
               }
             },
-            child: Text('Ya, Nonaktifkan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.error)),
+            child: Text(AppLocalizations.of(context)!.yesDeactivateButton, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.error)),
           ),
         ],
       ),

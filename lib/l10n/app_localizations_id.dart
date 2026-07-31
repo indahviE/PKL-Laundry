@@ -54,6 +54,21 @@ class AppLocalizationsId extends AppLocalizations {
   String get languageTitle => 'Bahasa';
 
   @override
+  String get sectionCsTeam => 'Tim CS';
+
+  @override
+  String get manageCsChatTitle => 'Kelola Chat CS';
+
+  @override
+  String get manageCsChatSubtitle => 'Balas percakapan dari semua user';
+
+  @override
+  String get chatTitle => 'Chat';
+
+  @override
+  String get chatSubtitle => 'Balasan';
+
+  @override
   String get sectionOther => 'Lainnya';
 
   @override
@@ -217,6 +232,122 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get activeOrdersLabel => 'Pesanan aktif';
+
+  @override
+  String get reportsTitle => 'Laporan';
+
+  @override
+  String get reportsSubtitle => 'Pantau performa bisnis laundry Anda';
+
+  @override
+  String get periodToday => 'Hari Ini';
+
+  @override
+  String get periodThisWeek => 'Minggu Ini';
+
+  @override
+  String get periodThisMonth => 'Bulan Ini';
+
+  @override
+  String get periodThisYear => 'Tahun Ini';
+
+  @override
+  String get printButtonShort => 'Cetak';
+
+  @override
+  String get printReportButton => 'Cetak Laporan';
+
+  @override
+  String get generatingPdfButton => 'Membuat PDF...';
+
+  @override
+  String get growthThisPeriodLabel => 'Pertumbuhan Periode Ini';
+
+  @override
+  String get growthUpLabel => 'Naik';
+
+  @override
+  String get growthDownLabel => 'Turun';
+
+  @override
+  String get fromPreviousPeriodLabel => 'dari periode sebelumnya';
+
+  @override
+  String get revenueTrendTitle => 'Tren Pendapatan';
+
+  @override
+  String get last7DaysLabel => '7 hari terakhir';
+
+  @override
+  String get revenuePerServiceTitle => 'Pendapatan per Layanan';
+
+  @override
+  String get noOrdersThisPeriod => 'Belum ada data pesanan pada periode ini.';
+
+  @override
+  String get completionRateLabel => 'Tingkat Penyelesaian';
+
+  @override
+  String get ofAllOrdersLabel => 'dari seluruh pesanan';
+
+  @override
+  String exportPdfError(String error) {
+    return 'Gagal membuat PDF: $error';
+  }
+
+  @override
+  String get pdfReportTitle => 'Laporan Bisnis Laundry';
+
+  @override
+  String pdfHeaderInfo(String period, String branch, String date) {
+    return 'Periode: $period   |   Cabang: $branch   |   Dibuat: $date';
+  }
+
+  @override
+  String get pdfSummaryTitle => 'Ringkasan';
+
+  @override
+  String get totalRevenueLabel => 'Total Pendapatan';
+
+  @override
+  String get newCustomersLabel => 'Pelanggan Baru';
+
+  @override
+  String get avgOrderLabel => 'Rata-rata Order';
+
+  @override
+  String get growthLabel => 'Pertumbuhan';
+
+  @override
+  String growthValueTemplate(String rate) {
+    return '+$rate% dari periode sebelumnya';
+  }
+
+  @override
+  String get pdfWeeklyTrendTitle => 'Tren Pendapatan (7 hari terakhir)';
+
+  @override
+  String get pdfServiceColumn => 'Layanan';
+
+  @override
+  String get pdfOrdersColumn => 'Pesanan';
+
+  @override
+  String get pdfRevenueColumn => 'Pendapatan';
+
+  @override
+  String get pdfPercentageColumn => 'Persentase';
+
+  @override
+  String pdfPageOfPages(int page, int total) {
+    return 'Halaman $page dari $total';
+  }
+
+  @override
+  String get unnamedBranchLabel => 'Cabang Tanpa Nama';
+
+  @override
+  String get otherServiceLabel => 'Lainnya';
 
   @override
   String get setupBranchTitle => 'Mulai Setup Cabang';
@@ -713,7 +844,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get customerNameEmptyError => 'Nama pelanggan tidak boleh kosong';
 
   @override
-  String get phoneNumberLabel => 'No. Telepon';
+  String get phoneNumberLabel => 'Nomor Telepon';
 
   @override
   String get phoneNumberHint => 'Contoh: 081234567890';
@@ -841,7 +972,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get branchContactPhoneLabel => 'Nomor Telepon';
 
   @override
-  String get emailOptionalLabel => 'Email Cabang (Opsional)';
+  String get emailOptionalLabel => 'Email (Opsional)';
 
   @override
   String get managerOptionalLabel => 'Manajer Cabang (Opsional)';
@@ -967,7 +1098,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get branchCodeHint => 'Contoh: JKT001';
 
   @override
-  String get addressHint => 'Contoh: Jl. Merdeka No. 123';
+  String get addressHint => 'Masukkan alamat lengkap rumah';
 
   @override
   String get cityHint => 'Jakarta';
@@ -1161,7 +1292,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get newOrderButtonLabel => 'Baru';
 
   @override
-  String get searchOrderHint => 'Cari pesanan atau pelanggan...';
+  String get searchOrderHint => 'Cari pesanan...';
 
   @override
   String get orderWaitingStatus => 'Menunggu';
@@ -1288,4 +1419,645 @@ class AppLocalizationsId extends AppLocalizations {
   String orderItemLabel(int count) {
     return '$count item';
   }
+
+  @override
+  String get closeButton => 'Tutup';
+
+  @override
+  String get selectOrderTitle => 'Pilih Pesanan';
+
+  @override
+  String get noOrdersWaitingPickupHint =>
+      'Tidak ada pesanan yang menunggu dijemput.';
+
+  @override
+  String get noOrdersReadyDeliveryHint =>
+      'Tidak ada pesanan yang siap diantar.';
+
+  @override
+  String get customerFallbackLabel => 'Pelanggan';
+
+  @override
+  String get scheduleDeliveryScreenTitle => 'Jadwalkan Antar Jemput';
+
+  @override
+  String get pickupModeLabel => 'Penjemputan';
+
+  @override
+  String get deliveryModeLabel => 'Pengantaran';
+
+  @override
+  String get newCustomerButtonShort => 'Baru';
+
+  @override
+  String get autoFilledScheduleHint =>
+      'Tanggal & jam terisi otomatis dari saat pesanan dibuat';
+
+  @override
+  String get selectBranchLabel => 'Pilih Cabang';
+
+  @override
+  String get noActiveBranchesScheduleHint =>
+      'Belum ada cabang aktif. Tambahkan cabang terlebih dahulu di menu Cabang.';
+
+  @override
+  String get selectBranchHint => 'Pilih Cabang';
+
+  @override
+  String get useMapLocationButton => 'Pakai lokasi peta';
+
+  @override
+  String get mapLocationComingSoon =>
+      'Fitur pilih lokasi peta akan segera hadir';
+
+  @override
+  String get addressFieldExampleHint =>
+      'Jl. Kebayoran Lama No. 123, Jakarta Selatan...';
+
+  @override
+  String get dateLabel => 'Tanggal';
+
+  @override
+  String get timeLabel => 'Jam';
+
+  @override
+  String get selectCourierLabel => 'Pilih Kurir';
+
+  @override
+  String get noCourierEmployeeScheduleHint =>
+      'Belum ada karyawan dengan posisi \"Kurir\". Anda tetap bisa menyimpan jadwal tanpa memilih kurir.';
+
+  @override
+  String get searchCourierHint => 'Cari kurir terdekat...';
+
+  @override
+  String get courierListHint =>
+      'Kurir aktif dengan posisi \"Kurir\" ditampilkan di daftar ini.';
+
+  @override
+  String get additionalNotesLabel => 'Catatan Tambahan (Opsional)';
+
+  @override
+  String get notesExampleHint =>
+      'Contoh: Titipkan di satpam, pagar warna hitam...';
+
+  @override
+  String get scheduleSummaryTitle => 'RINGKASAN JADWAL';
+
+  @override
+  String get selectOrSearchOrderLabel => 'Pilih atau Cari Pesanan';
+
+  @override
+  String get addressNotSetLabel => 'Alamat belum ditentukan';
+
+  @override
+  String get notScheduledLabel => 'Belum dijadwalkan';
+
+  @override
+  String modeWithBranchLabel(String mode, String branch) {
+    return 'Mode: $mode • $branch';
+  }
+
+  @override
+  String modeOnlyLabel(String mode) {
+    return 'Mode: $mode';
+  }
+
+  @override
+  String get saveScheduleButton => 'Simpan Jadwal';
+
+  @override
+  String get selectOrderRequiredError => 'Pilih pesanan terlebih dahulu';
+
+  @override
+  String get addressRequiredError => 'Alamat wajib diisi';
+
+  @override
+  String get dateTimeRequiredError => 'Tanggal dan jam wajib dipilih';
+
+  @override
+  String get scheduleSaveSuccess => 'Jadwal berhasil disimpan';
+
+  @override
+  String scheduleSaveError(String error) {
+    return 'Gagal menyimpan jadwal: $error';
+  }
+
+  @override
+  String get waitingPickupStatus => 'Menunggu dijemput';
+
+  @override
+  String get readyDeliveryStatus => 'Siap diantar';
+
+  @override
+  String get readyPickupStatus => 'Siap diambil';
+
+  @override
+  String get waitingConfirmationStatus => 'Menunggu konfirmasi';
+
+  @override
+  String get confirmedStatus => 'Dikonfirmasi';
+
+  @override
+  String get inProgressStatus => 'Dalam proses';
+
+  @override
+  String markedPickedUpSnackbar(String orderNumber) {
+    return '$orderNumber ditandai sudah dijemput';
+  }
+
+  @override
+  String markedDeliveredSnackbar(String orderNumber) {
+    return '$orderNumber ditandai sudah diantar';
+  }
+
+  @override
+  String genericUpdateError(String error) {
+    return 'Gagal update: $error';
+  }
+
+  @override
+  String get addScheduleButton => 'Tambah Jadwal';
+
+  @override
+  String get pickupDeliveryTitle => 'Antar Jemput';
+
+  @override
+  String get pickupDeliverySubtitle => 'Kelola jemput, antar & ambil sendiri';
+
+  @override
+  String get searchOrderCustomerHint =>
+      'Cari nama pelanggan atau no. pesanan...';
+
+  @override
+  String get filterNeedsPickup => 'Perlu dijemput';
+
+  @override
+  String get filterSelfService => 'Ambil sendiri';
+
+  @override
+  String get filterOthers => 'Lainnya';
+
+  @override
+  String get statNeedsPickupTitle => 'Perlu Dijemput';
+
+  @override
+  String get statReadyDeliveryTitle => 'Siap Diantar';
+
+  @override
+  String get statSelfServiceTitle => 'Ambil Sendiri';
+
+  @override
+  String get noOrdersTitle => 'Tidak ada pesanan';
+
+  @override
+  String get noOrdersFilterSubtitle =>
+      'Belum ada pesanan yang cocok dengan filter ini';
+
+  @override
+  String get selectScheduleModeSubtitle => 'Pilih mode jadwal yang mau dibuat';
+
+  @override
+  String get schedulePickupTileTitle => 'Jadwalkan Penjemputan';
+
+  @override
+  String get schedulePickupTileSubtitle =>
+      'Untuk pesanan yang menunggu dijemput';
+
+  @override
+  String get scheduleDeliveryTileTitle => 'Jadwalkan Pengantaran';
+
+  @override
+  String get scheduleDeliveryTileSubtitle =>
+      'Untuk pesanan yang sudah siap diantar';
+
+  @override
+  String get selectServiceTitle => 'Pilih Layanan';
+
+  @override
+  String get noActiveServicesHint => 'Belum ada layanan aktif.';
+
+  @override
+  String get dpAmountRequiredError => 'Isi nominal DP terlebih dahulu';
+
+  @override
+  String get dpAmountTooLargeError =>
+      'Nominal DP harus lebih kecil dari total. Pilih \"Lunas\" kalau bayar penuh.';
+
+  @override
+  String get minOneItemError => 'Tambahkan minimal 1 item';
+
+  @override
+  String weightRequiredError(String itemName) {
+    return 'Isi berat (kg) untuk \"$itemName\"';
+  }
+
+  @override
+  String confirmFailedError(String error) {
+    return 'Gagal konfirmasi: $error';
+  }
+
+  @override
+  String get cashPaymentLabel => 'Tunai';
+
+  @override
+  String get bankTransferLabel => 'Transfer Bank';
+
+  @override
+  String get debitCardLabel => 'Kartu Debit';
+
+  @override
+  String get eWalletLabel => 'E-Wallet';
+
+  @override
+  String get paymentMethodLabel => 'Metode Pembayaran';
+
+  @override
+  String get transferPaymentPendingNotice =>
+      'Status pembayaran akan \"Belum Dibayar\" sampai dikonfirmasi manual di halaman detail pesanan.';
+
+  @override
+  String get instantPaymentNotice =>
+      'Metode ini dianggap dibayar langsung saat ini juga.';
+
+  @override
+  String get fullPaymentLabel => 'Lunas';
+
+  @override
+  String get partialPaymentLabel => 'DP (Sebagian)';
+
+  @override
+  String get dpAmountLabel => 'Nominal DP';
+
+  @override
+  String get dpAmountHint => 'Contoh: 20000';
+
+  @override
+  String get remainingBalanceHint =>
+      'Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.';
+
+  @override
+  String get confirmPickupTitle => 'Konfirmasi Jemput';
+
+  @override
+  String confirmPickupSubtitle(String customerName, String orderNumber) {
+    return 'Catat item & berat cucian $customerName ($orderNumber)';
+  }
+
+  @override
+  String get laundryItemsLabel => 'Item Cucian';
+
+  @override
+  String get addButtonLabel => 'Tambah';
+
+  @override
+  String get noItemsAddHint =>
+      'Belum ada item. Tekan \"Tambah\" untuk memilih layanan.';
+
+  @override
+  String get confirmPickedUpButton => 'Konfirmasi Sudah Dijemput';
+
+  @override
+  String get confirmDeliveryTitle => 'Konfirmasi Antar';
+
+  @override
+  String confirmDeliverySubtitle(String customerName, String orderNumber) {
+    return 'Antar cucian $customerName ($orderNumber)';
+  }
+
+  @override
+  String get assignedCourierLabel => 'Kurir Bertugas (Opsional)';
+
+  @override
+  String get noCourierEmployeeDeliverHint =>
+      'Belum ada karyawan dengan posisi \"Kurir\". Anda tetap bisa lanjut menandai order ini sudah diantar.';
+
+  @override
+  String get selectCourierHint => 'Pilih kurir';
+
+  @override
+  String get confirmDeliveredButton => 'Konfirmasi Sudah Diantar';
+
+  @override
+  String get pickupTypeLabel => 'Jemput';
+
+  @override
+  String get walkInTypeLabel => 'Walk-in';
+
+  @override
+  String get deliveryTypeLabel => 'Antar';
+
+  @override
+  String get selfPickupTypeLabel => 'Ambil Sendiri';
+
+  @override
+  String get genericCourierLabel => 'Kurir';
+
+  @override
+  String get courierNotAssignedLabel => 'Kurir belum ditentukan';
+
+  @override
+  String plannedPickupLabel(String date) {
+    return 'Rencana jemput: $date';
+  }
+
+  @override
+  String selfServicePickedUpLabel(String date) {
+    return 'Diambil: $date';
+  }
+
+  @override
+  String deliveredAtLabel(String date) {
+    return 'Diantar: $date';
+  }
+
+  @override
+  String pickedUpFromCustomerLabel(String date) {
+    return 'Dijemput: $date';
+  }
+
+  @override
+  String get markPickedUpButton => 'Tandai Sudah Dijemput';
+
+  @override
+  String get markSelfPickedUpButton => 'Tandai Sudah Diambil';
+
+  @override
+  String get markDeliveredButton => 'Tandai Sudah Diantar';
+
+  @override
+  String get employeeNotFoundError => 'Data karyawan tidak ditemukan.';
+
+  @override
+  String employeeLoadError(String error) {
+    return 'Gagal memuat data karyawan: $error';
+  }
+
+  @override
+  String employeeGenericError(String error) {
+    return 'Terjadi kesalahan: $error';
+  }
+
+  @override
+  String get branchNotSelectedWarning =>
+      'Cabang laundry belum dipilih atau belum dibuat!';
+
+  @override
+  String get sessionExpiredError => 'Sesi user berakhir.';
+
+  @override
+  String get branchNotLinkedWarning =>
+      'Cabang terpilih belum terhubung dengan data perusahaan. Periksa kembali data cabang.';
+
+  @override
+  String get quotaLimitReachedTitle => 'Batas Kuota Tercapai';
+
+  @override
+  String get quotaLimitReachedContent =>
+      'Jumlah karyawan Anda telah mencapai batas maksimal kuota paket langganan saat ini. Silakan upgrade paket.';
+
+  @override
+  String get employeeUpdateSuccess => 'Data karyawan berhasil diperbarui!';
+
+  @override
+  String get employeeAddSuccess => 'Staf karyawan berhasil ditambahkan!';
+
+  @override
+  String employeeSaveError(String error) {
+    return 'Gagal menyimpan data karyawan: $error';
+  }
+
+  @override
+  String get deactivateEmployeeTitle => 'Nonaktifkan Karyawan';
+
+  @override
+  String get deactivateEmployeeConfirm =>
+      'Apakah Anda yakin ingin menonaktifkan karyawan ini? Riwayat transaksi lama akan tetap aman.';
+
+  @override
+  String get deactivateEmployeeConfirmAlt =>
+      'Apakah Anda yakin ingin menonaktifkan status aktif karyawan ini? Riwayat transaksi lama akan tetap aman.';
+
+  @override
+  String get yesDeactivateButton => 'Ya, Nonaktifkan';
+
+  @override
+  String get employeeDeactivatedSuccess => 'Karyawan telah dinonaktifkan.';
+
+  @override
+  String employeeDeactivateError(String error) {
+    return 'Gagal menonaktifkan karyawan: $error';
+  }
+
+  @override
+  String get editEmployeeTitle => 'Edit Data Karyawan';
+
+  @override
+  String get addEmployeeTitle => 'Tambah Karyawan';
+
+  @override
+  String get additionalDetailsDivider => 'DETAIL TAMBAHAN';
+
+  @override
+  String get editEmployeeInfoBanner =>
+      'Perubahan akan langsung tersimpan pada data karyawan ini.';
+
+  @override
+  String get addEmployeeInfoBanner =>
+      'Sistem akan memvalidasi limitasi kuota paket langganan Anda secara otomatis sebelum menyimpan data karyawan.';
+
+  @override
+  String get fullNameHint => 'Contoh: Siti Aminah';
+
+  @override
+  String get employeeNameRequiredError => 'Nama karyawan wajib diisi';
+
+  @override
+  String get phoneNumberRequiredError => 'Nomor telepon wajib diisi';
+
+  @override
+  String get invalidEmailFormatError => 'Format email tidak valid';
+
+  @override
+  String get roleLabel => 'Role / Jabatan';
+
+  @override
+  String get selectPositionHint => 'Pilih Jabatan';
+
+  @override
+  String get positionRequiredError => 'Posisi atau jabatan wajib dipilih';
+
+  @override
+  String get assignedBranchLabel => 'Cabang Bertugas';
+
+  @override
+  String get registerNewBranchFirstButton =>
+      '+ Daftarkan Cabang Baru Terlebih Dahulu';
+
+  @override
+  String get branchRequiredError => 'Cabang penempatan wajib dipilih';
+
+  @override
+  String get hireDateLabel => 'Tanggal Bergabung';
+
+  @override
+  String get appAccessTitle => 'Akses Aplikasi';
+
+  @override
+  String get appAccessSubtitle => 'Berikan akses login aplikasi';
+
+  @override
+  String get employeeStatusTitle => 'Status Karyawan';
+
+  @override
+  String employeeStatusCurrent(String status) {
+    return 'Status saat ini: $status';
+  }
+
+  @override
+  String get statusActive => 'Aktif';
+
+  @override
+  String get statusInactive => 'Tidak Aktif';
+
+  @override
+  String get employeeCodeLabel => 'Kode Karyawan';
+
+  @override
+  String get employeeCodeHint => 'Contoh: EMP01, KSR02';
+
+  @override
+  String get employeeCodeRequiredError => 'Kode karyawan tidak boleh kosong';
+
+  @override
+  String get baseSalaryLabel => 'Gaji Pokok (IDR)';
+
+  @override
+  String get baseSalaryRequiredError => 'Gaji pokok wajib diisi';
+
+  @override
+  String get commissionPerTransactionLabel => 'Komisi per Transaksi (%)';
+
+  @override
+  String get commissionHint => 'Contoh: 5.0';
+
+  @override
+  String get employeePermissionsTitle => 'Hak Akses Fitur Karyawan';
+
+  @override
+  String get employeePermissionsSubtitle =>
+      'Atur fitur apa saja yang boleh diakses karyawan ini';
+
+  @override
+  String get canCreateOrderPermission => 'Dapat Membuat Pesanan (Order)';
+
+  @override
+  String get canManageCustomerPermission => 'Dapat Mengelola Data Pelanggan';
+
+  @override
+  String get canViewReportPermission =>
+      'Dapat Melihat Laporan Keuangan (Report)';
+
+  @override
+  String get savingButton => 'Menyimpan...';
+
+  @override
+  String get saveEmployeeButton => 'Simpan Karyawan';
+
+  @override
+  String get employeeDetailTitle => 'Detail Karyawan';
+
+  @override
+  String employeeCodeFallback(String code) {
+    return 'Karyawan $code';
+  }
+
+  @override
+  String get laundryStaffFallback => 'Staf Laundry';
+
+  @override
+  String get addressFullLabel => 'Alamat Lengkap';
+
+  @override
+  String get employmentInfoTitle => 'Informasi Pekerjaan';
+
+  @override
+  String get documentIdLabel => 'ID Dokumen';
+
+  @override
+  String get positionLabel => 'Posisi Kerja';
+
+  @override
+  String get baseSalaryShortLabel => 'Gaji Pokok';
+
+  @override
+  String get commissionLabel => 'Komisi';
+
+  @override
+  String get systemAccessTitle => 'Hak Akses Sistem';
+
+  @override
+  String get createOrdersPermissionShort => 'Membuat Pesanan';
+
+  @override
+  String get manageCustomersPermissionShort => 'Mengelola Pelanggan';
+
+  @override
+  String get viewReportsPermissionShort => 'Melihat Laporan';
+
+  @override
+  String get activityHistoryLabel => 'Riwayat Aktivitas';
+
+  @override
+  String get activityHistoryUnavailable => 'Riwayat aktivitas belum tersedia.';
+
+  @override
+  String get resetPasswordLabel => 'Reset Password';
+
+  @override
+  String get resetPasswordUnavailable => 'Reset password belum tersedia.';
+
+  @override
+  String get manageEmployeesTitle => 'Kelola Karyawan';
+
+  @override
+  String get searchEmployeeHint => 'Cari nama atau nomor telepon karyawan...';
+
+  @override
+  String get filterAllLabel => 'Semua';
+
+  @override
+  String get allRolesLabel => 'Semua Role';
+
+  @override
+  String get totalEmployeesLabel => 'Total Karyawan';
+
+  @override
+  String get noEmployeesFoundTitle => 'Data karyawan tidak ditemukan';
+
+  @override
+  String get noEmployeesFoundSubtitle =>
+      'Coba ubah filter atau tambahkan karyawan baru';
+
+  @override
+  String get newEmployeeButton => 'Karyawan Baru';
+
+  @override
+  String get noNameFallback => 'Tanpa Nama';
+
+  @override
+  String get terminateEmployeeTitle => 'Terminasi Karyawan';
+
+  @override
+  String terminateEmployeeConfirm(String name, String position) {
+    return 'Apakah Anda yakin ingin menonaktifkan $name ($position)?';
+  }
+
+  @override
+  String employeeDeactivatedWithCodeSuccess(String code) {
+    return 'Karyawan $code telah dinonaktifkan';
+  }
+
+  @override
+  String get unnamedBranchFallback => 'Cabang Tanpa Nama';
 }

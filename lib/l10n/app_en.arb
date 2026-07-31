@@ -13,12 +13,19 @@
   "pendingOrdersNotifSubtitle": "{count} orders waiting to be processed",
   "@pendingOrdersNotifSubtitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "noNewNotifications": "No new notifications",
   "noNewNotificationsSubtitle": "New pending orders will show up here",
   "languageTitle": "Language",
+  "sectionCsTeam": "CS Team",
+  "manageCsChatTitle": "Manage CS Chat",
+  "manageCsChatSubtitle": "Reply to conversations from all users",
+  "chatTitle": "Chat",
+  "chatSubtitle": "Replies",
   "sectionOther": "Others",
   "helpTitle": "Help",
   "helpSubtitle": "FAQ & support",
@@ -29,7 +36,6 @@
   "cancel": "Cancel",
   "logout": "Log Out",
   "roleOwner": "Owner",
-
   "fullNameLabel": "Full Name",
   "emailLabel": "Email",
   "nameEmptyError": "Name cannot be empty",
@@ -37,25 +43,32 @@
   "galleryOpenError": "Failed to open gallery: {error}",
   "@galleryOpenError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "uploadTimeoutError": "Upload timed out, check your connection",
   "uploadFailedError": "Upload failed ({code}): {body}",
   "@uploadFailedError": {
     "placeholders": {
-      "code": { "type": "String" },
-      "body": { "type": "String" }
+      "code": {
+        "type": "String"
+      },
+      "body": {
+        "type": "String"
+      }
     }
   },
   "profileUpdateSuccess": "Profile updated successfully",
   "profileUpdateError": "Failed to update profile: {error}",
   "@profileUpdateError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "oldPasswordLabel": "Old Password",
   "newPasswordLabel": "New Password",
   "confirmPasswordLabel": "Confirm New Password",
@@ -74,28 +87,100 @@
   "passwordChangeGenericError": "Failed to change password: {error}",
   "@passwordChangeGenericError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "otherProviderNotice": "Your account is signed in with another provider (e.g. Google), so there's no password to change here.",
-
   "activeBranchLabel": "ACTIVE BRANCH",
   "allBranchesLabel": "All Branches",
   "selectBranchTitle": "Select Branch",
   "searchBranchHint": "Search branch name...",
   "noBranchesRegistered": "No branches registered yet",
   "branchNotFoundSearch": "Branch not found",
-
   "greetingMorning": "Good Morning",
   "greetingAfternoon": "Good Afternoon",
   "greetingEvening": "Good Evening",
   "dashboardSubtitle": "Here's a summary of your laundry business",
-
   "revenueThisMonthLabel": "Revenue this month",
   "autoSyncLabel": "Auto-synced",
   "customersLabel": "Customers",
   "activeOrdersLabel": "Active orders",
-
+  "reportsTitle": "Reports",
+  "reportsSubtitle": "Monitor your laundry business performance",
+  "periodToday": "Today",
+  "periodThisWeek": "This Week",
+  "periodThisMonth": "This Month",
+  "periodThisYear": "This Year",
+  "printButtonShort": "Print",
+  "printReportButton": "Print Report",
+  "generatingPdfButton": "Generating PDF...",
+  "orderRetryButtonLabel": "Try Again",
+  "growthThisPeriodLabel": "This Period's Growth",
+  "growthUpLabel": "Up",
+  "growthDownLabel": "Down",
+  "fromPreviousPeriodLabel": "from previous period",
+  "revenueTrendTitle": "Revenue Trend",
+  "last7DaysLabel": "Last 7 days",
+  "revenuePerServiceTitle": "Revenue per Service",
+  "noOrdersThisPeriod": "No order data for this period yet.",
+  "completionRateLabel": "Completion Rate",
+  "ofAllOrdersLabel": "of all orders",
+  "exportPdfError": "Failed to generate PDF: {error}",
+  "@exportPdfError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfReportTitle": "Laundry Business Report",
+  "pdfHeaderInfo": "Period: {period}   |   Branch: {branch}   |   Generated: {date}",
+  "@pdfHeaderInfo": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      },
+      "branch": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfSummaryTitle": "Summary",
+  "totalRevenueLabel": "Total Revenue",
+  "newCustomersLabel": "New Customers",
+  "avgOrderLabel": "Average Order",
+  "growthLabel": "Growth",
+  "growthValueTemplate": "+{rate}% from previous period",
+  "@growthValueTemplate": {
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfWeeklyTrendTitle": "Revenue Trend (Last 7 days)",
+  "pdfServiceColumn": "Service",
+  "pdfOrdersColumn": "Orders",
+  "pdfRevenueColumn": "Revenue",
+  "pdfPercentageColumn": "Percentage",
+  "pdfPageOfPages": "Page {page} of {total}",
+  "@pdfPageOfPages": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "unnamedBranchLabel": "Unnamed Branch",
+  "otherServiceLabel": "Other",
   "setupBranchTitle": "Start Branch Setup",
   "setupBranchSubtitle": "Complete branch profile & address",
   "setupEmployeeTitle": "Add Employees",
@@ -106,11 +191,14 @@
   "setupStepsProgress": "{done} of {total} steps completed",
   "@setupStepsProgress": {
     "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
-
   "newOrderAction": "New\nOrder",
   "newEmployeeAction": "New\nEmployee",
   "manageBranchAction": "Manage\nBranch",
@@ -122,10 +210,11 @@
   "quotaLimitReached": "The Starter plan quota limit for {label} has been reached! Please upgrade.",
   "@quotaLimitReached": {
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
-
   "weeklyRevenueTitle": "Weekly Revenue",
   "sevenDaysLabel": "7 days",
   "dayMon": "Mon",
@@ -135,15 +224,12 @@
   "dayFri": "Fri",
   "daySat": "Sat",
   "daySun": "Sun",
-
   "mainOrdersTitle": "Main Orders",
   "viewAllLabel": "View All",
-
   "filterAll": "All",
   "filterProcessing": "Processing",
   "filterReady": "Ready for Pickup",
   "filterCompleted": "Completed",
-
   "noOrdersData": "No order data yet.",
   "noOrdersForStatus": "No orders with this status.",
   "statusCancelled": "Cancelled",
@@ -152,11 +238,14 @@
   "orderDetailSummary": "{count} items · Rp {amount}",
   "@orderDetailSummary": {
     "placeholders": {
-      "count": { "type": "String" },
-      "amount": { "type": "String" }
+      "count": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
     }
   },
-
   "serviceNameLabel": "Service Name",
   "serviceNameHint": "Example: Regular Wash & Iron",
   "serviceNameError": "Service name cannot be empty",
@@ -169,7 +258,6 @@
   "priceEmptyError": "Price cannot be empty",
   "priceInvalidError": "Enter a valid number",
   "durationHint": "Example: 24",
-
   "createServiceAppBarTitle": "Add New Service",
   "createServiceSectionTitle": "Laundry Service Details",
   "createServiceSectionSubtitle": "Enter the details of the laundry service package you offer.",
@@ -185,10 +273,11 @@
   "addServiceError": "Failed to add service: {error}",
   "@addServiceError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "servicesListAppBarTitle": "Service List",
   "servicesListSubtitle": "Manage wash types, prices, and estimated durations",
   "newServiceFab": "New Service",
@@ -202,45 +291,59 @@
   "serviceActivatedSnackbar": "Service \"{name}\" reactivated",
   "@serviceActivatedSnackbar": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "serviceDeactivatedSnackbar": "Service \"{name}\" deactivated",
   "@serviceDeactivatedSnackbar": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "toggleStatusError": "Failed to change status: {error}",
   "@toggleStatusError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "deleteConfirmTitle": "Delete Permanently?",
   "deleteConfirmContent": "Service \"{name}\" will be permanently deleted from the database and CANNOT be recovered.\n\nIf this service is or has been used in an order, it's recommended to use the \"Deactivate\" option instead so old order history still displays correctly.",
   "@deleteConfirmContent": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "deletePermanentButton": "Delete Permanently",
   "deleteServiceSuccess": "Service \"{name}\" permanently deleted",
   "@deleteServiceSuccess": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "deleteServiceError": "Failed to delete service: {error}",
   "@deleteServiceError": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "durationInHours": "{hours} hrs",
   "@durationInHours": {
     "placeholders": {
-      "hours": { "type": "int" }
+      "hours": {
+        "type": "int"
+      }
     }
   },
   "activeStatusChip": "Active",
@@ -248,13 +351,17 @@
   "pricePerKgValue": "Rp {price} / Kg",
   "@pricePerKgValue": {
     "placeholders": {
-      "price": { "type": "String" }
+      "price": {
+        "type": "String"
+      }
     }
   },
   "pricePerItemValue": "Rp {price} / Item",
   "@pricePerItemValue": {
     "placeholders": {
-      "price": { "type": "String" }
+      "price": {
+        "type": "String"
+      }
     }
   },
   "editServiceSheetTitle": "Edit Service",
@@ -271,10 +378,11 @@
   "saveChangesError": "Failed to save changes: {error}",
   "@saveChangesError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "customersTitle": "Customers",
   "customersSubtitle": "Manage your laundry customer data",
   "newCustomerButton": "New",
@@ -289,7 +397,9 @@
   "ordersCountLabel": "{count} orders",
   "@ordersCountLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "neverOrderedLabel": "Never ordered",
@@ -297,16 +407,19 @@
   "hoursAgoLabel": "{hours}h ago",
   "@hoursAgoLabel": {
     "placeholders": {
-      "hours": { "type": "int" }
+      "hours": {
+        "type": "int"
+      }
     }
   },
   "daysAgoLabel": "{days}d ago",
   "@daysAgoLabel": {
     "placeholders": {
-      "days": { "type": "int" }
+      "days": {
+        "type": "int"
+      }
     }
   },
-
   "editCustomerComingSoon": "Navigate to Edit Customer will be added",
   "editCustomerMenuItem": "Edit Customer",
   "deleteCustomerMenuItem": "Delete Customer",
@@ -314,7 +427,9 @@
   "deleteCustomerConfirmContent": "Customer data \"{name}\" will be permanently deleted. This action cannot be undone.",
   "@deleteCustomerConfirmContent": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "deleteButton": "Delete",
@@ -323,7 +438,9 @@
   "joinedSinceLabel": "Joined since {date}",
   "@joinedSinceLabel": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "activeCustomerLabel": "Active Customer",
@@ -334,8 +451,8 @@
   "totalOrdersLabel": "Total Orders",
   "totalSpentLabel": "Total Spent",
   "contactInfoTitle": "Contact Information",
-  "phoneLabel": "Phone",
-  "addressLabel": "Address",
+  "phoneLabel": "Phone Number",
+  "addressLabel": "Full Address",
   "orderHistoryTitle": "Order History",
   "viewAllOrdersComingSoon": "Navigate to full order history will be added",
   "noOrderHistoryLabel": "No order history yet",
@@ -348,10 +465,11 @@
   "orderItemCountLabel": "· {count} items",
   "@orderItemCountLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "newCustomerHeaderTitle": "New Customer",
   "newCustomerHeaderSubtitle": "Complete the customer data to add them to the system",
   "customerNameHint": "Enter customer name",
@@ -371,17 +489,20 @@
   "errorWithMessage": "Error: {error}",
   "@errorWithMessage": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "addCustomerError": "Failed to add customer: {error}",
   "@addCustomerError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "loadCustomersError": "Failed to load customers: {error}",
-
   "laundriesTitle": "Branches",
   "laundriesSubtitle": "Manage your laundry branches",
   "searchLaundryHint": "Search by branch name, code, or city...",
@@ -395,7 +516,6 @@
   "newBranchButton": "New Branch",
   "addBranchButton": "Add Branch",
   "loadLaundriesError": "Failed to load branch data",
-
   "addBranchTitle": "Add New Branch",
   "editBranchTitle": "Edit Branch Data",
   "addBranchInfo": "The system will automatically validate branch quota limits according to your subscription plan.",
@@ -404,10 +524,8 @@
   "registerCompanyFirst": "+ Register Company First",
   "branchNameLabel": "Branch Name",
   "branchCodeLabel": "Branch Code",
-  "addressLabel": "Full Address",
   "cityLabel": "City",
   "provinceLabel": "Province",
-  "phoneLabel": "Phone Number",
   "emailOptionalLabel": "Branch Email (Optional)",
   "managerOptionalLabel": "Branch Manager (Optional)",
   "noEmployeeDataInfo": "No employee data yet. Manager can be assigned later.",
@@ -444,14 +562,14 @@
   "friday": "Friday",
   "saturday": "Saturday",
   "sunday": "Sunday",
-
   "cardCapacityLabel": "Capacity {capacity}",
   "@cardCapacityLabel": {
     "placeholders": {
-      "capacity": { "type": "Object" }
+      "capacity": {
+        "type": "Object"
+      }
     }
   },
-
   "selectCompanyHint": "Select company",
   "branchNameHint": "e.g. Merdeka Branch",
   "branchCodeHint": "e.g. JKT001",
@@ -472,7 +590,9 @@
   "loadBranchDataError": "Failed to load branch data: {error}",
   "@loadBranchDataError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "companyNotSelectedWarning": "Company not selected or not created yet!",
@@ -480,34 +600,37 @@
   "saveBranchError": "Failed to save branch data: {error}",
   "@saveBranchError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "branchDetailTitle": "Branch Detail",
   "deleteBranchConfirmDetail": "Branch \"{name}\" ({code}) will be permanently deleted. This action cannot be undone.",
   "@deleteBranchConfirmDetail": {
     "placeholders": {
-      "name": { "type": "String" },
-      "code": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
     }
   },
   "branchDeleteSuccess": "Branch \"{name}\" deleted successfully.",
   "@branchDeleteSuccess": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "deleteBranchError": "Failed to delete branch: {error}",
   "@deleteBranchError": {
     "placeholders": {
-      "error": { "type": "String" }
-    }
-  },
-  "toggleStatusError": "Failed to change status: {error}",
-  "@toggleStatusError": {
-    "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "addressShortLabel": "Address",
@@ -517,7 +640,6 @@
   "notSetLabel": "Not set",
   "branchNotFoundTitle": "Branch not found",
   "branchNotFoundSubtitle": "The branch may have been deleted or the id is invalid",
-
   "monthJan": "Jan",
   "monthFeb": "Feb",
   "monthMar": "Mar",
@@ -530,19 +652,24 @@
   "monthOct": "Oct",
   "monthNov": "Nov",
   "monthDec": "Dec",
-
   "branchListTitle": "Branch List ({count})",
   "@branchListTitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "hideLabel": "Hide",
   "openTodayStatus": "Open • {open} - {close}",
   "@openTodayStatus": {
     "placeholders": {
-      "open": { "type": "String" },
-      "close": { "type": "String" }
+      "open": {
+        "type": "String"
+      },
+      "close": {
+        "type": "String"
+      }
     }
   },
   "closedTemporarilyLabel": "Temporarily Closed",
@@ -551,15 +678,380 @@
   "staffAtThisBranchLabel": "Staff at This Branch ({count})",
   "@staffAtThisBranchLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "noStaffAtBranch": "No employees assigned to this branch yet.",
   "resignedLabel": "Resigned",
-
   "deactivateBranchTitle": "Deactivate Branch?",
   "deactivateBranchContent": "This branch will be marked as temporarily closed and will not accept new orders.",
   "activeStatusSubtitle": "Turn off to mark as temporarily closed",
   "generalInfoSection": "General Information",
-  "deactivateBranchButton": "Deactivate Branch"
+  "deactivateBranchButton": "Deactivate Branch",
+  "closeButton": "Close",
+  "selectOrderTitle": "Select Order",
+  "noOrdersWaitingPickupHint": "No orders waiting to be picked up.",
+  "noOrdersReadyDeliveryHint": "No orders ready to be delivered.",
+  "customerFallbackLabel": "Customer",
+  "scheduleDeliveryScreenTitle": "Schedule Pickup/Delivery",
+  "pickupModeLabel": "Pickup",
+  "deliveryModeLabel": "Delivery",
+  "searchOrderHint": "Search order...",
+  "newCustomerButtonShort": "New",
+  "autoFilledScheduleHint": "Date & time auto-filled from when the order was created",
+  "selectBranchLabel": "Select Branch",
+  "noActiveBranchesScheduleHint": "No active branches yet. Add a branch first from the Branches menu.",
+  "selectBranchHint": "Select branch",
+  "useMapLocationButton": "Use map location",
+  "mapLocationComingSoon": "Map location picker is coming soon",
+  "addressFieldExampleHint": "e.g. 123 Main St, South Jakarta...",
+  "dateLabel": "Date",
+  "timeLabel": "Time",
+  "selectCourierLabel": "Select Courier",
+  "noCourierEmployeeScheduleHint": "No employees with the \"Courier\" position yet. You can still save the schedule without picking a courier.",
+  "searchCourierHint": "Search nearest courier...",
+  "courierListHint": "Active employees with the \"Courier\" position are shown in this list.",
+  "additionalNotesLabel": "Additional Notes (Optional)",
+  "notesExampleHint": "Example: Leave with security, black gate...",
+  "scheduleSummaryTitle": "SCHEDULE SUMMARY",
+  "selectOrSearchOrderLabel": "Select or Search Order",
+  "addressNotSetLabel": "Address not set",
+  "notScheduledLabel": "Not scheduled",
+  "modeWithBranchLabel": "Mode: {mode} • {branch}",
+  "@modeWithBranchLabel": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "modeOnlyLabel": "Mode: {mode}",
+  "@modeOnlyLabel": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "saveScheduleButton": "Save Schedule",
+  "selectOrderRequiredError": "Please select an order first",
+  "addressRequiredError": "Address is required",
+  "dateTimeRequiredError": "Date and time must be selected",
+  "scheduleSaveSuccess": "Schedule saved successfully",
+  "scheduleSaveError": "Failed to save schedule: {error}",
+  "@scheduleSaveError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "waitingPickupStatus": "Waiting for pickup",
+  "readyDeliveryStatus": "Ready for delivery",
+  "readyPickupStatus": "Ready for pickup",
+  "waitingConfirmationStatus": "Awaiting confirmation",
+  "confirmedStatus": "Confirmed",
+  "inProgressStatus": "In progress",
+  "markedPickedUpSnackbar": "{orderNumber} marked as picked up",
+  "@markedPickedUpSnackbar": {
+    "placeholders": {
+      "orderNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "markedDeliveredSnackbar": "{orderNumber} marked as delivered",
+  "@markedDeliveredSnackbar": {
+    "placeholders": {
+      "orderNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "genericUpdateError": "Failed to update: {error}",
+  "@genericUpdateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "addScheduleButton": "Add Schedule",
+  "pickupDeliveryTitle": "Pickup & Delivery",
+  "pickupDeliverySubtitle": "Manage pickup, delivery & self-service",
+  "searchOrderCustomerHint": "Search customer name or order no...",
+  "filterNeedsPickup": "Needs pickup",
+  "filterSelfService": "Self-service",
+  "filterOthers": "Others",
+  "statNeedsPickupTitle": "Needs Pickup",
+  "statReadyDeliveryTitle": "Ready to Deliver",
+  "statSelfServiceTitle": "Self-Service",
+  "noOrdersTitle": "No orders",
+  "noOrdersFilterSubtitle": "No orders match this filter yet",
+  "selectScheduleModeSubtitle": "Choose which schedule to create",
+  "schedulePickupTileTitle": "Schedule Pickup",
+  "schedulePickupTileSubtitle": "For orders waiting to be picked up",
+  "scheduleDeliveryTileTitle": "Schedule Delivery",
+  "scheduleDeliveryTileSubtitle": "For orders ready to be delivered",
+  "selectServiceTitle": "Select Service",
+  "noActiveServicesHint": "No active services yet.",
+  "dpAmountRequiredError": "Please enter a down payment amount first",
+  "dpAmountTooLargeError": "Down payment must be less than the total. Choose \"Paid in Full\" if paying the full amount.",
+  "minOneItemError": "Add at least 1 item",
+  "weightRequiredError": "Enter the weight (kg) for \"{itemName}\"",
+  "@weightRequiredError": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmFailedError": "Failed to confirm: {error}",
+  "@confirmFailedError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cashPaymentLabel": "Cash",
+  "bankTransferLabel": "Bank Transfer",
+  "debitCardLabel": "Debit Card",
+  "eWalletLabel": "E-Wallet",
+  "paymentMethodLabel": "Payment Method",
+  "transferPaymentPendingNotice": "Payment status will be \"Unpaid\" until manually confirmed on the order detail page.",
+  "instantPaymentNotice": "This method is considered paid immediately.",
+  "fullPaymentLabel": "Paid in Full",
+  "partialPaymentLabel": "Down Payment (Partial)",
+  "dpAmountLabel": "Down Payment Amount",
+  "dpAmountHint": "Example: 20000",
+  "remainingBalanceHint": "The remaining balance can be settled later from the order detail page.",
+  "confirmPickupTitle": "Confirm Pickup",
+  "confirmPickupSubtitle": "Record the laundry items & weight for {customerName} ({orderNumber})",
+  "@confirmPickupSubtitle": {
+    "placeholders": {
+      "customerName": {
+        "type": "String"
+      },
+      "orderNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "laundryItemsLabel": "Laundry Items",
+  "addButtonLabel": "Add",
+  "noItemsAddHint": "No items yet. Tap \"Add\" to pick a service.",
+  "totalLabel": "Total",
+  "confirmPickedUpButton": "Confirm Picked Up",
+  "confirmDeliveryTitle": "Confirm Delivery",
+  "confirmDeliverySubtitle": "Deliver laundry for {customerName} ({orderNumber})",
+  "@confirmDeliverySubtitle": {
+    "placeholders": {
+      "customerName": {
+        "type": "String"
+      },
+      "orderNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "assignedCourierLabel": "Assigned Courier (Optional)",
+  "noCourierEmployeeDeliverHint": "No employees with the \"Courier\" position yet. You can still mark this order as delivered.",
+  "selectCourierHint": "Select courier",
+  "confirmDeliveredButton": "Confirm Delivered",
+  "pickupTypeLabel": "Pickup",
+  "walkInTypeLabel": "Walk-in",
+  "deliveryTypeLabel": "Delivery",
+  "selfPickupTypeLabel": "Self-Pickup",
+  "genericCourierLabel": "Courier",
+  "courierNotAssignedLabel": "Courier not assigned",
+  "plannedPickupLabel": "Pickup planned: {date}",
+  "@plannedPickupLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "selfServicePickedUpLabel": "Picked up by customer: {date}",
+  "@selfServicePickedUpLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "deliveredAtLabel": "Delivered: {date}",
+  "@deliveredAtLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pickedUpFromCustomerLabel": "Picked up: {date}",
+  "@pickedUpFromCustomerLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "markPickedUpButton": "Mark as Picked Up",
+  "markSelfPickedUpButton": "Mark as Collected",
+  "markDeliveredButton": "Mark as Delivered",
+  "employeeNotFoundError": "Employee data not found.",
+  "employeeLoadError": "Failed to load employee data: {error}",
+  "@employeeLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "employeeGenericError": "An error occurred: {error}",
+  "@employeeGenericError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "branchNotSelectedWarning": "Branch not selected or not yet created!",
+  "sessionExpiredError": "Session has expired.",
+  "branchNotLinkedWarning": "Selected branch is not linked to company data. Please check the branch data again.",
+  "quotaLimitReachedTitle": "Quota Limit Reached",
+  "quotaLimitReachedContent": "The number of employees has reached the maximum quota of your current subscription plan. Please upgrade your plan.",
+  "upgradePlanButton": "Upgrade Plan",
+  "employeeUpdateSuccess": "Employee data updated successfully!",
+  "employeeAddSuccess": "Employee added successfully!",
+  "employeeSaveError": "Failed to save employee data: {error}",
+  "@employeeSaveError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deactivateEmployeeTitle": "Deactivate Employee",
+  "deactivateEmployeeConfirm": "Are you sure you want to deactivate this employee? Past transaction history will remain safe.",
+  "deactivateEmployeeConfirmAlt": "Are you sure you want to deactivate this employee's active status? Past transaction history will remain safe.",
+  "yesDeactivateButton": "Yes, Deactivate",
+  "employeeDeactivatedSuccess": "Employee has been deactivated.",
+  "employeeDeactivateError": "Failed to deactivate employee: {error}",
+  "@employeeDeactivateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "editEmployeeTitle": "Edit Employee Data",
+  "addEmployeeTitle": "Add Employee",
+  "additionalDetailsDivider": "ADDITIONAL DETAILS",
+  "editEmployeeInfoBanner": "Changes will be saved immediately to this employee's data.",
+  "addEmployeeInfoBanner": "The system will automatically validate your subscription plan quota before saving the employee data.",
+  "fullNameHint": "e.g. Siti Aminah",
+  "employeeNameRequiredError": "Employee name is required",
+  "phoneNumberLabel": "Phone Number",
+  "phoneNumberRequiredError": "Phone number is required",
+  "emailOptionalLabel": "Email (Optional)",
+  "invalidEmailFormatError": "Invalid email format",
+  "addressLabel": "Address",
+  "addressHint": "Enter complete home address",
+  "roleLabel": "Role / Position",
+  "selectPositionHint": "Select Position",
+  "positionRequiredError": "Position must be selected",
+  "assignedBranchLabel": "Assigned Branch",
+  "registerNewBranchFirstButton": "+ Register a New Branch First",
+  "selectBranchHint": "Select Branch",
+  "branchRequiredError": "Assigned branch must be selected",
+  "hireDateLabel": "Hire Date",
+  "appAccessTitle": "App Access",
+  "appAccessSubtitle": "Grant app login access",
+  "employeeStatusTitle": "Employee Status",
+  "employeeStatusCurrent": "Current status: {status}",
+  "@employeeStatusCurrent": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "statusActive": "Active",
+  "statusInactive": "Inactive",
+  "employeeCodeLabel": "Employee Code",
+  "employeeCodeHint": "e.g. EMP01, KSR02",
+  "employeeCodeRequiredError": "Employee code cannot be empty",
+  "baseSalaryLabel": "Base Salary (IDR)",
+  "baseSalaryRequiredError": "Base salary is required",
+  "commissionPerTransactionLabel": "Commission per Transaction (%)",
+  "commissionHint": "e.g. 5.0",
+  "employeePermissionsTitle": "Employee Feature Permissions",
+  "employeePermissionsSubtitle": "Set which features this employee can access",
+  "canCreateOrderPermission": "Can Create Orders",
+  "canManageCustomerPermission": "Can Manage Customer Data",
+  "canViewReportPermission": "Can View Financial Reports",
+  "savingButton": "Saving...",
+  "saveEmployeeButton": "Save Employee",
+  "employeeDetailTitle": "Employee Detail",
+  "employeeCodeFallback": "Employee {code}",
+  "@employeeCodeFallback": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "laundryStaffFallback": "Laundry Staff",
+  "addressFullLabel": "Full Address",
+  "employmentInfoTitle": "Employment Information",
+  "documentIdLabel": "Document ID",
+  "positionLabel": "Position",
+  "baseSalaryShortLabel": "Base Salary",
+  "commissionLabel": "Commission",
+  "systemAccessTitle": "System Access Rights",
+  "createOrdersPermissionShort": "Create Orders",
+  "manageCustomersPermissionShort": "Manage Customers",
+  "viewReportsPermissionShort": "View Reports",
+  "activityHistoryLabel": "Activity History",
+  "activityHistoryUnavailable": "Activity history is not available yet.",
+  "resetPasswordLabel": "Reset Password",
+  "resetPasswordUnavailable": "Password reset is not available yet.",
+  "manageEmployeesTitle": "Manage Employees",
+  "searchEmployeeHint": "Search employee name or phone number...",
+  "filterAllLabel": "All",
+  "allBranchesLabel": "All Branches",
+  "allRolesLabel": "All Roles",
+  "totalEmployeesLabel": "Total Employees",
+  "noEmployeesFoundTitle": "No employee data found",
+  "noEmployeesFoundSubtitle": "Try changing filters or add a new employee",
+  "newEmployeeButton": "New Employee",
+  "noNameFallback": "No Name",
+  "terminateEmployeeTitle": "Terminate Employee",
+  "terminateEmployeeConfirm": "Are you sure you want to deactivate {name} ({position})?",
+  "@terminateEmployeeConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "position": {
+        "type": "String"
+      }
+    }
+  },
+  "employeeDeactivatedWithCodeSuccess": "Employee {code} has been deactivated",
+  "@employeeDeactivatedWithCodeSuccess": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "unnamedBranchFallback": "Unnamed Branch"
 }

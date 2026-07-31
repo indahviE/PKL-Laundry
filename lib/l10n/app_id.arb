@@ -13,12 +13,19 @@
   "pendingOrdersNotifSubtitle": "{count} pesanan menunggu diproses",
   "@pendingOrdersNotifSubtitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "noNewNotifications": "Tidak ada notifikasi baru",
   "noNewNotificationsSubtitle": "Pesanan baru yang masuk akan muncul di sini",
   "languageTitle": "Bahasa",
+  "sectionCsTeam": "Tim CS",
+  "manageCsChatTitle": "Kelola Chat CS",
+  "manageCsChatSubtitle": "Balas percakapan dari semua user",
+  "chatTitle": "Chat",
+  "chatSubtitle": "Balasan",
   "sectionOther": "Lainnya",
   "helpTitle": "Bantuan",
   "helpSubtitle": "FAQ & dukungan",
@@ -29,7 +36,6 @@
   "cancel": "Batal",
   "logout": "Keluar",
   "roleOwner": "Owner",
-
   "fullNameLabel": "Nama Lengkap",
   "emailLabel": "Email",
   "nameEmptyError": "Nama tidak boleh kosong",
@@ -37,25 +43,32 @@
   "galleryOpenError": "Gagal buka galeri: {error}",
   "@galleryOpenError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "uploadTimeoutError": "Upload timeout, cek koneksi kamu",
   "uploadFailedError": "Upload gagal ({code}): {body}",
   "@uploadFailedError": {
     "placeholders": {
-      "code": { "type": "String" },
-      "body": { "type": "String" }
+      "code": {
+        "type": "String"
+      },
+      "body": {
+        "type": "String"
+      }
     }
   },
   "profileUpdateSuccess": "Profil berhasil diperbarui",
   "profileUpdateError": "Gagal update profil: {error}",
   "@profileUpdateError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "oldPasswordLabel": "Password Lama",
   "newPasswordLabel": "Password Baru",
   "confirmPasswordLabel": "Konfirmasi Password Baru",
@@ -74,28 +87,99 @@
   "passwordChangeGenericError": "Gagal ubah password: {error}",
   "@passwordChangeGenericError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "otherProviderNotice": "Akun kamu login pakai provider lain (misalnya Google), jadi gak ada password yang bisa diubah di sini.",
-
   "activeBranchLabel": "CABANG AKTIF",
   "allBranchesLabel": "Semua Cabang",
   "selectBranchTitle": "Pilih Cabang",
   "searchBranchHint": "Cari nama cabang...",
   "noBranchesRegistered": "Belum ada cabang terdaftar",
   "branchNotFoundSearch": "Cabang tidak ditemukan",
-
   "greetingMorning": "Selamat Pagi",
   "greetingAfternoon": "Selamat Sore",
   "greetingEvening": "Selamat Malam",
   "dashboardSubtitle": "Berikut ringkasan bisnis laundry Anda",
-
   "revenueThisMonthLabel": "Pendapatan bulan ini",
   "autoSyncLabel": "Sinkronisasi otomatis",
   "customersLabel": "Pelanggan",
   "activeOrdersLabel": "Pesanan aktif",
-
+  "reportsTitle": "Laporan",
+  "reportsSubtitle": "Pantau performa bisnis laundry Anda",
+  "periodToday": "Hari Ini",
+  "periodThisWeek": "Minggu Ini",
+  "periodThisMonth": "Bulan Ini",
+  "periodThisYear": "Tahun Ini",
+  "printButtonShort": "Cetak",
+  "printReportButton": "Cetak Laporan",
+  "generatingPdfButton": "Membuat PDF...",
+  "growthThisPeriodLabel": "Pertumbuhan Periode Ini",
+  "growthUpLabel": "Naik",
+  "growthDownLabel": "Turun",
+  "fromPreviousPeriodLabel": "dari periode sebelumnya",
+  "revenueTrendTitle": "Tren Pendapatan",
+  "last7DaysLabel": "7 hari terakhir",
+  "revenuePerServiceTitle": "Pendapatan per Layanan",
+  "noOrdersThisPeriod": "Belum ada data pesanan pada periode ini.",
+  "completionRateLabel": "Tingkat Penyelesaian",
+  "ofAllOrdersLabel": "dari seluruh pesanan",
+  "exportPdfError": "Gagal membuat PDF: {error}",
+  "@exportPdfError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfReportTitle": "Laporan Bisnis Laundry",
+  "pdfHeaderInfo": "Periode: {period}   |   Cabang: {branch}   |   Dibuat: {date}",
+  "@pdfHeaderInfo": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      },
+      "branch": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfSummaryTitle": "Ringkasan",
+  "totalRevenueLabel": "Total Pendapatan",
+  "newCustomersLabel": "Pelanggan Baru",
+  "avgOrderLabel": "Rata-rata Order",
+  "growthLabel": "Pertumbuhan",
+  "growthValueTemplate": "+{rate}% dari periode sebelumnya",
+  "@growthValueTemplate": {
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfWeeklyTrendTitle": "Tren Pendapatan (7 hari terakhir)",
+  "pdfServiceColumn": "Layanan",
+  "pdfOrdersColumn": "Pesanan",
+  "pdfRevenueColumn": "Pendapatan",
+  "pdfPercentageColumn": "Persentase",
+  "pdfPageOfPages": "Halaman {page} dari {total}",
+  "@pdfPageOfPages": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "unnamedBranchLabel": "Cabang Tanpa Nama",
+  "otherServiceLabel": "Lainnya",
   "setupBranchTitle": "Mulai Setup Cabang",
   "setupBranchSubtitle": "Lengkapi profil & alamat cabang",
   "setupEmployeeTitle": "Tambahkan Karyawan",
@@ -106,11 +190,14 @@
   "setupStepsProgress": "{done} dari {total} langkah selesai",
   "@setupStepsProgress": {
     "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" }
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
-
   "newOrderAction": "Pesanan\nBaru",
   "newEmployeeAction": "Karyawan\nBaru",
   "manageBranchAction": "Kelola\nCabang",
@@ -122,10 +209,11 @@
   "quotaLimitReached": "Batas kuota paket Starter untuk {label} telah tercapai! Silakan upgrade.",
   "@quotaLimitReached": {
     "placeholders": {
-      "label": { "type": "String" }
+      "label": {
+        "type": "String"
+      }
     }
   },
-
   "weeklyRevenueTitle": "Pendapatan Mingguan",
   "sevenDaysLabel": "7 hari",
   "dayMon": "Sen",
@@ -135,15 +223,12 @@
   "dayFri": "Jum",
   "daySat": "Sab",
   "daySun": "Min",
-
   "mainOrdersTitle": "Pesanan Utama",
   "viewAllLabel": "Lihat Semua",
-
   "filterAll": "Semua",
   "filterProcessing": "Diproses",
   "filterReady": "Siap Diambil",
   "filterCompleted": "Selesai",
-
   "noOrdersData": "Tidak ada data pesanan.",
   "noOrdersForStatus": "Tidak ada pesanan dengan status ini.",
   "statusCancelled": "Batal",
@@ -152,11 +237,14 @@
   "orderDetailSummary": "{count} item · Rp {amount}",
   "@orderDetailSummary": {
     "placeholders": {
-      "count": { "type": "String" },
-      "amount": { "type": "String" }
+      "count": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
     }
   },
-
   "serviceNameLabel": "Nama Layanan",
   "serviceNameHint": "Contoh: Cuci Kering Setrika Reguler",
   "serviceNameError": "Nama layanan tidak boleh kosong",
@@ -169,7 +257,6 @@
   "priceEmptyError": "Harga tidak boleh kosong",
   "priceInvalidError": "Masukkan angka yang valid",
   "durationHint": "Contoh: 24",
-
   "createServiceAppBarTitle": "Tambah Layanan Baru",
   "createServiceSectionTitle": "Detail Layanan Laundry",
   "createServiceSectionSubtitle": "Masukkan informasi jenis paket jasa laundry yang kamu sediakan.",
@@ -185,10 +272,11 @@
   "addServiceError": "Gagal menambahkan layanan: {error}",
   "@addServiceError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "servicesListAppBarTitle": "Daftar Layanan",
   "servicesListSubtitle": "Kelola jenis cuci, harga, dan estimasi durasi",
   "newServiceFab": "Layanan Baru",
@@ -202,45 +290,59 @@
   "serviceActivatedSnackbar": "Layanan \"{name}\" diaktifkan kembali",
   "@serviceActivatedSnackbar": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "serviceDeactivatedSnackbar": "Layanan \"{name}\" dinonaktifkan",
   "@serviceDeactivatedSnackbar": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "toggleStatusError": "Gagal mengubah status: {error}",
   "@toggleStatusError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "deleteConfirmTitle": "Hapus Permanen?",
   "deleteConfirmContent": "Layanan \"{name}\" akan dihapus permanen dari database dan TIDAK BISA dikembalikan.\n\nJika layanan ini masih atau pernah dipakai di pesanan, sebaiknya gunakan opsi \"Nonaktifkan\" saja agar riwayat pesanan lama tetap tampil normal.",
   "@deleteConfirmContent": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "deletePermanentButton": "Hapus Permanen",
   "deleteServiceSuccess": "Layanan \"{name}\" berhasil dihapus permanen",
   "@deleteServiceSuccess": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "deleteServiceError": "Gagal menghapus layanan: {error}",
   "@deleteServiceError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "durationInHours": "{hours} Jam",
   "@durationInHours": {
     "placeholders": {
-      "hours": { "type": "int" }
+      "hours": {
+        "type": "int"
+      }
     }
   },
   "activeStatusChip": "Aktif",
@@ -248,13 +350,17 @@
   "pricePerKgValue": "Rp {price} / Kg",
   "@pricePerKgValue": {
     "placeholders": {
-      "price": { "type": "String" }
+      "price": {
+        "type": "String"
+      }
     }
   },
   "pricePerItemValue": "Rp {price} / Item",
   "@pricePerItemValue": {
     "placeholders": {
-      "price": { "type": "String" }
+      "price": {
+        "type": "String"
+      }
     }
   },
   "editServiceSheetTitle": "Edit Layanan",
@@ -271,10 +377,11 @@
   "saveChangesError": "Gagal menyimpan perubahan: {error}",
   "@saveChangesError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "customersTitle": "Pelanggan",
   "customersSubtitle": "Kelola data pelanggan laundry Anda",
   "newCustomerButton": "Baru",
@@ -289,7 +396,9 @@
   "ordersCountLabel": "{count} pesanan",
   "@ordersCountLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "neverOrderedLabel": "Belum pernah order",
@@ -297,16 +406,19 @@
   "hoursAgoLabel": "{hours} jam lalu",
   "@hoursAgoLabel": {
     "placeholders": {
-      "hours": { "type": "int" }
+      "hours": {
+        "type": "int"
+      }
     }
   },
   "daysAgoLabel": "{days} hari lalu",
   "@daysAgoLabel": {
     "placeholders": {
-      "days": { "type": "int" }
+      "days": {
+        "type": "int"
+      }
     }
   },
-
   "editCustomerComingSoon": "Navigasi ke Edit Pelanggan akan ditambahkan",
   "editCustomerMenuItem": "Edit Pelanggan",
   "deleteCustomerMenuItem": "Hapus Pelanggan",
@@ -314,7 +426,9 @@
   "deleteCustomerConfirmContent": "Data pelanggan \"{name}\" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.",
   "@deleteCustomerConfirmContent": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "deleteButton": "Hapus",
@@ -323,7 +437,9 @@
   "joinedSinceLabel": "Bergabung sejak {date}",
   "@joinedSinceLabel": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "activeCustomerLabel": "Pelanggan Aktif",
@@ -348,10 +464,11 @@
   "orderItemCountLabel": "· {count} item",
   "@orderItemCountLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "newCustomerHeaderTitle": "Pelanggan Baru",
   "newCustomerHeaderSubtitle": "Lengkapi data pelanggan untuk menambahkannya ke sistem",
   "customerNameHint": "Masukkan nama pelanggan",
@@ -371,17 +488,20 @@
   "errorWithMessage": "Error: {error}",
   "@errorWithMessage": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "addCustomerError": "Gagal menambahkan pelanggan: {error}",
   "@addCustomerError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "loadCustomersError": "Gagal memuat data pelanggan: {error}",
-
   "laundriesTitle": "Cabang",
   "laundriesSubtitle": "Kelola cabang laundry Anda",
   "searchLaundryHint": "Cari nama, kode, atau kota cabang...",
@@ -395,7 +515,6 @@
   "newBranchButton": "Cabang Baru",
   "addBranchButton": "Tambah Cabang",
   "loadLaundriesError": "Gagal memuat data cabang",
-
   "addBranchTitle": "Tambah Cabang Baru",
   "editBranchTitle": "Edit Data Cabang",
   "addBranchInfo": "Sistem akan memvalidasi limitasi kuota cabang sesuai paket langganan Anda secara otomatis sebelum menyimpan data.",
@@ -444,14 +563,14 @@
   "friday": "Jumat",
   "saturday": "Sabtu",
   "sunday": "Minggu",
-
   "cardCapacityLabel": "Kapasitas {capacity}",
   "@cardCapacityLabel": {
     "placeholders": {
-      "capacity": { "type": "Object" }
+      "capacity": {
+        "type": "Object"
+      }
     }
   },
-
   "selectCompanyHint": "Pilih perusahaan",
   "branchNameHint": "Contoh: Cabang Merdeka",
   "branchCodeHint": "Contoh: JKT001",
@@ -472,7 +591,9 @@
   "loadBranchDataError": "Gagal memuat data cabang: {error}",
   "@loadBranchDataError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "companyNotSelectedWarning": "Perusahaan belum dipilih atau belum dibuat!",
@@ -480,28 +601,37 @@
   "saveBranchError": "Gagal menyimpan data cabang: {error}",
   "@saveBranchError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "branchDetailTitle": "Detail Cabang",
   "deleteBranchConfirmDetail": "Cabang \"{name}\" ({code}) akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
   "@deleteBranchConfirmDetail": {
     "placeholders": {
-      "name": { "type": "String" },
-      "code": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
     }
   },
   "branchDeleteSuccess": "Cabang \"{name}\" berhasil dihapus.",
   "@branchDeleteSuccess": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "deleteBranchError": "Gagal menghapus cabang: {error}",
   "@deleteBranchError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "addressShortLabel": "Alamat",
@@ -511,7 +641,6 @@
   "notSetLabel": "Belum diatur",
   "branchNotFoundTitle": "Cabang tidak ditemukan",
   "branchNotFoundSubtitle": "Cabang mungkin sudah dihapus atau id tidak valid",
-
   "monthJan": "Jan",
   "monthFeb": "Feb",
   "monthMar": "Mar",
@@ -524,19 +653,24 @@
   "monthOct": "Okt",
   "monthNov": "Nov",
   "monthDec": "Des",
-
   "branchListTitle": "Daftar Cabang ({count})",
   "@branchListTitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "hideLabel": "Sembunyikan",
   "openTodayStatus": "Buka • {open} - {close}",
   "@openTodayStatus": {
     "placeholders": {
-      "open": { "type": "String" },
-      "close": { "type": "String" }
+      "open": {
+        "type": "String"
+      },
+      "close": {
+        "type": "String"
+      }
     }
   },
   "closedTemporarilyLabel": "Tutup Sementara",
@@ -545,7 +679,9 @@
   "staffAtThisBranchLabel": "Staf di Cabang Ini ({count})",
   "@staffAtThisBranchLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "noStaffAtBranch": "Belum ada karyawan yang ditempatkan di cabang ini.",
@@ -554,12 +690,11 @@
   "deactivateBranchContent": "Cabang ini akan ditandai tutup sementara dan tidak menerima pesanan baru.",
   "activeStatusSubtitle": "Nonaktifkan untuk tutup sementara",
   "generalInfoSection": "Informasi Umum",
-  "deactivateBranchButton": "Nonaktifkan Cabang"
-,
+  "deactivateBranchButton": "Nonaktifkan Cabang",
   "ordersListTitle": "Pesanan",
   "ordersListSubtitle": "Kelola semua pesanan laundry Anda",
   "newOrderButtonLabel": "Baru",
-  "searchOrderHint": "Cari pesanan atau pelanggan...",
+  "searchOrderHint": "Cari pesanan...",
   "orderWaitingStatus": "Menunggu",
   "orderProcessingStatus": "Diproses",
   "orderCompletedStatus": "Selesai",
@@ -571,7 +706,6 @@
   "orderNoOrdersSubtitle": "Buat pesanan baru untuk memulai",
   "orderCreateOrderButtonLabel": "Buat Pesanan",
   "orderSessionNotFoundError": "Sesi tidak ditemukan, silakan login ulang",
-
   "createOrderAppBarTitle": "Buat Pesanan Baru",
   "createOrderSectionTitle": "Detail Pesanan",
   "createOrderSectionSubtitle": "Isi informasi pesanan",
@@ -593,12 +727,13 @@
   "createOrderError": "Gagal membuat pesanan: {error}",
   "@createOrderError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "noActiveServicesError": "Tidak ada layanan aktif. Tambahkan layanan dulu di menu Layanan sebelum membuat pesanan.",
   "selectCustomerError": "Silakan pilih pelanggan terlebih dahulu",
-
   "orderDetailAppBarTitle": "Detail Pesanan",
   "orderDetailCustomerInfoTitle": "Informasi Pelanggan",
   "orderDetailItemsTitle": "Item",
@@ -609,7 +744,371 @@
   "orderItemLabel": "{count} item",
   "@orderItemLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
-  }
+  },
+  "closeButton": "Tutup",
+  "selectOrderTitle": "Pilih Pesanan",
+  "noOrdersWaitingPickupHint": "Tidak ada pesanan yang menunggu dijemput.",
+  "noOrdersReadyDeliveryHint": "Tidak ada pesanan yang siap diantar.",
+  "customerFallbackLabel": "Pelanggan",
+  "scheduleDeliveryScreenTitle": "Jadwalkan Antar Jemput",
+  "pickupModeLabel": "Penjemputan",
+  "deliveryModeLabel": "Pengantaran",
+  "newCustomerButtonShort": "Baru",
+  "autoFilledScheduleHint": "Tanggal & jam terisi otomatis dari saat pesanan dibuat",
+  "selectBranchLabel": "Pilih Cabang",
+  "noActiveBranchesScheduleHint": "Belum ada cabang aktif. Tambahkan cabang terlebih dahulu di menu Cabang.",
+  "selectBranchHint": "Pilih cabang",
+  "useMapLocationButton": "Pakai lokasi peta",
+  "mapLocationComingSoon": "Fitur pilih lokasi peta akan segera hadir",
+  "addressFieldExampleHint": "Jl. Kebayoran Lama No. 123, Jakarta Selatan...",
+  "dateLabel": "Tanggal",
+  "timeLabel": "Jam",
+  "selectCourierLabel": "Pilih Kurir",
+  "noCourierEmployeeScheduleHint": "Belum ada karyawan dengan posisi \"Kurir\". Anda tetap bisa menyimpan jadwal tanpa memilih kurir.",
+  "searchCourierHint": "Cari kurir terdekat...",
+  "courierListHint": "Kurir aktif dengan posisi \"Kurir\" ditampilkan di daftar ini.",
+  "additionalNotesLabel": "Catatan Tambahan (Opsional)",
+  "notesExampleHint": "Contoh: Titipkan di satpam, pagar warna hitam...",
+  "scheduleSummaryTitle": "RINGKASAN JADWAL",
+  "selectOrSearchOrderLabel": "Pilih atau Cari Pesanan",
+  "addressNotSetLabel": "Alamat belum ditentukan",
+  "notScheduledLabel": "Belum dijadwalkan",
+  "modeWithBranchLabel": "Mode: {mode} • {branch}",
+  "@modeWithBranchLabel": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "modeOnlyLabel": "Mode: {mode}",
+  "@modeOnlyLabel": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "saveScheduleButton": "Simpan Jadwal",
+  "selectOrderRequiredError": "Pilih pesanan terlebih dahulu",
+  "addressRequiredError": "Alamat wajib diisi",
+  "dateTimeRequiredError": "Tanggal dan jam wajib dipilih",
+  "scheduleSaveSuccess": "Jadwal berhasil disimpan",
+  "scheduleSaveError": "Gagal menyimpan jadwal: {error}",
+  "@scheduleSaveError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "waitingPickupStatus": "Menunggu dijemput",
+  "readyDeliveryStatus": "Siap diantar",
+  "readyPickupStatus": "Siap diambil",
+  "waitingConfirmationStatus": "Menunggu konfirmasi",
+  "confirmedStatus": "Dikonfirmasi",
+  "inProgressStatus": "Dalam proses",
+  "markedPickedUpSnackbar": "{orderNumber} ditandai sudah dijemput",
+  "@markedPickedUpSnackbar": {
+    "placeholders": {
+      "orderNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "markedDeliveredSnackbar": "{orderNumber} ditandai sudah diantar",
+  "@markedDeliveredSnackbar": {
+    "placeholders": {
+      "orderNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "genericUpdateError": "Gagal update: {error}",
+  "@genericUpdateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "addScheduleButton": "Tambah Jadwal",
+  "pickupDeliveryTitle": "Antar Jemput",
+  "pickupDeliverySubtitle": "Kelola jemput, antar & ambil sendiri",
+  "searchOrderCustomerHint": "Cari nama pelanggan atau no. pesanan...",
+  "filterNeedsPickup": "Perlu dijemput",
+  "filterSelfService": "Ambil sendiri",
+  "filterOthers": "Lainnya",
+  "statNeedsPickupTitle": "Perlu Dijemput",
+  "statReadyDeliveryTitle": "Siap Diantar",
+  "statSelfServiceTitle": "Ambil Sendiri",
+  "noOrdersTitle": "Tidak ada pesanan",
+  "noOrdersFilterSubtitle": "Belum ada pesanan yang cocok dengan filter ini",
+  "selectScheduleModeSubtitle": "Pilih mode jadwal yang mau dibuat",
+  "schedulePickupTileTitle": "Jadwalkan Penjemputan",
+  "schedulePickupTileSubtitle": "Untuk pesanan yang menunggu dijemput",
+  "scheduleDeliveryTileTitle": "Jadwalkan Pengantaran",
+  "scheduleDeliveryTileSubtitle": "Untuk pesanan yang sudah siap diantar",
+  "selectServiceTitle": "Pilih Layanan",
+  "noActiveServicesHint": "Belum ada layanan aktif.",
+  "dpAmountRequiredError": "Isi nominal DP terlebih dahulu",
+  "dpAmountTooLargeError": "Nominal DP harus lebih kecil dari total. Pilih \"Lunas\" kalau bayar penuh.",
+  "minOneItemError": "Tambahkan minimal 1 item",
+  "weightRequiredError": "Isi berat (kg) untuk \"{itemName}\"",
+  "@weightRequiredError": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmFailedError": "Gagal konfirmasi: {error}",
+  "@confirmFailedError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cashPaymentLabel": "Tunai",
+  "bankTransferLabel": "Transfer Bank",
+  "debitCardLabel": "Kartu Debit",
+  "eWalletLabel": "E-Wallet",
+  "paymentMethodLabel": "Metode Pembayaran",
+  "transferPaymentPendingNotice": "Status pembayaran akan \"Belum Dibayar\" sampai dikonfirmasi manual di halaman detail pesanan.",
+  "instantPaymentNotice": "Metode ini dianggap dibayar langsung saat ini juga.",
+  "fullPaymentLabel": "Lunas",
+  "partialPaymentLabel": "DP (Sebagian)",
+  "dpAmountLabel": "Nominal DP",
+  "dpAmountHint": "Contoh: 20000",
+  "remainingBalanceHint": "Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.",
+  "confirmPickupTitle": "Konfirmasi Jemput",
+  "confirmPickupSubtitle": "Catat item & berat cucian {customerName} ({orderNumber})",
+  "@confirmPickupSubtitle": {
+    "placeholders": {
+      "customerName": {
+        "type": "String"
+      },
+      "orderNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "laundryItemsLabel": "Item Cucian",
+  "addButtonLabel": "Tambah",
+  "noItemsAddHint": "Belum ada item. Tekan \"Tambah\" untuk memilih layanan.",
+  "confirmPickedUpButton": "Konfirmasi Sudah Dijemput",
+  "confirmDeliveryTitle": "Konfirmasi Antar",
+  "confirmDeliverySubtitle": "Antar cucian {customerName} ({orderNumber})",
+  "@confirmDeliverySubtitle": {
+    "placeholders": {
+      "customerName": {
+        "type": "String"
+      },
+      "orderNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "assignedCourierLabel": "Kurir Bertugas (Opsional)",
+  "noCourierEmployeeDeliverHint": "Belum ada karyawan dengan posisi \"Kurir\". Anda tetap bisa lanjut menandai order ini sudah diantar.",
+  "selectCourierHint": "Pilih kurir",
+  "confirmDeliveredButton": "Konfirmasi Sudah Diantar",
+  "pickupTypeLabel": "Jemput",
+  "walkInTypeLabel": "Walk-in",
+  "deliveryTypeLabel": "Antar",
+  "selfPickupTypeLabel": "Ambil Sendiri",
+  "genericCourierLabel": "Kurir",
+  "courierNotAssignedLabel": "Kurir belum ditentukan",
+  "plannedPickupLabel": "Rencana jemput: {date}",
+  "@plannedPickupLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "selfServicePickedUpLabel": "Diambil: {date}",
+  "@selfServicePickedUpLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "deliveredAtLabel": "Diantar: {date}",
+  "@deliveredAtLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pickedUpFromCustomerLabel": "Dijemput: {date}",
+  "@pickedUpFromCustomerLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "markPickedUpButton": "Tandai Sudah Dijemput",
+  "markSelfPickedUpButton": "Tandai Sudah Diambil",
+  "markDeliveredButton": "Tandai Sudah Diantar",
+  "employeeNotFoundError": "Data karyawan tidak ditemukan.",
+  "employeeLoadError": "Gagal memuat data karyawan: {error}",
+  "@employeeLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "employeeGenericError": "Terjadi kesalahan: {error}",
+  "@employeeGenericError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "branchNotSelectedWarning": "Cabang laundry belum dipilih atau belum dibuat!",
+  "sessionExpiredError": "Sesi user berakhir.",
+  "branchNotLinkedWarning": "Cabang terpilih belum terhubung dengan data perusahaan. Periksa kembali data cabang.",
+  "quotaLimitReachedTitle": "Batas Kuota Tercapai",
+  "quotaLimitReachedContent": "Jumlah karyawan Anda telah mencapai batas maksimal kuota paket langganan saat ini. Silakan upgrade paket.",
+  "upgradePlanButton": "Upgrade Paket",
+  "employeeUpdateSuccess": "Data karyawan berhasil diperbarui!",
+  "employeeAddSuccess": "Staf karyawan berhasil ditambahkan!",
+  "employeeSaveError": "Gagal menyimpan data karyawan: {error}",
+  "@employeeSaveError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deactivateEmployeeTitle": "Nonaktifkan Karyawan",
+  "deactivateEmployeeConfirm": "Apakah Anda yakin ingin menonaktifkan karyawan ini? Riwayat transaksi lama akan tetap aman.",
+  "deactivateEmployeeConfirmAlt": "Apakah Anda yakin ingin menonaktifkan status aktif karyawan ini? Riwayat transaksi lama akan tetap aman.",
+  "yesDeactivateButton": "Ya, Nonaktifkan",
+  "employeeDeactivatedSuccess": "Karyawan telah dinonaktifkan.",
+  "employeeDeactivateError": "Gagal menonaktifkan karyawan: {error}",
+  "@employeeDeactivateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "editEmployeeTitle": "Edit Data Karyawan",
+  "addEmployeeTitle": "Tambah Karyawan",
+  "additionalDetailsDivider": "DETAIL TAMBAHAN",
+  "editEmployeeInfoBanner": "Perubahan akan langsung tersimpan pada data karyawan ini.",
+  "addEmployeeInfoBanner": "Sistem akan memvalidasi limitasi kuota paket langganan Anda secara otomatis sebelum menyimpan data karyawan.",
+  "fullNameHint": "Contoh: Siti Aminah",
+  "employeeNameRequiredError": "Nama karyawan wajib diisi",
+  "phoneNumberLabel": "Nomor Telepon",
+  "phoneNumberRequiredError": "Nomor telepon wajib diisi",
+  "emailOptionalLabel": "Email (Opsional)",
+  "invalidEmailFormatError": "Format email tidak valid",
+  "addressLabel": "Alamat",
+  "addressHint": "Masukkan alamat lengkap rumah",
+  "roleLabel": "Role / Jabatan",
+  "selectPositionHint": "Pilih Jabatan",
+  "positionRequiredError": "Posisi atau jabatan wajib dipilih",
+  "assignedBranchLabel": "Cabang Bertugas",
+  "registerNewBranchFirstButton": "+ Daftarkan Cabang Baru Terlebih Dahulu",
+  "selectBranchHint": "Pilih Cabang",
+  "branchRequiredError": "Cabang penempatan wajib dipilih",
+  "hireDateLabel": "Tanggal Bergabung",
+  "appAccessTitle": "Akses Aplikasi",
+  "appAccessSubtitle": "Berikan akses login aplikasi",
+  "employeeStatusTitle": "Status Karyawan",
+  "employeeStatusCurrent": "Status saat ini: {status}",
+  "@employeeStatusCurrent": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "statusActive": "Aktif",
+  "statusInactive": "Tidak Aktif",
+  "employeeCodeLabel": "Kode Karyawan",
+  "employeeCodeHint": "Contoh: EMP01, KSR02",
+  "employeeCodeRequiredError": "Kode karyawan tidak boleh kosong",
+  "baseSalaryLabel": "Gaji Pokok (IDR)",
+  "baseSalaryRequiredError": "Gaji pokok wajib diisi",
+  "commissionPerTransactionLabel": "Komisi per Transaksi (%)",
+  "commissionHint": "Contoh: 5.0",
+  "employeePermissionsTitle": "Hak Akses Fitur Karyawan",
+  "employeePermissionsSubtitle": "Atur fitur apa saja yang boleh diakses karyawan ini",
+  "canCreateOrderPermission": "Dapat Membuat Pesanan (Order)",
+  "canManageCustomerPermission": "Dapat Mengelola Data Pelanggan",
+  "canViewReportPermission": "Dapat Melihat Laporan Keuangan (Report)",
+  "savingButton": "Menyimpan...",
+  "saveEmployeeButton": "Simpan Karyawan",
+  "employeeDetailTitle": "Detail Karyawan",
+  "employeeCodeFallback": "Karyawan {code}",
+  "@employeeCodeFallback": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "laundryStaffFallback": "Staf Laundry",
+  "addressFullLabel": "Alamat Lengkap",
+  "employmentInfoTitle": "Informasi Pekerjaan",
+  "documentIdLabel": "ID Dokumen",
+  "positionLabel": "Posisi Kerja",
+  "baseSalaryShortLabel": "Gaji Pokok",
+  "commissionLabel": "Komisi",
+  "systemAccessTitle": "Hak Akses Sistem",
+  "createOrdersPermissionShort": "Membuat Pesanan",
+  "manageCustomersPermissionShort": "Mengelola Pelanggan",
+  "viewReportsPermissionShort": "Melihat Laporan",
+  "activityHistoryLabel": "Riwayat Aktivitas",
+  "activityHistoryUnavailable": "Riwayat aktivitas belum tersedia.",
+  "resetPasswordLabel": "Reset Password",
+  "resetPasswordUnavailable": "Reset password belum tersedia.",
+  "manageEmployeesTitle": "Kelola Karyawan",
+  "searchEmployeeHint": "Cari nama atau nomor telepon karyawan...",
+  "filterAllLabel": "Semua",
+  "allBranchesLabel": "Semua Cabang",
+  "allRolesLabel": "Semua Role",
+  "totalEmployeesLabel": "Total Karyawan",
+  "noEmployeesFoundTitle": "Data karyawan tidak ditemukan",
+  "noEmployeesFoundSubtitle": "Coba ubah filter atau tambahkan karyawan baru",
+  "newEmployeeButton": "Karyawan Baru",
+  "noNameFallback": "Tanpa Nama",
+  "terminateEmployeeTitle": "Terminasi Karyawan",
+  "terminateEmployeeConfirm": "Apakah Anda yakin ingin menonaktifkan {name} ({position})?",
+  "@terminateEmployeeConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "position": {
+        "type": "String"
+      }
+    }
+  },
+  "employeeDeactivatedWithCodeSuccess": "Karyawan {code} telah dinonaktifkan",
+  "@employeeDeactivatedWithCodeSuccess": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "unnamedBranchFallback": "Cabang Tanpa Nama"
 }

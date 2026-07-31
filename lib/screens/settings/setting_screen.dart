@@ -200,14 +200,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.stretch,
                                           children: [
-                                            _sectionLabel('Tim CS'),
+                                            _sectionLabel(t.sectionCsTeam),
                                             _buildSectionCard([
                                               _buildTile(
                                                 icon: Icons
                                                     .support_agent_rounded,
-                                                title: 'Kelola Chat CS',
+                                                title: t.manageCsChatTitle,
                                                 subtitle:
-                                                    'Balas percakapan dari semua user',
+                                                    t.manageCsChatSubtitle,
                                                 color: _Palette.cyan,
                                                 background: _Palette.cyanSoft,
                                                 onTap: () => context
@@ -224,8 +224,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   _buildSectionCard([
                                     _buildTile(
                                       icon: Icons.chat_bubble_outline_rounded,
-                                      title: 'Chat',
-                                      subtitle: 'Balasan',
+                                      title: t.chatTitle,
+                                      subtitle: t.chatSubtitle,
                                       color: _Palette.cyan,
                                       background: _Palette.cyanSoft,
                                       onTap: () =>

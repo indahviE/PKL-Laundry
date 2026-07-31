@@ -54,6 +54,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageTitle => 'Language';
 
   @override
+  String get sectionCsTeam => 'CS Team';
+
+  @override
+  String get manageCsChatTitle => 'Manage CS Chat';
+
+  @override
+  String get manageCsChatSubtitle => 'Reply to conversations from all users';
+
+  @override
+  String get chatTitle => 'Chat';
+
+  @override
+  String get chatSubtitle => 'Replies';
+
+  @override
   String get sectionOther => 'Others';
 
   @override
@@ -217,6 +232,122 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activeOrdersLabel => 'Active orders';
+
+  @override
+  String get reportsTitle => 'Reports';
+
+  @override
+  String get reportsSubtitle => 'Monitor your laundry business performance';
+
+  @override
+  String get periodToday => 'Today';
+
+  @override
+  String get periodThisWeek => 'This Week';
+
+  @override
+  String get periodThisMonth => 'This Month';
+
+  @override
+  String get periodThisYear => 'This Year';
+
+  @override
+  String get printButtonShort => 'Print';
+
+  @override
+  String get printReportButton => 'Print Report';
+
+  @override
+  String get generatingPdfButton => 'Generating PDF...';
+
+  @override
+  String get growthThisPeriodLabel => 'This Period\'s Growth';
+
+  @override
+  String get growthUpLabel => 'Up';
+
+  @override
+  String get growthDownLabel => 'Down';
+
+  @override
+  String get fromPreviousPeriodLabel => 'from previous period';
+
+  @override
+  String get revenueTrendTitle => 'Revenue Trend';
+
+  @override
+  String get last7DaysLabel => 'Last 7 days';
+
+  @override
+  String get revenuePerServiceTitle => 'Revenue per Service';
+
+  @override
+  String get noOrdersThisPeriod => 'No order data for this period yet.';
+
+  @override
+  String get completionRateLabel => 'Completion Rate';
+
+  @override
+  String get ofAllOrdersLabel => 'of all orders';
+
+  @override
+  String exportPdfError(String error) {
+    return 'Failed to generate PDF: $error';
+  }
+
+  @override
+  String get pdfReportTitle => 'Laundry Business Report';
+
+  @override
+  String pdfHeaderInfo(String period, String branch, String date) {
+    return 'Period: $period   |   Branch: $branch   |   Generated: $date';
+  }
+
+  @override
+  String get pdfSummaryTitle => 'Summary';
+
+  @override
+  String get totalRevenueLabel => 'Total Revenue';
+
+  @override
+  String get newCustomersLabel => 'New Customers';
+
+  @override
+  String get avgOrderLabel => 'Average Order';
+
+  @override
+  String get growthLabel => 'Growth';
+
+  @override
+  String growthValueTemplate(String rate) {
+    return '+$rate% from previous period';
+  }
+
+  @override
+  String get pdfWeeklyTrendTitle => 'Revenue Trend (Last 7 days)';
+
+  @override
+  String get pdfServiceColumn => 'Service';
+
+  @override
+  String get pdfOrdersColumn => 'Orders';
+
+  @override
+  String get pdfRevenueColumn => 'Revenue';
+
+  @override
+  String get pdfPercentageColumn => 'Percentage';
+
+  @override
+  String pdfPageOfPages(int page, int total) {
+    return 'Page $page of $total';
+  }
+
+  @override
+  String get unnamedBranchLabel => 'Unnamed Branch';
+
+  @override
+  String get otherServiceLabel => 'Other';
 
   @override
   String get setupBranchTitle => 'Start Branch Setup';
@@ -663,7 +794,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneLabel => 'Phone Number';
 
   @override
-  String get addressLabel => 'Full Address';
+  String get addressLabel => 'Address';
 
   @override
   String get orderHistoryTitle => 'Order History';
@@ -840,7 +971,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get branchContactPhoneLabel => 'Nomor Telepon';
 
   @override
-  String get emailOptionalLabel => 'Branch Email (Optional)';
+  String get emailOptionalLabel => 'Email (Optional)';
 
   @override
   String get managerOptionalLabel => 'Branch Manager (Optional)';
@@ -966,7 +1097,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get branchCodeHint => 'e.g. JKT001';
 
   @override
-  String get addressHint => 'e.g. Jl. Merdeka No. 123';
+  String get addressHint => 'Enter complete home address';
 
   @override
   String get cityHint => 'Jakarta';
@@ -1159,7 +1290,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newOrderButtonLabel => 'Baru';
 
   @override
-  String get searchOrderHint => 'Cari pesanan atau pelanggan...';
+  String get searchOrderHint => 'Search order...';
 
   @override
   String get orderWaitingStatus => 'Menunggu';
@@ -1180,7 +1311,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orderTotalRevenueLabel => 'Total Revenue';
 
   @override
-  String get orderRetryButtonLabel => 'Coba Lagi';
+  String get orderRetryButtonLabel => 'Try Again';
 
   @override
   String get orderNoOrdersLabel => 'Tidak ada pesanan';
@@ -1286,4 +1417,635 @@ class AppLocalizationsEn extends AppLocalizations {
   String orderItemLabel(int count) {
     return '$count item';
   }
+
+  @override
+  String get closeButton => 'Close';
+
+  @override
+  String get selectOrderTitle => 'Select Order';
+
+  @override
+  String get noOrdersWaitingPickupHint => 'No orders waiting to be picked up.';
+
+  @override
+  String get noOrdersReadyDeliveryHint => 'No orders ready to be delivered.';
+
+  @override
+  String get customerFallbackLabel => 'Customer';
+
+  @override
+  String get scheduleDeliveryScreenTitle => 'Schedule Pickup/Delivery';
+
+  @override
+  String get pickupModeLabel => 'Pickup';
+
+  @override
+  String get deliveryModeLabel => 'Delivery';
+
+  @override
+  String get newCustomerButtonShort => 'New';
+
+  @override
+  String get autoFilledScheduleHint =>
+      'Date & time auto-filled from when the order was created';
+
+  @override
+  String get selectBranchLabel => 'Select Branch';
+
+  @override
+  String get noActiveBranchesScheduleHint =>
+      'No active branches yet. Add a branch first from the Branches menu.';
+
+  @override
+  String get selectBranchHint => 'Select Branch';
+
+  @override
+  String get useMapLocationButton => 'Use map location';
+
+  @override
+  String get mapLocationComingSoon => 'Map location picker is coming soon';
+
+  @override
+  String get addressFieldExampleHint => 'e.g. 123 Main St, South Jakarta...';
+
+  @override
+  String get dateLabel => 'Date';
+
+  @override
+  String get timeLabel => 'Time';
+
+  @override
+  String get selectCourierLabel => 'Select Courier';
+
+  @override
+  String get noCourierEmployeeScheduleHint =>
+      'No employees with the \"Courier\" position yet. You can still save the schedule without picking a courier.';
+
+  @override
+  String get searchCourierHint => 'Search nearest courier...';
+
+  @override
+  String get courierListHint =>
+      'Active employees with the \"Courier\" position are shown in this list.';
+
+  @override
+  String get additionalNotesLabel => 'Additional Notes (Optional)';
+
+  @override
+  String get notesExampleHint => 'Example: Leave with security, black gate...';
+
+  @override
+  String get scheduleSummaryTitle => 'SCHEDULE SUMMARY';
+
+  @override
+  String get selectOrSearchOrderLabel => 'Select or Search Order';
+
+  @override
+  String get addressNotSetLabel => 'Address not set';
+
+  @override
+  String get notScheduledLabel => 'Not scheduled';
+
+  @override
+  String modeWithBranchLabel(String mode, String branch) {
+    return 'Mode: $mode • $branch';
+  }
+
+  @override
+  String modeOnlyLabel(String mode) {
+    return 'Mode: $mode';
+  }
+
+  @override
+  String get saveScheduleButton => 'Save Schedule';
+
+  @override
+  String get selectOrderRequiredError => 'Please select an order first';
+
+  @override
+  String get addressRequiredError => 'Address is required';
+
+  @override
+  String get dateTimeRequiredError => 'Date and time must be selected';
+
+  @override
+  String get scheduleSaveSuccess => 'Schedule saved successfully';
+
+  @override
+  String scheduleSaveError(String error) {
+    return 'Failed to save schedule: $error';
+  }
+
+  @override
+  String get waitingPickupStatus => 'Waiting for pickup';
+
+  @override
+  String get readyDeliveryStatus => 'Ready for delivery';
+
+  @override
+  String get readyPickupStatus => 'Ready for pickup';
+
+  @override
+  String get waitingConfirmationStatus => 'Awaiting confirmation';
+
+  @override
+  String get confirmedStatus => 'Confirmed';
+
+  @override
+  String get inProgressStatus => 'In progress';
+
+  @override
+  String markedPickedUpSnackbar(String orderNumber) {
+    return '$orderNumber marked as picked up';
+  }
+
+  @override
+  String markedDeliveredSnackbar(String orderNumber) {
+    return '$orderNumber marked as delivered';
+  }
+
+  @override
+  String genericUpdateError(String error) {
+    return 'Failed to update: $error';
+  }
+
+  @override
+  String get addScheduleButton => 'Add Schedule';
+
+  @override
+  String get pickupDeliveryTitle => 'Pickup & Delivery';
+
+  @override
+  String get pickupDeliverySubtitle => 'Manage pickup, delivery & self-service';
+
+  @override
+  String get searchOrderCustomerHint => 'Search customer name or order no...';
+
+  @override
+  String get filterNeedsPickup => 'Needs pickup';
+
+  @override
+  String get filterSelfService => 'Self-service';
+
+  @override
+  String get filterOthers => 'Others';
+
+  @override
+  String get statNeedsPickupTitle => 'Needs Pickup';
+
+  @override
+  String get statReadyDeliveryTitle => 'Ready to Deliver';
+
+  @override
+  String get statSelfServiceTitle => 'Self-Service';
+
+  @override
+  String get noOrdersTitle => 'No orders';
+
+  @override
+  String get noOrdersFilterSubtitle => 'No orders match this filter yet';
+
+  @override
+  String get selectScheduleModeSubtitle => 'Choose which schedule to create';
+
+  @override
+  String get schedulePickupTileTitle => 'Schedule Pickup';
+
+  @override
+  String get schedulePickupTileSubtitle => 'For orders waiting to be picked up';
+
+  @override
+  String get scheduleDeliveryTileTitle => 'Schedule Delivery';
+
+  @override
+  String get scheduleDeliveryTileSubtitle => 'For orders ready to be delivered';
+
+  @override
+  String get selectServiceTitle => 'Select Service';
+
+  @override
+  String get noActiveServicesHint => 'No active services yet.';
+
+  @override
+  String get dpAmountRequiredError =>
+      'Please enter a down payment amount first';
+
+  @override
+  String get dpAmountTooLargeError =>
+      'Down payment must be less than the total. Choose \"Paid in Full\" if paying the full amount.';
+
+  @override
+  String get minOneItemError => 'Add at least 1 item';
+
+  @override
+  String weightRequiredError(String itemName) {
+    return 'Enter the weight (kg) for \"$itemName\"';
+  }
+
+  @override
+  String confirmFailedError(String error) {
+    return 'Failed to confirm: $error';
+  }
+
+  @override
+  String get cashPaymentLabel => 'Cash';
+
+  @override
+  String get bankTransferLabel => 'Bank Transfer';
+
+  @override
+  String get debitCardLabel => 'Debit Card';
+
+  @override
+  String get eWalletLabel => 'E-Wallet';
+
+  @override
+  String get paymentMethodLabel => 'Payment Method';
+
+  @override
+  String get transferPaymentPendingNotice =>
+      'Payment status will be \"Unpaid\" until manually confirmed on the order detail page.';
+
+  @override
+  String get instantPaymentNotice =>
+      'This method is considered paid immediately.';
+
+  @override
+  String get fullPaymentLabel => 'Paid in Full';
+
+  @override
+  String get partialPaymentLabel => 'Down Payment (Partial)';
+
+  @override
+  String get dpAmountLabel => 'Down Payment Amount';
+
+  @override
+  String get dpAmountHint => 'Example: 20000';
+
+  @override
+  String get remainingBalanceHint =>
+      'The remaining balance can be settled later from the order detail page.';
+
+  @override
+  String get confirmPickupTitle => 'Confirm Pickup';
+
+  @override
+  String confirmPickupSubtitle(String customerName, String orderNumber) {
+    return 'Record the laundry items & weight for $customerName ($orderNumber)';
+  }
+
+  @override
+  String get laundryItemsLabel => 'Laundry Items';
+
+  @override
+  String get addButtonLabel => 'Add';
+
+  @override
+  String get noItemsAddHint => 'No items yet. Tap \"Add\" to pick a service.';
+
+  @override
+  String get confirmPickedUpButton => 'Confirm Picked Up';
+
+  @override
+  String get confirmDeliveryTitle => 'Confirm Delivery';
+
+  @override
+  String confirmDeliverySubtitle(String customerName, String orderNumber) {
+    return 'Deliver laundry for $customerName ($orderNumber)';
+  }
+
+  @override
+  String get assignedCourierLabel => 'Assigned Courier (Optional)';
+
+  @override
+  String get noCourierEmployeeDeliverHint =>
+      'No employees with the \"Courier\" position yet. You can still mark this order as delivered.';
+
+  @override
+  String get selectCourierHint => 'Select courier';
+
+  @override
+  String get confirmDeliveredButton => 'Confirm Delivered';
+
+  @override
+  String get pickupTypeLabel => 'Pickup';
+
+  @override
+  String get walkInTypeLabel => 'Walk-in';
+
+  @override
+  String get deliveryTypeLabel => 'Delivery';
+
+  @override
+  String get selfPickupTypeLabel => 'Self-Pickup';
+
+  @override
+  String get genericCourierLabel => 'Courier';
+
+  @override
+  String get courierNotAssignedLabel => 'Courier not assigned';
+
+  @override
+  String plannedPickupLabel(String date) {
+    return 'Pickup planned: $date';
+  }
+
+  @override
+  String selfServicePickedUpLabel(String date) {
+    return 'Picked up by customer: $date';
+  }
+
+  @override
+  String deliveredAtLabel(String date) {
+    return 'Delivered: $date';
+  }
+
+  @override
+  String pickedUpFromCustomerLabel(String date) {
+    return 'Picked up: $date';
+  }
+
+  @override
+  String get markPickedUpButton => 'Mark as Picked Up';
+
+  @override
+  String get markSelfPickedUpButton => 'Mark as Collected';
+
+  @override
+  String get markDeliveredButton => 'Mark as Delivered';
+
+  @override
+  String get employeeNotFoundError => 'Employee data not found.';
+
+  @override
+  String employeeLoadError(String error) {
+    return 'Failed to load employee data: $error';
+  }
+
+  @override
+  String employeeGenericError(String error) {
+    return 'An error occurred: $error';
+  }
+
+  @override
+  String get branchNotSelectedWarning =>
+      'Branch not selected or not yet created!';
+
+  @override
+  String get sessionExpiredError => 'Session has expired.';
+
+  @override
+  String get branchNotLinkedWarning =>
+      'Selected branch is not linked to company data. Please check the branch data again.';
+
+  @override
+  String get quotaLimitReachedTitle => 'Quota Limit Reached';
+
+  @override
+  String get quotaLimitReachedContent =>
+      'The number of employees has reached the maximum quota of your current subscription plan. Please upgrade your plan.';
+
+  @override
+  String get employeeUpdateSuccess => 'Employee data updated successfully!';
+
+  @override
+  String get employeeAddSuccess => 'Employee added successfully!';
+
+  @override
+  String employeeSaveError(String error) {
+    return 'Failed to save employee data: $error';
+  }
+
+  @override
+  String get deactivateEmployeeTitle => 'Deactivate Employee';
+
+  @override
+  String get deactivateEmployeeConfirm =>
+      'Are you sure you want to deactivate this employee? Past transaction history will remain safe.';
+
+  @override
+  String get deactivateEmployeeConfirmAlt =>
+      'Are you sure you want to deactivate this employee\'s active status? Past transaction history will remain safe.';
+
+  @override
+  String get yesDeactivateButton => 'Yes, Deactivate';
+
+  @override
+  String get employeeDeactivatedSuccess => 'Employee has been deactivated.';
+
+  @override
+  String employeeDeactivateError(String error) {
+    return 'Failed to deactivate employee: $error';
+  }
+
+  @override
+  String get editEmployeeTitle => 'Edit Employee Data';
+
+  @override
+  String get addEmployeeTitle => 'Add Employee';
+
+  @override
+  String get additionalDetailsDivider => 'ADDITIONAL DETAILS';
+
+  @override
+  String get editEmployeeInfoBanner =>
+      'Changes will be saved immediately to this employee\'s data.';
+
+  @override
+  String get addEmployeeInfoBanner =>
+      'The system will automatically validate your subscription plan quota before saving the employee data.';
+
+  @override
+  String get fullNameHint => 'e.g. Siti Aminah';
+
+  @override
+  String get employeeNameRequiredError => 'Employee name is required';
+
+  @override
+  String get phoneNumberRequiredError => 'Phone number is required';
+
+  @override
+  String get invalidEmailFormatError => 'Invalid email format';
+
+  @override
+  String get roleLabel => 'Role / Position';
+
+  @override
+  String get selectPositionHint => 'Select Position';
+
+  @override
+  String get positionRequiredError => 'Position must be selected';
+
+  @override
+  String get assignedBranchLabel => 'Assigned Branch';
+
+  @override
+  String get registerNewBranchFirstButton => '+ Register a New Branch First';
+
+  @override
+  String get branchRequiredError => 'Assigned branch must be selected';
+
+  @override
+  String get hireDateLabel => 'Hire Date';
+
+  @override
+  String get appAccessTitle => 'App Access';
+
+  @override
+  String get appAccessSubtitle => 'Grant app login access';
+
+  @override
+  String get employeeStatusTitle => 'Employee Status';
+
+  @override
+  String employeeStatusCurrent(String status) {
+    return 'Current status: $status';
+  }
+
+  @override
+  String get statusActive => 'Active';
+
+  @override
+  String get statusInactive => 'Inactive';
+
+  @override
+  String get employeeCodeLabel => 'Employee Code';
+
+  @override
+  String get employeeCodeHint => 'e.g. EMP01, KSR02';
+
+  @override
+  String get employeeCodeRequiredError => 'Employee code cannot be empty';
+
+  @override
+  String get baseSalaryLabel => 'Base Salary (IDR)';
+
+  @override
+  String get baseSalaryRequiredError => 'Base salary is required';
+
+  @override
+  String get commissionPerTransactionLabel => 'Commission per Transaction (%)';
+
+  @override
+  String get commissionHint => 'e.g. 5.0';
+
+  @override
+  String get employeePermissionsTitle => 'Employee Feature Permissions';
+
+  @override
+  String get employeePermissionsSubtitle =>
+      'Set which features this employee can access';
+
+  @override
+  String get canCreateOrderPermission => 'Can Create Orders';
+
+  @override
+  String get canManageCustomerPermission => 'Can Manage Customer Data';
+
+  @override
+  String get canViewReportPermission => 'Can View Financial Reports';
+
+  @override
+  String get savingButton => 'Saving...';
+
+  @override
+  String get saveEmployeeButton => 'Save Employee';
+
+  @override
+  String get employeeDetailTitle => 'Employee Detail';
+
+  @override
+  String employeeCodeFallback(String code) {
+    return 'Employee $code';
+  }
+
+  @override
+  String get laundryStaffFallback => 'Laundry Staff';
+
+  @override
+  String get addressFullLabel => 'Full Address';
+
+  @override
+  String get employmentInfoTitle => 'Employment Information';
+
+  @override
+  String get documentIdLabel => 'Document ID';
+
+  @override
+  String get positionLabel => 'Position';
+
+  @override
+  String get baseSalaryShortLabel => 'Base Salary';
+
+  @override
+  String get commissionLabel => 'Commission';
+
+  @override
+  String get systemAccessTitle => 'System Access Rights';
+
+  @override
+  String get createOrdersPermissionShort => 'Create Orders';
+
+  @override
+  String get manageCustomersPermissionShort => 'Manage Customers';
+
+  @override
+  String get viewReportsPermissionShort => 'View Reports';
+
+  @override
+  String get activityHistoryLabel => 'Activity History';
+
+  @override
+  String get activityHistoryUnavailable =>
+      'Activity history is not available yet.';
+
+  @override
+  String get resetPasswordLabel => 'Reset Password';
+
+  @override
+  String get resetPasswordUnavailable => 'Password reset is not available yet.';
+
+  @override
+  String get manageEmployeesTitle => 'Manage Employees';
+
+  @override
+  String get searchEmployeeHint => 'Search employee name or phone number...';
+
+  @override
+  String get filterAllLabel => 'All';
+
+  @override
+  String get allRolesLabel => 'All Roles';
+
+  @override
+  String get totalEmployeesLabel => 'Total Employees';
+
+  @override
+  String get noEmployeesFoundTitle => 'No employee data found';
+
+  @override
+  String get noEmployeesFoundSubtitle =>
+      'Try changing filters or add a new employee';
+
+  @override
+  String get newEmployeeButton => 'New Employee';
+
+  @override
+  String get noNameFallback => 'No Name';
+
+  @override
+  String get terminateEmployeeTitle => 'Terminate Employee';
+
+  @override
+  String terminateEmployeeConfirm(String name, String position) {
+    return 'Are you sure you want to deactivate $name ($position)?';
+  }
+
+  @override
+  String employeeDeactivatedWithCodeSuccess(String code) {
+    return 'Employee $code has been deactivated';
+  }
+
+  @override
+  String get unnamedBranchFallback => 'Unnamed Branch';
 }

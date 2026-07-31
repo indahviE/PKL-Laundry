@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 
 // Disamain persis dengan _DS.canvas di services_list_screen.dart
 // (#F5F7FA) — file upload ini kayaknya versi lama, dibenerin lagi.
@@ -18,6 +19,12 @@ const Color _cCard = Color(0xFFFFFFFF);
 const Color _cOnSurfaceVariant = Color(0xFF404752);
 const Color _cOutlineVariant = Color(0xFFBFC7D4);
 const Color _cPrimary = Color(0xFF0061A4);
+
+/// Jenis error yang bisa terjadi saat fetch data laporan. Disimpan
+/// sebagai kode (bukan String siap-tampil) supaya pesannya bisa
+/// diterjemahkan sesuai locale aktif saat di-render di build(),
+/// bukan "dibekukan" dalam Bahasa Indonesia saat fetch terjadi.
+enum _ReportsErrorType { none, session, generic }
 
 /// Model breakdown pendapatan per jenis layanan
 class _ServiceBreakdown {
@@ -43,11 +50,11 @@ class _LaundryOption {
 
   _LaundryOption({required this.id, required this.name});
 
-  factory _LaundryOption.fromFirestore(DocumentSnapshot doc) {
+  factory _LaundryOption.fromFirestore(DocumentSnapshot doc, AppLocalizations t) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
     return _LaundryOption(
       id: doc.id,
-      name: (data['name'] ?? 'Cabang Tanpa Nama') as String,
+      name: (data['name'] ?? t.unnamedBranchLabel) as String,
     );
   }
 }
@@ -69,7 +76,6 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   int _selectedPeriod = 2; // 0: Hari Ini, 1: Minggu Ini, 2: Bulan Ini, 3: Tahun Ini
-  final List<String> _periods = ['Hari Ini', 'Minggu Ini', 'Bulan Ini', 'Tahun Ini'];
   bool _isExporting = false;
 
   // Filter cabang - 'all' berarti gabungan semua cabang (behavior lama,
@@ -89,17 +95,51 @@ class _ReportsScreenState extends State<ReportsScreen> {
   double _completionRate = 0;
 
   List<double> _weeklyValues = List.filled(7, 0.0);
-  final List<String> _weeklyDays = const ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
   List<_ServiceBreakdown> _serviceBreakdown = [];
 
   bool _isLoading = true;
-  String? _errorMessage;
+  _ReportsErrorType _errorType = _ReportsErrorType.none;
+  String? _errorDetail;
+
+  /// Label periode, dibangun dari AppLocalizations supaya ikut locale
+  /// aktif (index sama dengan _selectedPeriod: 0 Hari Ini, 1 Minggu Ini,
+  /// 2 Bulan Ini, 3 Tahun Ini).
+  List<String> _periodLabels(AppLocalizations t) => [
+        t.periodToday,
+        t.periodThisWeek,
+        t.periodThisMonth,
+        t.periodThisYear,
+      ];
+
+  /// Label hari Senin-Minggu, dibangun dari AppLocalizations (dayMon..daySun)
+  /// supaya konsisten dengan singkatan hari yang dipakai di layar lain.
+  List<String> _weekdayLabels(AppLocalizations t) => [
+        t.dayMon,
+        t.dayTue,
+        t.dayWed,
+        t.dayThu,
+        t.dayFri,
+        t.daySat,
+        t.daySun,
+      ];
+
+  // Dipakai supaya fetch pertama cuma jalan sekali. Dipanggil dari
+  // didChangeDependencies (bukan initState) karena kedua fetch di bawah
+  // butuh AppLocalizations.of(context) SEBELUM await pertama — dan
+  // memanggil dependOnInheritedWidgetOfExactType (dipakai AppLocalizations.of)
+  // selama initState() masih berjalan itu dilarang Flutter ("was called
+  // before _ReportsScreenState.initState() completed"). didChangeDependencies
+  // dijamin berjalan setelah widget ter-mount penuh, jadi aman.
+  bool _didInitialFetch = false;
 
   @override
-  void initState() {
-    super.initState();
-    _fetchLaundries();
-    _fetchReportsData();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didInitialFetch) {
+      _didInitialFetch = true;
+      _fetchLaundries();
+      _fetchReportsData();
+    }
   }
 
   /// Ambil semua cabang aktif milik company ini, buat isi chip filter
@@ -111,6 +151,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     if (user == null) return;
 
     try {
+      final t = AppLocalizations.of(context)!;
       final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
       final companiesSnap = await userDocRef.collection('companies').limit(1).get();
       if (companiesSnap.docs.isEmpty) return;
@@ -124,7 +165,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
       if (!mounted) return;
       setState(() {
-        _laundriesList = laundriesSnap.docs.map((d) => _LaundryOption.fromFirestore(d)).toList();
+        _laundriesList =
+            laundriesSnap.docs.map((d) => _LaundryOption.fromFirestore(d, t)).toList();
       });
     } catch (e) {
       debugPrint('Gagal memuat data cabang: $e');
@@ -141,18 +183,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Future<void> _fetchReportsData() async {
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
+      _errorType = _ReportsErrorType.none;
+      _errorDetail = null;
     });
 
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         setState(() {
-          _errorMessage = 'Sesi tidak ditemukan, silakan login ulang';
+          _errorType = _ReportsErrorType.session;
           _isLoading = false;
         });
         return;
       }
+
+      final t = AppLocalizations.of(context)!;
 
       final now = DateTime.now();
       late DateTime startDate;
@@ -227,13 +272,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
         // satu order bisa punya lebih dari 1 jenis layanan sekaligus.
         final items = (data['items'] as List?) ?? [];
         if (items.isEmpty) {
-          const fallbackName = 'Lainnya';
+          final fallbackName = t.otherServiceLabel;
           serviceRevenue[fallbackName] = (serviceRevenue[fallbackName] ?? 0) + amount;
           serviceOrderCount[fallbackName] = (serviceOrderCount[fallbackName] ?? 0) + 1;
         } else {
           for (final rawItem in items) {
             final item = Map<String, dynamic>.from(rawItem as Map);
-            final serviceName = (item['service_name'] ?? 'Lainnya') as String;
+            final serviceName = (item['service_name'] ?? t.otherServiceLabel) as String;
             final itemTotal = ((item['total_price'] ?? 0) as num).toDouble();
             serviceRevenue[serviceName] = (serviceRevenue[serviceName] ?? 0) + itemTotal;
             serviceOrderCount[serviceName] = (serviceOrderCount[serviceName] ?? 0) + 1;
@@ -290,7 +335,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Error: $e';
+        _errorType = _ReportsErrorType.generic;
+        _errorDetail = e.toString();
         _isLoading = false;
       });
     }
@@ -372,11 +418,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   /// Nama cabang yang lagi difilter, buat ditampilin di judul PDF.
-  /// "Semua Cabang" kalau _selectedLaundryId == 'all'.
-  String get _selectedLaundryLabel {
-    if (_selectedLaundryId == 'all') return 'Semua Cabang';
+  /// t.allBranchesLabel kalau _selectedLaundryId == 'all'.
+  String _selectedLaundryLabel(AppLocalizations t) {
+    if (_selectedLaundryId == 'all') return t.allBranchesLabel;
     final match = _laundriesList.where((l) => l.id == _selectedLaundryId);
-    return match.isNotEmpty ? match.first.name : 'Semua Cabang';
+    return match.isNotEmpty ? match.first.name : t.allBranchesLabel;
   }
 
   String _formatCurrency(double amount) {
@@ -397,13 +443,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
   static const PdfColor _pdfBorderLight = PdfColor.fromInt(0xFFBAE6FD); // border tabel, biru muda
 
   /// Generate & bagikan/print laporan sebagai PDF
+  ///
+  /// PENTING soal locale: `t` DIAMBIL DI SINI (dari Flutter BuildContext
+  /// yang dioper sebagai parameter `context`) SEBELUM masuk ke
+  /// header/build/footer callback milik package:pdf. Di dalam callback
+  /// tersebut parameter bernama `context` adalah pw.Context (beda tipe,
+  /// cuma dipakai untuk context.pageNumber/pagesCount) — jadi jangan
+  /// panggil AppLocalizations.of(context) di dalamnya, cukup pakai
+  /// variabel `t` yang sudah ditangkap closure ini.
   Future<void> _exportToPdf(BuildContext context) async {
     setState(() => _isExporting = true);
 
+    final t = AppLocalizations.of(context)!;
+
     try {
       final doc = pw.Document();
-      final periodLabel = _periods[_selectedPeriod];
-      final laundryLabel = _selectedLaundryLabel;
+      final periodLabel = _periodLabels(t)[_selectedPeriod];
+      final laundryLabel = _selectedLaundryLabel(t);
+      final weekdayLabels = _weekdayLabels(t);
       final now = DateTime.now();
       final generatedAt = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} '
           '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
@@ -416,48 +473,48 @@ class _ReportsScreenState extends State<ReportsScreen> {
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(32),
-          header: (context) => pw.Column(
+          header: (pdfContext) => pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
-                'Laporan Bisnis Laundry',
+                t.pdfReportTitle,
                 style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: _pdfPrimaryDark),
               ),
               pw.SizedBox(height: 4),
               pw.Text(
-                'Periode: $periodLabel   |   Cabang: $laundryLabel   |   Dibuat: $generatedAt',
+                t.pdfHeaderInfo(periodLabel, laundryLabel, generatedAt),
                 style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
               ),
               pw.SizedBox(height: 12),
               pw.Divider(color: _pdfPrimary, thickness: 1.2),
             ],
           ),
-          build: (context) => [
+          build: (pdfContext) => [
             // Ringkasan KPI utama
-            pw.Text('Ringkasan', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: _pdfPrimaryDark)),
+            pw.Text(t.pdfSummaryTitle, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: _pdfPrimaryDark)),
             pw.SizedBox(height: 8),
             pw.Table(
               border: pw.TableBorder.all(color: _pdfBorderLight),
               children: [
-                _pdfTableRow(['Total Pendapatan', _formatCurrency(_totalRevenue)]),
-                _pdfTableRow(['Total Pesanan', '$_totalOrders']),
-                _pdfTableRow(['Pelanggan Baru', '$_newCustomers']),
-                _pdfTableRow(['Rata-rata Order', _formatCurrency(_avgOrderValue)]),
-                _pdfTableRow(['Pertumbuhan', '+${_growthRate.toStringAsFixed(1)}% dari periode sebelumnya']),
-                _pdfTableRow(['Completion Rate', '${_completionRate.toStringAsFixed(1)}%']),
+                _pdfTableRow([t.totalRevenueLabel, _formatCurrency(_totalRevenue)]),
+                _pdfTableRow([t.totalOrdersLabel, '$_totalOrders']),
+                _pdfTableRow([t.newCustomersLabel, '$_newCustomers']),
+                _pdfTableRow([t.avgOrderLabel, _formatCurrency(_avgOrderValue)]),
+                _pdfTableRow([t.growthLabel, t.growthValueTemplate(_growthRate.toStringAsFixed(1))]),
+                _pdfTableRow([t.completionRateLabel, '${_completionRate.toStringAsFixed(1)}%']),
               ],
             ),
             pw.SizedBox(height: 20),
 
             // Tren mingguan
-            pw.Text('Tren Pendapatan (7 hari terakhir)', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: _pdfPrimaryDark)),
+            pw.Text(t.pdfWeeklyTrendTitle, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: _pdfPrimaryDark)),
             pw.SizedBox(height: 8),
             pw.Table(
               border: pw.TableBorder.all(color: _pdfBorderLight),
               children: [
                 pw.TableRow(
                   decoration: const pw.BoxDecoration(color: _pdfPrimaryTint),
-                  children: _weeklyDays
+                  children: weekdayLabels
                       .map((d) => pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
                             child: pw.Text(d, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
@@ -477,7 +534,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             pw.SizedBox(height: 20),
 
             // Breakdown per layanan
-            pw.Text('Pendapatan per Layanan', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: _pdfPrimaryDark)),
+            pw.Text(t.revenuePerServiceTitle, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: _pdfPrimaryDark)),
             pw.SizedBox(height: 8),
             pw.Table(
               border: pw.TableBorder.all(color: _pdfBorderLight),
@@ -491,10 +548,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 pw.TableRow(
                   decoration: const pw.BoxDecoration(color: _pdfPrimaryTint),
                   children: [
-                    _pdfCell('Layanan', bold: true),
-                    _pdfCell('Pesanan', bold: true),
-                    _pdfCell('Pendapatan', bold: true),
-                    _pdfCell('Persentase', bold: true),
+                    _pdfCell(t.pdfServiceColumn, bold: true),
+                    _pdfCell(t.pdfOrdersColumn, bold: true),
+                    _pdfCell(t.pdfRevenueColumn, bold: true),
+                    _pdfCell(t.pdfPercentageColumn, bold: true),
                   ],
                 ),
                 ..._serviceBreakdown.map((service) {
@@ -511,10 +568,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ],
             ),
           ],
-          footer: (context) => pw.Align(
+          footer: (pdfContext) => pw.Align(
             alignment: pw.Alignment.centerRight,
             child: pw.Text(
-              'Halaman ${context.pageNumber} dari ${context.pagesCount}',
+              t.pdfPageOfPages(pdfContext.pageNumber, pdfContext.pagesCount),
               style: const pw.TextStyle(fontSize: 9, color: _pdfPrimaryDark),
             ),
           ),
@@ -529,7 +586,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal membuat PDF: $e')),
+          SnackBar(content: Text(t.exportPdfError(e.toString()))),
         );
       }
     } finally {
@@ -564,6 +621,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final String? errorMessage = _errorType == _ReportsErrorType.session
+        ? t.sessionNotFoundError
+        : (_errorType == _ReportsErrorType.generic ? t.errorWithMessage(_errorDetail ?? '') : null);
+
     return Scaffold(
       backgroundColor: _cSurface,
       body: SafeArea(
@@ -600,21 +662,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             padding: EdgeInsets.all(32.0),
                             child: Center(child: CircularProgressIndicator()),
                           )
-                        else if (_errorMessage != null)
+                        else if (errorMessage != null)
                           Center(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
                               child: Column(
                                 children: [
                                   Text(
-                                    _errorMessage ?? 'Error',
+                                    errorMessage,
                                     textAlign: TextAlign.center,
                                     style: GoogleFonts.poppins(color: Colors.red),
                                   ),
                                   const SizedBox(height: AppTheme.lg),
                                   TextButton(
                                     onPressed: _fetchReportsData,
-                                    child: Text('Coba lagi', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                                    child: Text(t.orderRetryButtonLabel, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                                   ),
                                 ],
                               ),
@@ -679,6 +741,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   /// (mobile). Label tombol Export disembunyikan di mobile, cuma nyisain
   /// icon-nya, karena ruang horizontal terbatas.
   Widget _buildHeader(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     return Row(
@@ -708,7 +771,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Laporan',
+                      t.reportsTitle,
                       style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -719,7 +782,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Pantau performa bisnis laundry Anda',
+                      t.reportsSubtitle,
                       style: GoogleFonts.poppins(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w400,
@@ -745,7 +808,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 )
               : const Icon(Icons.print_outlined, size: 18),
           label: Text(
-            isMobile ? (_isExporting ? '...' : 'Cetak') : (_isExporting ? 'Membuat PDF...' : 'Cetak Laporan'),
+            isMobile
+                ? (_isExporting ? '...' : t.printButtonShort)
+                : (_isExporting ? t.generatingPdfButton : t.printReportButton),
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13.5),
           ),
           style: OutlinedButton.styleFrom(
@@ -766,13 +831,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   /// Build period filter chips
   Widget _buildPeriodChips(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final periods = _periodLabels(t);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: List.generate(
-          _periods.length,
+          periods.length,
           (index) => Padding(
-            padding: EdgeInsets.only(right: index < _periods.length - 1 ? AppTheme.md : 0),
+            padding: EdgeInsets.only(right: index < periods.length - 1 ? AppTheme.md : 0),
             child: ChoiceChip(
               selected: _selectedPeriod == index,
               onSelected: (_) {
@@ -780,7 +847,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 _fetchReportsData();
               },
               showCheckmark: false,
-              label: Text(_periods[index]),
+              label: Text(periods[index]),
               backgroundColor: AppTheme.cardColor,
               selectedColor: AppTheme.primaryColor.withOpacity(0.12),
               side: BorderSide(
@@ -805,6 +872,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   /// pertama selalu "Semua Cabang", sisanya sesuai nama cabang aktif.
   /// Pola sama persis dengan OrdersListScreen/CustomersListScreen.
   Widget _buildLaundryFilterChips(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -812,7 +880,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           Padding(
             padding: const EdgeInsets.only(right: AppTheme.sm),
             child: _buildLaundryChip(
-              label: 'Semua Cabang',
+              label: t.allBranchesLabel,
               isSelected: _selectedLaundryId == 'all',
               onTap: () {
                 setState(() => _selectedLaundryId = 'all');
@@ -875,11 +943,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   /// Build main KPI cards — dirampingkan: padding & font lebih kecil, card lebih pendek
   Widget _buildMainKPICards(BuildContext context, bool isMobile) {
+    final t = AppLocalizations.of(context)!;
     final stats = [
-      (icon: Icons.payments_outlined, label: 'Total Pendapatan', value: _formatCurrencyShort(_totalRevenue), color: AppTheme.primaryColor),
-      (icon: Icons.shopping_bag_outlined, label: 'Total Pesanan', value: '$_totalOrders', color: const Color(0xFF51CF66)),
-      (icon: Icons.person_add_alt_1_outlined, label: 'Pelanggan Baru', value: '$_newCustomers', color: const Color(0xFFFFA94D)),
-      (icon: Icons.trending_up_rounded, label: 'Rata-rata Order', value: _formatCurrencyShort(_avgOrderValue), color: const Color(0xFFB197FC)),
+      (icon: Icons.payments_outlined, label: t.totalRevenueLabel, value: _formatCurrencyShort(_totalRevenue), color: AppTheme.primaryColor),
+      (icon: Icons.shopping_bag_outlined, label: t.totalOrdersLabel, value: '$_totalOrders', color: const Color(0xFF51CF66)),
+      (icon: Icons.person_add_alt_1_outlined, label: t.newCustomersLabel, value: '$_newCustomers', color: const Color(0xFFFFA94D)),
+      (icon: Icons.trending_up_rounded, label: t.avgOrderLabel, value: _formatCurrencyShort(_avgOrderValue), color: const Color(0xFFB197FC)),
     ];
 
     return GridView.count(
@@ -897,6 +966,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   /// Build growth indicator — dirampingkan jadi satu baris ringkas
   Widget _buildGrowthIndicator(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final isPositive = _growthRate >= 0;
     final growthColor = isPositive ? const Color(0xFF51CF66) : Colors.red;
 
@@ -933,12 +1003,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pertumbuhan Periode Ini',
+                  t.growthThisPeriodLabel,
                   style: GoogleFonts.poppins(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${isPositive ? "Naik" : "Turun"} ${_growthRate.abs().toStringAsFixed(1)}% dari periode sebelumnya',
+                  '${isPositive ? t.growthUpLabel : t.growthDownLabel} ${_growthRate.abs().toStringAsFixed(1)}% ${t.fromPreviousPeriodLabel}',
                   style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
                 ),
               ],
@@ -962,6 +1032,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   /// Build revenue chart
   Widget _buildRevenueChart(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final weekdayLabels = _weekdayLabels(t);
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
@@ -982,7 +1054,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Tren Pendapatan',
+                t.revenueTrendTitle,
                 style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
               ),
               Container(
@@ -992,7 +1064,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '7 hari terakhir',
+                  t.last7DaysLabel,
                   style: GoogleFonts.poppins(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
                 ),
               ),
@@ -1022,7 +1094,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _weeklyDays[i],
+                          weekdayLabels[i],
                           style: GoogleFonts.poppins(fontSize: 10.5, color: AppTheme.textTertiary),
                         ),
                       ],
@@ -1039,6 +1111,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   /// Build breakdown pendapatan per layanan
   Widget _buildServiceBreakdownSection(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     if (_serviceBreakdown.isEmpty) {
       return Container(
         width: double.infinity,
@@ -1058,12 +1132,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Pendapatan per Layanan',
+              t.revenuePerServiceTitle,
               style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
-              'Belum ada data pesanan pada periode ini.',
+              t.noOrdersThisPeriod,
               style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
             ),
           ],
@@ -1091,7 +1165,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Pendapatan per Layanan',
+            t.revenuePerServiceTitle,
             style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
           ),
           const SizedBox(height: AppTheme.lg),
@@ -1126,7 +1200,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '${service.orderCount} pesanan',
+                                t.ordersCountLabel(service.orderCount),
                                 style: GoogleFonts.poppins(fontSize: 10.5, color: AppTheme.textTertiary),
                               ),
                             ],
@@ -1171,14 +1245,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
   /// Build additional metrics — sekarang cuma Completion Rate (rating dihapus,
   /// fitur customer rating belum ada di app)
   Widget _buildAdditionalMetrics(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
           child: _MetricCard(
             icon: Icons.check_circle_outline,
-            label: 'Completion Rate',
+            label: t.completionRateLabel,
             value: '${_completionRate.toStringAsFixed(1)}%',
-            caption: 'dari seluruh pesanan',
+            caption: t.ofAllOrdersLabel,
             color: const Color(0xFF51CF66),
           ),
         ),

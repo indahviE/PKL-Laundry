@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
 import '../../repositories/subscription_repository.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Local design tokens matching the new "NetWash Utility System" design
 /// (samain persis dengan CreateServiceScreen: canvas abu kebiruan, kartu
@@ -178,7 +179,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
       setState(() {
         _laundriesList = laundrySnap.docs.map((doc) => {
           'id': doc.id,
-          'name': doc.data()['name'] ?? 'Cabang Tanpa Nama',
+          'name': doc.data()['name'] ?? AppLocalizations.of(context)!.unnamedBranchFallback,
           // company_id ikut disertakan agar saat karyawan disimpan,
           // company_id konsisten dengan cabang yang dipilih
           // (relasi laundries.company_id sesuai Blueprint §3.2.3)
@@ -213,7 +214,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
 
       if (!doc.exists || doc.data() == null) {
         if (mounted) {
-          _showSnack('Data karyawan tidak ditemukan.', isError: false, isWarning: true);
+          _showSnack(AppLocalizations.of(context)!.employeeNotFoundError, isError: false, isWarning: true);
           context.pop();
         }
         return;
@@ -242,7 +243,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
       });
     } catch (e) {
       if (mounted) {
-        _showSnack('Gagal memuat data karyawan: $e', isError: true);
+        _showSnack(AppLocalizations.of(context)!.employeeLoadError(e.toString()), isError: true);
       }
     } finally {
       if (mounted) setState(() => _isFetchingEmployee = false);
@@ -306,7 +307,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   Future<void> _saveEmployee() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedLaundryId == null) {
-      _showSnack('Cabang laundry belum dipilih atau belum dibuat!', isWarning: true);
+      _showSnack(AppLocalizations.of(context)!.branchNotSelectedWarning, isWarning: true);
       return;
     }
 
@@ -314,7 +315,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception("Sesi user berakhir.");
+      if (user == null) throw Exception(AppLocalizations.of(context)!.sessionExpiredError);
 
       final currentUserId = user.uid;
 
@@ -331,7 +332,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
       if (companyIdRef == null || companyIdRef.isEmpty) {
         if (mounted) {
           _showSnack(
-            'Cabang terpilih belum terhubung dengan data perusahaan. Periksa kembali data cabang.',
+            AppLocalizations.of(context)!.branchNotLinkedWarning,
             isWarning: true,
           );
           setState(() => _isLoading = false);
@@ -348,15 +349,15 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
               context: context,
               builder: (ctx) => AlertDialog(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                title: Text('Batas Kuota Tercapai', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+                title: Text(AppLocalizations.of(context)!.quotaLimitReachedTitle, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
                 content: Text(
-                  'Jumlah karyawan Anda telah mencapai batas maksimal kuota paket langganan saat ini. Silakan upgrade paket.',
+                  AppLocalizations.of(context)!.quotaLimitReachedContent,
                   style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurfaceVariant),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => ctx.pop(),
-                    child: Text('Batal', style: GoogleFonts.beVietnamPro(color: _DS.onSurfaceVariant)),
+                    child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.beVietnamPro(color: _DS.onSurfaceVariant)),
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -368,7 +369,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                       ctx.pop();
                       context.push('/settings/subscription');
                     },
-                    child: Text('Upgrade Paket', style: GoogleFonts.beVietnamPro(color: Colors.white, fontWeight: FontWeight.w600)),
+                    child: Text(AppLocalizations.of(context)!.upgradePlanButton, style: GoogleFonts.beVietnamPro(color: Colors.white, fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
@@ -424,14 +425,14 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
 
       if (mounted) {
         _showSnack(
-          _isEditMode ? 'Data karyawan berhasil diperbarui!' : 'Staf karyawan berhasil ditambahkan!',
+          _isEditMode ? AppLocalizations.of(context)!.employeeUpdateSuccess : AppLocalizations.of(context)!.employeeAddSuccess,
           isSuccess: true,
         );
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        _showSnack('Gagal menyimpan data karyawan: $e', isError: true);
+        _showSnack(AppLocalizations.of(context)!.employeeSaveError(e.toString()), isError: true);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -448,16 +449,16 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Nonaktifkan Karyawan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+        title: Text(AppLocalizations.of(context)!.deactivateEmployeeTitle, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
         content: Text(
-          'Apakah Anda yakin ingin menonaktifkan karyawan ini? Riwayat transaksi lama akan tetap aman.',
+          AppLocalizations.of(context)!.deactivateEmployeeConfirm,
           style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurfaceVariant),
         ),
         actions: [
-          TextButton(onPressed: () => ctx.pop(false), child: Text('Batal', style: GoogleFonts.beVietnamPro(color: _DS.onSurfaceVariant))),
+          TextButton(onPressed: () => ctx.pop(false), child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.beVietnamPro(color: _DS.onSurfaceVariant))),
           TextButton(
             onPressed: () => ctx.pop(true),
-            child: Text('Ya, Nonaktifkan', style: GoogleFonts.beVietnamPro(color: _DS.error, fontWeight: FontWeight.w600)),
+            child: Text(AppLocalizations.of(context)!.yesDeactivateButton, style: GoogleFonts.beVietnamPro(color: _DS.error, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -478,12 +479,12 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
         'updated_at': FieldValue.serverTimestamp(),
       });
       if (mounted) {
-        _showSnack('Karyawan telah dinonaktifkan.', isWarning: true);
+        _showSnack(AppLocalizations.of(context)!.employeeDeactivatedSuccess, isWarning: true);
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        _showSnack('Gagal menonaktifkan karyawan: $e', isError: true);
+        _showSnack(AppLocalizations.of(context)!.employeeDeactivateError(e.toString()), isError: true);
       }
     }
   }
@@ -547,7 +548,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                                             Padding(
                                               padding: const EdgeInsets.symmetric(horizontal: 10),
                                               child: Text(
-                                                'DETAIL TAMBAHAN',
+                                                AppLocalizations.of(context)!.additionalDetailsDivider,
                                                 style: _DS.labelBold(),
                                               ),
                                             ),
@@ -602,7 +603,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              _isEditMode ? 'Edit Data Karyawan' : 'Tambah Karyawan',
+              _isEditMode ? AppLocalizations.of(context)!.editEmployeeTitle : AppLocalizations.of(context)!.addEmployeeTitle,
               style: _DS.headlineMd(color: _DS.primary),
             ),
           ),
@@ -642,8 +643,8 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
           Expanded(
             child: Text(
               _isEditMode
-                  ? 'Perubahan akan langsung tersimpan pada data karyawan ini.'
-                  : 'Sistem akan memvalidasi limitasi kuota paket langganan Anda secara otomatis sebelum menyimpan data karyawan.',
+                  ? AppLocalizations.of(context)!.editEmployeeInfoBanner
+                  : AppLocalizations.of(context)!.addEmployeeInfoBanner,
               style: _DS.bodySm(color: _DS.onSurfaceVariant).copyWith(height: 1.35),
             ),
           ),
@@ -658,18 +659,18 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   Widget _buildPersonalDataCard() {
     return _sectionCard([
       _sectionColumn(
-        label: 'Nama Lengkap',
+        label: AppLocalizations.of(context)!.fullNameLabel,
         child: TextFormField(
           controller: _fullNameController,
           textCapitalization: TextCapitalization.words,
           style: _DS.bodyMd(),
-          decoration: _inputDecoration(hintText: 'Contoh: Siti Aminah', prefixIcon: Icons.person_outline),
-          validator: (v) => v == null || v.trim().isEmpty ? 'Nama karyawan wajib diisi' : null,
+          decoration: _inputDecoration(hintText: AppLocalizations.of(context)!.fullNameHint, prefixIcon: Icons.person_outline),
+          validator: (v) => v == null || v.trim().isEmpty ? AppLocalizations.of(context)!.employeeNameRequiredError : null,
         ),
       ),
       const SizedBox(height: AppTheme.lg),
       _sectionColumn(
-        label: 'Nomor Telepon',
+        label: AppLocalizations.of(context)!.phoneNumberLabel,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -691,7 +692,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                 keyboardType: TextInputType.phone,
                 style: _DS.bodyMd(),
                 decoration: _inputDecoration(hintText: '8123456789', prefixIcon: Icons.phone_outlined),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Nomor telepon wajib diisi' : null,
+                validator: (v) => v == null || v.trim().isEmpty ? AppLocalizations.of(context)!.phoneNumberRequiredError : null,
               ),
             ),
           ],
@@ -699,7 +700,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
       ),
       const SizedBox(height: AppTheme.lg),
       _sectionColumn(
-        label: 'Email (Opsional)',
+        label: AppLocalizations.of(context)!.emailOptionalLabel,
         child: TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
@@ -708,18 +709,18 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
           validator: (v) {
             if (v == null || v.trim().isEmpty) return null; // opsional
             final emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[\w\.\-]+$');
-            return emailRegex.hasMatch(v.trim()) ? null : 'Format email tidak valid';
+            return emailRegex.hasMatch(v.trim()) ? null : AppLocalizations.of(context)!.invalidEmailFormatError;
           },
         ),
       ),
       const SizedBox(height: AppTheme.lg),
       _sectionColumn(
-        label: 'Alamat',
+        label: AppLocalizations.of(context)!.addressLabel,
         child: TextFormField(
           controller: _addressController,
           maxLines: 3,
           style: _DS.bodyMd(),
-          decoration: _inputDecoration(hintText: 'Masukkan alamat lengkap rumah', prefixIcon: Icons.home_outlined),
+          decoration: _inputDecoration(hintText: AppLocalizations.of(context)!.addressHint, prefixIcon: Icons.home_outlined),
         ),
       ),
     ]);
@@ -731,7 +732,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   Widget _buildAssignmentCard() {
     return _sectionCard([
       _sectionColumn(
-        label: 'Role / Jabatan',
+        label: AppLocalizations.of(context)!.roleLabel,
         child: DropdownButtonFormField<String>(
           isExpanded: true,
           value: _positionController.text.isEmpty ? null : _positionController.text,
@@ -746,19 +747,19 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
               ),
           ],
           onChanged: (val) => setState(() => _positionController.text = val ?? ''),
-          decoration: _inputDecoration(hintText: 'Pilih Jabatan', prefixIcon: Icons.assignment_ind_outlined),
-          validator: (v) => v == null || v.isEmpty ? 'Posisi atau jabatan wajib dipilih' : null,
+          decoration: _inputDecoration(hintText: AppLocalizations.of(context)!.selectPositionHint, prefixIcon: Icons.assignment_ind_outlined),
+          validator: (v) => v == null || v.isEmpty ? AppLocalizations.of(context)!.positionRequiredError : null,
         ),
       ),
       const SizedBox(height: AppTheme.lg),
       _sectionColumn(
-        label: 'Cabang Bertugas',
+        label: AppLocalizations.of(context)!.assignedBranchLabel,
         child: _laundriesList.isEmpty
             ? TextButton(
                 onPressed: () => context.push('/laundries/create'),
                 style: TextButton.styleFrom(padding: EdgeInsets.zero, alignment: Alignment.centerLeft),
                 child: Text(
-                  '+ Daftarkan Cabang Baru Terlebih Dahulu',
+                  AppLocalizations.of(context)!.registerNewBranchFirstButton,
                   style: _DS.bodySm(color: _DS.primary, weight: FontWeight.w600),
                 ),
               )
@@ -782,13 +783,13 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                   );
                 }).toList(),
                 onChanged: (val) => setState(() => _selectedLaundryId = val),
-                decoration: _inputDecoration(hintText: 'Pilih Cabang', prefixIcon: Icons.storefront_outlined),
-                validator: (v) => v == null ? 'Cabang penempatan wajib dipilih' : null,
+                decoration: _inputDecoration(hintText: AppLocalizations.of(context)!.selectBranchHint, prefixIcon: Icons.storefront_outlined),
+                validator: (v) => v == null ? AppLocalizations.of(context)!.branchRequiredError : null,
               ),
       ),
       const SizedBox(height: AppTheme.lg),
       _sectionColumn(
-        label: 'Tanggal Bergabung',
+        label: AppLocalizations.of(context)!.hireDateLabel,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
@@ -843,9 +844,9 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Akses Aplikasi', style: _DS.subtitleMd(color: _DS.onSurface)),
+                Text(AppLocalizations.of(context)!.appAccessTitle, style: _DS.subtitleMd(color: _DS.onSurface)),
                 const SizedBox(height: 2),
-                Text('Berikan akses login aplikasi', style: _DS.bodySm()),
+                Text(AppLocalizations.of(context)!.appAccessSubtitle, style: _DS.bodySm()),
               ],
             ),
           ),
@@ -876,9 +877,14 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Status Karyawan', style: _DS.subtitleMd(color: _DS.onSurface)),
+                Text(AppLocalizations.of(context)!.employeeStatusTitle, style: _DS.subtitleMd(color: _DS.onSurface)),
                 const SizedBox(height: 2),
-                Text('Status saat ini: ${_isActive ? 'Aktif' : 'Tidak Aktif'}', style: _DS.bodySm()),
+                Text(
+                  AppLocalizations.of(context)!.employeeStatusCurrent(
+                    _isActive ? AppLocalizations.of(context)!.statusActive : AppLocalizations.of(context)!.statusInactive,
+                  ),
+                  style: _DS.bodySm(),
+                ),
               ],
             ),
           ),
@@ -901,34 +907,34 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   Widget _buildPayrollCard() {
     return _sectionCard([
       _sectionColumn(
-        label: 'Kode Karyawan',
+        label: AppLocalizations.of(context)!.employeeCodeLabel,
         child: TextFormField(
           controller: _employeeCodeController,
           textCapitalization: TextCapitalization.characters,
           style: _DS.bodyMd(),
-          decoration: _inputDecoration(hintText: 'Contoh: EMP01, KSR02', prefixIcon: Icons.vpn_key_outlined),
-          validator: (v) => v == null || v.trim().isEmpty ? 'Kode karyawan tidak boleh kosong' : null,
+          decoration: _inputDecoration(hintText: AppLocalizations.of(context)!.employeeCodeHint, prefixIcon: Icons.vpn_key_outlined),
+          validator: (v) => v == null || v.trim().isEmpty ? AppLocalizations.of(context)!.employeeCodeRequiredError : null,
         ),
       ),
       const SizedBox(height: AppTheme.lg),
       _sectionColumn(
-        label: 'Gaji Pokok (IDR)',
+        label: AppLocalizations.of(context)!.baseSalaryLabel,
         child: TextFormField(
           controller: _salaryController,
           keyboardType: TextInputType.number,
           style: _DS.bodyMd(),
           decoration: _inputDecoration(hintText: '0', prefixText: 'Rp '),
-          validator: (v) => v == null || v.trim().isEmpty ? 'Gaji pokok wajib diisi' : null,
+          validator: (v) => v == null || v.trim().isEmpty ? AppLocalizations.of(context)!.baseSalaryRequiredError : null,
         ),
       ),
       const SizedBox(height: AppTheme.lg),
       _sectionColumn(
-        label: 'Komisi per Transaksi (%)',
+        label: AppLocalizations.of(context)!.commissionPerTransactionLabel,
         child: TextFormField(
           controller: _commissionController,
           keyboardType: TextInputType.number,
           style: _DS.bodyMd(),
-          decoration: _inputDecoration(hintText: 'Contoh: 5.0'),
+          decoration: _inputDecoration(hintText: AppLocalizations.of(context)!.commissionHint),
         ),
       ),
     ]);
@@ -939,9 +945,9 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   // ---------------------------------------------------------------------
   Widget _buildPermissionsCard() {
     return _sectionCard([
-      Text('Hak Akses Fitur Karyawan', style: _DS.subtitleMd(color: _DS.onSurface)),
+      Text(AppLocalizations.of(context)!.employeePermissionsTitle, style: _DS.subtitleMd(color: _DS.onSurface)),
       const SizedBox(height: 2),
-      Text('Atur fitur apa saja yang boleh diakses karyawan ini', style: _DS.bodySm()),
+      Text(AppLocalizations.of(context)!.employeePermissionsSubtitle, style: _DS.bodySm()),
       const SizedBox(height: 12),
       Container(
         decoration: BoxDecoration(
@@ -952,19 +958,19 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
         child: Column(
           children: [
             _permissionTile(
-              title: 'Dapat Membuat Pesanan (Order)',
+              title: AppLocalizations.of(context)!.canCreateOrderPermission,
               value: _canCreateOrder,
               onChanged: (v) => setState(() => _canCreateOrder = v ?? false),
             ),
             Divider(height: 1, color: _DS.outlineVariant),
             _permissionTile(
-              title: 'Dapat Mengelola Data Pelanggan',
+              title: AppLocalizations.of(context)!.canManageCustomerPermission,
               value: _canManageCustomer,
               onChanged: (v) => setState(() => _canManageCustomer = v ?? false),
             ),
             Divider(height: 1, color: _DS.outlineVariant),
             _permissionTile(
-              title: 'Dapat Melihat Laporan Keuangan (Report)',
+              title: AppLocalizations.of(context)!.canViewReportPermission,
               value: _canViewReport,
               onChanged: (v) => setState(() => _canViewReport = v ?? false),
             ),
@@ -993,7 +999,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
         onPressed: _confirmTerminate,
         icon: Icon(Icons.person_off_outlined, size: 18, color: _DS.error),
         label: Text(
-          'Nonaktifkan Karyawan',
+          AppLocalizations.of(context)!.deactivateEmployeeTitle,
           style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w600, color: _DS.error),
         ),
       ),
@@ -1044,11 +1050,11 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                           ),
                         ),
                         const SizedBox(width: AppTheme.md),
-                        Text('Menyimpan...', style: _DS.headlineMd(color: Colors.white)),
+                        Text(AppLocalizations.of(context)!.savingButton, style: _DS.headlineMd(color: Colors.white)),
                       ],
                     )
                   : Text(
-                      _isEditMode ? 'Simpan Perubahan' : 'Simpan Karyawan',
+                      _isEditMode ? AppLocalizations.of(context)!.saveChangesButton : AppLocalizations.of(context)!.saveEmployeeButton,
                       style: _DS.headlineMd(color: Colors.white),
                     ),
             ),

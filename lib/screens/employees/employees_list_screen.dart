@@ -7,6 +7,7 @@ import '../../models/employee.dart';
 import '../../models/laundry.dart';
 import '../../repositories/employee_repository.dart';
 import '../../repositories/laundry_repository.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Local design tokens matching the new "NetWash Utility System" design
 /// (samain persis dengan ServicesListScreen & CreateEmployeeScreen: canvas
@@ -123,16 +124,19 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Terminasi Karyawan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+        title: Text(AppLocalizations.of(context)!.terminateEmployeeTitle, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
         content: Text(
-          'Apakah Anda yakin ingin menonaktifkan ${employee.fullName.isNotEmpty ? employee.fullName : employee.employeeCode} (${employee.position})?',
+          AppLocalizations.of(context)!.terminateEmployeeConfirm(
+            employee.fullName.isNotEmpty ? employee.fullName : employee.employeeCode,
+            employee.position,
+          ),
           style: _DS.bodySm(color: _DS.onSurfaceVariant),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Batal', style: GoogleFonts.beVietnamPro())),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.beVietnamPro())),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Ya, Nonaktifkan', style: GoogleFonts.beVietnamPro(color: _DS.error, fontWeight: FontWeight.w600)),
+            child: Text(AppLocalizations.of(context)!.yesDeactivateButton, style: GoogleFonts.beVietnamPro(color: _DS.error, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -142,7 +146,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
       await ref.read(employeeRepositoryProvider).terminateEmployee(employee.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Karyawan ${employee.employeeCode} telah dinonaktifkan', style: GoogleFonts.beVietnamPro())),
+          SnackBar(content: Text(AppLocalizations.of(context)!.employeeDeactivatedWithCodeSuccess(employee.employeeCode), style: GoogleFonts.beVietnamPro())),
         );
       }
     }
@@ -165,7 +169,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
       body: SafeArea(
         child: employeesAsync.when(
           loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2, color: _DS.primary)),
-          error: (err, stack) => Center(child: Text('Error: $err', style: GoogleFonts.beVietnamPro())),
+          error: (err, stack) => Center(child: Text(AppLocalizations.of(context)!.employeeGenericError(err.toString()), style: GoogleFonts.beVietnamPro())),
           data: (allEmployees) {
             // Logika Filter & Search
             final filteredEmployees = allEmployees.where((emp) {
@@ -279,7 +283,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            'Kelola Karyawan',
+            AppLocalizations.of(context)!.manageEmployeesTitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: _DS.headlineMd(color: _DS.navy),
@@ -308,7 +312,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
       onChanged: (_) => setState(() {}),
       style: _DS.bodyMd(),
       decoration: InputDecoration(
-        hintText: 'Cari nama atau nomor telepon karyawan...',
+        hintText: AppLocalizations.of(context)!.searchEmployeeHint,
         hintStyle: _DS.bodyMd(color: _DS.onSurfaceVariant),
         prefixIcon: const Icon(Icons.search_rounded, color: _DS.onSurfaceVariant),
         filled: true,
@@ -334,9 +338,9 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
   /// sesuai pola _filterChip di ServicesListScreen.
   Widget _buildStatusChips() {
     final filters = [
-      ('all', 'Semua', Icons.groups_outlined),
-      ('active', 'Aktif', Icons.check_circle_outline),
-      ('inactive', 'Tidak Aktif', Icons.cancel_outlined),
+      ('all', AppLocalizations.of(context)!.filterAllLabel, Icons.groups_outlined),
+      ('active', AppLocalizations.of(context)!.statusActive, Icons.check_circle_outline),
+      ('inactive', AppLocalizations.of(context)!.statusInactive, Icons.cancel_outlined),
     ];
 
     return SizedBox(
@@ -421,7 +425,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
                 children: [
                   const Icon(Icons.storefront_outlined, size: 15, color: _DS.primary),
                   const SizedBox(width: 6),
-                  Flexible(child: Text('Semua Cabang', overflow: TextOverflow.ellipsis, style: _DS.bodySm(color: _DS.onSurface))),
+                  Flexible(child: Text(AppLocalizations.of(context)!.allBranchesLabel, overflow: TextOverflow.ellipsis, style: _DS.bodySm(color: _DS.onSurface))),
                 ],
               ),
             ),
@@ -464,7 +468,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
                 children: [
                   const Icon(Icons.badge_outlined, size: 15, color: _DS.primary),
                   const SizedBox(width: 6),
-                  Flexible(child: Text('Semua Role', overflow: TextOverflow.ellipsis, style: _DS.bodySm(color: _DS.onSurface))),
+                  Flexible(child: Text(AppLocalizations.of(context)!.allRolesLabel, overflow: TextOverflow.ellipsis, style: _DS.bodySm(color: _DS.onSurface))),
                 ],
               ),
             ),
@@ -503,7 +507,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Total Karyawan', style: _DS.bodySm()),
+          Text(AppLocalizations.of(context)!.totalEmployeesLabel, style: _DS.bodySm()),
           const SizedBox(height: 6),
           Text('$total', style: _DS.headlineMd(color: _DS.primary).copyWith(fontSize: 22)),
         ],
@@ -545,14 +549,14 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
               child: Icon(Icons.badge_outlined, size: 44, color: _DS.primary.withOpacity(0.6)),
             ),
             const SizedBox(height: 20),
-            Text('Data karyawan tidak ditemukan', style: _DS.bodyMd(weight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.noEmployeesFoundTitle, style: _DS.bodyMd(weight: FontWeight.w600)),
             const SizedBox(height: 6),
-            Text('Coba ubah filter atau tambahkan karyawan baru', style: _DS.bodySm()),
+            Text(AppLocalizations.of(context)!.noEmployeesFoundSubtitle, style: _DS.bodySm()),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () => _openCreateEmployee(context),
               icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
-              label: Text('Karyawan Baru', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600)),
+              label: Text(AppLocalizations.of(context)!.newEmployeeButton, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _DS.primary,
                 foregroundColor: Colors.white,
@@ -593,7 +597,7 @@ class _EmployeeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = employee.isActive;
-    final displayName = employee.fullName.isNotEmpty ? employee.fullName : 'Tanpa Nama';
+    final displayName = employee.fullName.isNotEmpty ? employee.fullName : AppLocalizations.of(context)!.noNameFallback;
 
     return InkWell(
       onTap: onTap,
