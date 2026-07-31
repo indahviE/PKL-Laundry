@@ -736,6 +736,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get unitPerKgSuffix => '/kg';
+
+  @override
+  String get unitPerItemSuffix => '/item';
+
+  @override
   String get editServiceSheetTitle => 'Edit Service';
 
   @override
@@ -1420,7 +1426,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderSessionNotFoundError =>
-      'Sesi tidak ditemukan, silakan login ulang';
+      'User session not found. Please log in again.';
 
   @override
   String get createOrderAppBarTitle => 'Buat Pesanan Baru';
@@ -1528,6 +1534,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customerFallbackLabel => 'Customer';
+
+  @override
+  String get orderNotFoundError => 'Order not found';
+
+  @override
+  String loadOrderError(String error) {
+    return 'Failed to load order: $error';
+  }
+
+  @override
+  String get loadingOrderLabel => 'Loading order...';
+
+  @override
+  String get schedulingDeliveryBadgeLabel => 'Scheduling Delivery';
 
   @override
   String get scheduleDeliveryScreenTitle => 'Schedule Pickup/Delivery';
@@ -1661,6 +1681,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String markedDeliveredCompletedSnackbar(String orderNumber) {
+    return '$orderNumber marked as delivered & completed';
+  }
+
+  @override
   String genericUpdateError(String error) {
     return 'Failed to update: $error';
   }
@@ -1679,6 +1704,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get filterNeedsPickup => 'Needs pickup';
+
+  @override
+  String get filterNeedsDelivery => 'Needs delivery';
 
   @override
   String get filterSelfService => 'Self-service';

@@ -1394,6 +1394,18 @@ abstract class AppLocalizations {
   /// **'Rp {price} / Item'**
   String pricePerItemValue(String price);
 
+  /// No description provided for @unitPerKgSuffix.
+  ///
+  /// In id, this message translates to:
+  /// **' / Kg'**
+  String get unitPerKgSuffix;
+
+  /// No description provided for @unitPerItemSuffix.
+  ///
+  /// In id, this message translates to:
+  /// **' / Item'**
+  String get unitPerItemSuffix;
+
   /// No description provided for @editServiceSheetTitle.
   ///
   /// In id, this message translates to:
@@ -2864,6 +2876,30 @@ abstract class AppLocalizations {
   /// **'Pelanggan'**
   String get customerFallbackLabel;
 
+  /// No description provided for @orderNotFoundError.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan tidak ditemukan'**
+  String get orderNotFoundError;
+
+  /// No description provided for @loadOrderError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memuat pesanan: {error}'**
+  String loadOrderError(String error);
+
+  /// No description provided for @loadingOrderLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Memuat pesanan...'**
+  String get loadingOrderLabel;
+
+  /// No description provided for @schedulingDeliveryBadgeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Menjadwalkan Pengantaran'**
+  String get schedulingDeliveryBadgeLabel;
+
   /// No description provided for @scheduleDeliveryScreenTitle.
   ///
   /// In id, this message translates to:
@@ -3098,6 +3134,12 @@ abstract class AppLocalizations {
   /// **'{orderNumber} ditandai sudah diantar'**
   String markedDeliveredSnackbar(String orderNumber);
 
+  /// No description provided for @markedDeliveredCompletedSnackbar.
+  ///
+  /// In id, this message translates to:
+  /// **'{orderNumber} ditandai sudah diantar & selesai'**
+  String markedDeliveredCompletedSnackbar(String orderNumber);
+
   /// No description provided for @genericUpdateError.
   ///
   /// In id, this message translates to:
@@ -3133,6 +3175,12 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Perlu dijemput'**
   String get filterNeedsPickup;
+
+  /// No description provided for @filterNeedsDelivery.
+  ///
+  /// In id, this message translates to:
+  /// **'Perlu diantar'**
+  String get filterNeedsDelivery;
 
   /// No description provided for @filterSelfService.
   ///

@@ -412,6 +412,8 @@
       }
     }
   },
+  "unitPerKgSuffix": " / Kg",
+  "unitPerItemSuffix": " / Item",
   "editServiceSheetTitle": "Edit Layanan",
   "editServiceSheetSubtitle": "Perbarui detail jenis layanan laundry ini",
   "pricingTypeKgShort": "Per Kg",
@@ -803,6 +805,17 @@
   "noOrdersWaitingPickupHint": "Tidak ada pesanan yang menunggu dijemput.",
   "noOrdersReadyDeliveryHint": "Tidak ada pesanan yang siap diantar.",
   "customerFallbackLabel": "Pelanggan",
+  "orderNotFoundError": "Pesanan tidak ditemukan",
+  "loadOrderError": "Gagal memuat pesanan: {error}",
+  "@loadOrderError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "loadingOrderLabel": "Memuat pesanan...",
+  "schedulingDeliveryBadgeLabel": "Menjadwalkan Pengantaran",
   "scheduleDeliveryScreenTitle": "Jadwalkan Antar Jemput",
   "pickupModeLabel": "Penjemputan",
   "deliveryModeLabel": "Pengantaran",
@@ -880,6 +893,14 @@
       }
     }
   },
+  "markedDeliveredCompletedSnackbar": "{orderNumber} ditandai sudah diantar & selesai",
+  "@markedDeliveredCompletedSnackbar": {
+    "placeholders": {
+      "orderNumber": {
+        "type": "String"
+      }
+    }
+  },
   "genericUpdateError": "Gagal update: {error}",
   "@genericUpdateError": {
     "placeholders": {
@@ -893,6 +914,7 @@
   "pickupDeliverySubtitle": "Kelola jemput, antar & ambil sendiri",
   "searchOrderCustomerHint": "Cari nama pelanggan atau no. pesanan...",
   "filterNeedsPickup": "Perlu dijemput",
+  "filterNeedsDelivery": "Perlu diantar",
   "filterSelfService": "Ambil sendiri",
   "filterOthers": "Lainnya",
   "statNeedsPickupTitle": "Perlu Dijemput",

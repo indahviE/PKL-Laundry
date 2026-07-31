@@ -735,6 +735,12 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get unitPerKgSuffix => ' / Kg';
+
+  @override
+  String get unitPerItemSuffix => ' / Item';
+
+  @override
   String get editServiceSheetTitle => 'Edit Layanan';
 
   @override
@@ -1532,6 +1538,20 @@ class AppLocalizationsId extends AppLocalizations {
   String get customerFallbackLabel => 'Pelanggan';
 
   @override
+  String get orderNotFoundError => 'Pesanan tidak ditemukan';
+
+  @override
+  String loadOrderError(String error) {
+    return 'Gagal memuat pesanan: $error';
+  }
+
+  @override
+  String get loadingOrderLabel => 'Memuat pesanan...';
+
+  @override
+  String get schedulingDeliveryBadgeLabel => 'Menjadwalkan Pengantaran';
+
+  @override
   String get scheduleDeliveryScreenTitle => 'Jadwalkan Antar Jemput';
 
   @override
@@ -1666,6 +1686,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String markedDeliveredCompletedSnackbar(String orderNumber) {
+    return '$orderNumber ditandai sudah diantar & selesai';
+  }
+
+  @override
   String genericUpdateError(String error) {
     return 'Gagal update: $error';
   }
@@ -1685,6 +1710,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get filterNeedsPickup => 'Perlu dijemput';
+
+  @override
+  String get filterNeedsDelivery => 'Perlu diantar';
 
   @override
   String get filterSelfService => 'Ambil sendiri';

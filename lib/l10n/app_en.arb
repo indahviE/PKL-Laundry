@@ -317,6 +317,7 @@
   "tryDifferentKeywordFilterHint": "Try a different keyword or filter",
   "emptyBranchSelectionMeansAllHint": "Leave empty to be available at all branches.",
   "sessionNotFoundError": "User session not found. Please log in again.",
+  "orderSessionNotFoundError": "User session not found. Please log in again.",
   "companyNotSetupError": "Company not created yet. Please complete the onboarding (company setup) first.",
   "addServiceSuccess": "Service added successfully!",
   "addServiceError": "Failed to add service: {error}",
@@ -413,6 +414,8 @@
       }
     }
   },
+  "unitPerKgSuffix": "/kg",
+  "unitPerItemSuffix": "/item",
   "editServiceSheetTitle": "Edit Service",
   "editServiceSheetSubtitle": "Update the details of this laundry service",
   "pricingTypeKgShort": "Per Kg",
@@ -744,6 +747,17 @@
   "noOrdersWaitingPickupHint": "No orders waiting to be picked up.",
   "noOrdersReadyDeliveryHint": "No orders ready to be delivered.",
   "customerFallbackLabel": "Customer",
+  "orderNotFoundError": "Order not found",
+  "loadOrderError": "Failed to load order: {error}",
+  "@loadOrderError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "loadingOrderLabel": "Loading order...",
+  "schedulingDeliveryBadgeLabel": "Scheduling Delivery",
   "scheduleDeliveryScreenTitle": "Schedule Pickup/Delivery",
   "pickupModeLabel": "Pickup",
   "deliveryModeLabel": "Delivery",
@@ -822,6 +836,14 @@
       }
     }
   },
+  "markedDeliveredCompletedSnackbar": "{orderNumber} marked as delivered & completed",
+  "@markedDeliveredCompletedSnackbar": {
+    "placeholders": {
+      "orderNumber": {
+        "type": "String"
+      }
+    }
+  },
   "genericUpdateError": "Failed to update: {error}",
   "@genericUpdateError": {
     "placeholders": {
@@ -835,6 +857,7 @@
   "pickupDeliverySubtitle": "Manage pickup, delivery & self-service",
   "searchOrderCustomerHint": "Search customer name or order no...",
   "filterNeedsPickup": "Needs pickup",
+  "filterNeedsDelivery": "Needs delivery",
   "filterSelfService": "Self-service",
   "filterOthers": "Others",
   "statNeedsPickupTitle": "Needs Pickup",
