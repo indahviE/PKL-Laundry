@@ -735,6 +735,12 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get unitPerKgSuffix => ' / Kg';
+
+  @override
+  String get unitPerItemSuffix => ' / Item';
+
+  @override
   String get editServiceSheetTitle => 'Edit Layanan';
 
   @override
@@ -1410,13 +1416,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get orderRetryButtonLabel => 'Coba Lagi';
 
   @override
-  String get orderNoOrdersLabel => 'Tidak ada pesanan';
+  String get orderNoOrdersLabel => 'Belum ada pesanan';
 
   @override
   String get orderNoOrdersSubtitle => 'Buat pesanan baru untuk memulai';
 
   @override
-  String get orderCreateOrderButtonLabel => 'Buat Pesanan';
+  String get orderCreateOrderButtonLabel =>
+      'Buat pesanan pertama Anda sekarang';
 
   @override
   String get orderSessionNotFoundError =>
@@ -1530,6 +1537,20 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get customerFallbackLabel => 'Pelanggan';
+
+  @override
+  String get orderNotFoundError => 'Pesanan tidak ditemukan';
+
+  @override
+  String loadOrderError(String error) {
+    return 'Gagal memuat pesanan: $error';
+  }
+
+  @override
+  String get loadingOrderLabel => 'Memuat pesanan...';
+
+  @override
+  String get schedulingDeliveryBadgeLabel => 'Menjadwalkan Pengantaran';
 
   @override
   String get scheduleDeliveryScreenTitle => 'Jadwalkan Antar Jemput';
@@ -1666,6 +1687,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String markedDeliveredCompletedSnackbar(String orderNumber) {
+    return '$orderNumber ditandai sudah diantar & selesai';
+  }
+
+  @override
   String genericUpdateError(String error) {
     return 'Gagal update: $error';
   }
@@ -1685,6 +1711,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get filterNeedsPickup => 'Perlu dijemput';
+
+  @override
+  String get filterNeedsDelivery => 'Perlu diantar';
 
   @override
   String get filterSelfService => 'Ambil sendiri';
@@ -2154,4 +2183,50 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get unnamedBranchFallback => 'Cabang Tanpa Nama';
+
+  @override
+  String get orderNoOrdersInBranch => 'Belum ada pesanan di cabang ini';
+
+  @override
+  String get orderSuggestNewOrChangeBranch =>
+      'Silakan tambahkan pesanan baru atau coba pilih filter cabang yang berbeda.';
+
+  @override
+  String get orderStatusWaiting => 'Menunggu';
+
+  @override
+  String get orderStatusWashing => 'Dicuci';
+
+  @override
+  String get orderStatusDrying => 'Dikeringkan';
+
+  @override
+  String get orderStatusIroning => 'Disetrika';
+
+  @override
+  String get orderStatusQualityCheck => 'Cek Kualitas';
+
+  @override
+  String get orderStatusReady => 'Siap Diambil';
+
+  @override
+  String get orderTypePickup => 'Dijemput';
+
+  @override
+  String get orderTypeWalkIn => 'Walk-in';
+
+  @override
+  String get orderDeliveryDelivery => 'Diantar';
+
+  @override
+  String get orderDeliverySelfPickup => 'Ambil Sendiri';
+
+  @override
+  String get orderServiceMoreSuffix => 'lainnya';
+
+  @override
+  String get orderTotalPaymentLabel => 'Total Pembayaran';
+
+  @override
+  String get orderItemsLabel => 'item';
 }

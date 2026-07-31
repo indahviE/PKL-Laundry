@@ -1394,6 +1394,18 @@ abstract class AppLocalizations {
   /// **'Rp {price} / Item'**
   String pricePerItemValue(String price);
 
+  /// No description provided for @unitPerKgSuffix.
+  ///
+  /// In id, this message translates to:
+  /// **' / Kg'**
+  String get unitPerKgSuffix;
+
+  /// No description provided for @unitPerItemSuffix.
+  ///
+  /// In id, this message translates to:
+  /// **' / Item'**
+  String get unitPerItemSuffix;
+
   /// No description provided for @editServiceSheetTitle.
   ///
   /// In id, this message translates to:
@@ -2639,7 +2651,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderNoOrdersLabel.
   ///
   /// In id, this message translates to:
-  /// **'Tidak ada pesanan'**
+  /// **'Belum ada pesanan'**
   String get orderNoOrdersLabel;
 
   /// No description provided for @orderNoOrdersSubtitle.
@@ -2651,7 +2663,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderCreateOrderButtonLabel.
   ///
   /// In id, this message translates to:
-  /// **'Buat Pesanan'**
+  /// **'Buat pesanan pertama Anda sekarang'**
   String get orderCreateOrderButtonLabel;
 
   /// No description provided for @orderSessionNotFoundError.
@@ -2863,6 +2875,30 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Pelanggan'**
   String get customerFallbackLabel;
+
+  /// No description provided for @orderNotFoundError.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan tidak ditemukan'**
+  String get orderNotFoundError;
+
+  /// No description provided for @loadOrderError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memuat pesanan: {error}'**
+  String loadOrderError(String error);
+
+  /// No description provided for @loadingOrderLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Memuat pesanan...'**
+  String get loadingOrderLabel;
+
+  /// No description provided for @schedulingDeliveryBadgeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Menjadwalkan Pengantaran'**
+  String get schedulingDeliveryBadgeLabel;
 
   /// No description provided for @scheduleDeliveryScreenTitle.
   ///
@@ -3098,6 +3134,12 @@ abstract class AppLocalizations {
   /// **'{orderNumber} ditandai sudah diantar'**
   String markedDeliveredSnackbar(String orderNumber);
 
+  /// No description provided for @markedDeliveredCompletedSnackbar.
+  ///
+  /// In id, this message translates to:
+  /// **'{orderNumber} ditandai sudah diantar & selesai'**
+  String markedDeliveredCompletedSnackbar(String orderNumber);
+
   /// No description provided for @genericUpdateError.
   ///
   /// In id, this message translates to:
@@ -3133,6 +3175,12 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Perlu dijemput'**
   String get filterNeedsPickup;
+
+  /// No description provided for @filterNeedsDelivery.
+  ///
+  /// In id, this message translates to:
+  /// **'Perlu diantar'**
+  String get filterNeedsDelivery;
 
   /// No description provided for @filterSelfService.
   ///
@@ -3967,6 +4015,96 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Cabang Tanpa Nama'**
   String get unnamedBranchFallback;
+
+  /// No description provided for @orderNoOrdersInBranch.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada pesanan di cabang ini'**
+  String get orderNoOrdersInBranch;
+
+  /// No description provided for @orderSuggestNewOrChangeBranch.
+  ///
+  /// In id, this message translates to:
+  /// **'Silakan tambahkan pesanan baru atau coba pilih filter cabang yang berbeda.'**
+  String get orderSuggestNewOrChangeBranch;
+
+  /// No description provided for @orderStatusWaiting.
+  ///
+  /// In id, this message translates to:
+  /// **'Menunggu'**
+  String get orderStatusWaiting;
+
+  /// No description provided for @orderStatusWashing.
+  ///
+  /// In id, this message translates to:
+  /// **'Dicuci'**
+  String get orderStatusWashing;
+
+  /// No description provided for @orderStatusDrying.
+  ///
+  /// In id, this message translates to:
+  /// **'Dikeringkan'**
+  String get orderStatusDrying;
+
+  /// No description provided for @orderStatusIroning.
+  ///
+  /// In id, this message translates to:
+  /// **'Disetrika'**
+  String get orderStatusIroning;
+
+  /// No description provided for @orderStatusQualityCheck.
+  ///
+  /// In id, this message translates to:
+  /// **'Cek Kualitas'**
+  String get orderStatusQualityCheck;
+
+  /// No description provided for @orderStatusReady.
+  ///
+  /// In id, this message translates to:
+  /// **'Siap Diambil'**
+  String get orderStatusReady;
+
+  /// No description provided for @orderTypePickup.
+  ///
+  /// In id, this message translates to:
+  /// **'Dijemput'**
+  String get orderTypePickup;
+
+  /// No description provided for @orderTypeWalkIn.
+  ///
+  /// In id, this message translates to:
+  /// **'Walk-in'**
+  String get orderTypeWalkIn;
+
+  /// No description provided for @orderDeliveryDelivery.
+  ///
+  /// In id, this message translates to:
+  /// **'Diantar'**
+  String get orderDeliveryDelivery;
+
+  /// No description provided for @orderDeliverySelfPickup.
+  ///
+  /// In id, this message translates to:
+  /// **'Ambil Sendiri'**
+  String get orderDeliverySelfPickup;
+
+  /// No description provided for @orderServiceMoreSuffix.
+  ///
+  /// In id, this message translates to:
+  /// **'lainnya'**
+  String get orderServiceMoreSuffix;
+
+  /// No description provided for @orderTotalPaymentLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total Pembayaran'**
+  String get orderTotalPaymentLabel;
+
+  /// No description provided for @orderItemsLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'item'**
+  String get orderItemsLabel;
 }
 
 class _AppLocalizationsDelegate

@@ -2,20 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/themes/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/employee.dart';
 import '../../models/laundry.dart';
 import '../../models/order.dart';
 import '../../repositories/employee_repository.dart';
 import '../../repositories/laundry_repository.dart';
 import '../../repositories/order_repository.dart';
-// TODO: sesuaikan path ini kalau lokasi/nama file CreateCustomerScreen di
-// project kamu berbeda dari asumsi berikut.
 import '../customers/create_customer_screen.dart';
 
-/// Local design tokens matching the new "NetWash Utility System" design.
-/// Disamakan dengan ServicesListScreen supaya seluruh alur Antar Jemput
-/// (daftar + jadwalkan) senada dengan Kelola Layanan: kanvas abu kebiruan,
-/// kartu putih dengan shadow lembut, dan font Be Vietnam Pro.
 class _DS {
   static const canvas = Color(0xFFF5F7FA);
   static const surface = Colors.white;
@@ -41,44 +36,10 @@ class _DS {
         color: color ?? onSurface,
         letterSpacing: -0.2,
       );
-
-  static TextStyle bodyMd({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
-        fontSize: 14,
-        fontWeight: weight ?? FontWeight.w400,
-        color: color ?? onSurface,
-      );
-
-  static TextStyle bodySm({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
-        fontSize: 12.5,
-        fontWeight: weight ?? FontWeight.w400,
-        color: color ?? onSurfaceVariant,
-      );
 }
 
-/// "Jadwalkan Antar Jemput" - layar untuk membuat RENCANA jadwal jemput
-/// atau antar untuk order yang sudah ada, lengkap dengan cabang, alamat,
-/// tanggal, jam & kurir. Ini BEDA dari PickupDeliveryScreen yang menandai
-/// order SUDAH BENERAN dijemput/diantar - layar ini cuma menyimpan rencana
-/// (lihat OrderRepository.scheduleLogistics()), jadi tidak mengubah
-/// pickup_date/delivery_date/status sama sekali.
-///
-/// UPDATED: nambah `preselectedOrderId` - dipakai saat layar ini dibuka
-/// LANGSUNG dari OrderDetailScreen (tombol "Jadwalkan Pengantaran" saat
-/// status ready & deliveryType delivery). Kalau field ini diisi:
-/// - mode dikunci ke 'pengantaran' (mode toggle disembunyikan)
-/// - order picker disembunyikan, diganti kartu info singkat (order sudah
-///   pasti, gak perlu dicari/dipilih lagi dari daftar)
-/// - cabang otomatis ke-lock sesuai laundryId order tsb, dropdown-nya
-///   dikunci (disabled) supaya tidak ke-reset _selectedOrder secara tidak
-///   sengaja
 class CreateDeliveryScheduleScreen extends ConsumerStatefulWidget {
-  /// Mode awal saat layar dibuka - 'penjemputan' atau 'pengantaran'.
-  /// Diabaikan kalau [preselectedOrderId] diisi (mode dipaksa 'pengantaran').
   final String initialMode;
-
-  /// Kalau diisi, layar ini dibuka LANGSUNG untuk 1 order tertentu (dari
-  /// OrderDetailScreen). Mode dikunci ke 'pengantaran', picker order & mode
-  /// toggle disembunyikan, dan cabang ikut ter-lock ke laundryId order tsb.
   final String? preselectedOrderId;
 
   const CreateDeliveryScheduleScreen({
@@ -92,15 +53,10 @@ class CreateDeliveryScheduleScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliveryScheduleScreen> {
-  // Sama persis dengan warna kategori "Perlu Dijemput" di PickupDeliveryScreen
-  // (ungu = penjemputan). Warna "pengantaran" sekarang ikut token _DS.primary
-  // di atas, sama seperti aksen biru yang dipakai OrdersListScreen.
   static const _pickupAccent = Color(0xFFB197FC);
 
   Color get _modeAccent => _mode == 'penjemputan' ? _pickupAccent : _DS.primary;
 
-  /// True kalau layar ini dibuka dengan order sudah ditentukan dari luar
-  /// (OrderDetailScreen) - mode & order picker jadi read-only/disembunyikan.
   bool get _isLocked => widget.preselectedOrderId != null;
 
   late String _mode; // 'penjemputan' | 'pengantaran'
@@ -111,9 +67,6 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
 
-  // True kalau tanggal/jam/alamat/kurir di form ini ke-isi otomatis dari
-  // jadwal yang udah dibuat pas CreateOrderScreen (bukan diketik manual
-  // sekarang) - dipakai buat nampilin hint kecil ke admin.
   bool _prefilledFromOrder = false;
 
   List<Employee> _couriers = [];
@@ -170,26 +123,21 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
         _laundries = all.where((l) => l.isActive).toList();
         _isLoadingLaundries = false;
       });
-      // Kalau order sudah ke-fetch duluan (race antara dua Future async
-      // ini), langsung coba lock cabang begitu daftar cabang siap.
       _lockBranchToOrder();
     } catch (_) {
       if (mounted) setState(() => _isLoadingLaundries = false);
     }
   }
 
-  /// Ambil order yang sudah ditentukan dari OrderDetailScreen. Kalau order
-  /// ini kebetulan sudah punya logisticsSchedule mode 'pengantaran' (mis.
-  /// dari CreateOrderScreen), prefill tanggal/jam/alamatnya juga - sama
-  /// pola prefill-nya dengan _pickOrder() di alur non-locked.
   Future<void> _fetchPreselectedOrder() async {
     setState(() => _isLoadingPreselected = true);
     try {
       final order = await ref.read(orderRepositoryProvider).getOrder(widget.preselectedOrderId!);
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
 
       if (order == null) {
-        _showSnack('Pesanan tidak ditemukan', isError: true);
+        _showSnack(l10n.orderNotFoundError, isError: true);
         setState(() => _isLoadingPreselected = false);
         return;
       }
@@ -219,15 +167,13 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
       _lockBranchToOrder();
     } catch (e) {
       if (mounted) {
-        _showSnack('Gagal memuat pesanan: $e', isError: true);
+        final l10n = AppLocalizations.of(context)!;
+        _showSnack(l10n.loadOrderError(e.toString()), isError: true);
         setState(() => _isLoadingPreselected = false);
       }
     }
   }
 
-  /// Set cabang otomatis sesuai laundryId order - dipanggil dari 2 tempat
-  /// (setelah order & setelah daftar cabang selesai fetch), karena
-  /// keduanya async dan urutan selesainya gak pasti mana duluan.
   void _lockBranchToOrder() {
     if (!_isLocked || _selectedOrder == null || _laundries.isEmpty) return;
     final match = _laundries.where((l) => l.id == _selectedOrder!.laundryId);
@@ -236,11 +182,6 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     }
   }
 
-  /// Order yang relevan untuk mode & cabang saat ini - hanya yang belum
-  /// selesai dijemput/diantar (pickup_date / delivery_date masih kosong),
-  /// supaya tidak menjadwalkan ulang order yang sudah tuntas. Kalau ada
-  /// cabang yang dipilih, order juga difilter supaya hanya menampilkan
-  /// order dari cabang tersebut.
   bool _matchesMode(Order order) {
     final modeMatches = _mode == 'penjemputan'
         ? (order.needsPickup && order.pickupDate == null)
@@ -264,12 +205,13 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     }
 
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
 
     await showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: Text('Pilih Pesanan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurface)),
+        title: Text(l10n.selectOrderTitle, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurface)),
         content: SizedBox(
           width: double.maxFinite,
           child: error != null
@@ -278,9 +220,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                   ? Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Text(
-                        _mode == 'penjemputan'
-                            ? 'Tidak ada pesanan yang menunggu dijemput.'
-                            : 'Tidak ada pesanan yang siap diantar.',
+                        _mode == 'penjemputan' ? l10n.noOrdersWaitingPickupHint : l10n.noOrdersReadyDeliveryHint,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
                       ),
@@ -292,7 +232,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                         final order = orders[index];
                         return ListTile(
                           title: Text(
-                            (order.customerName?.isNotEmpty ?? false) ? order.customerName! : 'Pelanggan',
+                            (order.customerName?.isNotEmpty ?? false) ? order.customerName! : l10n.customerFallbackLabel,
                             style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w600),
                           ),
                           subtitle: Text(order.orderNumber, style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant)),
@@ -301,11 +241,6 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                               _selectedOrder = order;
                               _prefilledFromOrder = false;
 
-                              // Kalau order ini udah punya jadwal jemput
-                              // (diisi pas CreateOrderScreen) dan mode-nya
-                              // sama kayak yang lagi dibuka di sini, isi
-                              // otomatis field yang relevan supaya admin
-                              // tinggal melengkapi kurir + alamat.
                               final schedule = order.logisticsSchedule;
                               if (schedule != null && schedule.mode == _mode) {
                                 if (schedule.scheduledAt != null) {
@@ -329,15 +264,12 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                     ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text('Tutup', style: GoogleFonts.beVietnamPro())),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.closeButton, style: GoogleFonts.beVietnamPro())),
         ],
       ),
     );
   }
 
-  /// Buka layar tambah pelanggan baru yang sudah ada di app. Hanya relevan
-  /// untuk mode penjemputan (di mode pengantaran pelanggan seharusnya sudah
-  /// ada karena order-nya sudah dibuat sebelumnya).
   Future<void> _handleAddNewCustomer() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const CreateCustomerScreen()),
@@ -363,9 +295,13 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     if (picked != null) setState(() => _selectedTime = picked);
   }
 
-  String _formatDate(DateTime? date) {
+  String _formatDate(BuildContext context, DateTime? date) {
     if (date == null) return '---';
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    final l10n = AppLocalizations.of(context)!;
+    final months = [
+      l10n.monthJan, l10n.monthFeb, l10n.monthMar, l10n.monthApr, l10n.monthMay, l10n.monthJun,
+      l10n.monthJul, l10n.monthAug, l10n.monthSep, l10n.monthOct, l10n.monthNov, l10n.monthDec,
+    ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
@@ -375,16 +311,17 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
   }
 
   Future<void> _handleSave() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_selectedOrder == null) {
-      _showSnack('Pilih pesanan terlebih dahulu', isError: true);
+      _showSnack(l10n.selectOrderRequiredError, isError: true);
       return;
     }
     if (_addressController.text.trim().isEmpty) {
-      _showSnack('Alamat wajib diisi', isError: true);
+      _showSnack(l10n.addressRequiredError, isError: true);
       return;
     }
     if (_selectedDate == null || _selectedTime == null) {
-      _showSnack('Tanggal dan jam wajib dipilih', isError: true);
+      _showSnack(l10n.dateTimeRequiredError, isError: true);
       return;
     }
 
@@ -408,14 +345,11 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
             notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
           );
       if (mounted) {
-        _showSnack('Jadwal berhasil disimpan');
-        // pop(true) - bukan maybePop() - supaya pemanggil (khususnya
-        // OrderDetailScreen lewat _openScheduleDeliverySheet) tau jadwal
-        // berhasil disimpan dan bisa refresh datanya.
+        _showSnack(l10n.scheduleSaveSuccess);
         Navigator.of(context).pop(true);
       }
     } catch (e) {
-      _showSnack('Gagal menyimpan jadwal: $e', isError: true);
+      _showSnack(l10n.scheduleSaveError(e.toString()), isError: true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -450,23 +384,23 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _isLocked ? _buildLockedOrderInfo() : _buildModeToggle(),
+                          _isLocked ? _buildLockedOrderInfo(context) : _buildModeToggle(context),
                           const SizedBox(height: AppTheme.xl),
                           if (!_isLocked) ...[
-                            _buildOrderPicker(),
+                            _buildOrderPicker(context),
                             const SizedBox(height: AppTheme.lg),
                           ],
-                          _buildBranchPicker(),
+                          _buildBranchPicker(context),
                           const SizedBox(height: AppTheme.lg),
-                          _buildAddressField(),
+                          _buildAddressField(context),
                           const SizedBox(height: AppTheme.lg),
-                          _buildDateTimeRow(),
+                          _buildDateTimeRow(context),
                           const SizedBox(height: AppTheme.lg),
-                          _buildCourierPicker(),
+                          _buildCourierPicker(context),
                           const SizedBox(height: AppTheme.lg),
-                          _buildNotesField(),
+                          _buildNotesField(context),
                           const SizedBox(height: AppTheme.xl),
-                          _buildSummaryCard(),
+                          _buildSummaryCard(context),
                         ],
                       ),
                     ),
@@ -474,7 +408,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                 ),
               ),
             ),
-            _buildBottomBar(),
+            _buildBottomBar(context),
           ],
         ),
       ),
@@ -482,6 +416,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
   }
 
   Widget _buildHeader(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       color: _DS.canvas,
       padding: const EdgeInsets.fromLTRB(12, 16, 20, 12),
@@ -515,7 +450,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              _isLocked ? 'Jadwalkan Pengantaran' : 'Jadwalkan Antar Jemput',
+              _isLocked ? l10n.scheduleDeliveryTileTitle : l10n.scheduleDeliveryScreenTitle,
               style: _DS.headlineMd(color: _DS.navy),
             ),
           ),
@@ -524,10 +459,8 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     );
   }
 
-  /// Kartu info order saat mode locked (dibuka dari OrderDetailScreen) -
-  /// menggantikan mode toggle, karena mode & order-nya sudah pasti dan
-  /// tidak boleh diubah dari sini.
-  Widget _buildLockedOrderInfo() {
+  Widget _buildLockedOrderInfo(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(AppTheme.md),
       decoration: BoxDecoration(
@@ -544,16 +477,16 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Menjadwalkan Pengantaran',
+                  l10n.schedulingDeliveryBadgeLabel,
                   style: GoogleFonts.beVietnamPro(fontSize: 12, fontWeight: FontWeight.w700, color: _DS.primary),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   _isLoadingPreselected
-                      ? 'Memuat pesanan...'
+                      ? l10n.loadingOrderLabel
                       : (_selectedOrder != null
-                          ? '${_selectedOrder!.orderNumber} (${_selectedOrder!.customerName ?? "Pelanggan"})'
-                          : 'Pesanan tidak ditemukan'),
+                          ? '${_selectedOrder!.orderNumber} (${_selectedOrder!.customerName ?? l10n.customerFallbackLabel})'
+                          : l10n.orderNotFoundError),
                   style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w600, color: _DS.onSurface),
                 ),
               ],
@@ -566,7 +499,8 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     );
   }
 
-  Widget _buildModeToggle() {
+  Widget _buildModeToggle(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -576,8 +510,8 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
       ),
       child: Row(
         children: [
-          Expanded(child: _modeButton('penjemputan', 'Penjemputan', Icons.call_received_rounded, _pickupAccent)),
-          Expanded(child: _modeButton('pengantaran', 'Pengantaran', Icons.call_made_rounded, _DS.primary)),
+          Expanded(child: _modeButton('penjemputan', l10n.pickupModeLabel, Icons.call_received_rounded, _pickupAccent)),
+          Expanded(child: _modeButton('pengantaran', l10n.deliveryModeLabel, Icons.call_made_rounded, _DS.primary)),
         ],
       ),
     );
@@ -632,11 +566,12 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
         border: Border.all(color: _DS.outlineVariant),
       );
 
-  Widget _buildOrderPicker() {
+  Widget _buildOrderPicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _fieldLabel('Pilih Pesanan'),
+        _fieldLabel(l10n.selectOrSearchOrderLabel),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -654,8 +589,8 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                       Expanded(
                         child: Text(
                           _selectedOrder == null
-                              ? 'Cari pesanan...'
-                              : '${_selectedOrder!.orderNumber} (${_selectedOrder!.customerName ?? "Pelanggan"})',
+                              ? l10n.searchOrderHint
+                              : '${_selectedOrder!.orderNumber} (${_selectedOrder!.customerName ?? l10n.customerFallbackLabel})',
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.beVietnamPro(
                             fontSize: 13.5,
@@ -673,9 +608,6 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                 ),
               ),
             ),
-            // Tombol "Baru" (tambah pelanggan) hanya relevan saat menjadwalkan
-            // penjemputan - di pengantaran, order (dan pelanggannya) sudah pasti
-            // ada karena dibuat sebelumnya.
             if (_mode == 'penjemputan') ...[
               const SizedBox(width: 8),
               InkWell(
@@ -694,7 +626,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                       Icon(Icons.person_add_alt_1_rounded, size: 18, color: _DS.primary),
                       const SizedBox(width: 6),
                       Text(
-                        'Baru',
+                        l10n.newCustomerButtonShort,
                         style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.primary),
                       ),
                     ],
@@ -712,7 +644,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  'Tanggal & jam terisi otomatis dari saat pesanan dibuat',
+                  l10n.autoFilledScheduleHint,
                   style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.primary, fontStyle: FontStyle.italic),
                 ),
               ),
@@ -723,11 +655,12 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     );
   }
 
-  Widget _buildBranchPicker() {
+  Widget _buildBranchPicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _fieldLabel('Pilih Cabang'),
+        _fieldLabel(l10n.selectBranchLabel),
         if (_isLoadingLaundries)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -743,7 +676,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
               borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             ),
             child: Text(
-              'Belum ada cabang aktif. Tambahkan cabang terlebih dahulu di menu Cabang.',
+              l10n.noActiveBranchesScheduleHint,
               style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant),
             ),
           )
@@ -764,20 +697,14 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                           ),
                         ))
                     .toList(),
-                // Dikunci saat _isLocked - order & cabangnya sudah pasti
-                // ditentukan dari OrderDetailScreen, jadi tidak boleh
-                // diganti manual dari sini (kalau diganti, _selectedOrder
-                // yang sudah ke-lock bisa jadi tidak konsisten lagi).
                 onChanged: _isLocked
                     ? null
                     : (val) => setState(() {
                           _selectedLaundry = val;
-                          // Order yang sudah dipilih mungkin dari cabang lain,
-                          // jadi direset supaya konsisten dengan cabang barunya.
                           _selectedOrder = null;
                         }),
                 decoration: InputDecoration(
-                  hintText: 'Pilih cabang',
+                  hintText: l10n.selectBranchHint,
                   hintStyle: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
                   prefixIcon: Icon(Icons.storefront_outlined, size: 20, color: _DS.onSurfaceVariant),
                   border: InputBorder.none,
@@ -790,7 +717,8 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     );
   }
 
-  Widget _buildAddressField() {
+  Widget _buildAddressField(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -800,14 +728,14 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 6),
               child: Text(
-                'Alamat',
+                l10n.addressLabel,
                 style: GoogleFonts.beVietnamPro(fontSize: 12, fontWeight: FontWeight.w700, color: _DS.onSurfaceVariant),
               ),
             ),
             TextButton.icon(
-              onPressed: () => _showSnack('Fitur pilih lokasi peta akan segera hadir'),
+              onPressed: () => _showSnack(l10n.mapLocationComingSoon),
               icon: Icon(Icons.location_on_outlined, size: 15, color: _DS.primary),
-              label: Text('Pakai lokasi peta', style: GoogleFonts.beVietnamPro(fontSize: 11.5, fontWeight: FontWeight.w700, color: _DS.primary)),
+              label: Text(l10n.useMapLocationButton, style: GoogleFonts.beVietnamPro(fontSize: 11.5, fontWeight: FontWeight.w700, color: _DS.primary)),
               style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
             ),
           ],
@@ -821,7 +749,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
             style: GoogleFonts.beVietnamPro(fontSize: 13.5),
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
-              hintText: 'Jl. Kebayoran Lama No. 123, Jakarta Selatan...',
+              hintText: l10n.addressFieldExampleHint,
               hintStyle: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(AppTheme.md),
@@ -832,14 +760,15 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     );
   }
 
-  Widget _buildDateTimeRow() {
+  Widget _buildDateTimeRow(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _fieldLabel('Tanggal'),
+              _fieldLabel(l10n.dateLabel),
               InkWell(
                 onTap: _pickDate,
                 borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -850,7 +779,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                     children: [
                       Expanded(
                         child: Text(
-                          _formatDate(_selectedDate),
+                          _formatDate(context, _selectedDate),
                           style: GoogleFonts.beVietnamPro(
                             fontSize: 13,
                             color: _selectedDate == null ? _DS.onSurfaceVariant : _DS.onSurface,
@@ -870,7 +799,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _fieldLabel('Jam'),
+              _fieldLabel(l10n.timeLabel),
               InkWell(
                 onTap: _pickTime,
                 borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -900,11 +829,12 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     );
   }
 
-  Widget _buildCourierPicker() {
+  Widget _buildCourierPicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _fieldLabel('Pilih Kurir'),
+        _fieldLabel(l10n.selectCourierLabel),
         if (_isLoadingCouriers)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -920,7 +850,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
               borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             ),
             child: Text(
-              'Belum ada karyawan dengan posisi "Kurir". Anda tetap bisa menyimpan jadwal tanpa memilih kurir.',
+              l10n.noCourierEmployeeScheduleHint,
               style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant),
             ),
           )
@@ -943,7 +873,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                     .toList(),
                 onChanged: (val) => setState(() => _selectedCourier = val),
                 decoration: InputDecoration(
-                  hintText: 'Cari kurir terdekat...',
+                  hintText: l10n.searchCourierHint,
                   hintStyle: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
                   prefixIcon: Icon(Icons.delivery_dining_outlined, size: 20, color: _DS.onSurfaceVariant),
                   border: InputBorder.none,
@@ -956,7 +886,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text(
-            'Kurir aktif dengan posisi "Kurir" ditampilkan di daftar ini.',
+            l10n.courierListHint,
             style: GoogleFonts.beVietnamPro(fontSize: 11, fontStyle: FontStyle.italic, color: _DS.onSurfaceVariant),
           ),
         ),
@@ -964,11 +894,12 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     );
   }
 
-  Widget _buildNotesField() {
+  Widget _buildNotesField(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _fieldLabel('Catatan Tambahan (Opsional)'),
+        _fieldLabel(l10n.additionalNotesLabel),
         Container(
           decoration: _fieldBoxDecoration,
           child: TextField(
@@ -976,7 +907,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
             maxLines: 3,
             style: GoogleFonts.beVietnamPro(fontSize: 13.5),
             decoration: InputDecoration(
-              hintText: 'Contoh: Titipkan di satpam, pagar warna hitam...',
+              hintText: l10n.notesExampleHint,
               hintStyle: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(AppTheme.md),
@@ -987,15 +918,16 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     );
   }
 
-  Widget _buildSummaryCard() {
+  Widget _buildSummaryCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final name = _selectedOrder == null
-        ? 'Pilih atau Cari Pesanan'
-        : '${_selectedOrder!.orderNumber} (${_selectedOrder!.customerName ?? "Pelanggan"})';
-    final address = _addressController.text.trim().isEmpty ? 'Alamat belum ditentukan' : _addressController.text.trim();
+        ? l10n.selectOrSearchOrderLabel
+        : '${_selectedOrder!.orderNumber} (${_selectedOrder!.customerName ?? l10n.customerFallbackLabel})';
+    final address = _addressController.text.trim().isEmpty ? l10n.addressNotSetLabel : _addressController.text.trim();
     final schedule = (_selectedDate == null && _selectedTime == null)
-        ? 'Belum dijadwalkan'
-        : '${_formatDate(_selectedDate)} • ${_formatTime(_selectedTime)}';
-    final modeLabel = _mode == 'penjemputan' ? 'Penjemputan' : 'Pengantaran';
+        ? l10n.notScheduledLabel
+        : '${_formatDate(context, _selectedDate)} • ${_formatTime(_selectedTime)}';
+    final modeLabel = _mode == 'penjemputan' ? l10n.pickupModeLabel : l10n.deliveryModeLabel;
     final branchLabel = _selectedLaundry?.name;
 
     return Container(
@@ -1010,7 +942,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'RINGKASAN JADWAL',
+            l10n.scheduleSummaryTitle,
             style: GoogleFonts.beVietnamPro(fontSize: 11.5, fontWeight: FontWeight.w700, color: _modeAccent, letterSpacing: 0.4),
           ),
           const SizedBox(height: AppTheme.md),
@@ -1045,7 +977,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                     Text(schedule, style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w600, color: _DS.onSurface)),
                     const SizedBox(height: 2),
                     Text(
-                      branchLabel != null ? 'Mode: $modeLabel • $branchLabel' : 'Mode: $modeLabel',
+                      branchLabel != null ? l10n.modeWithBranchLabel(modeLabel, branchLabel) : l10n.modeOnlyLabel(modeLabel),
                       style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant),
                     ),
                   ],
@@ -1067,7 +999,8 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1091,7 +1024,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
               ),
               child: _isSaving
                   ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('Simpan Jadwal', style: GoogleFonts.beVietnamPro(fontSize: 15, fontWeight: FontWeight.w700)),
+                  : Text(l10n.saveScheduleButton, style: GoogleFonts.beVietnamPro(fontSize: 15, fontWeight: FontWeight.w700)),
             ),
           ),
         ),
