@@ -895,7 +895,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get phoneLabel => 'Telepon';
 
   @override
-  String get addressLabel => 'Alamat';
+  String get customerAddressLabel => 'Alamat';
 
   @override
   String get orderHistoryTitle => 'Riwayat Pesanan';
@@ -911,13 +911,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get orderStatusPending => 'Menunggu';
 
   @override
-  String get orderStatusConfirmed => 'Dikonfirmasi';
+  String get customerOrderStatusConfirmed => 'Dikonfirmasi';
 
   @override
   String get orderStatusInProgress => 'Diproses';
 
   @override
-  String get orderStatusProcessing => 'Diproses';
+  String get customerOrderStatusProcessing => 'Diproses';
 
   @override
   String get orderStatusCompleted => 'Selesai';
@@ -944,7 +944,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get customerNameEmptyError => 'Nama pelanggan tidak boleh kosong';
 
   @override
-  String get phoneNumberLabel => 'Nomor Telepon';
+  String get customerPhoneNumberLabel => 'No. Telepon';
 
   @override
   String get phoneNumberHint => 'Contoh: 081234567890';
@@ -1072,7 +1072,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get branchContactPhoneLabel => 'Nomor Telepon';
 
   @override
-  String get emailOptionalLabel => 'Email (Opsional)';
+  String get branchEmailOptionalLabel => 'Email Cabang (Opsional)';
 
   @override
   String get managerOptionalLabel => 'Manajer Cabang (Opsional)';
@@ -1198,7 +1198,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get branchCodeHint => 'Contoh: JKT001';
 
   @override
-  String get addressHint => 'Masukkan alamat lengkap rumah';
+  String get branchAddressHint => 'Contoh: Jl. Merdeka No. 123';
 
   @override
   String get cityHint => 'Jakarta';
@@ -1383,9 +1383,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get deactivateBranchButton => 'Nonaktifkan Cabang';
 
   @override
-  String get ordersListTitle => 'Pesanan';
-
-  @override
   String get ordersListSubtitle => 'Kelola semua pesanan laundry Anda';
 
   @override
@@ -1401,29 +1398,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get orderProcessingStatus => 'Diproses';
 
   @override
-  String get orderCompletedStatus => 'Selesai';
-
-  @override
-  String get orderCancelledStatus => 'Dibatalkan';
-
-  @override
-  String get orderTotalOrdersLabel => 'Total Pesanan';
-
-  @override
-  String get orderTotalRevenueLabel => 'Total Revenue';
-
-  @override
   String get orderRetryButtonLabel => 'Coba Lagi';
-
-  @override
-  String get orderNoOrdersLabel => 'Belum ada pesanan';
-
-  @override
-  String get orderNoOrdersSubtitle => 'Buat pesanan baru untuk memulai';
-
-  @override
-  String get orderCreateOrderButtonLabel =>
-      'Buat pesanan pertama Anda sekarang';
 
   @override
   String get orderSessionNotFoundError =>
@@ -1576,7 +1551,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Belum ada cabang aktif. Tambahkan cabang terlebih dahulu di menu Cabang.';
 
   @override
-  String get selectBranchHint => 'Pilih Cabang';
+  String get createOrderSelectBranchHint => 'Pilih cabang';
 
   @override
   String get useMapLocationButton => 'Pakai lokasi peta';
@@ -1996,10 +1971,22 @@ class AppLocalizationsId extends AppLocalizations {
   String get employeeNameRequiredError => 'Nama karyawan wajib diisi';
 
   @override
+  String get phoneNumberLabel => 'Nomor Telepon';
+
+  @override
   String get phoneNumberRequiredError => 'Nomor telepon wajib diisi';
 
   @override
+  String get emailOptionalLabel => 'Email (Opsional)';
+
+  @override
   String get invalidEmailFormatError => 'Format email tidak valid';
+
+  @override
+  String get addressLabel => 'Alamat';
+
+  @override
+  String get addressHint => 'Masukkan alamat lengkap rumah';
 
   @override
   String get roleLabel => 'Role / Jabatan';
@@ -2016,6 +2003,9 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get registerNewBranchFirstButton =>
       '+ Daftarkan Cabang Baru Terlebih Dahulu';
+
+  @override
+  String get selectBranchHint => 'Pilih Cabang';
 
   @override
   String get branchRequiredError => 'Cabang penempatan wajib dipilih';
@@ -2185,6 +2175,22 @@ class AppLocalizationsId extends AppLocalizations {
   String get unnamedBranchFallback => 'Cabang Tanpa Nama';
 
   @override
+  String get ordersListTitle => 'Pesanan';
+
+  @override
+  String get orderCompletedStatus => 'Selesai';
+
+  @override
+  String get orderCancelledStatus => 'Dibatalkan';
+
+  @override
+  String get orderNoOrdersLabel => 'Belum ada pesanan';
+
+  @override
+  String get orderCreateOrderButtonLabel =>
+      'Buat pesanan pertama Anda sekarang';
+
+  @override
   String get orderNoOrdersInBranch => 'Belum ada pesanan di cabang ini';
 
   @override
@@ -2193,6 +2199,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get orderStatusWaiting => 'Menunggu';
+
+  @override
+  String get orderStatusConfirmed => 'Dikonfirmasi';
+
+  @override
+  String get orderStatusProcessing => 'Diproses';
 
   @override
   String get orderStatusWashing => 'Dicuci';
@@ -2302,4 +2314,394 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get chatCsInputHint => 'Tulis pesan ke CS...';
+
+  @override
+  String get orderDetailStatusPending => 'Menunggu';
+
+  @override
+  String get orderDetailStatusConfirmed => 'Dikonfirmasi';
+
+  @override
+  String get orderDetailStatusInProgress => 'Diproses';
+
+  @override
+  String get orderDetailStatusWashing => 'Washing (Pencucian)';
+
+  @override
+  String get orderDetailStatusDrying => 'Drying (Pengeringan)';
+
+  @override
+  String get orderDetailStatusIroning => 'Ironing (Penyetrikaan)';
+
+  @override
+  String get orderDetailStatusQualityCheck => 'Quality Check';
+
+  @override
+  String get orderDetailStatusReady => 'Siap Diambil/Kirim';
+
+  @override
+  String get orderDetailStatusCompleted => 'Selesai';
+
+  @override
+  String get orderDetailStatusCancelled => 'Dibatalkan';
+
+  @override
+  String get orderDetailNotePending => 'Menunggu konfirmasi';
+
+  @override
+  String get orderDetailNoteConfirmed => 'Pesanan sudah dikonfirmasi';
+
+  @override
+  String get orderDetailNoteInProgress => 'Sedang diproses';
+
+  @override
+  String get orderDetailNoteWashing => 'Sedang dalam mesin cuci';
+
+  @override
+  String get orderDetailNoteDrying => 'Sedang dikeringkan';
+
+  @override
+  String get orderDetailNoteIroning => 'Sedang disetrika';
+
+  @override
+  String get orderDetailNoteQualityCheck => 'Sedang dicek kualitasnya';
+
+  @override
+  String get orderDetailNoteReady => 'Siap diambil / diantar';
+
+  @override
+  String get orderDetailNoteCompleted => 'Pesanan sudah selesai';
+
+  @override
+  String get paymentMethodCash => 'Tunai';
+
+  @override
+  String get paymentMethodTransfer => 'Transfer Bank';
+
+  @override
+  String get paymentMethodDebit => 'Kartu Debit';
+
+  @override
+  String get paymentMethodEwallet => 'E-Wallet';
+
+  @override
+  String get orderDetailPaymentStatusPaid => 'Lunas';
+
+  @override
+  String get orderDetailPaymentStatusPartial => 'DP Sebagian';
+
+  @override
+  String get orderDetailPaymentStatusRefunded => 'Refund';
+
+  @override
+  String get orderDetailPaymentStatusPending => 'Belum Dibayar';
+
+  @override
+  String statusUpdateSuccess(String status) {
+    return 'Status berhasil diubah menjadi $status';
+  }
+
+  @override
+  String statusUpdateError(String error) {
+    return 'Gagal mengupdate status: $error';
+  }
+
+  @override
+  String get paymentRecordSuccess => 'Pembayaran berhasil dicatat';
+
+  @override
+  String get customerPhoneUnavailable =>
+      'Nomor telepon pelanggan tidak tersedia';
+
+  @override
+  String get whatsappOpenError => 'Tidak bisa membuka WhatsApp';
+
+  @override
+  String get amountMustBePositiveError => 'Nominal harus lebih dari Rp0';
+
+  @override
+  String get receiptDownloadWebUnsupported =>
+      'Download struk cuma didukung di aplikasi HP, bukan di web';
+
+  @override
+  String get receiptImageGenerationError => 'Gagal membuat gambar struk';
+
+  @override
+  String get receiptSavedToGallery => 'Struk tersimpan di galeri';
+
+  @override
+  String receiptDownloadError(String error) {
+    return 'Gagal mengunduh struk: $error';
+  }
+
+  @override
+  String get cancellationReasonRequiredError => 'Alasan pembatalan wajib diisi';
+
+  @override
+  String cancelOrderError(String error) {
+    return 'Gagal membatalkan pesanan: $error';
+  }
+
+  @override
+  String get cancellationRequestSubmitted =>
+      'Pengajuan pembatalan terkirim, menunggu persetujuan';
+
+  @override
+  String cancellationRequestSubmitError(String error) {
+    return 'Gagal mengirim pengajuan: $error';
+  }
+
+  @override
+  String get cancellationRequestApproved =>
+      'Pengajuan pembatalan disetujui, pesanan dibatalkan';
+
+  @override
+  String cancellationRequestApproveError(String error) {
+    return 'Gagal menyetujui pengajuan: $error';
+  }
+
+  @override
+  String get cancellationRequestRejected => 'Pengajuan pembatalan ditolak';
+
+  @override
+  String cancellationRequestRejectError(String error) {
+    return 'Gagal menolak pengajuan: $error';
+  }
+
+  @override
+  String get deliveryScheduleSuccess => 'Pengantaran berhasil dijadwalkan';
+
+  @override
+  String statusChangedNoteTemplate(String status) {
+    return 'Status diubah ke $status';
+  }
+
+  @override
+  String orderCancelledNoteTemplate(String reason) {
+    return 'Pesanan dibatalkan: $reason';
+  }
+
+  @override
+  String cancellationRequestedNoteTemplate(String name, String reason) {
+    return 'Pengajuan pembatalan oleh $name: $reason';
+  }
+
+  @override
+  String cancellationApprovedNoteTemplate(String name) {
+    return 'Pengajuan pembatalan disetujui oleh $name';
+  }
+
+  @override
+  String cancellationRejectedNoteTemplate(String name) {
+    return 'Pengajuan pembatalan ditolak oleh $name';
+  }
+
+  @override
+  String whatsappOrderReadyDeliveryMessage(String name, String orderNumber) {
+    return 'Halo kak $name!, ini Netwash 😊 . Pesanan kamu ($orderNumber) sudah selesai dan akan segera kami antar ke alamat kakak ya. Ditunggu ya kak 🙏';
+  }
+
+  @override
+  String whatsappOrderReadyPickupMessage(String name, String orderNumber) {
+    return 'Halo kak $name!, ini Netwash 😊 . Pesanan kamu ($orderNumber) sudah selesai dan siap. Mau diantar ke alamat atau mau diambil sendiri ya?';
+  }
+
+  @override
+  String whatsappContactMessage(String name, String orderNumber) {
+    return 'Halo kak $name, ini dari Netwash terkait pesanan $orderNumber.';
+  }
+
+  @override
+  String get receiptWhatsappTitle => 'Struk Pesanan - Netwash';
+
+  @override
+  String get receiptOrderNumberLabel => 'No. Pesanan';
+
+  @override
+  String get receiptDateLabel => 'Tanggal';
+
+  @override
+  String get receiptCustomerLabel => 'Pelanggan';
+
+  @override
+  String get receiptItemsLabel => 'Item';
+
+  @override
+  String get receiptTotalLabel => 'Total';
+
+  @override
+  String get receiptPaymentMethodLabel => 'Metode Bayar';
+
+  @override
+  String get receiptPaymentStatusLabel => 'Status Bayar';
+
+  @override
+  String get receiptThankYouMessage => 'Terima kasih sudah pakai Netwash 🙏';
+
+  @override
+  String get receiptFallbackSubtitle => 'Struk Pesanan';
+
+  @override
+  String get confirmPaymentDialogTitle => 'Konfirmasi Pembayaran';
+
+  @override
+  String remainingBillDialogLabel(String amount) {
+    return 'Sisa tagihan: $amount';
+  }
+
+  @override
+  String get amountPaidFieldLabel => 'Nominal Dibayar';
+
+  @override
+  String get methodFieldLabel => 'Metode';
+
+  @override
+  String get saveButtonLabel => 'Simpan';
+
+  @override
+  String get cancelOrderDialogTitle => 'Batalkan Pesanan?';
+
+  @override
+  String get requestCancellationDialogTitle => 'Ajukan Pembatalan?';
+
+  @override
+  String get cancelOrderDialogContent =>
+      'Tindakan ini akan mengubah status pesanan menjadi Dibatalkan.';
+
+  @override
+  String get requestCancellationDialogContent =>
+      'Pengajuan ini perlu disetujui Admin/Owner/Manager sebelum status pesanan berubah jadi Dibatalkan.';
+
+  @override
+  String get cancellationReasonFieldLabel => 'Alasan pembatalan';
+
+  @override
+  String get noButtonLabel => 'Tidak';
+
+  @override
+  String get yesCancelButtonLabel => 'Ya, Batalkan';
+
+  @override
+  String get submitCancellationRequestButtonLabel => 'Ajukan Pembatalan';
+
+  @override
+  String get orderDetailTitle => 'Detail Pesanan';
+
+  @override
+  String get orderStatusSectionLabel => 'Status Pesanan';
+
+  @override
+  String get orderCancelledTitle => 'Pesanan Dibatalkan';
+
+  @override
+  String get trackProgressTitle => 'Lacak Progress';
+
+  @override
+  String get customerInfoSectionLabel => 'Informasi Pelanggan';
+
+  @override
+  String get registeredBranchLabel => 'Cabang Terdaftar';
+
+  @override
+  String get itemCountLabel => 'Jumlah Item';
+
+  @override
+  String itemCountValueTemplate(int count) {
+    return '$count item';
+  }
+
+  @override
+  String get serviceLabel => 'Layanan';
+
+  @override
+  String get costBreakdownSectionLabel => 'Rincian Biaya';
+
+  @override
+  String get totalBillLabel => 'Total Tagihan';
+
+  @override
+  String get paymentSectionLabel => 'Pembayaran';
+
+  @override
+  String get paidAmountLabel => 'Sudah Dibayar';
+
+  @override
+  String get remainingBillLabel => 'Sisa Tagihan';
+
+  @override
+  String get confirmPaymentButtonLabel => 'Konfirmasi Pembayaran';
+
+  @override
+  String get downloadReceiptButtonLabel => 'Download Struk';
+
+  @override
+  String get sendReceiptWhatsappButtonLabel => 'Kirim Struk via WA';
+
+  @override
+  String get paymentHistorySectionLabel => 'Riwayat Pembayaran';
+
+  @override
+  String get notesSectionLabel => 'Catatan';
+
+  @override
+  String get cancelOrderButtonLabel => 'Batalkan Pesanan';
+
+  @override
+  String get pendingCancellationApprovalTitle =>
+      'Menunggu Persetujuan Pembatalan';
+
+  @override
+  String requestedByLabel(String name) {
+    return 'Diajukan oleh $name';
+  }
+
+  @override
+  String reasonLabel(String reason) {
+    return 'Alasan: $reason';
+  }
+
+  @override
+  String get employeeFallbackLabel => 'Karyawan';
+
+  @override
+  String get rejectButtonLabel => 'Tolak';
+
+  @override
+  String get approveButtonLabel => 'Setujui';
+
+  @override
+  String get notifyReadyForDeliveryButtonLabel => 'Kabari Siap Diantar';
+
+  @override
+  String get notifyViaWhatsappButtonLabel => 'Kabari via WhatsApp';
+
+  @override
+  String get scheduleDeliveryButtonLabel => 'Jadwalkan Pengantaran';
+
+  @override
+  String get contactCustomerButtonLabel => 'Hubungi Pelanggan';
+
+  @override
+  String get confirmOrderButtonLabel => 'Konfirmasi Pesanan';
+
+  @override
+  String get startProcessButtonLabel => 'Mulai Proses';
+
+  @override
+  String get startWashingButtonLabel => 'Mulai Mencuci';
+
+  @override
+  String get finishWashingButtonLabel => 'Selesai Dicuci';
+
+  @override
+  String get finishDryingButtonLabel => 'Selesai Dikeringkan';
+
+  @override
+  String get finishIroningButtonLabel => 'Selesai Disetrika';
+
+  @override
+  String get passQualityCheckButtonLabel => 'Lolos Cek Kualitas';
+
+  @override
+  String get markCompletedButtonLabel => 'Tandai Selesai';
 }

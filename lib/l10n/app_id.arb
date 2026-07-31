@@ -502,14 +502,14 @@
   "totalSpentLabel": "Total Belanja",
   "contactInfoTitle": "Informasi Kontak",
   "phoneLabel": "Telepon",
-  "addressLabel": "Alamat",
+  "customerAddressLabel": "Alamat",
   "orderHistoryTitle": "Riwayat Pesanan",
   "viewAllOrdersComingSoon": "Navigasi ke semua riwayat pesanan akan ditambahkan",
   "noOrderHistoryLabel": "Belum ada riwayat pesanan",
   "orderStatusPending": "Menunggu",
-  "orderStatusConfirmed": "Dikonfirmasi",
+  "customerOrderStatusConfirmed": "Dikonfirmasi",
   "orderStatusInProgress": "Diproses",
-  "orderStatusProcessing": "Diproses",
+  "customerOrderStatusProcessing": "Diproses",
   "orderStatusCompleted": "Selesai",
   "orderStatusCancelled": "Dibatalkan",
   "orderItemCountLabel": "· {count} item",
@@ -524,7 +524,7 @@
   "newCustomerHeaderSubtitle": "Lengkapi data pelanggan untuk menambahkannya ke sistem",
   "customerNameHint": "Masukkan nama pelanggan",
   "customerNameEmptyError": "Nama pelanggan tidak boleh kosong",
-  "phoneNumberLabel": "No. Telepon",
+  "customerPhoneNumberLabel": "No. Telepon",
   "phoneNumberHint": "Contoh: 081234567890",
   "phoneNumberEmptyError": "No. telepon tidak boleh kosong",
   "phoneNumberInvalidError": "Format no. telepon tidak valid",
@@ -578,7 +578,7 @@
   "cityLabel": "Kota",
   "provinceLabel": "Provinsi",
   "branchContactPhoneLabel": "Nomor Telepon",
-  "emailOptionalLabel": "Email Cabang (Opsional)",
+  "branchEmailOptionalLabel": "Email Cabang (Opsional)",
   "managerOptionalLabel": "Manajer Cabang (Opsional)",
   "noEmployeeDataInfo": "Belum ada data karyawan. Manajer bisa ditugaskan belakangan.",
   "dailyCapacityLabel": "Kapasitas Harian (Jumlah Order)",
@@ -625,7 +625,7 @@
   "selectCompanyHint": "Pilih perusahaan",
   "branchNameHint": "Contoh: Cabang Merdeka",
   "branchCodeHint": "Contoh: JKT001",
-  "addressHint": "Contoh: Jl. Merdeka No. 123",
+  "branchAddressHint": "Contoh: Jl. Merdeka No. 123",
   "cityHint": "Jakarta",
   "provinceHint": "DKI Jakarta",
   "branchPhoneLabel": "Nomor Telepon Cabang",
@@ -742,20 +742,12 @@
   "activeStatusSubtitle": "Nonaktifkan untuk tutup sementara",
   "generalInfoSection": "Informasi Umum",
   "deactivateBranchButton": "Nonaktifkan Cabang",
-  "ordersListTitle": "Pesanan",
   "ordersListSubtitle": "Kelola semua pesanan laundry Anda",
   "newOrderButtonLabel": "Baru",
   "searchOrderHint": "Cari pesanan...",
   "orderWaitingStatus": "Menunggu",
   "orderProcessingStatus": "Diproses",
-  "orderCompletedStatus": "Selesai",
-  "orderCancelledStatus": "Dibatalkan",
-  "orderTotalOrdersLabel": "Total Pesanan",
-  "orderTotalRevenueLabel": "Total Revenue",
   "orderRetryButtonLabel": "Coba Lagi",
-  "orderNoOrdersLabel": "Tidak ada pesanan",
-  "orderNoOrdersSubtitle": "Buat pesanan baru untuk memulai",
-  "orderCreateOrderButtonLabel": "Buat Pesanan",
   "orderSessionNotFoundError": "Sesi tidak ditemukan, silakan login ulang",
   "createOrderAppBarTitle": "Buat Pesanan Baru",
   "createOrderSectionTitle": "Detail Pesanan",
@@ -823,7 +815,7 @@
   "autoFilledScheduleHint": "Tanggal & jam terisi otomatis dari saat pesanan dibuat",
   "selectBranchLabel": "Pilih Cabang",
   "noActiveBranchesScheduleHint": "Belum ada cabang aktif. Tambahkan cabang terlebih dahulu di menu Cabang.",
-  "selectBranchHint": "Pilih cabang",
+  "createOrderSelectBranchHint": "Pilih cabang",
   "useMapLocationButton": "Pakai lokasi peta",
   "mapLocationComingSoon": "Fitur pilih lokasi peta akan segera hadir",
   "addressFieldExampleHint": "Jl. Kebayoran Lama No. 123, Jakarta Selatan...",
@@ -1055,7 +1047,6 @@
   "branchNotLinkedWarning": "Cabang terpilih belum terhubung dengan data perusahaan. Periksa kembali data cabang.",
   "quotaLimitReachedTitle": "Batas Kuota Tercapai",
   "quotaLimitReachedContent": "Jumlah karyawan Anda telah mencapai batas maksimal kuota paket langganan saat ini. Silakan upgrade paket.",
-  "upgradePlanButton": "Upgrade Paket",
   "employeeUpdateSuccess": "Data karyawan berhasil diperbarui!",
   "employeeAddSuccess": "Staf karyawan berhasil ditambahkan!",
   "employeeSaveError": "Gagal menyimpan data karyawan: {error}",
@@ -1154,7 +1145,6 @@
   "manageEmployeesTitle": "Kelola Karyawan",
   "searchEmployeeHint": "Cari nama atau nomor telepon karyawan...",
   "filterAllLabel": "Semua",
-  "allBranchesLabel": "Semua Cabang",
   "allRolesLabel": "Semua Role",
   "totalEmployeesLabel": "Total Karyawan",
   "noEmployeesFoundTitle": "Data karyawan tidak ditemukan",
@@ -1204,7 +1194,6 @@
   "orderServiceMoreSuffix": "lainnya",
   "orderTotalPaymentLabel": "Total Pembayaran",
   "orderItemsLabel": "item",
-  "unnamedBranchFallback": "Cabang Tanpa Nama",
   "linkOpenError": "Tidak bisa membuka tautan",
   "appVersionLabel": "Versi {version}",
   "@appVersionLabel": {
@@ -1239,5 +1228,219 @@
     }
   },
   "chatEmptyStateMessage": "Belum ada percakapan.\nKetik pesan di bawah buat mulai chat dengan CS.",
-  "chatCsInputHint": "Tulis pesan ke CS..."
+  "chatCsInputHint": "Tulis pesan ke CS...",
+  "orderDetailStatusPending": "Menunggu",
+  "orderDetailStatusConfirmed": "Dikonfirmasi",
+  "orderDetailStatusInProgress": "Diproses",
+  "orderDetailStatusWashing": "Washing (Pencucian)",
+  "orderDetailStatusDrying": "Drying (Pengeringan)",
+  "orderDetailStatusIroning": "Ironing (Penyetrikaan)",
+  "orderDetailStatusQualityCheck": "Quality Check",
+  "orderDetailStatusReady": "Siap Diambil/Kirim",
+  "orderDetailStatusCompleted": "Selesai",
+  "orderDetailStatusCancelled": "Dibatalkan",
+  "orderDetailNotePending": "Menunggu konfirmasi",
+  "orderDetailNoteConfirmed": "Pesanan sudah dikonfirmasi",
+  "orderDetailNoteInProgress": "Sedang diproses",
+  "orderDetailNoteWashing": "Sedang dalam mesin cuci",
+  "orderDetailNoteDrying": "Sedang dikeringkan",
+  "orderDetailNoteIroning": "Sedang disetrika",
+  "orderDetailNoteQualityCheck": "Sedang dicek kualitasnya",
+  "orderDetailNoteReady": "Siap diambil / diantar",
+  "orderDetailNoteCompleted": "Pesanan sudah selesai",
+  "paymentMethodCash": "Tunai",
+  "paymentMethodTransfer": "Transfer Bank",
+  "paymentMethodDebit": "Kartu Debit",
+  "paymentMethodEwallet": "E-Wallet",
+  "orderDetailPaymentStatusPaid": "Lunas",
+  "orderDetailPaymentStatusPartial": "DP Sebagian",
+  "orderDetailPaymentStatusRefunded": "Refund",
+  "orderDetailPaymentStatusPending": "Belum Dibayar",
+  "statusUpdateSuccess": "Status berhasil diubah menjadi {status}",
+  "@statusUpdateSuccess": {
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "statusUpdateError": "Gagal mengupdate status: {error}",
+  "@statusUpdateError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "paymentRecordSuccess": "Pembayaran berhasil dicatat",
+  "customerPhoneUnavailable": "Nomor telepon pelanggan tidak tersedia",
+  "whatsappOpenError": "Tidak bisa membuka WhatsApp",
+  "amountMustBePositiveError": "Nominal harus lebih dari Rp0",
+  "receiptDownloadWebUnsupported": "Download struk cuma didukung di aplikasi HP, bukan di web",
+  "receiptImageGenerationError": "Gagal membuat gambar struk",
+  "receiptSavedToGallery": "Struk tersimpan di galeri",
+  "receiptDownloadError": "Gagal mengunduh struk: {error}",
+  "@receiptDownloadError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "cancellationReasonRequiredError": "Alasan pembatalan wajib diisi",
+  "cancelOrderError": "Gagal membatalkan pesanan: {error}",
+  "@cancelOrderError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "cancellationRequestSubmitted": "Pengajuan pembatalan terkirim, menunggu persetujuan",
+  "cancellationRequestSubmitError": "Gagal mengirim pengajuan: {error}",
+  "@cancellationRequestSubmitError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "cancellationRequestApproved": "Pengajuan pembatalan disetujui, pesanan dibatalkan",
+  "cancellationRequestApproveError": "Gagal menyetujui pengajuan: {error}",
+  "@cancellationRequestApproveError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "cancellationRequestRejected": "Pengajuan pembatalan ditolak",
+  "cancellationRequestRejectError": "Gagal menolak pengajuan: {error}",
+  "@cancellationRequestRejectError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "deliveryScheduleSuccess": "Pengantaran berhasil dijadwalkan",
+  "statusChangedNoteTemplate": "Status diubah ke {status}",
+  "@statusChangedNoteTemplate": {
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "orderCancelledNoteTemplate": "Pesanan dibatalkan: {reason}",
+  "@orderCancelledNoteTemplate": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "cancellationRequestedNoteTemplate": "Pengajuan pembatalan oleh {name}: {reason}",
+  "@cancellationRequestedNoteTemplate": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "reason": { "type": "String" }
+    }
+  },
+  "cancellationApprovedNoteTemplate": "Pengajuan pembatalan disetujui oleh {name}",
+  "@cancellationApprovedNoteTemplate": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "cancellationRejectedNoteTemplate": "Pengajuan pembatalan ditolak oleh {name}",
+  "@cancellationRejectedNoteTemplate": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "whatsappOrderReadyDeliveryMessage": "Halo kak {name}!, ini Netwash 😊 . Pesanan kamu ({orderNumber}) sudah selesai dan akan segera kami antar ke alamat kakak ya. Ditunggu ya kak 🙏",
+  "@whatsappOrderReadyDeliveryMessage": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "orderNumber": { "type": "String" }
+    }
+  },
+  "whatsappOrderReadyPickupMessage": "Halo kak {name}!, ini Netwash 😊 . Pesanan kamu ({orderNumber}) sudah selesai dan siap. Mau diantar ke alamat atau mau diambil sendiri ya?",
+  "@whatsappOrderReadyPickupMessage": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "orderNumber": { "type": "String" }
+    }
+  },
+  "whatsappContactMessage": "Halo kak {name}, ini dari Netwash terkait pesanan {orderNumber}.",
+  "@whatsappContactMessage": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "orderNumber": { "type": "String" }
+    }
+  },
+  "receiptWhatsappTitle": "Struk Pesanan - Netwash",
+  "receiptOrderNumberLabel": "No. Pesanan",
+  "receiptDateLabel": "Tanggal",
+  "receiptCustomerLabel": "Pelanggan",
+  "receiptItemsLabel": "Item",
+  "receiptTotalLabel": "Total",
+  "receiptPaymentMethodLabel": "Metode Bayar",
+  "receiptPaymentStatusLabel": "Status Bayar",
+  "receiptThankYouMessage": "Terima kasih sudah pakai Netwash 🙏",
+  "receiptFallbackSubtitle": "Struk Pesanan",
+  "confirmPaymentDialogTitle": "Konfirmasi Pembayaran",
+  "remainingBillDialogLabel": "Sisa tagihan: {amount}",
+  "@remainingBillDialogLabel": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "amountPaidFieldLabel": "Nominal Dibayar",
+  "methodFieldLabel": "Metode",
+  "saveButtonLabel": "Simpan",
+  "cancelOrderDialogTitle": "Batalkan Pesanan?",
+  "requestCancellationDialogTitle": "Ajukan Pembatalan?",
+  "cancelOrderDialogContent": "Tindakan ini akan mengubah status pesanan menjadi Dibatalkan.",
+  "requestCancellationDialogContent": "Pengajuan ini perlu disetujui Admin/Owner/Manager sebelum status pesanan berubah jadi Dibatalkan.",
+  "cancellationReasonFieldLabel": "Alasan pembatalan",
+  "noButtonLabel": "Tidak",
+  "yesCancelButtonLabel": "Ya, Batalkan",
+  "submitCancellationRequestButtonLabel": "Ajukan Pembatalan",
+  "orderDetailTitle": "Detail Pesanan",
+  "orderStatusSectionLabel": "Status Pesanan",
+  "orderCancelledTitle": "Pesanan Dibatalkan",
+  "trackProgressTitle": "Lacak Progress",
+  "customerInfoSectionLabel": "Informasi Pelanggan",
+  "registeredBranchLabel": "Cabang Terdaftar",
+  "itemCountLabel": "Jumlah Item",
+  "itemCountValueTemplate": "{count} item",
+  "@itemCountValueTemplate": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "serviceLabel": "Layanan",
+  "costBreakdownSectionLabel": "Rincian Biaya",
+  "totalBillLabel": "Total Tagihan",
+  "paymentSectionLabel": "Pembayaran",
+  "paidAmountLabel": "Sudah Dibayar",
+  "remainingBillLabel": "Sisa Tagihan",
+  "confirmPaymentButtonLabel": "Konfirmasi Pembayaran",
+  "downloadReceiptButtonLabel": "Download Struk",
+  "sendReceiptWhatsappButtonLabel": "Kirim Struk via WA",
+  "paymentHistorySectionLabel": "Riwayat Pembayaran",
+  "notesSectionLabel": "Catatan",
+  "cancelOrderButtonLabel": "Batalkan Pesanan",
+  "pendingCancellationApprovalTitle": "Menunggu Persetujuan Pembatalan",
+  "requestedByLabel": "Diajukan oleh {name}",
+  "@requestedByLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "reasonLabel": "Alasan: {reason}",
+  "@reasonLabel": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "employeeFallbackLabel": "Karyawan",
+  "rejectButtonLabel": "Tolak",
+  "approveButtonLabel": "Setujui",
+  "notifyReadyForDeliveryButtonLabel": "Kabari Siap Diantar",
+  "notifyViaWhatsappButtonLabel": "Kabari via WhatsApp",
+  "scheduleDeliveryButtonLabel": "Jadwalkan Pengantaran",
+  "contactCustomerButtonLabel": "Hubungi Pelanggan",
+  "confirmOrderButtonLabel": "Konfirmasi Pesanan",
+  "startProcessButtonLabel": "Mulai Proses",
+  "startWashingButtonLabel": "Mulai Mencuci",
+  "finishWashingButtonLabel": "Selesai Dicuci",
+  "finishDryingButtonLabel": "Selesai Dikeringkan",
+  "finishIroningButtonLabel": "Selesai Disetrika",
+  "passQualityCheckButtonLabel": "Lolos Cek Kualitas",
+  "markCompletedButtonLabel": "Tandai Selesai"
 }

@@ -1682,11 +1682,11 @@ abstract class AppLocalizations {
   /// **'Telepon'**
   String get phoneLabel;
 
-  /// No description provided for @addressLabel.
+  /// No description provided for @customerAddressLabel.
   ///
   /// In id, this message translates to:
   /// **'Alamat'**
-  String get addressLabel;
+  String get customerAddressLabel;
 
   /// No description provided for @orderHistoryTitle.
   ///
@@ -1712,11 +1712,11 @@ abstract class AppLocalizations {
   /// **'Menunggu'**
   String get orderStatusPending;
 
-  /// No description provided for @orderStatusConfirmed.
+  /// No description provided for @customerOrderStatusConfirmed.
   ///
   /// In id, this message translates to:
   /// **'Dikonfirmasi'**
-  String get orderStatusConfirmed;
+  String get customerOrderStatusConfirmed;
 
   /// No description provided for @orderStatusInProgress.
   ///
@@ -1724,11 +1724,11 @@ abstract class AppLocalizations {
   /// **'Diproses'**
   String get orderStatusInProgress;
 
-  /// No description provided for @orderStatusProcessing.
+  /// No description provided for @customerOrderStatusProcessing.
   ///
   /// In id, this message translates to:
   /// **'Diproses'**
-  String get orderStatusProcessing;
+  String get customerOrderStatusProcessing;
 
   /// No description provided for @orderStatusCompleted.
   ///
@@ -1772,11 +1772,11 @@ abstract class AppLocalizations {
   /// **'Nama pelanggan tidak boleh kosong'**
   String get customerNameEmptyError;
 
-  /// No description provided for @phoneNumberLabel.
+  /// No description provided for @customerPhoneNumberLabel.
   ///
   /// In id, this message translates to:
-  /// **'Nomor Telepon'**
-  String get phoneNumberLabel;
+  /// **'No. Telepon'**
+  String get customerPhoneNumberLabel;
 
   /// No description provided for @phoneNumberHint.
   ///
@@ -2012,11 +2012,11 @@ abstract class AppLocalizations {
   /// **'Nomor Telepon'**
   String get branchContactPhoneLabel;
 
-  /// No description provided for @emailOptionalLabel.
+  /// No description provided for @branchEmailOptionalLabel.
   ///
   /// In id, this message translates to:
-  /// **'Email (Opsional)'**
-  String get emailOptionalLabel;
+  /// **'Email Cabang (Opsional)'**
+  String get branchEmailOptionalLabel;
 
   /// No description provided for @managerOptionalLabel.
   ///
@@ -2252,11 +2252,11 @@ abstract class AppLocalizations {
   /// **'Contoh: JKT001'**
   String get branchCodeHint;
 
-  /// No description provided for @addressHint.
+  /// No description provided for @branchAddressHint.
   ///
   /// In id, this message translates to:
-  /// **'Masukkan alamat lengkap rumah'**
-  String get addressHint;
+  /// **'Contoh: Jl. Merdeka No. 123'**
+  String get branchAddressHint;
 
   /// No description provided for @cityHint.
   ///
@@ -2582,12 +2582,6 @@ abstract class AppLocalizations {
   /// **'Nonaktifkan Cabang'**
   String get deactivateBranchButton;
 
-  /// No description provided for @ordersListTitle.
-  ///
-  /// In id, this message translates to:
-  /// **'Pesanan'**
-  String get ordersListTitle;
-
   /// No description provided for @ordersListSubtitle.
   ///
   /// In id, this message translates to:
@@ -2618,53 +2612,11 @@ abstract class AppLocalizations {
   /// **'Diproses'**
   String get orderProcessingStatus;
 
-  /// No description provided for @orderCompletedStatus.
-  ///
-  /// In id, this message translates to:
-  /// **'Selesai'**
-  String get orderCompletedStatus;
-
-  /// No description provided for @orderCancelledStatus.
-  ///
-  /// In id, this message translates to:
-  /// **'Dibatalkan'**
-  String get orderCancelledStatus;
-
-  /// No description provided for @orderTotalOrdersLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Total Pesanan'**
-  String get orderTotalOrdersLabel;
-
-  /// No description provided for @orderTotalRevenueLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Total Revenue'**
-  String get orderTotalRevenueLabel;
-
   /// No description provided for @orderRetryButtonLabel.
   ///
   /// In id, this message translates to:
   /// **'Coba Lagi'**
   String get orderRetryButtonLabel;
-
-  /// No description provided for @orderNoOrdersLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Belum ada pesanan'**
-  String get orderNoOrdersLabel;
-
-  /// No description provided for @orderNoOrdersSubtitle.
-  ///
-  /// In id, this message translates to:
-  /// **'Buat pesanan baru untuk memulai'**
-  String get orderNoOrdersSubtitle;
-
-  /// No description provided for @orderCreateOrderButtonLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Buat pesanan pertama Anda sekarang'**
-  String get orderCreateOrderButtonLabel;
 
   /// No description provided for @orderSessionNotFoundError.
   ///
@@ -2942,11 +2894,11 @@ abstract class AppLocalizations {
   /// **'Belum ada cabang aktif. Tambahkan cabang terlebih dahulu di menu Cabang.'**
   String get noActiveBranchesScheduleHint;
 
-  /// No description provided for @selectBranchHint.
+  /// No description provided for @createOrderSelectBranchHint.
   ///
   /// In id, this message translates to:
-  /// **'Pilih Cabang'**
-  String get selectBranchHint;
+  /// **'Pilih cabang'**
+  String get createOrderSelectBranchHint;
 
   /// No description provided for @useMapLocationButton.
   ///
@@ -3662,17 +3614,41 @@ abstract class AppLocalizations {
   /// **'Nama karyawan wajib diisi'**
   String get employeeNameRequiredError;
 
+  /// No description provided for @phoneNumberLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Nomor Telepon'**
+  String get phoneNumberLabel;
+
   /// No description provided for @phoneNumberRequiredError.
   ///
   /// In id, this message translates to:
   /// **'Nomor telepon wajib diisi'**
   String get phoneNumberRequiredError;
 
+  /// No description provided for @emailOptionalLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Email (Opsional)'**
+  String get emailOptionalLabel;
+
   /// No description provided for @invalidEmailFormatError.
   ///
   /// In id, this message translates to:
   /// **'Format email tidak valid'**
   String get invalidEmailFormatError;
+
+  /// No description provided for @addressLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat'**
+  String get addressLabel;
+
+  /// No description provided for @addressHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan alamat lengkap rumah'**
+  String get addressHint;
 
   /// No description provided for @roleLabel.
   ///
@@ -3703,6 +3679,12 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'+ Daftarkan Cabang Baru Terlebih Dahulu'**
   String get registerNewBranchFirstButton;
+
+  /// No description provided for @selectBranchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih Cabang'**
+  String get selectBranchHint;
 
   /// No description provided for @branchRequiredError.
   ///
@@ -4016,6 +3998,36 @@ abstract class AppLocalizations {
   /// **'Cabang Tanpa Nama'**
   String get unnamedBranchFallback;
 
+  /// No description provided for @ordersListTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan'**
+  String get ordersListTitle;
+
+  /// No description provided for @orderCompletedStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai'**
+  String get orderCompletedStatus;
+
+  /// No description provided for @orderCancelledStatus.
+  ///
+  /// In id, this message translates to:
+  /// **'Dibatalkan'**
+  String get orderCancelledStatus;
+
+  /// No description provided for @orderNoOrdersLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada pesanan'**
+  String get orderNoOrdersLabel;
+
+  /// No description provided for @orderCreateOrderButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Buat pesanan pertama Anda sekarang'**
+  String get orderCreateOrderButtonLabel;
+
   /// No description provided for @orderNoOrdersInBranch.
   ///
   /// In id, this message translates to:
@@ -4033,6 +4045,18 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Menunggu'**
   String get orderStatusWaiting;
+
+  /// No description provided for @orderStatusConfirmed.
+  ///
+  /// In id, this message translates to:
+  /// **'Dikonfirmasi'**
+  String get orderStatusConfirmed;
+
+  /// No description provided for @orderStatusProcessing.
+  ///
+  /// In id, this message translates to:
+  /// **'Diproses'**
+  String get orderStatusProcessing;
 
   /// No description provided for @orderStatusWashing.
   ///
@@ -4231,6 +4255,696 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Tulis pesan ke CS...'**
   String get chatCsInputHint;
+
+  /// No description provided for @orderDetailStatusPending.
+  ///
+  /// In id, this message translates to:
+  /// **'Menunggu'**
+  String get orderDetailStatusPending;
+
+  /// No description provided for @orderDetailStatusConfirmed.
+  ///
+  /// In id, this message translates to:
+  /// **'Dikonfirmasi'**
+  String get orderDetailStatusConfirmed;
+
+  /// No description provided for @orderDetailStatusInProgress.
+  ///
+  /// In id, this message translates to:
+  /// **'Diproses'**
+  String get orderDetailStatusInProgress;
+
+  /// No description provided for @orderDetailStatusWashing.
+  ///
+  /// In id, this message translates to:
+  /// **'Washing (Pencucian)'**
+  String get orderDetailStatusWashing;
+
+  /// No description provided for @orderDetailStatusDrying.
+  ///
+  /// In id, this message translates to:
+  /// **'Drying (Pengeringan)'**
+  String get orderDetailStatusDrying;
+
+  /// No description provided for @orderDetailStatusIroning.
+  ///
+  /// In id, this message translates to:
+  /// **'Ironing (Penyetrikaan)'**
+  String get orderDetailStatusIroning;
+
+  /// No description provided for @orderDetailStatusQualityCheck.
+  ///
+  /// In id, this message translates to:
+  /// **'Quality Check'**
+  String get orderDetailStatusQualityCheck;
+
+  /// No description provided for @orderDetailStatusReady.
+  ///
+  /// In id, this message translates to:
+  /// **'Siap Diambil/Kirim'**
+  String get orderDetailStatusReady;
+
+  /// No description provided for @orderDetailStatusCompleted.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai'**
+  String get orderDetailStatusCompleted;
+
+  /// No description provided for @orderDetailStatusCancelled.
+  ///
+  /// In id, this message translates to:
+  /// **'Dibatalkan'**
+  String get orderDetailStatusCancelled;
+
+  /// No description provided for @orderDetailNotePending.
+  ///
+  /// In id, this message translates to:
+  /// **'Menunggu konfirmasi'**
+  String get orderDetailNotePending;
+
+  /// No description provided for @orderDetailNoteConfirmed.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan sudah dikonfirmasi'**
+  String get orderDetailNoteConfirmed;
+
+  /// No description provided for @orderDetailNoteInProgress.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang diproses'**
+  String get orderDetailNoteInProgress;
+
+  /// No description provided for @orderDetailNoteWashing.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang dalam mesin cuci'**
+  String get orderDetailNoteWashing;
+
+  /// No description provided for @orderDetailNoteDrying.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang dikeringkan'**
+  String get orderDetailNoteDrying;
+
+  /// No description provided for @orderDetailNoteIroning.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang disetrika'**
+  String get orderDetailNoteIroning;
+
+  /// No description provided for @orderDetailNoteQualityCheck.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang dicek kualitasnya'**
+  String get orderDetailNoteQualityCheck;
+
+  /// No description provided for @orderDetailNoteReady.
+  ///
+  /// In id, this message translates to:
+  /// **'Siap diambil / diantar'**
+  String get orderDetailNoteReady;
+
+  /// No description provided for @orderDetailNoteCompleted.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan sudah selesai'**
+  String get orderDetailNoteCompleted;
+
+  /// No description provided for @paymentMethodCash.
+  ///
+  /// In id, this message translates to:
+  /// **'Tunai'**
+  String get paymentMethodCash;
+
+  /// No description provided for @paymentMethodTransfer.
+  ///
+  /// In id, this message translates to:
+  /// **'Transfer Bank'**
+  String get paymentMethodTransfer;
+
+  /// No description provided for @paymentMethodDebit.
+  ///
+  /// In id, this message translates to:
+  /// **'Kartu Debit'**
+  String get paymentMethodDebit;
+
+  /// No description provided for @paymentMethodEwallet.
+  ///
+  /// In id, this message translates to:
+  /// **'E-Wallet'**
+  String get paymentMethodEwallet;
+
+  /// No description provided for @orderDetailPaymentStatusPaid.
+  ///
+  /// In id, this message translates to:
+  /// **'Lunas'**
+  String get orderDetailPaymentStatusPaid;
+
+  /// No description provided for @orderDetailPaymentStatusPartial.
+  ///
+  /// In id, this message translates to:
+  /// **'DP Sebagian'**
+  String get orderDetailPaymentStatusPartial;
+
+  /// No description provided for @orderDetailPaymentStatusRefunded.
+  ///
+  /// In id, this message translates to:
+  /// **'Refund'**
+  String get orderDetailPaymentStatusRefunded;
+
+  /// No description provided for @orderDetailPaymentStatusPending.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum Dibayar'**
+  String get orderDetailPaymentStatusPending;
+
+  /// No description provided for @statusUpdateSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Status berhasil diubah menjadi {status}'**
+  String statusUpdateSuccess(String status);
+
+  /// No description provided for @statusUpdateError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal mengupdate status: {error}'**
+  String statusUpdateError(String error);
+
+  /// No description provided for @paymentRecordSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Pembayaran berhasil dicatat'**
+  String get paymentRecordSuccess;
+
+  /// No description provided for @customerPhoneUnavailable.
+  ///
+  /// In id, this message translates to:
+  /// **'Nomor telepon pelanggan tidak tersedia'**
+  String get customerPhoneUnavailable;
+
+  /// No description provided for @whatsappOpenError.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak bisa membuka WhatsApp'**
+  String get whatsappOpenError;
+
+  /// No description provided for @amountMustBePositiveError.
+  ///
+  /// In id, this message translates to:
+  /// **'Nominal harus lebih dari Rp0'**
+  String get amountMustBePositiveError;
+
+  /// No description provided for @receiptDownloadWebUnsupported.
+  ///
+  /// In id, this message translates to:
+  /// **'Download struk cuma didukung di aplikasi HP, bukan di web'**
+  String get receiptDownloadWebUnsupported;
+
+  /// No description provided for @receiptImageGenerationError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal membuat gambar struk'**
+  String get receiptImageGenerationError;
+
+  /// No description provided for @receiptSavedToGallery.
+  ///
+  /// In id, this message translates to:
+  /// **'Struk tersimpan di galeri'**
+  String get receiptSavedToGallery;
+
+  /// No description provided for @receiptDownloadError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal mengunduh struk: {error}'**
+  String receiptDownloadError(String error);
+
+  /// No description provided for @cancellationReasonRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan pembatalan wajib diisi'**
+  String get cancellationReasonRequiredError;
+
+  /// No description provided for @cancelOrderError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal membatalkan pesanan: {error}'**
+  String cancelOrderError(String error);
+
+  /// No description provided for @cancellationRequestSubmitted.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengajuan pembatalan terkirim, menunggu persetujuan'**
+  String get cancellationRequestSubmitted;
+
+  /// No description provided for @cancellationRequestSubmitError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal mengirim pengajuan: {error}'**
+  String cancellationRequestSubmitError(String error);
+
+  /// No description provided for @cancellationRequestApproved.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengajuan pembatalan disetujui, pesanan dibatalkan'**
+  String get cancellationRequestApproved;
+
+  /// No description provided for @cancellationRequestApproveError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menyetujui pengajuan: {error}'**
+  String cancellationRequestApproveError(String error);
+
+  /// No description provided for @cancellationRequestRejected.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengajuan pembatalan ditolak'**
+  String get cancellationRequestRejected;
+
+  /// No description provided for @cancellationRequestRejectError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menolak pengajuan: {error}'**
+  String cancellationRequestRejectError(String error);
+
+  /// No description provided for @deliveryScheduleSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengantaran berhasil dijadwalkan'**
+  String get deliveryScheduleSuccess;
+
+  /// No description provided for @statusChangedNoteTemplate.
+  ///
+  /// In id, this message translates to:
+  /// **'Status diubah ke {status}'**
+  String statusChangedNoteTemplate(String status);
+
+  /// No description provided for @orderCancelledNoteTemplate.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan dibatalkan: {reason}'**
+  String orderCancelledNoteTemplate(String reason);
+
+  /// No description provided for @cancellationRequestedNoteTemplate.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengajuan pembatalan oleh {name}: {reason}'**
+  String cancellationRequestedNoteTemplate(String name, String reason);
+
+  /// No description provided for @cancellationApprovedNoteTemplate.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengajuan pembatalan disetujui oleh {name}'**
+  String cancellationApprovedNoteTemplate(String name);
+
+  /// No description provided for @cancellationRejectedNoteTemplate.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengajuan pembatalan ditolak oleh {name}'**
+  String cancellationRejectedNoteTemplate(String name);
+
+  /// No description provided for @whatsappOrderReadyDeliveryMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'Halo kak {name}!, ini Netwash 😊 . Pesanan kamu ({orderNumber}) sudah selesai dan akan segera kami antar ke alamat kakak ya. Ditunggu ya kak 🙏'**
+  String whatsappOrderReadyDeliveryMessage(String name, String orderNumber);
+
+  /// No description provided for @whatsappOrderReadyPickupMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'Halo kak {name}!, ini Netwash 😊 . Pesanan kamu ({orderNumber}) sudah selesai dan siap. Mau diantar ke alamat atau mau diambil sendiri ya?'**
+  String whatsappOrderReadyPickupMessage(String name, String orderNumber);
+
+  /// No description provided for @whatsappContactMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'Halo kak {name}, ini dari Netwash terkait pesanan {orderNumber}.'**
+  String whatsappContactMessage(String name, String orderNumber);
+
+  /// No description provided for @receiptWhatsappTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Struk Pesanan - Netwash'**
+  String get receiptWhatsappTitle;
+
+  /// No description provided for @receiptOrderNumberLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'No. Pesanan'**
+  String get receiptOrderNumberLabel;
+
+  /// No description provided for @receiptDateLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanggal'**
+  String get receiptDateLabel;
+
+  /// No description provided for @receiptCustomerLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan'**
+  String get receiptCustomerLabel;
+
+  /// No description provided for @receiptItemsLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Item'**
+  String get receiptItemsLabel;
+
+  /// No description provided for @receiptTotalLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total'**
+  String get receiptTotalLabel;
+
+  /// No description provided for @receiptPaymentMethodLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Metode Bayar'**
+  String get receiptPaymentMethodLabel;
+
+  /// No description provided for @receiptPaymentStatusLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Status Bayar'**
+  String get receiptPaymentStatusLabel;
+
+  /// No description provided for @receiptThankYouMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'Terima kasih sudah pakai Netwash 🙏'**
+  String get receiptThankYouMessage;
+
+  /// No description provided for @receiptFallbackSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Struk Pesanan'**
+  String get receiptFallbackSubtitle;
+
+  /// No description provided for @confirmPaymentDialogTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Konfirmasi Pembayaran'**
+  String get confirmPaymentDialogTitle;
+
+  /// No description provided for @remainingBillDialogLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Sisa tagihan: {amount}'**
+  String remainingBillDialogLabel(String amount);
+
+  /// No description provided for @amountPaidFieldLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Nominal Dibayar'**
+  String get amountPaidFieldLabel;
+
+  /// No description provided for @methodFieldLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Metode'**
+  String get methodFieldLabel;
+
+  /// No description provided for @saveButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan'**
+  String get saveButtonLabel;
+
+  /// No description provided for @cancelOrderDialogTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Batalkan Pesanan?'**
+  String get cancelOrderDialogTitle;
+
+  /// No description provided for @requestCancellationDialogTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ajukan Pembatalan?'**
+  String get requestCancellationDialogTitle;
+
+  /// No description provided for @cancelOrderDialogContent.
+  ///
+  /// In id, this message translates to:
+  /// **'Tindakan ini akan mengubah status pesanan menjadi Dibatalkan.'**
+  String get cancelOrderDialogContent;
+
+  /// No description provided for @requestCancellationDialogContent.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengajuan ini perlu disetujui Admin/Owner/Manager sebelum status pesanan berubah jadi Dibatalkan.'**
+  String get requestCancellationDialogContent;
+
+  /// No description provided for @cancellationReasonFieldLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan pembatalan'**
+  String get cancellationReasonFieldLabel;
+
+  /// No description provided for @noButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak'**
+  String get noButtonLabel;
+
+  /// No description provided for @yesCancelButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Ya, Batalkan'**
+  String get yesCancelButtonLabel;
+
+  /// No description provided for @submitCancellationRequestButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Ajukan Pembatalan'**
+  String get submitCancellationRequestButtonLabel;
+
+  /// No description provided for @orderDetailTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail Pesanan'**
+  String get orderDetailTitle;
+
+  /// No description provided for @orderStatusSectionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Status Pesanan'**
+  String get orderStatusSectionLabel;
+
+  /// No description provided for @orderCancelledTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan Dibatalkan'**
+  String get orderCancelledTitle;
+
+  /// No description provided for @trackProgressTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Lacak Progress'**
+  String get trackProgressTitle;
+
+  /// No description provided for @customerInfoSectionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Informasi Pelanggan'**
+  String get customerInfoSectionLabel;
+
+  /// No description provided for @registeredBranchLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang Terdaftar'**
+  String get registeredBranchLabel;
+
+  /// No description provided for @itemCountLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah Item'**
+  String get itemCountLabel;
+
+  /// No description provided for @itemCountValueTemplate.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} item'**
+  String itemCountValueTemplate(int count);
+
+  /// No description provided for @serviceLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Layanan'**
+  String get serviceLabel;
+
+  /// No description provided for @costBreakdownSectionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Rincian Biaya'**
+  String get costBreakdownSectionLabel;
+
+  /// No description provided for @totalBillLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Total Tagihan'**
+  String get totalBillLabel;
+
+  /// No description provided for @paymentSectionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pembayaran'**
+  String get paymentSectionLabel;
+
+  /// No description provided for @paidAmountLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Sudah Dibayar'**
+  String get paidAmountLabel;
+
+  /// No description provided for @remainingBillLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Sisa Tagihan'**
+  String get remainingBillLabel;
+
+  /// No description provided for @confirmPaymentButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Konfirmasi Pembayaran'**
+  String get confirmPaymentButtonLabel;
+
+  /// No description provided for @downloadReceiptButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Download Struk'**
+  String get downloadReceiptButtonLabel;
+
+  /// No description provided for @sendReceiptWhatsappButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kirim Struk via WA'**
+  String get sendReceiptWhatsappButtonLabel;
+
+  /// No description provided for @paymentHistorySectionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat Pembayaran'**
+  String get paymentHistorySectionLabel;
+
+  /// No description provided for @notesSectionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan'**
+  String get notesSectionLabel;
+
+  /// No description provided for @cancelOrderButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Batalkan Pesanan'**
+  String get cancelOrderButtonLabel;
+
+  /// No description provided for @pendingCancellationApprovalTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Menunggu Persetujuan Pembatalan'**
+  String get pendingCancellationApprovalTitle;
+
+  /// No description provided for @requestedByLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Diajukan oleh {name}'**
+  String requestedByLabel(String name);
+
+  /// No description provided for @reasonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan: {reason}'**
+  String reasonLabel(String reason);
+
+  /// No description provided for @employeeFallbackLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Karyawan'**
+  String get employeeFallbackLabel;
+
+  /// No description provided for @rejectButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tolak'**
+  String get rejectButtonLabel;
+
+  /// No description provided for @approveButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Setujui'**
+  String get approveButtonLabel;
+
+  /// No description provided for @notifyReadyForDeliveryButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kabari Siap Diantar'**
+  String get notifyReadyForDeliveryButtonLabel;
+
+  /// No description provided for @notifyViaWhatsappButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kabari via WhatsApp'**
+  String get notifyViaWhatsappButtonLabel;
+
+  /// No description provided for @scheduleDeliveryButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jadwalkan Pengantaran'**
+  String get scheduleDeliveryButtonLabel;
+
+  /// No description provided for @contactCustomerButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Hubungi Pelanggan'**
+  String get contactCustomerButtonLabel;
+
+  /// No description provided for @confirmOrderButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Konfirmasi Pesanan'**
+  String get confirmOrderButtonLabel;
+
+  /// No description provided for @startProcessButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai Proses'**
+  String get startProcessButtonLabel;
+
+  /// No description provided for @startWashingButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai Mencuci'**
+  String get startWashingButtonLabel;
+
+  /// No description provided for @finishWashingButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai Dicuci'**
+  String get finishWashingButtonLabel;
+
+  /// No description provided for @finishDryingButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai Dikeringkan'**
+  String get finishDryingButtonLabel;
+
+  /// No description provided for @finishIroningButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai Disetrika'**
+  String get finishIroningButtonLabel;
+
+  /// No description provided for @passQualityCheckButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Lolos Cek Kualitas'**
+  String get passQualityCheckButtonLabel;
+
+  /// No description provided for @markCompletedButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai Selesai'**
+  String get markCompletedButtonLabel;
 }
 
 class _AppLocalizationsDelegate

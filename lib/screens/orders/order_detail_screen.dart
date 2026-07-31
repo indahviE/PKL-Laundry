@@ -16,6 +16,7 @@ import '../../models/transaction.dart';
 import '../../models/user_model.dart';
 import '../../repositories/order_repository.dart';
 import '../../repositories/user_repository.dart';
+import '../../l10n/app_localizations.dart';
 
 // ============================================
 // DESIGN TOKENS (dari DESIGN.md / code.html referensi "Order Detail -
@@ -225,15 +226,16 @@ class _OrderDetailData {
   int get totalItemCount => items.fold<int>(0, (sum, i) => sum + i.quantity);
 
   /// Ringkasan nama layanan buat kartu "Layanan" - sama pola dengan
-  /// OrdersListScreen.serviceSummary.
-  String get serviceSummary {
+  /// OrdersListScreen.serviceSummary. `othersLabel` dikirim dari UI
+  /// (sudah dilokalisasi di sana) supaya model data ini tetap bebas
+  /// dependensi ke Flutter localization.
+  String serviceSummary(String othersLabel) {
     if (items.isEmpty) return '-';
     if (items.length == 1) return items.first.name;
-    return '${items.first.name} +${items.length - 1} lainnya';
+    return '${items.first.name} +${items.length - 1} $othersLabel';
   }
 
   bool get isDelivery => deliveryType == 'delivery';
-  String get deliveryTypeLabel => isDelivery ? 'Diantar' : 'Ambil Sendiri';
   IconData get deliveryTypeIcon => isDelivery ? Icons.local_shipping_outlined : Icons.storefront_outlined;
 
   /// Cari timestamp status tertentu dari riwayat (dipakai timeline).
@@ -327,33 +329,6 @@ IconData _iconForStatus(String status) {
   }
 }
 
-/// Catatan singkat buat tahap yang lagi AKTIF di timeline (pengganti
-/// timestamp, sama seperti "Sedang dalam mesin cuci" di referensi).
-String _activeStepNote(String status) {
-  switch (status) {
-    case 'pending':
-      return 'Menunggu konfirmasi';
-    case 'confirmed':
-      return 'Pesanan sudah dikonfirmasi';
-    case 'inProgress':
-      return 'Sedang diproses';
-    case 'washing':
-      return 'Sedang dalam mesin cuci';
-    case 'drying':
-      return 'Sedang dikeringkan';
-    case 'ironing':
-      return 'Sedang disetrika';
-    case 'qualityCheck':
-      return 'Sedang dicek kualitasnya';
-    case 'ready':
-      return 'Siap diambil / diantar';
-    case 'completed':
-      return 'Pesanan sudah selesai';
-    default:
-      return '';
-  }
-}
-
 /// Warna badge status pembayaran, dipetakan ke palet yang sama dengan
 /// filter status di OrdersListScreen (kuning/hijau/merah).
 Color _paymentBg(String status) {
@@ -422,6 +397,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   /// nggak keliatan user), cuma dipakai sebagai sumber screenshot.
   final GlobalKey _receiptKey = GlobalKey();
 
+  /// Shortcut ke AppLocalizations - dipakai di seluruh method state ini
+  /// (build maupun non-build, mis. handler snackbar) karena State selalu
+  /// punya akses ke `context` sendiri.
+  AppLocalizations get _t => AppLocalizations.of(context)!;
+
   @override
   void initState() {
     super.initState();
@@ -460,7 +440,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   CollectionReference get _ordersRef {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      throw 'Sesi tidak ditemukan, silakan login ulang.';
+      throw _t.sessionNotFoundError;
     }
     return FirebaseFirestore.instance.collection('users').doc(user.uid).collection('orders');
   }
@@ -474,7 +454,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     try {
       final doc = await _ordersRef.doc(widget.orderId).get();
       if (!doc.exists) {
-        throw 'Pesanan tidak ditemukan.';
+        throw _t.orderNotFoundError;
       }
       final order = _OrderDetailData.fromFirestore(doc);
       setState(() {
@@ -525,27 +505,54 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String _getStatusLabel(String status) {
     switch (status) {
       case 'pending':
-        return 'Menunggu';
+        return _t.orderDetailStatusPending;
       case 'confirmed':
-        return 'Dikonfirmasi';
+        return _t.orderDetailStatusConfirmed;
       case 'inProgress':
-        return 'Diproses';
+        return _t.orderDetailStatusInProgress;
       case 'washing':
-        return 'Washing (Pencucian)';
+        return _t.orderDetailStatusWashing;
       case 'drying':
-        return 'Drying (Pengeringan)';
+        return _t.orderDetailStatusDrying;
       case 'ironing':
-        return 'Ironing (Penyetrikaan)';
+        return _t.orderDetailStatusIroning;
       case 'qualityCheck':
-        return 'Quality Check';
+        return _t.orderDetailStatusQualityCheck;
       case 'ready':
-        return 'Siap Diambil/Kirim';
+        return _t.orderDetailStatusReady;
       case 'completed':
-        return 'Selesai';
+        return _t.orderDetailStatusCompleted;
       case 'cancelled':
-        return 'Dibatalkan';
+        return _t.orderDetailStatusCancelled;
       default:
         return status;
+    }
+  }
+
+  /// Catatan singkat buat tahap yang lagi AKTIF di timeline (pengganti
+  /// timestamp, sama seperti "Sedang dalam mesin cuci" di referensi).
+  String _activeStepNote(String status) {
+    switch (status) {
+      case 'pending':
+        return _t.orderDetailNotePending;
+      case 'confirmed':
+        return _t.orderDetailNoteConfirmed;
+      case 'inProgress':
+        return _t.orderDetailNoteInProgress;
+      case 'washing':
+        return _t.orderDetailNoteWashing;
+      case 'drying':
+        return _t.orderDetailNoteDrying;
+      case 'ironing':
+        return _t.orderDetailNoteIroning;
+      case 'qualityCheck':
+        return _t.orderDetailNoteQualityCheck;
+      case 'ready':
+        return _t.orderDetailNoteReady;
+      case 'completed':
+        return _t.orderDetailNoteCompleted;
+      default:
+        return '';
     }
   }
 
@@ -561,21 +568,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String? _nextStatusButtonLabel(String currentStatus) {
     switch (currentStatus) {
       case 'pending':
-        return 'Konfirmasi Pesanan';
+        return _t.confirmOrderButtonLabel;
       case 'confirmed':
-        return 'Mulai Proses';
+        return _t.startProcessButtonLabel;
       case 'inProgress':
-        return 'Mulai Mencuci';
+        return _t.startWashingButtonLabel;
       case 'washing':
-        return 'Selesai Dicuci';
+        return _t.finishWashingButtonLabel;
       case 'drying':
-        return 'Selesai Dikeringkan';
+        return _t.finishDryingButtonLabel;
       case 'ironing':
-        return 'Selesai Disetrika';
+        return _t.finishIroningButtonLabel;
       case 'qualityCheck':
-        return 'Lolos Cek Kualitas';
+        return _t.passQualityCheckButtonLabel;
       case 'ready':
-        return 'Tandai Selesai';
+        return _t.markCompletedButtonLabel;
       default:
         return null; // completed / cancelled -> tidak ada tombol maju
     }
@@ -592,13 +599,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String _paymentMethodLabel(String method) {
     switch (method) {
       case 'cash':
-        return 'Tunai';
+        return _t.paymentMethodCash;
       case 'transfer':
-        return 'Transfer Bank';
+        return _t.paymentMethodTransfer;
       case 'debit':
-        return 'Kartu Debit';
+        return _t.paymentMethodDebit;
       case 'ewallet':
-        return 'E-Wallet';
+        return _t.paymentMethodEwallet;
       default:
         return method;
     }
@@ -607,14 +614,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String _getPaymentStatusLabel(String status) {
     switch (status) {
       case 'paid':
-        return 'Lunas';
+        return _t.orderDetailPaymentStatusPaid;
       case 'partial':
-        return 'DP Sebagian';
+        return _t.orderDetailPaymentStatusPartial;
       case 'refunded':
-        return 'Refund';
+        return _t.orderDetailPaymentStatusRefunded;
       case 'pending':
       default:
-        return 'Belum Dibayar';
+        return _t.orderDetailPaymentStatusPending;
     }
   }
 
@@ -659,7 +666,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       final historyEntry = {
         'status': newStatus,
         'timestamp': Timestamp.now(),
-        'note': note ?? 'Status diubah ke ${_getStatusLabel(newStatus)}',
+        'note': note ?? _t.statusChangedNoteTemplate(_getStatusLabel(newStatus)),
       };
 
       final updateData = <String, dynamic>{
@@ -675,13 +682,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       await _ordersRef.doc(widget.orderId).update(updateData);
 
       if (mounted) {
-        _showSnack('Status berhasil diubah menjadi ${_getStatusLabel(newStatus)}');
+        _showSnack(_t.statusUpdateSuccess(_getStatusLabel(newStatus)));
       }
 
       await _fetchOrder();
     } catch (e) {
       if (mounted) {
-        _showSnack('Gagal mengupdate status: ${e.toString()}', isError: true);
+        _showSnack(_t.statusUpdateError(e.toString()), isError: true);
       }
     } finally {
       if (mounted) setState(() => _isUpdatingStatus = false);
@@ -704,7 +711,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rLg)),
             title: Text(
-              'Konfirmasi Pembayaran',
+              _t.confirmPaymentDialogTitle,
               style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cOnSurface),
             ),
             content: Column(
@@ -712,7 +719,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Sisa tagihan: ${_formatCurrency(remaining)}',
+                  _t.remainingBillDialogLabel(_formatCurrency(remaining)),
                   style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
                 ),
                 const SizedBox(height: AppTheme.md),
@@ -721,7 +728,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   keyboardType: TextInputType.number,
                   style: GoogleFonts.beVietnamPro(fontSize: 13.5),
                   decoration: InputDecoration(
-                    labelText: 'Nominal Dibayar',
+                    labelText: _t.amountPaidFieldLabel,
                     labelStyle: GoogleFonts.beVietnamPro(fontSize: 12.5),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -738,7 +745,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ],
                   onChanged: (val) => setDialogState(() => selectedMethod = val ?? selectedMethod),
                   decoration: InputDecoration(
-                    labelText: 'Metode',
+                    labelText: _t.methodFieldLabel,
                     labelStyle: GoogleFonts.beVietnamPro(fontSize: 12.5),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -748,7 +755,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: Text('Batal', style: GoogleFonts.beVietnamPro(color: _cOnSurfaceVariant)),
+                child: Text(_t.cancel, style: GoogleFonts.beVietnamPro(color: _cOnSurfaceVariant)),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(dialogContext, true),
@@ -758,7 +765,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: Text('Simpan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+                child: Text(_t.saveButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
               ),
             ],
           );
@@ -772,13 +779,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final amount = double.tryParse(rawAmount) ?? 0;
 
     if (amount <= 0) {
-      _showSnack('Nominal harus lebih dari Rp0', isError: true);
+      _showSnack(_t.amountMustBePositiveError, isError: true);
       return;
     }
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw 'Sesi tidak ditemukan, silakan login ulang.';
+      if (user == null) throw _t.sessionNotFoundError;
 
       await OrderRepository(userId: user.uid).recordPayment(
         widget.orderId,
@@ -789,7 +796,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         ),
       );
 
-      _showSnack('Pembayaran berhasil dicatat');
+      _showSnack(_t.paymentRecordSuccess);
       await _fetchOrder();
     } catch (e) {
       _showSnack(e.toString(), isError: true);
@@ -814,7 +821,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   /// validasi nomor kosong yang sama.
   Future<void> _launchWhatsappMessage(String phone, String message) async {
     if (phone.isEmpty) {
-      _showSnack('Nomor telepon pelanggan tidak tersedia', isError: true);
+      _showSnack(_t.customerPhoneUnavailable, isError: true);
       return;
     }
 
@@ -822,7 +829,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final uri = Uri.https('wa.me', '/$normalized', {'text': message});
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && mounted) {
-      _showSnack('Tidak bisa membuka WhatsApp', isError: true);
+      _showSnack(_t.whatsappOpenError, isError: true);
     }
   }
 
@@ -833,13 +840,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Future<void> _openWhatsapp(_OrderDetailData order) async {
     final String message;
     if (order.deliveryType == 'delivery') {
-      message = 'Halo kak ${order.customerName}!, ini Netwash 😊 . '
-          'Pesanan kamu (${order.orderNumber}) sudah selesai dan akan segera kami antar ke alamat kakak ya. '
-          'Ditunggu ya kak 🙏';
+      message = _t.whatsappOrderReadyDeliveryMessage(order.customerName, order.orderNumber);
     } else {
-      message = 'Halo kak ${order.customerName}!, ini Netwash 😊 . '
-          'Pesanan kamu (${order.orderNumber}) sudah selesai dan siap. '
-          'Mau diantar ke alamat atau mau diambil sendiri ya?';
+      message = _t.whatsappOrderReadyPickupMessage(order.customerName, order.orderNumber);
     }
 
     await _launchWhatsappMessage(order.customerPhone, message);
@@ -850,7 +853,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   /// ini cuma sapaan umum yang nyebut nomor pesanan, dipakai di status apa
   /// pun.
   Future<void> _contactCustomerWhatsapp(_OrderDetailData order) async {
-    final message = 'Halo kak ${order.customerName}, ini dari Netwash terkait pesanan ${order.orderNumber}.';
+    final message = _t.whatsappContactMessage(order.customerName, order.orderNumber);
     await _launchWhatsappMessage(order.customerPhone, message);
   }
 
@@ -861,31 +864,31 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   /// kebutuhan kasir.
   Future<void> _sendReceiptWhatsapp(_OrderDetailData order) async {
     final buffer = StringBuffer();
-    buffer.writeln('*Struk Pesanan - Netwash*');
-    buffer.writeln('No. Pesanan: ${order.orderNumber}');
-    buffer.writeln('Tanggal: ${_formatDate(order.orderDate)}');
-    buffer.writeln('Pelanggan: ${order.customerName}');
+    buffer.writeln('*${_t.receiptWhatsappTitle}*');
+    buffer.writeln('${_t.receiptOrderNumberLabel}: ${order.orderNumber}');
+    buffer.writeln('${_t.receiptDateLabel}: ${_formatDate(order.orderDate)}');
+    buffer.writeln('${_t.receiptCustomerLabel}: ${order.customerName}');
     buffer.writeln('');
-    buffer.writeln('*Item:*');
+    buffer.writeln('*${_t.receiptItemsLabel}:*');
     for (final item in order.items) {
       final lineTotal = item.price * item.quantity;
       buffer.writeln('${item.name} x${item.quantity} - ${_formatCurrency(lineTotal)}');
     }
     buffer.writeln('');
-    buffer.writeln('Subtotal: ${_formatCurrency(order.subtotal)}');
+    buffer.writeln('${_t.subtotalLabel}: ${_formatCurrency(order.subtotal)}');
     if (order.taxAmount > 0) {
-      buffer.writeln('Pajak: ${_formatCurrency(order.taxAmount)}');
+      buffer.writeln('${_t.taxLabel}: ${_formatCurrency(order.taxAmount)}');
     }
-    buffer.writeln('*Total: ${_formatCurrency(order.totalAmount)}*');
+    buffer.writeln('*${_t.receiptTotalLabel}: ${_formatCurrency(order.totalAmount)}*');
     buffer.writeln('');
-    buffer.writeln('Metode Bayar: ${_paymentMethodLabel(order.paymentMethodRaw)}');
-    buffer.writeln('Status Bayar: ${_getPaymentStatusLabel(order.paymentStatus)}');
-    buffer.writeln('Sudah Dibayar: ${_formatCurrency(order.paidAmount)}');
+    buffer.writeln('${_t.receiptPaymentMethodLabel}: ${_paymentMethodLabel(order.paymentMethodRaw)}');
+    buffer.writeln('${_t.receiptPaymentStatusLabel}: ${_getPaymentStatusLabel(order.paymentStatus)}');
+    buffer.writeln('${_t.paidAmountLabel}: ${_formatCurrency(order.paidAmount)}');
     if (order.remainingAmount > 0) {
-      buffer.writeln('Sisa Tagihan: ${_formatCurrency(order.remainingAmount)}');
+      buffer.writeln('${_t.remainingBillLabel}: ${_formatCurrency(order.remainingAmount)}');
     }
     buffer.writeln('');
-    buffer.writeln('Terima kasih sudah pakai Netwash 🙏');
+    buffer.writeln(_t.receiptThankYouMessage);
 
     await _launchWhatsappMessage(order.customerPhone, buffer.toString());
   }
@@ -924,7 +927,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     try {
       final bytes = await _captureReceiptImage();
       if (bytes == null) {
-        _showSnack('Gagal membuat gambar struk', isError: true);
+        _showSnack(_t.receiptImageGenerationError, isError: true);
         return;
       }
 
@@ -936,15 +939,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         // tetap ringan - kalau butuh testing di Chrome, pakai package
         // `universal_html` terpisah. Di HP asli, baris di bawah (mobile)
         // yang jalan.)
-        _showSnack('Download struk cuma didukung di aplikasi HP, bukan di web');
+        _showSnack(_t.receiptDownloadWebUnsupported);
         return;
       }
 
       await Gal.putImageBytes(bytes, name: fileName);
-      _showSnack('Struk tersimpan di galeri');
+      _showSnack(_t.receiptSavedToGallery);
     } catch (e) {
       if (mounted) {
-        _showSnack('Gagal mengunduh struk: ${e.toString()}', isError: true);
+        _showSnack(_t.receiptDownloadError(e.toString()), isError: true);
       }
     } finally {
       if (mounted) setState(() => _isGeneratingReceipt = false);
@@ -966,7 +969,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rLg)),
             title: Text(
-              directCancel ? 'Batalkan Pesanan?' : 'Ajukan Pembatalan?',
+              directCancel ? _t.cancelOrderDialogTitle : _t.requestCancellationDialogTitle,
               style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cOnSurface),
             ),
             content: Column(
@@ -974,9 +977,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  directCancel
-                      ? 'Tindakan ini akan mengubah status pesanan menjadi Dibatalkan.'
-                      : 'Pengajuan ini perlu disetujui Admin/Owner/Manager sebelum status pesanan berubah jadi Dibatalkan.',
+                  directCancel ? _t.cancelOrderDialogContent : _t.requestCancellationDialogContent,
                   style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
                 ),
                 const SizedBox(height: AppTheme.md),
@@ -985,7 +986,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   maxLines: 3,
                   style: GoogleFonts.beVietnamPro(fontSize: 13.5),
                   decoration: InputDecoration(
-                    labelText: 'Alasan pembatalan',
+                    labelText: _t.cancellationReasonFieldLabel,
                     labelStyle: GoogleFonts.beVietnamPro(fontSize: 12.5),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -995,13 +996,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: Text('Tidak', style: GoogleFonts.beVietnamPro(color: _cOnSurfaceVariant)),
+                child: Text(_t.noButtonLabel, style: GoogleFonts.beVietnamPro(color: _cOnSurfaceVariant)),
               ),
               TextButton(
                 onPressed: () {
                   final reason = reasonController.text.trim();
                   if (reason.isEmpty) {
-                    _showSnack('Alasan pembatalan wajib diisi', isError: true);
+                    _showSnack(_t.cancellationReasonRequiredError, isError: true);
                     return;
                   }
                   Navigator.pop(dialogContext);
@@ -1012,7 +1013,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   }
                 },
                 child: Text(
-                  directCancel ? 'Ya, Batalkan' : 'Ajukan Pembatalan',
+                  directCancel ? _t.yesCancelButtonLabel : _t.submitCancellationRequestButtonLabel,
                   style: GoogleFonts.beVietnamPro(color: _cError, fontWeight: FontWeight.w700),
                 ),
               ),
@@ -1054,17 +1055,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           {
             'status': 'cancelled',
             'timestamp': Timestamp.now(),
-            'note': 'Pesanan dibatalkan: $reason',
+            'note': _t.orderCancelledNoteTemplate(reason),
           }
         ]),
         'updated_at': FieldValue.serverTimestamp(),
         'cancellation_request': requestMap,
       });
 
-      if (mounted) _showSnack('Status berhasil diubah menjadi ${_getStatusLabel('cancelled')}');
+      if (mounted) _showSnack(_t.statusUpdateSuccess(_getStatusLabel('cancelled')));
       await _fetchOrder();
     } catch (e) {
-      if (mounted) _showSnack('Gagal membatalkan pesanan: ${e.toString()}', isError: true);
+      if (mounted) _showSnack(_t.cancelOrderError(e.toString()), isError: true);
     } finally {
       if (mounted) setState(() => _isSubmittingCancelAction = false);
     }
@@ -1091,14 +1092,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           {
             'status': _order!.status,
             'timestamp': Timestamp.now(),
-            'note': 'Pengajuan pembatalan oleh $_currentUserName: $reason',
+            'note': _t.cancellationRequestedNoteTemplate(_currentUserName, reason),
           }
         ]),
       });
-      if (mounted) _showSnack('Pengajuan pembatalan terkirim, menunggu persetujuan');
+      if (mounted) _showSnack(_t.cancellationRequestSubmitted);
       await _fetchOrder();
     } catch (e) {
-      if (mounted) _showSnack('Gagal mengirim pengajuan: ${e.toString()}', isError: true);
+      if (mounted) _showSnack(_t.cancellationRequestSubmitError(e.toString()), isError: true);
     } finally {
       if (mounted) setState(() => _isSubmittingCancelAction = false);
     }
@@ -1116,7 +1117,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           {
             'status': 'cancelled',
             'timestamp': Timestamp.now(),
-            'note': 'Pengajuan pembatalan disetujui oleh $_currentUserName',
+            'note': _t.cancellationApprovedNoteTemplate(_currentUserName),
           }
         ]),
         'updated_at': FieldValue.serverTimestamp(),
@@ -1124,10 +1125,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         'cancellation_request.reviewed_by_name': _currentUserName,
         'cancellation_request.reviewed_at': FieldValue.serverTimestamp(),
       });
-      if (mounted) _showSnack('Pengajuan pembatalan disetujui, pesanan dibatalkan');
+      if (mounted) _showSnack(_t.cancellationRequestApproved);
       await _fetchOrder();
     } catch (e) {
-      if (mounted) _showSnack('Gagal menyetujui pengajuan: ${e.toString()}', isError: true);
+      if (mounted) _showSnack(_t.cancellationRequestApproveError(e.toString()), isError: true);
     } finally {
       if (mounted) setState(() => _isSubmittingCancelAction = false);
     }
@@ -1146,14 +1147,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           {
             'status': order.status,
             'timestamp': Timestamp.now(),
-            'note': 'Pengajuan pembatalan ditolak oleh $_currentUserName',
+            'note': _t.cancellationRejectedNoteTemplate(_currentUserName),
           }
         ]),
       });
-      if (mounted) _showSnack('Pengajuan pembatalan ditolak');
+      if (mounted) _showSnack(_t.cancellationRequestRejected);
       await _fetchOrder();
     } catch (e) {
-      if (mounted) _showSnack('Gagal menolak pengajuan: ${e.toString()}', isError: true);
+      if (mounted) _showSnack(_t.cancellationRequestRejectError(e.toString()), isError: true);
     } finally {
       if (mounted) setState(() => _isSubmittingCancelAction = false);
     }
@@ -1277,16 +1278,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            _laundryName != null && _laundryName!.isNotEmpty ? _laundryName! : 'Struk Pesanan',
+            _laundryName != null && _laundryName!.isNotEmpty ? _laundryName! : _t.receiptFallbackSubtitle,
             textAlign: TextAlign.center,
             style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
           ),
           const SizedBox(height: 16),
           Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
-          _receiptRow('No. Pesanan', order.orderNumber),
-          _receiptRow('Tanggal', _formatDate(order.orderDate)),
-          _receiptRow('Pelanggan', order.customerName),
+          _receiptRow(_t.receiptOrderNumberLabel, order.orderNumber),
+          _receiptRow(_t.receiptDateLabel, _formatDate(order.orderDate)),
+          _receiptRow(_t.receiptCustomerLabel, order.customerName),
           const SizedBox(height: 12),
           Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
@@ -1314,13 +1315,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SizedBox(height: 12),
           Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
-          _receiptRow('Subtotal', _formatCurrency(order.subtotal)),
-          if (order.taxAmount > 0) _receiptRow('Pajak', _formatCurrency(order.taxAmount)),
+          _receiptRow(_t.subtotalLabel, _formatCurrency(order.subtotal)),
+          if (order.taxAmount > 0) _receiptRow(_t.taxLabel, _formatCurrency(order.taxAmount)),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total', style: GoogleFonts.beVietnamPro(fontSize: 14, fontWeight: FontWeight.w700, color: _cOnSurface)),
+              Text(_t.totalLabel, style: GoogleFonts.beVietnamPro(fontSize: 14, fontWeight: FontWeight.w700, color: _cOnSurface)),
               Text(
                 _formatCurrency(order.totalAmount),
                 style: GoogleFonts.beVietnamPro(fontSize: 16, fontWeight: FontWeight.w700, color: _cPrimary),
@@ -1330,13 +1331,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SizedBox(height: 12),
           Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
-          _receiptRow('Metode Bayar', _paymentMethodLabel(order.paymentMethodRaw)),
-          _receiptRow('Status Bayar', _getPaymentStatusLabel(order.paymentStatus)),
-          _receiptRow('Sudah Dibayar', _formatCurrency(order.paidAmount)),
-          if (order.remainingAmount > 0) _receiptRow('Sisa Tagihan', _formatCurrency(order.remainingAmount)),
+          _receiptRow(_t.receiptPaymentMethodLabel, _paymentMethodLabel(order.paymentMethodRaw)),
+          _receiptRow(_t.receiptPaymentStatusLabel, _getPaymentStatusLabel(order.paymentStatus)),
+          _receiptRow(_t.paidAmountLabel, _formatCurrency(order.paidAmount)),
+          if (order.remainingAmount > 0) _receiptRow(_t.remainingBillLabel, _formatCurrency(order.remainingAmount)),
           const SizedBox(height: 20),
           Text(
-            'Terima kasih sudah pakai Netwash 🙏',
+            _t.receiptThankYouMessage,
             textAlign: TextAlign.center,
             style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _cOnSurfaceVariant),
           ),
@@ -1393,7 +1394,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _order != null ? _order!.orderNumber : 'Detail Pesanan',
+                    _order != null ? _order!.orderNumber : _t.orderDetailTitle,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.beVietnamPro(
                       fontSize: 18,
@@ -1435,7 +1436,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             const SizedBox(height: AppTheme.lg),
             TextButton(
               onPressed: _fetchOrder,
-              child: Text('Coba lagi', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cPrimary)),
+              child: Text(_t.orderRetryButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cPrimary)),
             ),
           ],
         ),
@@ -1464,6 +1465,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   /// besar berwarna aksen) + badge cara pengiriman.
   Widget _buildStatusCard(BuildContext context, _OrderDetailData order) {
     final accent = _statusAccentColor(order.status);
+    final deliveryTypeLabel = order.isDelivery ? _t.orderDeliveryDelivery : _t.orderDeliverySelfPickup;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _cardDecoration(),
@@ -1478,7 +1480,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'STATUS PESANAN',
+                      _t.orderStatusSectionLabel.toUpperCase(),
                       style: GoogleFonts.beVietnamPro(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -1546,7 +1548,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       Icon(order.deliveryTypeIcon, size: 18, color: _cSecondary),
                       const SizedBox(width: 6),
                       Text(
-                        order.deliveryTypeLabel,
+                        deliveryTypeLabel,
                         style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _cSecondary),
                       ),
                     ],
@@ -1602,7 +1604,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pesanan Dibatalkan',
+                  _t.orderCancelledTitle,
                   style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 15, color: _cError),
                 ),
                 if (cancelEntry != null) ...[
@@ -1634,7 +1636,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Lacak Progress',
+            _t.trackProgressTitle,
             style: GoogleFonts.beVietnamPro(fontSize: 14, fontWeight: FontWeight.w500, color: _cOnSurfaceVariant),
           ),
           const SizedBox(height: 20),
@@ -1744,7 +1746,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'INFORMASI PELANGGAN',
+                _t.customerInfoSectionLabel.toUpperCase(),
                 style: GoogleFonts.beVietnamPro(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -1792,7 +1794,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'CABANG TERDAFTAR',
+                          _t.registeredBranchLabel.toUpperCase(),
                           style: GoogleFonts.beVietnamPro(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
@@ -1818,9 +1820,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     final statsGrid = Row(
       children: [
-        Expanded(child: _miniStatCard(icon: Icons.shopping_bag_outlined, label: 'Jumlah Item', value: '${order.totalItemCount} item')),
+        Expanded(child: _miniStatCard(icon: Icons.shopping_bag_outlined, label: _t.itemCountLabel, value: _t.itemCountValueTemplate(order.totalItemCount))),
         const SizedBox(width: AppTheme.sm),
-        Expanded(child: _miniStatCard(icon: Icons.category_outlined, label: 'Layanan', value: order.serviceSummary)),
+        Expanded(child: _miniStatCard(icon: Icons.category_outlined, label: _t.serviceLabel, value: order.serviceSummary(_t.orderServiceMoreSuffix))),
       ],
     );
 
@@ -1842,9 +1844,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         Expanded(
           child: Column(
             children: [
-              _miniStatCard(icon: Icons.shopping_bag_outlined, label: 'Jumlah Item', value: '${order.totalItemCount} item'),
+              _miniStatCard(icon: Icons.shopping_bag_outlined, label: _t.itemCountLabel, value: _t.itemCountValueTemplate(order.totalItemCount)),
               const SizedBox(height: AppTheme.sm),
-              _miniStatCard(icon: Icons.category_outlined, label: 'Layanan', value: order.serviceSummary),
+              _miniStatCard(icon: Icons.category_outlined, label: _t.serviceLabel, value: order.serviceSummary(_t.orderServiceMoreSuffix)),
             ],
           ),
         ),
@@ -1893,7 +1895,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'RINCIAN BIAYA',
+            _t.costBreakdownSectionLabel.toUpperCase(),
             style: GoogleFonts.beVietnamPro(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -1935,7 +1937,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Subtotal', style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cSecondary)),
+                    Text(_t.subtotalLabel, style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cSecondary)),
                     Text(
                       _formatCurrency(order.subtotal),
                       style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w600, color: _cOnSurface),
@@ -1947,7 +1949,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Pajak', style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cSecondary)),
+                      Text(_t.taxLabel, style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cSecondary)),
                       Text(
                         _formatCurrency(order.taxAmount),
                         style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w600, color: _cOnSurface),
@@ -1965,7 +1967,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Total Tagihan', style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w700, color: _cPrimary)),
+                      Text(_t.totalBillLabel, style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w700, color: _cPrimary)),
                       Text(
                         _formatCurrency(order.totalAmount),
                         style: GoogleFonts.beVietnamPro(fontSize: 18, fontWeight: FontWeight.w700, color: _cPrimary),
@@ -2008,7 +2010,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'PEMBAYARAN',
+                      _t.paymentSectionLabel.toUpperCase(),
                       style: GoogleFonts.beVietnamPro(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -2048,7 +2050,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Sudah Dibayar', style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant)),
+                Text(_t.paidAmountLabel, style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant)),
                 Text(
                   _formatCurrency(order.paidAmount),
                   style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _cOnSurface),
@@ -2060,7 +2062,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Sisa Tagihan', style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant)),
+              Text(_t.remainingBillLabel, style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant)),
               Text(
                 _formatCurrency(order.remainingAmount),
                 style: GoogleFonts.beVietnamPro(
@@ -2078,7 +2080,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               child: ElevatedButton.icon(
                 onPressed: () => _showRecordPaymentDialog(order),
                 icon: const Icon(Icons.payments_outlined, size: 18),
-                label: Text('Konfirmasi Pembayaran', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13)),
+                label: Text(_t.confirmPaymentButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _cPrimaryContainer,
                   foregroundColor: Colors.white,
@@ -2098,7 +2100,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   icon: _isGeneratingReceipt
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _cPrimary))
                       : const Icon(Icons.download_outlined, size: 18),
-                  label: Text('Download Struk', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 12.5)),
+                  label: Text(_t.downloadReceiptButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 12.5)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _cPrimary,
                     side: const BorderSide(color: _cPrimary),
@@ -2113,7 +2115,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () => _sendReceiptWhatsapp(order),
                   icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                  label: Text('Kirim Struk via WA', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 12.5)),
+                  label: Text(_t.sendReceiptWhatsappButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 12.5)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF25D366),
                     side: const BorderSide(color: Color(0xFF25D366)),
@@ -2151,7 +2153,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'RIWAYAT PEMBAYARAN',
+                _t.paymentHistorySectionLabel.toUpperCase(),
                 style: GoogleFonts.beVietnamPro(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -2213,7 +2215,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'CATATAN',
+            _t.notesSectionLabel.toUpperCase(),
             style: GoogleFonts.beVietnamPro(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -2241,7 +2243,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         onPressed: busy ? null : _confirmCancelOrder,
         icon: const Icon(Icons.cancel_outlined, size: 18, color: _cError),
         label: Text(
-          _canCancelDirectly ? 'Batalkan Pesanan' : 'Ajukan Pembatalan',
+          _canCancelDirectly ? _t.cancelOrderButtonLabel : _t.submitCancellationRequestButtonLabel,
           style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13.5, color: _cError),
         ),
       ),
@@ -2273,7 +2275,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Menunggu Persetujuan Pembatalan',
+                  _t.pendingCancellationApprovalTitle,
                   style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13.5, color: _cYellowText),
                 ),
               ),
@@ -2281,12 +2283,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Diajukan oleh ${request.requestedByName.isNotEmpty ? request.requestedByName : 'Karyawan'}',
+            _t.requestedByLabel(request.requestedByName.isNotEmpty ? request.requestedByName : _t.employeeFallbackLabel),
             style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600, color: _cOnSurfaceVariant),
           ),
           const SizedBox(height: 4),
           Text(
-            'Alasan: ${request.reason}',
+            _t.reasonLabel(request.reason),
             style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant, height: 1.5),
           ),
           if (_canCancelDirectly) ...[
@@ -2301,7 +2303,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       side: BorderSide(color: _cOutlineVariant),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rXl)),
                     ),
-                    child: Text('Tolak', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13)),
+                    child: Text(_t.rejectButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13)),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -2316,7 +2318,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     ),
                     child: busy
                         ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text('Setujui', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13)),
+                        : Text(_t.approveButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13)),
                   ),
                 ),
               ],
@@ -2348,7 +2350,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
 
     if (scheduled == true) {
-      _showSnack('Pengantaran berhasil dijadwalkan');
+      _showSnack(_t.deliveryScheduleSuccess);
       await _fetchOrder();
     }
   }
@@ -2385,7 +2387,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       onPressed: () => _openWhatsapp(order),
                       icon: const Icon(Icons.chat_outlined, size: 18),
                       label: Text(
-                        order.isDelivery ? 'Kabari Siap Diantar' : 'Kabari via WhatsApp',
+                        order.isDelivery ? _t.notifyReadyForDeliveryButtonLabel : _t.notifyViaWhatsappButtonLabel,
                         style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -2405,7 +2407,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           ? null
                           : () => _openScheduleDeliverySheet(order),
                       icon: const Icon(Icons.local_shipping_outlined, size: 18),
-                      label: Text('Jadwalkan Pengantaran', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14)),
+                      label: Text(_t.scheduleDeliveryButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _cPrimaryContainer,
                         foregroundColor: Colors.white,
@@ -2442,7 +2444,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () => _contactCustomerWhatsapp(order),
                     icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                    label: Text('Hubungi Pelanggan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                    label: Text(_t.contactCustomerButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13.5)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: _cPrimary,
                       side: const BorderSide(color: _cPrimary, width: 1.5),

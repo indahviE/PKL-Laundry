@@ -896,7 +896,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneLabel => 'Phone Number';
 
   @override
-  String get addressLabel => 'Address';
+  String get customerAddressLabel => 'Full Address';
 
   @override
   String get orderHistoryTitle => 'Order History';
@@ -912,13 +912,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orderStatusPending => 'Pending';
 
   @override
-  String get orderStatusConfirmed => 'Confirmed';
+  String get customerOrderStatusConfirmed => 'Confirmed';
 
   @override
   String get orderStatusInProgress => 'In Progress';
 
   @override
-  String get orderStatusProcessing => 'Processing';
+  String get customerOrderStatusProcessing => 'Processing';
 
   @override
   String get orderStatusCompleted => 'Completed';
@@ -945,7 +945,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customerNameEmptyError => 'Customer name cannot be empty';
 
   @override
-  String get phoneNumberLabel => 'Phone Number';
+  String get customerPhoneNumberLabel => 'Phone Number';
 
   @override
   String get phoneNumberHint => 'Example: 081234567890';
@@ -1073,7 +1073,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get branchContactPhoneLabel => 'Nomor Telepon';
 
   @override
-  String get emailOptionalLabel => 'Email (Optional)';
+  String get branchEmailOptionalLabel => 'Branch Email (Optional)';
 
   @override
   String get managerOptionalLabel => 'Branch Manager (Optional)';
@@ -1199,7 +1199,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get branchCodeHint => 'e.g. JKT001';
 
   @override
-  String get addressHint => 'Enter complete home address';
+  String get branchAddressHint => 'e.g. Jl. Merdeka No. 123';
 
   @override
   String get cityHint => 'Jakarta';
@@ -1383,13 +1383,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deactivateBranchButton => 'Deactivate Branch';
 
   @override
-  String get ordersListTitle => 'Orders';
-
-  @override
   String get ordersListSubtitle => 'Kelola semua pesanan laundry Anda';
 
   @override
-  String get newOrderButtonLabel => 'Baru';
+  String get newOrderButtonLabel => 'New';
 
   @override
   String get searchOrderHint => 'Search order...';
@@ -1401,28 +1398,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orderProcessingStatus => 'Diproses';
 
   @override
-  String get orderCompletedStatus => 'Completed';
-
-  @override
-  String get orderCancelledStatus => 'Cancelled';
-
-  @override
-  String get orderTotalOrdersLabel => 'Total Pesanan';
-
-  @override
-  String get orderTotalRevenueLabel => 'Total Revenue';
-
-  @override
   String get orderRetryButtonLabel => 'Try Again';
-
-  @override
-  String get orderNoOrdersLabel => 'No orders yet';
-
-  @override
-  String get orderNoOrdersSubtitle => 'Buat pesanan baru untuk memulai';
-
-  @override
-  String get orderCreateOrderButtonLabel => 'Create your first order now';
 
   @override
   String get orderSessionNotFoundError =>
@@ -1459,7 +1435,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subtotalLabel => 'Subtotal';
 
   @override
-  String get taxLabel => 'Pajak';
+  String get taxLabel => 'Tax';
 
   @override
   String get totalLabel => 'Total';
@@ -1573,7 +1549,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'No active branches yet. Add a branch first from the Branches menu.';
 
   @override
-  String get selectBranchHint => 'Select Branch';
+  String get createOrderSelectBranchHint => 'Select branch';
 
   @override
   String get useMapLocationButton => 'Use map location';
@@ -1986,10 +1962,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get employeeNameRequiredError => 'Employee name is required';
 
   @override
+  String get phoneNumberLabel => 'Phone Number';
+
+  @override
   String get phoneNumberRequiredError => 'Phone number is required';
 
   @override
+  String get emailOptionalLabel => 'Email (Optional)';
+
+  @override
   String get invalidEmailFormatError => 'Invalid email format';
+
+  @override
+  String get addressLabel => 'Address';
+
+  @override
+  String get addressHint => 'Enter complete home address';
 
   @override
   String get roleLabel => 'Role / Position';
@@ -2005,6 +1993,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get registerNewBranchFirstButton => '+ Register a New Branch First';
+
+  @override
+  String get selectBranchHint => 'Select Branch';
 
   @override
   String get branchRequiredError => 'Assigned branch must be selected';
@@ -2174,6 +2165,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unnamedBranchFallback => 'Unnamed Branch';
 
   @override
+  String get ordersListTitle => 'Orders';
+
+  @override
+  String get orderCompletedStatus => 'Completed';
+
+  @override
+  String get orderCancelledStatus => 'Cancelled';
+
+  @override
+  String get orderNoOrdersLabel => 'No orders yet';
+
+  @override
+  String get orderCreateOrderButtonLabel => 'Create your first order now';
+
+  @override
   String get orderNoOrdersInBranch => 'No orders in this branch';
 
   @override
@@ -2182,6 +2188,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderStatusWaiting => 'Waiting';
+
+  @override
+  String get orderStatusConfirmed => 'Confirmed';
+
+  @override
+  String get orderStatusProcessing => 'Processing';
 
   @override
   String get orderStatusWashing => 'Washing';
@@ -2291,4 +2303,395 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatCsInputHint => 'Write a message to CS...';
+
+  @override
+  String get orderDetailStatusPending => 'Waiting';
+
+  @override
+  String get orderDetailStatusConfirmed => 'Confirmed';
+
+  @override
+  String get orderDetailStatusInProgress => 'Processing';
+
+  @override
+  String get orderDetailStatusWashing => 'Washing';
+
+  @override
+  String get orderDetailStatusDrying => 'Drying';
+
+  @override
+  String get orderDetailStatusIroning => 'Ironing';
+
+  @override
+  String get orderDetailStatusQualityCheck => 'Quality Check';
+
+  @override
+  String get orderDetailStatusReady => 'Ready to Pick Up/Deliver';
+
+  @override
+  String get orderDetailStatusCompleted => 'Completed';
+
+  @override
+  String get orderDetailStatusCancelled => 'Cancelled';
+
+  @override
+  String get orderDetailNotePending => 'Waiting for confirmation';
+
+  @override
+  String get orderDetailNoteConfirmed => 'Order has been confirmed';
+
+  @override
+  String get orderDetailNoteInProgress => 'Being processed';
+
+  @override
+  String get orderDetailNoteWashing => 'In the washing machine';
+
+  @override
+  String get orderDetailNoteDrying => 'Being dried';
+
+  @override
+  String get orderDetailNoteIroning => 'Being ironed';
+
+  @override
+  String get orderDetailNoteQualityCheck => 'Quality is being checked';
+
+  @override
+  String get orderDetailNoteReady => 'Ready for pickup / delivery';
+
+  @override
+  String get orderDetailNoteCompleted => 'Order is complete';
+
+  @override
+  String get paymentMethodCash => 'Cash';
+
+  @override
+  String get paymentMethodTransfer => 'Bank Transfer';
+
+  @override
+  String get paymentMethodDebit => 'Debit Card';
+
+  @override
+  String get paymentMethodEwallet => 'E-Wallet';
+
+  @override
+  String get orderDetailPaymentStatusPaid => 'Paid';
+
+  @override
+  String get orderDetailPaymentStatusPartial => 'Partially Paid';
+
+  @override
+  String get orderDetailPaymentStatusRefunded => 'Refunded';
+
+  @override
+  String get orderDetailPaymentStatusPending => 'Unpaid';
+
+  @override
+  String statusUpdateSuccess(String status) {
+    return 'Status successfully changed to $status';
+  }
+
+  @override
+  String statusUpdateError(String error) {
+    return 'Failed to update status: $error';
+  }
+
+  @override
+  String get paymentRecordSuccess => 'Payment recorded successfully';
+
+  @override
+  String get customerPhoneUnavailable =>
+      'Customer phone number is not available';
+
+  @override
+  String get whatsappOpenError => 'Couldn\'t open WhatsApp';
+
+  @override
+  String get amountMustBePositiveError => 'Amount must be greater than Rp0';
+
+  @override
+  String get receiptDownloadWebUnsupported =>
+      'Receipt download is only supported on the mobile app, not on web';
+
+  @override
+  String get receiptImageGenerationError => 'Failed to generate receipt image';
+
+  @override
+  String get receiptSavedToGallery => 'Receipt saved to gallery';
+
+  @override
+  String receiptDownloadError(String error) {
+    return 'Failed to download receipt: $error';
+  }
+
+  @override
+  String get cancellationReasonRequiredError =>
+      'Cancellation reason is required';
+
+  @override
+  String cancelOrderError(String error) {
+    return 'Failed to cancel order: $error';
+  }
+
+  @override
+  String get cancellationRequestSubmitted =>
+      'Cancellation request submitted, awaiting approval';
+
+  @override
+  String cancellationRequestSubmitError(String error) {
+    return 'Failed to submit request: $error';
+  }
+
+  @override
+  String get cancellationRequestApproved =>
+      'Cancellation request approved, order cancelled';
+
+  @override
+  String cancellationRequestApproveError(String error) {
+    return 'Failed to approve request: $error';
+  }
+
+  @override
+  String get cancellationRequestRejected => 'Cancellation request rejected';
+
+  @override
+  String cancellationRequestRejectError(String error) {
+    return 'Failed to reject request: $error';
+  }
+
+  @override
+  String get deliveryScheduleSuccess => 'Delivery scheduled successfully';
+
+  @override
+  String statusChangedNoteTemplate(String status) {
+    return 'Status changed to $status';
+  }
+
+  @override
+  String orderCancelledNoteTemplate(String reason) {
+    return 'Order cancelled: $reason';
+  }
+
+  @override
+  String cancellationRequestedNoteTemplate(String name, String reason) {
+    return 'Cancellation requested by $name: $reason';
+  }
+
+  @override
+  String cancellationApprovedNoteTemplate(String name) {
+    return 'Cancellation request approved by $name';
+  }
+
+  @override
+  String cancellationRejectedNoteTemplate(String name) {
+    return 'Cancellation request rejected by $name';
+  }
+
+  @override
+  String whatsappOrderReadyDeliveryMessage(String name, String orderNumber) {
+    return 'Hi $name, this is Netwash 😊. Your order ($orderNumber) is complete and will be delivered to your address shortly. Thanks for waiting 🙏';
+  }
+
+  @override
+  String whatsappOrderReadyPickupMessage(String name, String orderNumber) {
+    return 'Hi $name, this is Netwash 😊. Your order ($orderNumber) is complete and ready. Would you like it delivered or will you pick it up yourself?';
+  }
+
+  @override
+  String whatsappContactMessage(String name, String orderNumber) {
+    return 'Hi $name, this is Netwash regarding order $orderNumber.';
+  }
+
+  @override
+  String get receiptWhatsappTitle => 'Netwash Order Receipt';
+
+  @override
+  String get receiptOrderNumberLabel => 'Order No.';
+
+  @override
+  String get receiptDateLabel => 'Date';
+
+  @override
+  String get receiptCustomerLabel => 'Customer';
+
+  @override
+  String get receiptItemsLabel => 'Items';
+
+  @override
+  String get receiptTotalLabel => 'Total';
+
+  @override
+  String get receiptPaymentMethodLabel => 'Payment Method';
+
+  @override
+  String get receiptPaymentStatusLabel => 'Payment Status';
+
+  @override
+  String get receiptThankYouMessage => 'Thank you for using Netwash 🙏';
+
+  @override
+  String get receiptFallbackSubtitle => 'Order Receipt';
+
+  @override
+  String get confirmPaymentDialogTitle => 'Confirm Payment';
+
+  @override
+  String remainingBillDialogLabel(String amount) {
+    return 'Remaining bill: $amount';
+  }
+
+  @override
+  String get amountPaidFieldLabel => 'Amount Paid';
+
+  @override
+  String get methodFieldLabel => 'Method';
+
+  @override
+  String get saveButtonLabel => 'Save';
+
+  @override
+  String get cancelOrderDialogTitle => 'Cancel Order?';
+
+  @override
+  String get requestCancellationDialogTitle => 'Request Cancellation?';
+
+  @override
+  String get cancelOrderDialogContent =>
+      'This action will change the order status to Cancelled.';
+
+  @override
+  String get requestCancellationDialogContent =>
+      'This request needs to be approved by an Admin/Owner/Manager before the order status changes to Cancelled.';
+
+  @override
+  String get cancellationReasonFieldLabel => 'Cancellation reason';
+
+  @override
+  String get noButtonLabel => 'No';
+
+  @override
+  String get yesCancelButtonLabel => 'Yes, Cancel';
+
+  @override
+  String get submitCancellationRequestButtonLabel => 'Request Cancellation';
+
+  @override
+  String get orderDetailTitle => 'Order Detail';
+
+  @override
+  String get orderStatusSectionLabel => 'Order Status';
+
+  @override
+  String get orderCancelledTitle => 'Order Cancelled';
+
+  @override
+  String get trackProgressTitle => 'Track Progress';
+
+  @override
+  String get customerInfoSectionLabel => 'Customer Information';
+
+  @override
+  String get registeredBranchLabel => 'Registered Branch';
+
+  @override
+  String get itemCountLabel => 'Item Count';
+
+  @override
+  String itemCountValueTemplate(int count) {
+    return '$count items';
+  }
+
+  @override
+  String get serviceLabel => 'Service';
+
+  @override
+  String get costBreakdownSectionLabel => 'Cost Breakdown';
+
+  @override
+  String get totalBillLabel => 'Total Bill';
+
+  @override
+  String get paymentSectionLabel => 'Payment';
+
+  @override
+  String get paidAmountLabel => 'Amount Paid';
+
+  @override
+  String get remainingBillLabel => 'Remaining Bill';
+
+  @override
+  String get confirmPaymentButtonLabel => 'Confirm Payment';
+
+  @override
+  String get downloadReceiptButtonLabel => 'Download Receipt';
+
+  @override
+  String get sendReceiptWhatsappButtonLabel => 'Send Receipt via WA';
+
+  @override
+  String get paymentHistorySectionLabel => 'Payment History';
+
+  @override
+  String get notesSectionLabel => 'Notes';
+
+  @override
+  String get cancelOrderButtonLabel => 'Cancel Order';
+
+  @override
+  String get pendingCancellationApprovalTitle =>
+      'Awaiting Cancellation Approval';
+
+  @override
+  String requestedByLabel(String name) {
+    return 'Requested by $name';
+  }
+
+  @override
+  String reasonLabel(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get employeeFallbackLabel => 'Employee';
+
+  @override
+  String get rejectButtonLabel => 'Reject';
+
+  @override
+  String get approveButtonLabel => 'Approve';
+
+  @override
+  String get notifyReadyForDeliveryButtonLabel => 'Notify Ready for Delivery';
+
+  @override
+  String get notifyViaWhatsappButtonLabel => 'Notify via WhatsApp';
+
+  @override
+  String get scheduleDeliveryButtonLabel => 'Schedule Delivery';
+
+  @override
+  String get contactCustomerButtonLabel => 'Contact Customer';
+
+  @override
+  String get confirmOrderButtonLabel => 'Confirm Order';
+
+  @override
+  String get startProcessButtonLabel => 'Start Processing';
+
+  @override
+  String get startWashingButtonLabel => 'Start Washing';
+
+  @override
+  String get finishWashingButtonLabel => 'Finish Washing';
+
+  @override
+  String get finishDryingButtonLabel => 'Finish Drying';
+
+  @override
+  String get finishIroningButtonLabel => 'Finish Ironing';
+
+  @override
+  String get passQualityCheckButtonLabel => 'Pass Quality Check';
+
+  @override
+  String get markCompletedButtonLabel => 'Mark as Completed';
 }

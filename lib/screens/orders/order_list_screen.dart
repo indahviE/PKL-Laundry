@@ -152,10 +152,10 @@ class OrderItem {
   bool get isPickup => orderType == 'pickup';
   bool get isDelivery => deliveryType == 'delivery';
 
-  String get orderTypeLabel => isPickup ? 'Dijemput' : 'Walk-in';
+  String orderTypeLabel(AppLocalizations t) => isPickup ? t.orderTypePickup : t.orderTypeWalkIn;
   IconData get orderTypeIcon => isPickup ? Icons.call_received_rounded : Icons.storefront_outlined;
 
-  String get deliveryTypeLabel => isDelivery ? 'Diantar' : 'Ambil Sendiri';
+  String deliveryTypeLabel(AppLocalizations t) => isDelivery ? t.orderDeliveryDelivery : t.orderDeliverySelfPickup;
   IconData get deliveryTypeIcon => isDelivery ? Icons.call_made_rounded : Icons.storefront_outlined;
 }
 
@@ -167,11 +167,11 @@ class _LaundryOption {
 
   _LaundryOption({required this.id, required this.name});
 
-  factory _LaundryOption.fromFirestore(DocumentSnapshot doc) {
+  factory _LaundryOption.fromFirestore(DocumentSnapshot doc, AppLocalizations t) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
     return _LaundryOption(
       id: doc.id,
-      name: (data['name'] ?? 'Cabang Tanpa Nama') as String,
+      name: (data['name'] ?? t.unnamedBranchFallback) as String,
     );
   }
 }
@@ -242,8 +242,9 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
           .get();
 
       if (mounted) {
+        final t = AppLocalizations.of(context)!;
         setState(() {
-          _laundriesList = laundriesSnap.docs.map((d) => _LaundryOption.fromFirestore(d)).toList();
+          _laundriesList = laundriesSnap.docs.map((d) => _LaundryOption.fromFirestore(d, t)).toList();
         });
       }
     } catch (_) {
@@ -271,7 +272,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
     if (user == null) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Sesi tidak ditemukan, silakan login ulang.';
+        _errorMessage = AppLocalizations.of(context)!.sessionExpiredError;
       });
       return;
     }
@@ -530,6 +531,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
   /// primary + teks putih, unselected = putih + border outline-variant.
   /// Cuma dirender kalau _showLaundryFilter true (cabang > 1).
   Widget _buildLaundryFilterButtons(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return SizedBox(
       height: 36,
       child: ListView(
@@ -537,7 +539,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
         physics: const BouncingScrollPhysics(),
         children: [
           _buildLaundryChip(
-            label: 'Semua Cabang',
+            label: t.allBranchesLabel,
             isSelected: _selectedLaundryId == 'all',
             onTap: () {
               setState(() => _selectedLaundryId = 'all');
@@ -598,13 +600,14 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
   /// Selesai, merah Dibatalkan). "Semua" pakai netral surface-container.
   /// Yang lagi aktif ditebalkan border & warna latarnya.
   Widget _buildFilterButtons(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final filters = <(String, String)>[
-      ('all', 'Semua'),
-      ('pending', 'Menunggu'),
-      ('inProgress', 'Diproses'),
-      ('ready', 'Siap Diambil'),
-      ('completed', 'Selesai'),
-      ('cancelled', 'Dibatalkan'),
+      ('all', t.filterAllLabel),
+      ('pending', t.orderStatusWaiting),
+      ('inProgress', t.orderStatusProcessing),
+      ('ready', t.orderStatusReady),
+      ('completed', t.orderCompletedStatus),
+      ('cancelled', t.orderCancelledStatus),
     ];
 
     return SizedBox(
@@ -672,6 +675,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
 
   /// Build error state
   Widget _buildErrorState(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppTheme.xxl),
@@ -687,7 +691,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
             const SizedBox(height: AppTheme.lg),
             TextButton(
               onPressed: _listenToOrders,
-              child: Text('Coba lagi', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cPrimary)),
+              child: Text(t.orderRetryButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cPrimary)),
             ),
           ],
         ),

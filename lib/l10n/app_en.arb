@@ -504,14 +504,14 @@
   "totalSpentLabel": "Total Spent",
   "contactInfoTitle": "Contact Information",
   "phoneLabel": "Phone Number",
-  "addressLabel": "Full Address",
+  "customerAddressLabel": "Full Address",
   "orderHistoryTitle": "Order History",
   "viewAllOrdersComingSoon": "Navigate to full order history will be added",
   "noOrderHistoryLabel": "No order history yet",
   "orderStatusPending": "Pending",
-  "orderStatusConfirmed": "Confirmed",
+  "customerOrderStatusConfirmed": "Confirmed",
   "orderStatusInProgress": "In Progress",
-  "orderStatusProcessing": "Processing",
+  "customerOrderStatusProcessing": "Processing",
   "orderStatusCompleted": "Completed",
   "orderStatusCancelled": "Cancelled",
   "orderItemCountLabel": "· {count} items",
@@ -526,7 +526,7 @@
   "newCustomerHeaderSubtitle": "Complete the customer data to add them to the system",
   "customerNameHint": "Enter customer name",
   "customerNameEmptyError": "Customer name cannot be empty",
-  "phoneNumberLabel": "Phone Number",
+  "customerPhoneNumberLabel": "Phone Number",
   "phoneNumberHint": "Example: 081234567890",
   "phoneNumberEmptyError": "Phone number cannot be empty",
   "phoneNumberInvalidError": "Invalid phone number format",
@@ -578,7 +578,7 @@
   "branchCodeLabel": "Branch Code",
   "cityLabel": "City",
   "provinceLabel": "Province",
-  "emailOptionalLabel": "Branch Email (Optional)",
+  "branchEmailOptionalLabel": "Branch Email (Optional)",
   "managerOptionalLabel": "Branch Manager (Optional)",
   "noEmployeeDataInfo": "No employee data yet. Manager can be assigned later.",
   "dailyCapacityLabel": "Daily Capacity (Orders Count)",
@@ -625,7 +625,7 @@
   "selectCompanyHint": "Select company",
   "branchNameHint": "e.g. Merdeka Branch",
   "branchCodeHint": "e.g. JKT001",
-  "addressHint": "e.g. Jl. Merdeka No. 123",
+  "branchAddressHint": "e.g. Jl. Merdeka No. 123",
   "cityHint": "Jakarta",
   "provinceHint": "DKI Jakarta",
   "branchPhoneLabel": "Branch Phone Number",
@@ -766,7 +766,7 @@
   "autoFilledScheduleHint": "Date & time auto-filled from when the order was created",
   "selectBranchLabel": "Select Branch",
   "noActiveBranchesScheduleHint": "No active branches yet. Add a branch first from the Branches menu.",
-  "selectBranchHint": "Select branch",
+  "createOrderSelectBranchHint": "Select branch",
   "useMapLocationButton": "Use map location",
   "mapLocationComingSoon": "Map location picker is coming soon",
   "addressFieldExampleHint": "e.g. 123 Main St, South Jakarta...",
@@ -999,7 +999,6 @@
   "branchNotLinkedWarning": "Selected branch is not linked to company data. Please check the branch data again.",
   "quotaLimitReachedTitle": "Quota Limit Reached",
   "quotaLimitReachedContent": "The number of employees has reached the maximum quota of your current subscription plan. Please upgrade your plan.",
-  "upgradePlanButton": "Upgrade Plan",
   "employeeUpdateSuccess": "Employee data updated successfully!",
   "employeeAddSuccess": "Employee added successfully!",
   "employeeSaveError": "Failed to save employee data: {error}",
@@ -1098,7 +1097,6 @@
   "manageEmployeesTitle": "Manage Employees",
   "searchEmployeeHint": "Search employee name or phone number...",
   "filterAllLabel": "All",
-  "allBranchesLabel": "All Branches",
   "allRolesLabel": "All Roles",
   "totalEmployeesLabel": "Total Employees",
   "noEmployeesFoundTitle": "No employee data found",
@@ -1127,6 +1125,7 @@
   },
   "unnamedBranchFallback": "Unnamed Branch",
   "ordersListTitle": "Orders",
+  "newOrderButtonLabel": "New",
   "orderCompletedStatus": "Completed",
   "orderCancelledStatus": "Cancelled",
   "orderNoOrdersLabel": "No orders yet",
@@ -1148,7 +1147,6 @@
   "orderServiceMoreSuffix": "others",
   "orderTotalPaymentLabel": "Total Payment",
   "orderItemsLabel": "items",
-  "unnamedBranchFallback": "Unnamed Branch",
   "linkOpenError": "Couldn't open the link",
   "appVersionLabel": "Version {version}",
   "@appVersionLabel": {
@@ -1183,5 +1181,221 @@
     }
   },
   "chatEmptyStateMessage": "No conversation yet.\nType a message below to start chatting with CS.",
-  "chatCsInputHint": "Write a message to CS..."
+  "chatCsInputHint": "Write a message to CS...",
+  "subtotalLabel": "Subtotal",
+  "taxLabel": "Tax",
+  "orderDetailStatusPending": "Waiting",
+  "orderDetailStatusConfirmed": "Confirmed",
+  "orderDetailStatusInProgress": "Processing",
+  "orderDetailStatusWashing": "Washing",
+  "orderDetailStatusDrying": "Drying",
+  "orderDetailStatusIroning": "Ironing",
+  "orderDetailStatusQualityCheck": "Quality Check",
+  "orderDetailStatusReady": "Ready to Pick Up/Deliver",
+  "orderDetailStatusCompleted": "Completed",
+  "orderDetailStatusCancelled": "Cancelled",
+  "orderDetailNotePending": "Waiting for confirmation",
+  "orderDetailNoteConfirmed": "Order has been confirmed",
+  "orderDetailNoteInProgress": "Being processed",
+  "orderDetailNoteWashing": "In the washing machine",
+  "orderDetailNoteDrying": "Being dried",
+  "orderDetailNoteIroning": "Being ironed",
+  "orderDetailNoteQualityCheck": "Quality is being checked",
+  "orderDetailNoteReady": "Ready for pickup / delivery",
+  "orderDetailNoteCompleted": "Order is complete",
+  "paymentMethodCash": "Cash",
+  "paymentMethodTransfer": "Bank Transfer",
+  "paymentMethodDebit": "Debit Card",
+  "paymentMethodEwallet": "E-Wallet",
+  "orderDetailPaymentStatusPaid": "Paid",
+  "orderDetailPaymentStatusPartial": "Partially Paid",
+  "orderDetailPaymentStatusRefunded": "Refunded",
+  "orderDetailPaymentStatusPending": "Unpaid",
+  "statusUpdateSuccess": "Status successfully changed to {status}",
+  "@statusUpdateSuccess": {
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "statusUpdateError": "Failed to update status: {error}",
+  "@statusUpdateError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "paymentRecordSuccess": "Payment recorded successfully",
+  "customerPhoneUnavailable": "Customer phone number is not available",
+  "whatsappOpenError": "Couldn't open WhatsApp",
+  "amountMustBePositiveError": "Amount must be greater than Rp0",
+  "receiptDownloadWebUnsupported": "Receipt download is only supported on the mobile app, not on web",
+  "receiptImageGenerationError": "Failed to generate receipt image",
+  "receiptSavedToGallery": "Receipt saved to gallery",
+  "receiptDownloadError": "Failed to download receipt: {error}",
+  "@receiptDownloadError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "cancellationReasonRequiredError": "Cancellation reason is required",
+  "cancelOrderError": "Failed to cancel order: {error}",
+  "@cancelOrderError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "cancellationRequestSubmitted": "Cancellation request submitted, awaiting approval",
+  "cancellationRequestSubmitError": "Failed to submit request: {error}",
+  "@cancellationRequestSubmitError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "cancellationRequestApproved": "Cancellation request approved, order cancelled",
+  "cancellationRequestApproveError": "Failed to approve request: {error}",
+  "@cancellationRequestApproveError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "cancellationRequestRejected": "Cancellation request rejected",
+  "cancellationRequestRejectError": "Failed to reject request: {error}",
+  "@cancellationRequestRejectError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "deliveryScheduleSuccess": "Delivery scheduled successfully",
+  "statusChangedNoteTemplate": "Status changed to {status}",
+  "@statusChangedNoteTemplate": {
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "orderCancelledNoteTemplate": "Order cancelled: {reason}",
+  "@orderCancelledNoteTemplate": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "cancellationRequestedNoteTemplate": "Cancellation requested by {name}: {reason}",
+  "@cancellationRequestedNoteTemplate": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "reason": { "type": "String" }
+    }
+  },
+  "cancellationApprovedNoteTemplate": "Cancellation request approved by {name}",
+  "@cancellationApprovedNoteTemplate": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "cancellationRejectedNoteTemplate": "Cancellation request rejected by {name}",
+  "@cancellationRejectedNoteTemplate": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "whatsappOrderReadyDeliveryMessage": "Hi {name}, this is Netwash 😊. Your order ({orderNumber}) is complete and will be delivered to your address shortly. Thanks for waiting 🙏",
+  "@whatsappOrderReadyDeliveryMessage": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "orderNumber": { "type": "String" }
+    }
+  },
+  "whatsappOrderReadyPickupMessage": "Hi {name}, this is Netwash 😊. Your order ({orderNumber}) is complete and ready. Would you like it delivered or will you pick it up yourself?",
+  "@whatsappOrderReadyPickupMessage": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "orderNumber": { "type": "String" }
+    }
+  },
+  "whatsappContactMessage": "Hi {name}, this is Netwash regarding order {orderNumber}.",
+  "@whatsappContactMessage": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "orderNumber": { "type": "String" }
+    }
+  },
+  "receiptWhatsappTitle": "Netwash Order Receipt",
+  "receiptOrderNumberLabel": "Order No.",
+  "receiptDateLabel": "Date",
+  "receiptCustomerLabel": "Customer",
+  "receiptItemsLabel": "Items",
+  "receiptTotalLabel": "Total",
+  "receiptPaymentMethodLabel": "Payment Method",
+  "receiptPaymentStatusLabel": "Payment Status",
+  "receiptThankYouMessage": "Thank you for using Netwash 🙏",
+  "receiptFallbackSubtitle": "Order Receipt",
+  "confirmPaymentDialogTitle": "Confirm Payment",
+  "remainingBillDialogLabel": "Remaining bill: {amount}",
+  "@remainingBillDialogLabel": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "amountPaidFieldLabel": "Amount Paid",
+  "methodFieldLabel": "Method",
+  "saveButtonLabel": "Save",
+  "cancelOrderDialogTitle": "Cancel Order?",
+  "requestCancellationDialogTitle": "Request Cancellation?",
+  "cancelOrderDialogContent": "This action will change the order status to Cancelled.",
+  "requestCancellationDialogContent": "This request needs to be approved by an Admin/Owner/Manager before the order status changes to Cancelled.",
+  "cancellationReasonFieldLabel": "Cancellation reason",
+  "noButtonLabel": "No",
+  "yesCancelButtonLabel": "Yes, Cancel",
+  "submitCancellationRequestButtonLabel": "Request Cancellation",
+  "orderDetailTitle": "Order Detail",
+  "orderStatusSectionLabel": "Order Status",
+  "orderCancelledTitle": "Order Cancelled",
+  "trackProgressTitle": "Track Progress",
+  "customerInfoSectionLabel": "Customer Information",
+  "registeredBranchLabel": "Registered Branch",
+  "itemCountLabel": "Item Count",
+  "itemCountValueTemplate": "{count} items",
+  "@itemCountValueTemplate": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "serviceLabel": "Service",
+  "costBreakdownSectionLabel": "Cost Breakdown",
+  "totalBillLabel": "Total Bill",
+  "paymentSectionLabel": "Payment",
+  "paidAmountLabel": "Amount Paid",
+  "remainingBillLabel": "Remaining Bill",
+  "confirmPaymentButtonLabel": "Confirm Payment",
+  "downloadReceiptButtonLabel": "Download Receipt",
+  "sendReceiptWhatsappButtonLabel": "Send Receipt via WA",
+  "paymentHistorySectionLabel": "Payment History",
+  "notesSectionLabel": "Notes",
+  "cancelOrderButtonLabel": "Cancel Order",
+  "pendingCancellationApprovalTitle": "Awaiting Cancellation Approval",
+  "requestedByLabel": "Requested by {name}",
+  "@requestedByLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "reasonLabel": "Reason: {reason}",
+  "@reasonLabel": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "employeeFallbackLabel": "Employee",
+  "rejectButtonLabel": "Reject",
+  "approveButtonLabel": "Approve",
+  "notifyReadyForDeliveryButtonLabel": "Notify Ready for Delivery",
+  "notifyViaWhatsappButtonLabel": "Notify via WhatsApp",
+  "scheduleDeliveryButtonLabel": "Schedule Delivery",
+  "contactCustomerButtonLabel": "Contact Customer",
+  "confirmOrderButtonLabel": "Confirm Order",
+  "startProcessButtonLabel": "Start Processing",
+  "startWashingButtonLabel": "Start Washing",
+  "finishWashingButtonLabel": "Finish Washing",
+  "finishDryingButtonLabel": "Finish Drying",
+  "finishIroningButtonLabel": "Finish Ironing",
+  "passQualityCheckButtonLabel": "Pass Quality Check",
+  "markCompletedButtonLabel": "Mark as Completed"
 }
