@@ -2218,4 +2218,77 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderItemsLabel => 'items';
+
+  @override
+  String get linkOpenError => 'Couldn\'t open the link';
+
+  @override
+  String appVersionLabel(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get aboutAppDescription =>
+      'NetWash is an on-demand laundry app that makes it easy for you to pick up, wash, and deliver laundry hassle-free.';
+
+  @override
+  String get privacyPolicyLabel => 'Privacy Policy';
+
+  @override
+  String get termsConditionsLabel => 'Terms and Conditions';
+
+  @override
+  String get rateAppLabel => 'Rate the App';
+
+  @override
+  String get copyrightNotice => '© 2026 NetWash. All rights reserved.';
+
+  @override
+  String get searchFaqHint => 'Search questions...';
+
+  @override
+  String get notAnsweredContactUs => 'Not answered yet? Contact us';
+
+  @override
+  String get faqOrderQuestion => 'How do I place a laundry order?';
+
+  @override
+  String get faqOrderAnswer =>
+      'Open the Order menu, choose a service, set the pickup address, then confirm your order. A courier will arrive as scheduled.';
+
+  @override
+  String get faqDurationQuestion => 'How long does the laundry process take?';
+
+  @override
+  String get faqDurationAnswer =>
+      'Regular wash takes 1-2 business days, express is finished within 6 hours of pickup.';
+
+  @override
+  String get faqPaymentQuestion => 'What payment methods are available?';
+
+  @override
+  String get faqPaymentAnswer =>
+      'We accept bank transfer, e-wallet, and cash payment directly to the courier.';
+
+  @override
+  String get faqTrackQuestion => 'How do I track my order status?';
+
+  @override
+  String get faqTrackAnswer =>
+      'Open the Orders menu, select the active order, and the status will update automatically as it progresses.';
+
+  @override
+  String get chatCsScreenTitle => 'Chat and CS';
+
+  @override
+  String sendMessageError(String error) {
+    return 'Failed to send message: $error';
+  }
+
+  @override
+  String get chatEmptyStateMessage =>
+      'No conversation yet.\nType a message below to start chatting with CS.';
+
+  @override
+  String get chatCsInputHint => 'Write a message to CS...';
 }

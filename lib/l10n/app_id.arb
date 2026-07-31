@@ -1203,5 +1203,41 @@
   "orderDeliverySelfPickup": "Ambil Sendiri",
   "orderServiceMoreSuffix": "lainnya",
   "orderTotalPaymentLabel": "Total Pembayaran",
-  "orderItemsLabel": "item"
+  "orderItemsLabel": "item",
+  "unnamedBranchFallback": "Cabang Tanpa Nama",
+  "linkOpenError": "Tidak bisa membuka tautan",
+  "appVersionLabel": "Versi {version}",
+  "@appVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutAppDescription": "NetWash adalah aplikasi laundry on-demand yang memudahkan kamu menjemput, mencuci, dan mengantar pakaian tanpa repot.",
+  "privacyPolicyLabel": "Kebijakan Privasi",
+  "termsConditionsLabel": "Syarat dan Ketentuan",
+  "rateAppLabel": "Beri Rating Aplikasi",
+  "copyrightNotice": "© 2026 NetWash. All rights reserved.",
+  "searchFaqHint": "Cari pertanyaan...",
+  "notAnsweredContactUs": "Belum terjawab? Hubungi kami",
+  "faqOrderQuestion": "Bagaimana cara order cuci?",
+  "faqOrderAnswer": "Buka menu Order, pilih layanan, tentukan alamat jemput, lalu konfirmasi pesanan. Kurir akan datang sesuai jadwal.",
+  "faqDurationQuestion": "Berapa lama proses cucian?",
+  "faqDurationAnswer": "Proses cuci reguler 1-2 hari kerja, express selesai dalam 6 jam sejak dijemput.",
+  "faqPaymentQuestion": "Metode pembayaran apa saja?",
+  "faqPaymentAnswer": "Kami menerima transfer bank, e-wallet, dan pembayaran tunai langsung ke kurir.",
+  "faqTrackQuestion": "Cara lacak status pesanan?",
+  "faqTrackAnswer": "Buka menu Orders, pilih pesanan aktif, status akan otomatis update mengikuti tahap pengerjaan.",
+  "chatCsScreenTitle": "Chat dan CS",
+  "sendMessageError": "Gagal mengirim pesan: {error}",
+  "@sendMessageError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatEmptyStateMessage": "Belum ada percakapan.\nKetik pesan di bawah buat mulai chat dengan CS.",
+  "chatCsInputHint": "Tulis pesan ke CS..."
 }

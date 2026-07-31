@@ -1147,5 +1147,41 @@
   "orderDeliverySelfPickup": "Self-Pickup",
   "orderServiceMoreSuffix": "others",
   "orderTotalPaymentLabel": "Total Payment",
-  "orderItemsLabel": "items"
+  "orderItemsLabel": "items",
+  "unnamedBranchFallback": "Unnamed Branch",
+  "linkOpenError": "Couldn't open the link",
+  "appVersionLabel": "Version {version}",
+  "@appVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutAppDescription": "NetWash is an on-demand laundry app that makes it easy for you to pick up, wash, and deliver laundry hassle-free.",
+  "privacyPolicyLabel": "Privacy Policy",
+  "termsConditionsLabel": "Terms and Conditions",
+  "rateAppLabel": "Rate the App",
+  "copyrightNotice": "© 2026 NetWash. All rights reserved.",
+  "searchFaqHint": "Search questions...",
+  "notAnsweredContactUs": "Not answered yet? Contact us",
+  "faqOrderQuestion": "How do I place a laundry order?",
+  "faqOrderAnswer": "Open the Order menu, choose a service, set the pickup address, then confirm your order. A courier will arrive as scheduled.",
+  "faqDurationQuestion": "How long does the laundry process take?",
+  "faqDurationAnswer": "Regular wash takes 1-2 business days, express is finished within 6 hours of pickup.",
+  "faqPaymentQuestion": "What payment methods are available?",
+  "faqPaymentAnswer": "We accept bank transfer, e-wallet, and cash payment directly to the courier.",
+  "faqTrackQuestion": "How do I track my order status?",
+  "faqTrackAnswer": "Open the Orders menu, select the active order, and the status will update automatically as it progresses.",
+  "chatCsScreenTitle": "Chat and CS",
+  "sendMessageError": "Failed to send message: {error}",
+  "@sendMessageError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatEmptyStateMessage": "No conversation yet.\nType a message below to start chatting with CS.",
+  "chatCsInputHint": "Write a message to CS..."
 }

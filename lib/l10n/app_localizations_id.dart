@@ -2229,4 +2229,77 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get orderItemsLabel => 'item';
+
+  @override
+  String get linkOpenError => 'Tidak bisa membuka tautan';
+
+  @override
+  String appVersionLabel(String version) {
+    return 'Versi $version';
+  }
+
+  @override
+  String get aboutAppDescription =>
+      'NetWash adalah aplikasi laundry on-demand yang memudahkan kamu menjemput, mencuci, dan mengantar pakaian tanpa repot.';
+
+  @override
+  String get privacyPolicyLabel => 'Kebijakan Privasi';
+
+  @override
+  String get termsConditionsLabel => 'Syarat dan Ketentuan';
+
+  @override
+  String get rateAppLabel => 'Beri Rating Aplikasi';
+
+  @override
+  String get copyrightNotice => '© 2026 NetWash. All rights reserved.';
+
+  @override
+  String get searchFaqHint => 'Cari pertanyaan...';
+
+  @override
+  String get notAnsweredContactUs => 'Belum terjawab? Hubungi kami';
+
+  @override
+  String get faqOrderQuestion => 'Bagaimana cara order cuci?';
+
+  @override
+  String get faqOrderAnswer =>
+      'Buka menu Order, pilih layanan, tentukan alamat jemput, lalu konfirmasi pesanan. Kurir akan datang sesuai jadwal.';
+
+  @override
+  String get faqDurationQuestion => 'Berapa lama proses cucian?';
+
+  @override
+  String get faqDurationAnswer =>
+      'Proses cuci reguler 1-2 hari kerja, express selesai dalam 6 jam sejak dijemput.';
+
+  @override
+  String get faqPaymentQuestion => 'Metode pembayaran apa saja?';
+
+  @override
+  String get faqPaymentAnswer =>
+      'Kami menerima transfer bank, e-wallet, dan pembayaran tunai langsung ke kurir.';
+
+  @override
+  String get faqTrackQuestion => 'Cara lacak status pesanan?';
+
+  @override
+  String get faqTrackAnswer =>
+      'Buka menu Orders, pilih pesanan aktif, status akan otomatis update mengikuti tahap pengerjaan.';
+
+  @override
+  String get chatCsScreenTitle => 'Chat dan CS';
+
+  @override
+  String sendMessageError(String error) {
+    return 'Gagal mengirim pesan: $error';
+  }
+
+  @override
+  String get chatEmptyStateMessage =>
+      'Belum ada percakapan.\nKetik pesan di bawah buat mulai chat dengan CS.';
+
+  @override
+  String get chatCsInputHint => 'Tulis pesan ke CS...';
 }

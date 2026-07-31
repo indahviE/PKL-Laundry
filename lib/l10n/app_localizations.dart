@@ -4105,6 +4105,132 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'item'**
   String get orderItemsLabel;
+
+  /// No description provided for @linkOpenError.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak bisa membuka tautan'**
+  String get linkOpenError;
+
+  /// No description provided for @appVersionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Versi {version}'**
+  String appVersionLabel(String version);
+
+  /// No description provided for @aboutAppDescription.
+  ///
+  /// In id, this message translates to:
+  /// **'NetWash adalah aplikasi laundry on-demand yang memudahkan kamu menjemput, mencuci, dan mengantar pakaian tanpa repot.'**
+  String get aboutAppDescription;
+
+  /// No description provided for @privacyPolicyLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kebijakan Privasi'**
+  String get privacyPolicyLabel;
+
+  /// No description provided for @termsConditionsLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Syarat dan Ketentuan'**
+  String get termsConditionsLabel;
+
+  /// No description provided for @rateAppLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Beri Rating Aplikasi'**
+  String get rateAppLabel;
+
+  /// No description provided for @copyrightNotice.
+  ///
+  /// In id, this message translates to:
+  /// **'© 2026 NetWash. All rights reserved.'**
+  String get copyrightNotice;
+
+  /// No description provided for @searchFaqHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari pertanyaan...'**
+  String get searchFaqHint;
+
+  /// No description provided for @notAnsweredContactUs.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum terjawab? Hubungi kami'**
+  String get notAnsweredContactUs;
+
+  /// No description provided for @faqOrderQuestion.
+  ///
+  /// In id, this message translates to:
+  /// **'Bagaimana cara order cuci?'**
+  String get faqOrderQuestion;
+
+  /// No description provided for @faqOrderAnswer.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka menu Order, pilih layanan, tentukan alamat jemput, lalu konfirmasi pesanan. Kurir akan datang sesuai jadwal.'**
+  String get faqOrderAnswer;
+
+  /// No description provided for @faqDurationQuestion.
+  ///
+  /// In id, this message translates to:
+  /// **'Berapa lama proses cucian?'**
+  String get faqDurationQuestion;
+
+  /// No description provided for @faqDurationAnswer.
+  ///
+  /// In id, this message translates to:
+  /// **'Proses cuci reguler 1-2 hari kerja, express selesai dalam 6 jam sejak dijemput.'**
+  String get faqDurationAnswer;
+
+  /// No description provided for @faqPaymentQuestion.
+  ///
+  /// In id, this message translates to:
+  /// **'Metode pembayaran apa saja?'**
+  String get faqPaymentQuestion;
+
+  /// No description provided for @faqPaymentAnswer.
+  ///
+  /// In id, this message translates to:
+  /// **'Kami menerima transfer bank, e-wallet, dan pembayaran tunai langsung ke kurir.'**
+  String get faqPaymentAnswer;
+
+  /// No description provided for @faqTrackQuestion.
+  ///
+  /// In id, this message translates to:
+  /// **'Cara lacak status pesanan?'**
+  String get faqTrackQuestion;
+
+  /// No description provided for @faqTrackAnswer.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka menu Orders, pilih pesanan aktif, status akan otomatis update mengikuti tahap pengerjaan.'**
+  String get faqTrackAnswer;
+
+  /// No description provided for @chatCsScreenTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Chat dan CS'**
+  String get chatCsScreenTitle;
+
+  /// No description provided for @sendMessageError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal mengirim pesan: {error}'**
+  String sendMessageError(String error);
+
+  /// No description provided for @chatEmptyStateMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada percakapan.\nKetik pesan di bawah buat mulai chat dengan CS.'**
+  String get chatEmptyStateMessage;
+
+  /// No description provided for @chatCsInputHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Tulis pesan ke CS...'**
+  String get chatCsInputHint;
 }
 
 class _AppLocalizationsDelegate
