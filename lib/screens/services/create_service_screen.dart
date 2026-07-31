@@ -262,17 +262,17 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
                                 children: [
                                   _buildNameField(l10n),
                                   const SizedBox(height: AppTheme.xl),
-                                  _buildPricingTypeSelector(),
+                                  _buildPricingTypeSelector(l10n),
                                   const SizedBox(height: AppTheme.xl),
                                   ..._buildDynamicPriceFields(l10n),
                                   const SizedBox(height: AppTheme.xl),
                                   _buildDurationSection(l10n),
                                   const SizedBox(height: AppTheme.xl),
-                                  _buildBranchSection(),
+                                  _buildBranchSection(l10n),
                                   const SizedBox(height: AppTheme.xl),
                                   _buildDescriptionField(l10n),
                                   const SizedBox(height: AppTheme.xl),
-                                  _buildStatusToggle(),
+                                  _buildStatusToggle(l10n),
                                   const SizedBox(height: AppTheme.xxl),
                                 ],
                               ),
@@ -343,15 +343,15 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
   // ---------------------------------------------------------------------
   // Tipe Layanan — Kiloan / Satuan / Express
   // ---------------------------------------------------------------------
-  Widget _buildPricingTypeSelector() {
+  Widget _buildPricingTypeSelector(AppLocalizations l10n) {
     return _sectionColumn(
-      label: 'Tipe Layanan',
+      label: l10n.serviceTypeSectionLabel,
       child: Row(
         children: [
           Expanded(
             child: _buildTypeCard(
               type: PricingType.perKg,
-              label: 'Kiloan',
+              label: l10n.pricingTypeKgChipLabel,
               icon: Icons.monitor_weight_rounded,
               iconBg: _DS.primaryFixed,
               iconColor: _DS.primary,
@@ -361,7 +361,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
           Expanded(
             child: _buildTypeCard(
               type: PricingType.perItem,
-              label: 'Satuan',
+              label: l10n.pricingTypeItemChipLabel,
               icon: Icons.checkroom_rounded,
               iconBg: _DS.tertiaryFixed,
               iconColor: _DS.tertiary,
@@ -371,7 +371,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
           Expanded(
             child: _buildTypeCard(
               type: PricingType.express,
-              label: 'Express',
+              label: l10n.pricingTypeExpressLabel,
               icon: Icons.bolt_rounded,
               iconBg: _DS.errorContainer,
               iconColor: _DS.error,
@@ -432,13 +432,13 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
     String priceLabel;
     switch (_selectedPricingType) {
       case PricingType.perKg:
-        priceLabel = 'Harga per Kg';
+        priceLabel = l10n.pricePerKgFieldLabel;
         break;
       case PricingType.perItem:
-        priceLabel = 'Harga per Item';
+        priceLabel = l10n.pricePerItemFieldLabel;
         break;
       case PricingType.express:
-        priceLabel = 'Harga Dasar';
+        priceLabel = l10n.baseFeeLabel;
         break;
     }
 
@@ -463,7 +463,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       widgets.add(const SizedBox(height: AppTheme.xl));
       widgets.add(
         _sectionColumn(
-          label: 'Biaya Tambahan Express',
+          label: l10n.expressFeeLabel,
           child: TextFormField(
             controller: _expressFeeController,
             keyboardType: TextInputType.number,
@@ -478,7 +478,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       widgets.add(const SizedBox(height: AppTheme.xl));
       widgets.add(
         _sectionColumn(
-          label: 'Berat Minimum (Kg)',
+          label: l10n.minWeightLabel,
           child: TextFormField(
             controller: _minWeightController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -497,7 +497,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
   // ---------------------------------------------------------------------
   Widget _buildDurationSection(AppLocalizations l10n) {
     return _sectionColumn(
-      label: 'Estimasi Durasi',
+      label: l10n.estimatedDurationSectionLabel,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -533,9 +533,9 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
                     value: _durationUnit,
                     style: _DS.bodyMd(),
                     icon: const Icon(Icons.expand_more_rounded, color: _DS.onSurfaceVariant),
-                    items: const [
-                      DropdownMenuItem(value: 'hours', child: Text('Jam')),
-                      DropdownMenuItem(value: 'days', child: Text('Hari')),
+                    items: [
+                      DropdownMenuItem(value: 'hours', child: Text(l10n.durationUnitHours)),
+                      DropdownMenuItem(value: 'days', child: Text(l10n.durationUnitDays)),
                     ],
                     onChanged: (val) {
                       if (val != null) setState(() => _durationUnit = val);
@@ -550,13 +550,13 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _durationChip('3 Jam', 3, 'hours'),
+                _durationChip(l10n.durationChipHoursLabel(3), 3, 'hours'),
                 const SizedBox(width: 8),
-                _durationChip('1 Hari', 1, 'days'),
+                _durationChip(l10n.durationChipDaysLabel(1), 1, 'days'),
                 const SizedBox(width: 8),
-                _durationChip('2 Hari', 2, 'days'),
+                _durationChip(l10n.durationChipDaysLabel(2), 2, 'days'),
                 const SizedBox(width: 8),
-                _durationChip('3 Hari', 3, 'days'),
+                _durationChip(l10n.durationChipDaysLabel(3), 3, 'days'),
               ],
             ),
           ),
@@ -591,11 +591,11 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
   // ---------------------------------------------------------------------
   // Tersedia di Cabang — chip style selector
   // ---------------------------------------------------------------------
-  Widget _buildBranchSection() {
+  Widget _buildBranchSection(AppLocalizations l10n) {
     final laundriesAsync = ref.watch(laundriesStreamProvider);
 
     return _sectionColumn(
-      label: 'Tersedia di Cabang',
+      label: l10n.availableAtBranchesLabel,
       child: laundriesAsync.when(
         data: (laundries) {
           if (laundries.isEmpty) {
@@ -613,7 +613,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Belum ada cabang. Tambahkan cabang terlebih dahulu di menu Cabang.',
+                      l10n.noBranchesForServiceHint,
                       style: _DS.bodySm(),
                     ),
                   ),
@@ -641,8 +641,9 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
                     Expanded(
                       child: Text(
                         noneSelected
-                            ? 'Belum ada cabang dipilih'
-                            : '${_selectedBranchIds.length} dari ${laundries.length} cabang dipilih',
+                            ? l10n.noBranchSelectedLabel
+                            : l10n.branchesSelectedCountLabel(
+                                _selectedBranchIds.length, laundries.length),
                         style: _DS.bodySm(),
                       ),
                     ),
@@ -678,7 +679,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              allSelected ? 'Batal Semua' : 'Pilih Semua',
+                              allSelected ? l10n.deselectAllLabel : l10n.selectAllLabel,
                               style: _DS.labelBold(color: _DS.primary),
                             ),
                           ],
@@ -779,7 +780,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: _DS.cardShadow,
           ),
-          child: Text('Gagal memuat cabang.', style: _DS.bodySm(color: _DS.error)),
+          child: Text(l10n.loadBranchesFailedLabel, style: _DS.bodySm(color: _DS.error)),
         ),
       ),
     );
@@ -803,7 +804,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
   // ---------------------------------------------------------------------
   // Status toggle
   // ---------------------------------------------------------------------
-  Widget _buildStatusToggle() {
+  Widget _buildStatusToggle(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -817,9 +818,9 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Layanan Aktif', style: _DS.subtitleMd(color: _DS.onSurface)),
+                Text(l10n.activeServiceSwitchTitle, style: _DS.subtitleMd(color: _DS.onSurface)),
                 const SizedBox(height: 2),
-                Text('Matikan untuk menyembunyikan layanan', style: _DS.bodySm()),
+                Text(l10n.activeServiceSwitchSubtitle, style: _DS.bodySm()),
               ],
             ),
           ),
