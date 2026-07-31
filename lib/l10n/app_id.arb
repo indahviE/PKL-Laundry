@@ -266,6 +266,55 @@
   "durationEmptyErrorFull": "Estimasi durasi pengerjaan tidak boleh kosong",
   "durationInvalidErrorFull": "Masukkan angka bulat jam yang valid",
   "saveServiceButton": "Simpan Layanan",
+  "serviceTypeSectionLabel": "Tipe Layanan",
+  "pricingTypeKgChipLabel": "Kiloan",
+  "pricingTypeItemChipLabel": "Satuan",
+  "pricingTypeExpressLabel": "Express",
+  "pricePerKgFieldLabel": "Harga per Kg",
+  "pricePerItemFieldLabel": "Harga per Item",
+  "baseFeeLabel": "Harga Dasar",
+  "expressFeeLabel": "Biaya Tambahan Express",
+  "minWeightLabel": "Berat Minimum (Kg)",
+  "estimatedDurationSectionLabel": "Estimasi Durasi",
+  "durationUnitHours": "Jam",
+  "durationUnitDays": "Hari",
+  "durationChipHoursLabel": "{count, plural, other{{count} Jam}}",
+  "@durationChipHoursLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationChipDaysLabel": "{count, plural, other{{count} Hari}}",
+  "@durationChipDaysLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "availableAtBranchesLabel": "Tersedia di Cabang",
+  "noBranchesForServiceHint": "Belum ada cabang. Tambahkan cabang terlebih dahulu di menu Cabang.",
+  "noBranchSelectedLabel": "Belum ada cabang dipilih",
+  "branchesSelectedCountLabel": "{count} dari {total} cabang dipilih",
+  "@branchesSelectedCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "selectAllLabel": "Pilih Semua",
+  "deselectAllLabel": "Batal Semua",
+  "loadBranchesFailedLabel": "Gagal memuat cabang.",
+  "searchServiceHint": "Cari nama layanan...",
+  "noMatchingServicesTitle": "Tidak ada layanan yang cocok",
+  "tryDifferentKeywordFilterHint": "Coba ubah kata kunci atau filter",
+  "emptyBranchSelectionMeansAllHint": "Kosongkan semua untuk tersedia di semua cabang.",
   "sessionNotFoundError": "Sesi pengguna tidak ditemukan. Silakan login kembali.",
   "companyNotSetupError": "Perusahaan belum dibuat. Selesaikan proses onboarding (setup perusahaan) terlebih dahulu.",
   "addServiceSuccess": "Layanan berhasil ditambahkan!",

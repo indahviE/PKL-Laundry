@@ -1082,6 +1082,156 @@ abstract class AppLocalizations {
   /// **'Simpan Layanan'**
   String get saveServiceButton;
 
+  /// No description provided for @serviceTypeSectionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tipe Layanan'**
+  String get serviceTypeSectionLabel;
+
+  /// No description provided for @pricingTypeKgChipLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kiloan'**
+  String get pricingTypeKgChipLabel;
+
+  /// No description provided for @pricingTypeItemChipLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Satuan'**
+  String get pricingTypeItemChipLabel;
+
+  /// No description provided for @pricingTypeExpressLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Express'**
+  String get pricingTypeExpressLabel;
+
+  /// No description provided for @pricePerKgFieldLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Harga per Kg'**
+  String get pricePerKgFieldLabel;
+
+  /// No description provided for @pricePerItemFieldLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Harga per Item'**
+  String get pricePerItemFieldLabel;
+
+  /// No description provided for @baseFeeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Harga Dasar'**
+  String get baseFeeLabel;
+
+  /// No description provided for @expressFeeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Biaya Tambahan Express'**
+  String get expressFeeLabel;
+
+  /// No description provided for @minWeightLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Berat Minimum (Kg)'**
+  String get minWeightLabel;
+
+  /// No description provided for @estimatedDurationSectionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Estimasi Durasi'**
+  String get estimatedDurationSectionLabel;
+
+  /// No description provided for @durationUnitHours.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam'**
+  String get durationUnitHours;
+
+  /// No description provided for @durationUnitDays.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari'**
+  String get durationUnitDays;
+
+  /// No description provided for @durationChipHoursLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} Jam}}'**
+  String durationChipHoursLabel(int count);
+
+  /// No description provided for @durationChipDaysLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} Hari}}'**
+  String durationChipDaysLabel(int count);
+
+  /// No description provided for @availableAtBranchesLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tersedia di Cabang'**
+  String get availableAtBranchesLabel;
+
+  /// No description provided for @noBranchesForServiceHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada cabang. Tambahkan cabang terlebih dahulu di menu Cabang.'**
+  String get noBranchesForServiceHint;
+
+  /// No description provided for @noBranchSelectedLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada cabang dipilih'**
+  String get noBranchSelectedLabel;
+
+  /// No description provided for @branchesSelectedCountLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} dari {total} cabang dipilih'**
+  String branchesSelectedCountLabel(int count, int total);
+
+  /// No description provided for @selectAllLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih Semua'**
+  String get selectAllLabel;
+
+  /// No description provided for @deselectAllLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Batal Semua'**
+  String get deselectAllLabel;
+
+  /// No description provided for @loadBranchesFailedLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memuat cabang.'**
+  String get loadBranchesFailedLabel;
+
+  /// No description provided for @searchServiceHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari nama layanan...'**
+  String get searchServiceHint;
+
+  /// No description provided for @noMatchingServicesTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada layanan yang cocok'**
+  String get noMatchingServicesTitle;
+
+  /// No description provided for @tryDifferentKeywordFilterHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Coba ubah kata kunci atau filter'**
+  String get tryDifferentKeywordFilterHint;
+
+  /// No description provided for @emptyBranchSelectionMeansAllHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Kosongkan semua untuk tersedia di semua cabang.'**
+  String get emptyBranchSelectionMeansAllHint;
+
   /// No description provided for @sessionNotFoundError.
   ///
   /// In id, this message translates to:

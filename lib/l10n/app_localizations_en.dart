@@ -535,6 +535,102 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveServiceButton => 'Save Service';
 
   @override
+  String get serviceTypeSectionLabel => 'Service Type';
+
+  @override
+  String get pricingTypeKgChipLabel => 'By Weight';
+
+  @override
+  String get pricingTypeItemChipLabel => 'By Item';
+
+  @override
+  String get pricingTypeExpressLabel => 'Express';
+
+  @override
+  String get pricePerKgFieldLabel => 'Price per Kg';
+
+  @override
+  String get pricePerItemFieldLabel => 'Price per Item';
+
+  @override
+  String get baseFeeLabel => 'Base Price';
+
+  @override
+  String get expressFeeLabel => 'Extra Express Fee';
+
+  @override
+  String get minWeightLabel => 'Minimum Weight (Kg)';
+
+  @override
+  String get estimatedDurationSectionLabel => 'Estimated Duration';
+
+  @override
+  String get durationUnitHours => 'Hours';
+
+  @override
+  String get durationUnitDays => 'Days';
+
+  @override
+  String durationChipHoursLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Hours',
+      one: '$count Hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationChipDaysLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Days',
+      one: '$count Day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get availableAtBranchesLabel => 'Available at Branches';
+
+  @override
+  String get noBranchesForServiceHint =>
+      'No branches yet. Add a branch first from the Branches menu.';
+
+  @override
+  String get noBranchSelectedLabel => 'No branch selected yet';
+
+  @override
+  String branchesSelectedCountLabel(int count, int total) {
+    return '$count of $total branches selected';
+  }
+
+  @override
+  String get selectAllLabel => 'Select All';
+
+  @override
+  String get deselectAllLabel => 'Deselect All';
+
+  @override
+  String get loadBranchesFailedLabel => 'Failed to load branches.';
+
+  @override
+  String get searchServiceHint => 'Search service name...';
+
+  @override
+  String get noMatchingServicesTitle => 'No matching services';
+
+  @override
+  String get tryDifferentKeywordFilterHint =>
+      'Try a different keyword or filter';
+
+  @override
+  String get emptyBranchSelectionMeansAllHint =>
+      'Leave empty to be available at all branches.';
+
+  @override
   String get sessionNotFoundError =>
       'User session not found. Please log in again.';
 

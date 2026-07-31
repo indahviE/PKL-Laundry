@@ -536,6 +536,100 @@ class AppLocalizationsId extends AppLocalizations {
   String get saveServiceButton => 'Simpan Layanan';
 
   @override
+  String get serviceTypeSectionLabel => 'Tipe Layanan';
+
+  @override
+  String get pricingTypeKgChipLabel => 'Kiloan';
+
+  @override
+  String get pricingTypeItemChipLabel => 'Satuan';
+
+  @override
+  String get pricingTypeExpressLabel => 'Express';
+
+  @override
+  String get pricePerKgFieldLabel => 'Harga per Kg';
+
+  @override
+  String get pricePerItemFieldLabel => 'Harga per Item';
+
+  @override
+  String get baseFeeLabel => 'Harga Dasar';
+
+  @override
+  String get expressFeeLabel => 'Biaya Tambahan Express';
+
+  @override
+  String get minWeightLabel => 'Berat Minimum (Kg)';
+
+  @override
+  String get estimatedDurationSectionLabel => 'Estimasi Durasi';
+
+  @override
+  String get durationUnitHours => 'Jam';
+
+  @override
+  String get durationUnitDays => 'Hari';
+
+  @override
+  String durationChipHoursLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Jam',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationChipDaysLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Hari',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get availableAtBranchesLabel => 'Tersedia di Cabang';
+
+  @override
+  String get noBranchesForServiceHint =>
+      'Belum ada cabang. Tambahkan cabang terlebih dahulu di menu Cabang.';
+
+  @override
+  String get noBranchSelectedLabel => 'Belum ada cabang dipilih';
+
+  @override
+  String branchesSelectedCountLabel(int count, int total) {
+    return '$count dari $total cabang dipilih';
+  }
+
+  @override
+  String get selectAllLabel => 'Pilih Semua';
+
+  @override
+  String get deselectAllLabel => 'Batal Semua';
+
+  @override
+  String get loadBranchesFailedLabel => 'Gagal memuat cabang.';
+
+  @override
+  String get searchServiceHint => 'Cari nama layanan...';
+
+  @override
+  String get noMatchingServicesTitle => 'Tidak ada layanan yang cocok';
+
+  @override
+  String get tryDifferentKeywordFilterHint =>
+      'Coba ubah kata kunci atau filter';
+
+  @override
+  String get emptyBranchSelectionMeansAllHint =>
+      'Kosongkan semua untuk tersedia di semua cabang.';
+
+  @override
   String get sessionNotFoundError =>
       'Sesi pengguna tidak ditemukan. Silakan login kembali.';
 

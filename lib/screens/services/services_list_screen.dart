@@ -65,31 +65,41 @@ class _DS {
 class _TypeStyle {
   final Color bg;
   final Color fg;
-  final String label;
   final IconData icon;
-  const _TypeStyle({required this.bg, required this.fg, required this.label, required this.icon});
+  const _TypeStyle({required this.bg, required this.fg, required this.icon});
 }
 
 const Map<PricingType, _TypeStyle> _typeStyles = {
   PricingType.perKg: _TypeStyle(
     bg: Color(0xFFDCEEFC),
     fg: Color(0xFF1976D2),
-    label: 'Kiloan',
     icon: Icons.checkroom_rounded,
   ),
   PricingType.perItem: _TypeStyle(
     bg: Color(0xFFFDE9D2),
     fg: Color(0xFFE67E22),
-    label: 'Satuan/Item',
     icon: Icons.checkroom_rounded,
   ),
   PricingType.express: _TypeStyle(
     bg: Color(0xFFEDE0FB),
     fg: Color(0xFF7B2FBE),
-    label: 'Express',
     icon: Icons.bolt_rounded,
   ),
 };
+
+/// Localized display label for each pricing type — resolved at render time
+/// (instead of baked into the const _typeStyles map) so it follows the
+/// active app locale.
+String _typeLabel(AppLocalizations l10n, PricingType type) {
+  switch (type) {
+    case PricingType.perKg:
+      return l10n.pricingTypeKgChipLabel;
+    case PricingType.perItem:
+      return l10n.pricingTypeItemChipLabel;
+    case PricingType.express:
+      return l10n.pricingTypeExpressLabel;
+  }
+}
 
 String _priceUnitSuffix(PricingType type) {
   switch (type) {
@@ -152,9 +162,9 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _buildHeader(context, l10n)),
-            SliverToBoxAdapter(child: _buildSearchBar()),
-            SliverToBoxAdapter(child: _buildBranchFilter(laundries)),
-            SliverToBoxAdapter(child: _buildTypeFilter()),
+            SliverToBoxAdapter(child: _buildSearchBar(l10n)),
+            SliverToBoxAdapter(child: _buildBranchFilter(laundries, l10n)),
+            SliverToBoxAdapter(child: _buildTypeFilter(l10n)),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
               sliver: StreamBuilder<List<Service>>(
@@ -195,7 +205,7 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
                   if (services.isEmpty) {
                     return SliverFillRemaining(
                       hasScrollBody: false,
-                      child: _buildNoMatchState(),
+                      child: _buildNoMatchState(l10n),
                     );
                   }
 
@@ -281,7 +291,7 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
   // ==========================================================
   // SEARCH BAR
   // ==========================================================
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
       child: TextField(
@@ -289,7 +299,7 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
         style: _DS.bodyMd(),
         onChanged: (val) => setState(() => _searchQuery = val),
         decoration: InputDecoration(
-          hintText: 'Cari nama layanan...',
+          hintText: l10n.searchServiceHint,
           hintStyle: _DS.bodyMd(color: _DS.onSurfaceVariant),
           prefixIcon: const Icon(Icons.search_rounded, color: _DS.onSurfaceVariant),
           filled: true,
@@ -315,7 +325,7 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
   // ==========================================================
   // FILTER CABANG
   // ==========================================================
-  Widget _buildBranchFilter(List<Laundry> laundries) {
+  Widget _buildBranchFilter(List<Laundry> laundries, AppLocalizations l10n) {
     if (laundries.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -326,7 +336,7 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           children: [
             _filterChip(
-              label: 'Semua Cabang',
+              label: l10n.allBranchesLabel,
               isSelected: _selectedBranchId == null,
               onTap: () => setState(() => _selectedBranchId = null),
             ),
@@ -371,7 +381,7 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
   // ==========================================================
   // FILTER TIPE LAYANAN
   // ==========================================================
-  Widget _buildTypeFilter() {
+  Widget _buildTypeFilter(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: SizedBox(
@@ -380,11 +390,11 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           children: [
-            _typeChip(label: 'Semua', isSelected: _selectedType == null, onTap: () => setState(() => _selectedType = null)),
+            _typeChip(label: l10n.filterAllLabel, isSelected: _selectedType == null, onTap: () => setState(() => _selectedType = null)),
             for (final type in PricingType.values) ...[
               const SizedBox(width: 10),
               _typeChip(
-                label: _typeStyles[type]!.label,
+                label: _typeLabel(l10n, type),
                 bg: _typeStyles[type]!.bg,
                 fg: _typeStyles[type]!.fg,
                 isSelected: _selectedType == type,
@@ -460,7 +470,7 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
     );
   }
 
-  Widget _buildNoMatchState() {
+  Widget _buildNoMatchState(AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 48),
@@ -469,9 +479,9 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
           children: [
             Icon(Icons.search_off_rounded, size: 40, color: _DS.onSurfaceVariant.withOpacity(0.6)),
             const SizedBox(height: 14),
-            Text('Tidak ada layanan yang cocok', style: _DS.bodyMd(weight: FontWeight.w600)),
+            Text(l10n.noMatchingServicesTitle, style: _DS.bodyMd(weight: FontWeight.w600)),
             const SizedBox(height: 4),
-            Text('Coba ubah kata kunci atau filter', style: _DS.bodySm()),
+            Text(l10n.tryDifferentKeywordFilterHint, style: _DS.bodySm()),
           ],
         ),
       ),
@@ -628,7 +638,7 @@ class _ServiceCard extends StatelessWidget {
 
     final branchNames = (service.branchIds.isEmpty ||
             (laundries.isNotEmpty && service.branchIds.length >= laundries.length))
-        ? const ['Semua Cabang']
+        ? [l10n.allBranchesLabel]
         : service.branchIds
             .map((id) => laundries.where((l) => l.id == id).map((l) => l.name).firstOrNull ?? '')
             .where((name) => name.isNotEmpty)
@@ -678,15 +688,15 @@ class _ServiceCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(8)),
-                          child: Text(typeStyle.label, style: _DS.bodySm(color: badgeFg, weight: FontWeight.w600)),
+                          child: Text(_typeLabel(l10n, service.pricingType), style: _DS.bodySm(color: badgeFg, weight: FontWeight.w600)),
                         ),
                         const SizedBox(width: 8),
                         Icon(Icons.access_time_rounded, size: 13, color: _DS.onSurfaceVariant.withOpacity(0.7)),
                         const SizedBox(width: 3),
                         Text(
                           service.durationUnit == 'days'
-                              ? '${(service.estimatedDuration / 24).round()} Hari'
-                              : '${service.estimatedDuration} Jam',
+                              ? l10n.durationChipDaysLabel((service.estimatedDuration / 24).round())
+                              : l10n.durationChipHoursLabel(service.estimatedDuration),
                           style: _DS.bodySm(),
                         ),
                       ],
@@ -1006,7 +1016,7 @@ class _EditServiceSheetState extends ConsumerState<_EditServiceSheet> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: ChoiceChip(
-                        label: Center(child: Text('Express', style: GoogleFonts.poppins(fontWeight: FontWeight.w500))),
+                        label: Center(child: Text(l10n.pricingTypeExpressLabel, style: GoogleFonts.poppins(fontWeight: FontWeight.w500))),
                         selected: _pricingType == PricingType.express,
                         onSelected: (selected) {
                           if (selected) setState(() => _pricingType = PricingType.express);
@@ -1021,7 +1031,7 @@ class _EditServiceSheetState extends ConsumerState<_EditServiceSheet> {
                   controller: _priceController,
                   label: _pricingType == PricingType.perKg
                       ? l10n.pricePerKgLabel
-                      : (_pricingType == PricingType.perItem ? l10n.pricePerItemLabel : 'Harga Dasar'),
+                      : (_pricingType == PricingType.perItem ? l10n.pricePerItemLabel : l10n.baseFeeLabel),
                   hintText: l10n.priceHint,
                   keyboardType: TextInputType.number,
                   validator: (val) {
@@ -1035,7 +1045,7 @@ class _EditServiceSheetState extends ConsumerState<_EditServiceSheet> {
                   const SizedBox(height: 16),
                   AppInput(
                     controller: _expressFeeController,
-                    label: 'Biaya Tambahan Express',
+                    label: l10n.expressFeeLabel,
                     hintText: l10n.priceHint,
                     keyboardType: TextInputType.number,
                   ),
@@ -1045,7 +1055,7 @@ class _EditServiceSheetState extends ConsumerState<_EditServiceSheet> {
                   const SizedBox(height: 16),
                   AppInput(
                     controller: _minWeightController,
-                    label: 'Berat Minimum (Kg)',
+                    label: l10n.minWeightLabel,
                     hintText: '1.0',
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   ),
@@ -1068,7 +1078,7 @@ class _EditServiceSheetState extends ConsumerState<_EditServiceSheet> {
 
                 if (widget.laundries.isNotEmpty) ...[
                   Text(
-                    'Tersedia di Cabang',
+                    l10n.availableAtBranchesLabel,
                     style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
                   ),
                   const SizedBox(height: 8),
@@ -1107,7 +1117,7 @@ class _EditServiceSheetState extends ConsumerState<_EditServiceSheet> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Kosongkan semua untuk tersedia di semua cabang.',
+                    l10n.emptyBranchSelectionMeansAllHint,
                     style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textTertiary),
                   ),
                   const SizedBox(height: 16),
