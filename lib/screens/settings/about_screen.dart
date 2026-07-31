@@ -18,7 +18,7 @@ class AboutScreen extends StatelessWidget {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak bisa membuka tautan')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.linkOpenError)),
       );
     }
   }
@@ -43,15 +43,15 @@ class AboutScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildAppInfo(),
+                        _buildAppInfo(t),
                         const SizedBox(height: 16),
-                        _buildDescriptionCard(),
+                        _buildDescriptionCard(t),
                         const SizedBox(height: 16),
-                        _buildLinksCard(context),
+                        _buildLinksCard(context, t),
                         const SizedBox(height: 20),
                         Center(
                           child: Text(
-                            '© 2026 NetWash. All rights reserved.',
+                            t.copyrightNotice,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
                               color: AppTheme.textTertiary,
@@ -102,7 +102,7 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAppInfo() {
+  Widget _buildAppInfo(AppLocalizations t) {
     return Center(
       child: Column(
         children: [
@@ -127,7 +127,7 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            'Versi $kAppVersion',
+            t.appVersionLabel(kAppVersion),
             style: GoogleFonts.poppins(
               fontSize: 12,
               color: AppTheme.textTertiary,
@@ -138,7 +138,7 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDescriptionCard() {
+  Widget _buildDescriptionCard(AppLocalizations t) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
@@ -153,7 +153,7 @@ class AboutScreen extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(16),
       child: Text(
-        'NetWash adalah aplikasi laundry on-demand yang memudahkan kamu menjemput, mencuci, dan mengantar pakaian tanpa repot.',
+        t.aboutAppDescription,
         style: GoogleFonts.poppins(
           fontSize: 13,
           color: AppTheme.textSecondary,
@@ -163,7 +163,7 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLinksCard(BuildContext context) {
+  Widget _buildLinksCard(BuildContext context, AppLocalizations t) {
     Widget row(String label, VoidCallback onTap, {bool showDivider = true}) {
       return Column(
         children: [
@@ -214,12 +214,12 @@ class AboutScreen extends StatelessWidget {
       child: Column(
         children: [
           // TODO: ganti URL kebijakan privasi & syarat ketentuan sesuai domain resmi
-          row('Kebijakan privasi',
+          row(t.privacyPolicyLabel,
               () => _openUrl(context, 'https://netwash.id/privasi')),
-          row('Syarat dan ketentuan',
+          row(t.termsConditionsLabel,
               () => _openUrl(context, 'https://netwash.id/syarat')),
           row(
-            'Beri rating aplikasi',
+            t.rateAppLabel,
             () => _openUrl(context,
                 'https://play.google.com/store/apps/details?id=com.netwash.app'),
             showDivider: false,

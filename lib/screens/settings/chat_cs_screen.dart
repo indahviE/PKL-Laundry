@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/themes/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/support_message.dart';
 import '../../repositories/support_message_repository.dart';
 
@@ -50,7 +51,10 @@ class _ChatCsScreenState extends ConsumerState<ChatCsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengirim pesan: $e')),
+        SnackBar(
+          content: Text(
+              AppLocalizations.of(context)!.sendMessageError(e.toString())),
+        ),
       );
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -71,13 +75,14 @@ class _ChatCsScreenState extends ConsumerState<ChatCsScreen> {
   @override
   Widget build(BuildContext context) {
     final uid = _uid;
+    final t = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(context),
+            _buildHeader(context, t),
             Expanded(
               child: uid == null
                   ? const SizedBox.shrink()
@@ -95,7 +100,7 @@ class _ChatCsScreenState extends ConsumerState<ChatCsScreen> {
                         }
                         final messages = snapshot.data!;
                         if (messages.isEmpty) {
-                          return _buildEmptyState();
+                          return _buildEmptyState(t);
                         }
                         _scrollToBottom();
                         return ListView.builder(
@@ -108,14 +113,14 @@ class _ChatCsScreenState extends ConsumerState<ChatCsScreen> {
                       },
                     ),
             ),
-            _buildInputBar(),
+            _buildInputBar(t),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppLocalizations t) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 20, 24, 20),
@@ -135,7 +140,7 @@ class _ChatCsScreenState extends ConsumerState<ChatCsScreen> {
           ),
           const SizedBox(width: 4),
           Text(
-            'Chat dan CS',
+            t.chatCsScreenTitle,
             style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -147,7 +152,7 @@ class _ChatCsScreenState extends ConsumerState<ChatCsScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations t) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -158,7 +163,7 @@ class _ChatCsScreenState extends ConsumerState<ChatCsScreen> {
                 size: 56, color: AppTheme.textTertiary),
             const SizedBox(height: 16),
             Text(
-              'Belum ada percakapan.\nKetik pesan di bawah buat mulai chat dengan CS.',
+              t.chatEmptyStateMessage,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 13.5,
@@ -224,7 +229,7 @@ class _ChatCsScreenState extends ConsumerState<ChatCsScreen> {
     );
   }
 
-  Widget _buildInputBar() {
+  Widget _buildInputBar(AppLocalizations t) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
       decoration: BoxDecoration(
@@ -250,7 +255,7 @@ class _ChatCsScreenState extends ConsumerState<ChatCsScreen> {
                 onSubmitted: (_) => _send(),
                 style: GoogleFonts.poppins(fontSize: 13.5),
                 decoration: InputDecoration(
-                  hintText: 'Tulis pesan ke CS...',
+                  hintText: t.chatCsInputHint,
                   hintStyle: GoogleFonts.poppins(
                     fontSize: 13.5,
                     color: AppTheme.textTertiary,

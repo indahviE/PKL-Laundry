@@ -107,12 +107,23 @@ class SubscriptionScreen extends ConsumerWidget {
 
   // ==========================================================
   // HEADER — samain gaya sama SettingsScreen: gradient, responsif,
-  // badge icon kecil di atas judul.
+  // badge icon kecil di atas judul. Tombol back ditaruh di pojok
+  // kiri atas lewat Stack, supaya judul & badge tetap center kayak
+  // sebelumnya (nggak geser cuma karena nambah 1 tombol).
+  //
+  // NOTE: Secara layout, Column judul/badge udah center secara
+  // matematis (lewat Positioned.fill + Center), jadi back button
+  // nggak pernah geser dia. Tapi secara VISUAL, lingkaran back
+  // button putih di kiri bikin sisi kiri kerasa lebih "berat"
+  // dibanding kanan yang kosong -> makanya kelihatan kayak nggak
+  // simetris. Fix: kasih placeholder transparan berukuran sama di
+  // pojok kanan atas biar berat visual kiri-kanan balance.
   // ==========================================================
   Widget _buildHeader(BuildContext context, bool isMobile) {
     final horizontalPadding = isMobile ? 18.0 : 24.0;
     final cornerRadius = isMobile ? 20.0 : 26.0;
     final badgeSize = isMobile ? 58.0 : 64.0;
+    const backButtonSize = 36.0;
 
     return Container(
       width: double.infinity,
@@ -129,59 +140,103 @@ class SubscriptionScreen extends ConsumerWidget {
           bottomRight: Radius.circular(cornerRadius),
         ),
       ),
-      child: Column(
+      child: Stack(
+        // PENTING: Center di bawah ini SENGAJA dibiarkan sebagai child
+        // biasa (bukan dibungkus Positioned/Positioned.fill). Kalau
+        // SEMUA child Stack berupa Positioned, Stack nggak punya
+        // patokan ukuran dan bakal minta constraints.biggest — yang di
+        // sini infinite (karena Stack ini ada di dalam Column di
+        // dalam SingleChildScrollView), jadi bakal crash dengan error
+        // "A Stack requires bounded constraints from its parent".
+        // Dengan Center jadi non-positioned child, Stack bisa
+        // nentuin tinggi dari situ.
         children: [
-          Text(
-            'Langganan Saya',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withOpacity(0.85),
-              letterSpacing: 0.3,
+          Center(
+            child: Column(
+              children: [
+                  Text(
+                    'Langganan Saya',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withOpacity(0.85),
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  SizedBox(height: isMobile ? 12 : 16),
+                  Container(
+                    width: badgeSize,
+                    height: badgeSize,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 16,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.workspace_premium_rounded,
+                      size: badgeSize * 0.5,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Kelola Paket Langganan',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Lihat status & upgrade paketmu kapan saja',
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white.withOpacity(0.85),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Positioned(
+            top: 0,
+            left: 0,
+            child: _BackButton(
+              onTap: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/settings');
+                }
+              },
             ),
           ),
-          SizedBox(height: isMobile ? 12 : 16),
-          Container(
-            width: badgeSize,
-            height: badgeSize,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 16,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.workspace_premium_rounded,
-              size: badgeSize * 0.5,
-              color: AppTheme.primaryColor,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Kelola Paket Langganan',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 15.5,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Lihat status & upgrade paketmu kapan saja',
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: Colors.white.withOpacity(0.85),
+          // Placeholder transparan di kanan, cuma buat balance berat
+          // visual — nggak interaktif, nggak kelihatan.
+          // Dibungkus IgnorePointer supaya nggak pernah ikut hit-test
+          // (kalau nggak dibungkus, di Flutter Web ini bisa nyebabin
+          // exception spam "Cannot hit test a render box that has
+          // never been laid out" pas kursor hover di area itu).
+          const Positioned(
+            top: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: SizedBox(
+                width: backButtonSize,
+                height: backButtonSize,
+              ),
             ),
           ),
         ],
@@ -394,5 +449,38 @@ class SubscriptionScreen extends ConsumerWidget {
 
   String _formatDate(DateTime date) {
     return '${date.day} ${_monthNames[date.month - 1]} ${date.year}';
+  }
+}
+
+/// Tombol back bulat kecil di atas gradient header, warna putih
+/// translucent biar kontras tapi tetap nyatu sama tema header.
+class _BackButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _BackButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.18),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
+    );
   }
 }

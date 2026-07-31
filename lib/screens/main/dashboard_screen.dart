@@ -722,7 +722,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                               onTap: () {
                                 Navigator.of(sheetContext).pop();
-                                context.push('/orders');
+                                // '/orders' branch shell -> go(), bukan push().
+                                context.go('/orders');
                               },
                               child: Container(
                                 padding: const EdgeInsets.all(AppTheme.md),
@@ -1171,7 +1172,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       return;
                     }
                   }
-                  context.push(route);
+                  // '/settings' adalah branch dari StatefulShellRoute yang sama
+                  // dengan Dashboard (lihat routes.dart), BUKAN route biasa.
+                  // context.push() untuk route branch lain di shell yang sama
+                  // hanya akan nge-push di atas Navigator branch saat ini
+                  // (currentIndex tidak ikut berubah -> bottom nav nyangkut di
+                  // Dashboard). context.go() yang benar: dia switch branch
+                  // shell-nya sekaligus update currentIndex, jadi bottom nav
+                  // ikut ke-highlight ke tab Settings.
+                  if (route == '/settings') {
+                    context.go(route);
+                  } else {
+                    context.push(route);
+                  }
                 },
                 borderRadius: BorderRadius.circular(40),
                 child: Column(
@@ -1323,7 +1336,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         Text(t.mainOrdersTitle, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
         TextButton(
-          onPressed: () => context.push('/orders'),
+          // '/orders' juga branch shell (sama kayak '/settings') -> pakai
+          // context.go() supaya bottom nav ikut ke-highlight ke tab Orders.
+          onPressed: () => context.go('/orders'),
           child: Text(t.viewAllLabel, style: TextStyle(color: textBlue, fontWeight: FontWeight.w600, fontSize: 12.5)),
         ),
       ],

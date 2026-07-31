@@ -13,24 +13,13 @@ class _Faq {
 
 // TODO: pindahkan ke Firestore/CMS kalau kontennya sering berubah,
 // biar tidak perlu rilis ulang app tiap update FAQ.
-const List<_Faq> _faqData = [
-  _Faq(
-    'Bagaimana cara order cuci?',
-    'Buka menu Order, pilih layanan, tentukan alamat jemput, lalu konfirmasi pesanan. Kurir akan datang sesuai jadwal.',
-  ),
-  _Faq(
-    'Berapa lama proses cucian?',
-    'Proses cuci reguler 1-2 hari kerja, express selesai dalam 6 jam sejak dijemput.',
-  ),
-  _Faq(
-    'Metode pembayaran apa saja?',
-    'Kami menerima transfer bank, e-wallet, dan pembayaran tunai langsung ke kurir.',
-  ),
-  _Faq(
-    'Cara lacak status pesanan?',
-    'Buka menu Orders, pilih pesanan aktif, status akan otomatis update mengikuti tahap pengerjaan.',
-  ),
-];
+// Ini fungsi (bukan const list) supaya isinya ikut bahasa aktif (t).
+List<_Faq> _faqData(AppLocalizations t) => [
+      _Faq(t.faqOrderQuestion, t.faqOrderAnswer),
+      _Faq(t.faqDurationQuestion, t.faqDurationAnswer),
+      _Faq(t.faqPaymentQuestion, t.faqPaymentAnswer),
+      _Faq(t.faqTrackQuestion, t.faqTrackAnswer),
+    ];
 
 class HelpScreen extends StatefulWidget {
   const HelpScreen({super.key});
@@ -44,9 +33,10 @@ class _HelpScreenState extends State<HelpScreen> {
   int? _expandedIndex;
   String _query = '';
 
-  List<_Faq> get _filtered {
-    if (_query.trim().isEmpty) return _faqData;
-    return _faqData
+  List<_Faq> _filtered(AppLocalizations t) {
+    final data = _faqData(t);
+    if (_query.trim().isEmpty) return data;
+    return data
         .where((f) => f.question.toLowerCase().contains(_query.toLowerCase()))
         .toList();
   }
@@ -61,7 +51,7 @@ class _HelpScreenState extends State<HelpScreen> {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak bisa membuka aplikasi tujuan')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.linkOpenError)),
       );
     }
   }
@@ -86,11 +76,11 @@ class _HelpScreenState extends State<HelpScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildSearchBar(),
+                        _buildSearchBar(t),
                         const SizedBox(height: 16),
-                        _buildFaqCard(),
+                        _buildFaqCard(t),
                         const SizedBox(height: 16),
-                        _buildContactCard(),
+                        _buildContactCard(t),
                       ],
                     ),
                   ),
@@ -135,7 +125,7 @@ class _HelpScreenState extends State<HelpScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(AppLocalizations t) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
@@ -146,7 +136,7 @@ class _HelpScreenState extends State<HelpScreen> {
         onChanged: (v) => setState(() => _query = v),
         style: GoogleFonts.poppins(fontSize: 13.5),
         decoration: InputDecoration(
-          hintText: 'Cari pertanyaan...',
+          hintText: t.searchFaqHint,
           hintStyle: GoogleFonts.poppins(
               fontSize: 13.5, color: AppTheme.textTertiary),
           prefixIcon: const Icon(Icons.search,
@@ -160,7 +150,8 @@ class _HelpScreenState extends State<HelpScreen> {
     );
   }
 
-  Widget _buildFaqCard() {
+  Widget _buildFaqCard(AppLocalizations t) {
+    final filtered = _filtered(t);
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
@@ -174,8 +165,8 @@ class _HelpScreenState extends State<HelpScreen> {
         ],
       ),
       child: Column(
-        children: List.generate(_filtered.length, (index) {
-          final faq = _filtered[index];
+        children: List.generate(filtered.length, (index) {
+          final faq = filtered[index];
           final isOpen = _expandedIndex == index;
           return Column(
             children: [
@@ -228,7 +219,7 @@ class _HelpScreenState extends State<HelpScreen> {
                   ),
                 ),
               ),
-              if (index != _filtered.length - 1)
+              if (index != filtered.length - 1)
                 Divider(
                   height: 1,
                   indent: 16,
@@ -242,7 +233,7 @@ class _HelpScreenState extends State<HelpScreen> {
     );
   }
 
-  Widget _buildContactCard() {
+  Widget _buildContactCard(AppLocalizations t) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
@@ -260,7 +251,7 @@ class _HelpScreenState extends State<HelpScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Belum terjawab? Hubungi kami',
+            t.notAnsweredContactUs,
             style: GoogleFonts.poppins(
               fontSize: 13.5,
               fontWeight: FontWeight.w500,
@@ -279,7 +270,7 @@ class _HelpScreenState extends State<HelpScreen> {
                     backgroundColor: AppTheme.successColor,
                   ),
                   icon: const Icon(Icons.chat, size: 16),
-                  label: const Text('WhatsApp'),
+                  label: Text(t.whatsappButton),
                 ),
               ),
               const SizedBox(width: 10),
@@ -288,7 +279,7 @@ class _HelpScreenState extends State<HelpScreen> {
                   onPressed: () =>
                       _launch(Uri.parse('mailto:cs@netwash.id')),
                   icon: const Icon(Icons.email_outlined, size: 16),
-                  label: const Text('Email'),
+                  label: Text(t.emailLabel),
                 ),
               ),
             ],
