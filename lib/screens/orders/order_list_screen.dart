@@ -92,6 +92,7 @@ class OrderItem {
   final String deliveryType; // 'self_pickup' / 'delivery' -> cara baju KELUAR
   final String laundryId; // cabang tempat order ini dibuat
   final String serviceSummary; // ringkasan nama layanan, dari items[].service_name
+  final int serviceCount; // jumlah unique services untuk suffix "+X lainnya"
 
   OrderItem({
     required this.id,
@@ -106,6 +107,7 @@ class OrderItem {
     required this.deliveryType,
     required this.laundryId,
     required this.serviceSummary,
+    required this.serviceCount,
   });
 
   /// Mapping dari dokumen Firestore users/{uid}/orders/{orderId}
@@ -122,11 +124,11 @@ class OrderItem {
         .map((e) => (Map<String, dynamic>.from(e as Map)['service_name'] ?? '') as String)
         .where((name) => name.isNotEmpty)
         .toList();
+    // Hanya simpan nama layanan pertama (untuk tampilan di card)
+    // Suffix "+X lainnya" akan dihandle di UI dengan localization
     final serviceSummary = serviceNames.isEmpty
         ? '-'
-        : serviceNames.length == 1
-            ? serviceNames.first
-            : '${serviceNames.first} +${serviceNames.length - 1} lainnya';
+        : serviceNames.first;
 
     return OrderItem(
       id: doc.id,
@@ -143,6 +145,7 @@ class OrderItem {
       deliveryType: (data['delivery_type'] ?? 'self_pickup') as String,
       laundryId: (data['laundry_id'] ?? '') as String,
       serviceSummary: serviceSummary,
+      serviceCount: serviceNames.length,
     );
   }
 
@@ -368,21 +371,21 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
   String _getStatusLabel(String status, AppLocalizations t) {
     switch (status) {
       case 'pending':
-        return 'Menunggu';
+        return t.orderStatusWaiting;
       case 'confirmed':
-        return 'Dikonfirmasi';
+        return t.orderStatusConfirmed;
       case 'inProgress':
-        return 'Diproses';
+        return t.orderStatusProcessing;
       case 'washing':
-        return 'Dicuci';
+        return t.orderStatusWashing;
       case 'drying':
-        return 'Dikeringkan';
+        return t.orderStatusDrying;
       case 'ironing':
-        return 'Disetrika';
+        return t.orderStatusIroning;
       case 'qualityCheck':
-        return 'Cek Kualitas';
+        return t.orderStatusQualityCheck;
       case 'ready':
-        return 'Siap Diambil';
+        return t.orderStatusReady;
       case 'completed':
         return t.orderCompletedStatus;
       case 'cancelled':
@@ -720,7 +723,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
             ),
             const SizedBox(height: AppTheme.lg),
             Text(
-              isFilteredByLaundry ? 'Belum ada pesanan di cabang ini' : t.orderNoOrdersLabel,
+              isFilteredByLaundry ? t.orderNoOrdersInBranch : t.orderNoOrdersLabel,
               textAlign: TextAlign.center,
               style: GoogleFonts.beVietnamPro(
                 fontSize: 18,
@@ -732,7 +735,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
             const SizedBox(height: AppTheme.sm),
             Text(
               isFilteredByLaundry
-                  ? 'Silakan tambahkan pesanan baru atau coba pilih filter cabang yang berbeda.'
+                  ? t.orderSuggestNewOrChangeBranch
                   : t.orderCreateOrderButtonLabel,
               textAlign: TextAlign.center,
               style: GoogleFonts.beVietnamPro(
@@ -781,6 +784,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                 formattedDate: _formatDate(order.date),
                 cabangName: _laundryNameFor(order.laundryId),
                 onTap: () => context.push('/orders/${order.id}'),
+                t: t,
               ),
               if (index < _filteredOrders.length - 1) const SizedBox(height: AppTheme.md),
             ],
@@ -897,6 +901,7 @@ class _OrderCard extends StatelessWidget {
   final String formattedDate;
   final String cabangName;
   final VoidCallback onTap;
+  final AppLocalizations t;
 
   const _OrderCard({
     required this.order,
@@ -907,6 +912,7 @@ class _OrderCard extends StatelessWidget {
     required this.formattedDate,
     required this.cabangName,
     required this.onTap,
+    required this.t,
   });
 
   @override
@@ -995,9 +1001,22 @@ class _OrderCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(child: _InfoRow(icon: Icons.dry_cleaning_outlined, label: order.serviceSummary)),
+                Expanded(
+                  child: _InfoRow(
+                    icon: Icons.dry_cleaning_outlined,
+                    label: order.serviceCount > 1
+                        ? '${order.serviceSummary} +${order.serviceCount - 1} ${t.orderServiceMoreSuffix}'
+                        : order.serviceSummary,
+                  ),
+                ),
                 const SizedBox(width: AppTheme.sm),
-                Expanded(child: _InfoRow(icon: Icons.shopping_bag_outlined, label: '${order.itemCount} item', alignEnd: true)),
+                Expanded(
+                  child: _InfoRow(
+                    icon: Icons.shopping_bag_outlined,
+                    label: '${order.itemCount} ${t.orderItemsLabel}',
+                    alignEnd: true,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -1007,7 +1026,7 @@ class _OrderCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Total Pembayaran',
+                  t.orderTotalPaymentLabel,
                   style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
                 ),
                 Text(

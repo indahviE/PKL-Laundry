@@ -1051,7 +1051,29 @@
       "code": {
         "type": "String"
       }
-    }
+    } 
   },
-  "unnamedBranchFallback": "Unnamed Branch"
+  "unnamedBranchFallback": "Unnamed Branch",
+  "ordersListTitle": "Orders",
+  "orderCompletedStatus": "Completed",
+  "orderCancelledStatus": "Cancelled",
+  "orderNoOrdersLabel": "No orders yet",
+  "orderCreateOrderButtonLabel": "Create your first order now",
+  "orderNoOrdersInBranch": "No orders in this branch",
+  "orderSuggestNewOrChangeBranch": "Please add a new order or try selecting a different branch filter.",
+  "orderStatusWaiting": "Waiting",
+  "orderStatusConfirmed": "Confirmed",
+  "orderStatusProcessing": "Processing",
+  "orderStatusWashing": "Washing",
+  "orderStatusDrying": "Drying",
+  "orderStatusIroning": "Ironing",
+  "orderStatusQualityCheck": "Quality Check",
+  "orderStatusReady": "Ready to Pick Up",
+  "orderTypePickup": "Pickup",
+  "orderTypeWalkIn": "Walk-in",
+  "orderDeliveryDelivery": "Delivery",
+  "orderDeliverySelfPickup": "Self-Pickup",
+  "orderServiceMoreSuffix": "others",
+  "orderTotalPaymentLabel": "Total Payment",
+  "orderItemsLabel": "items"
 }

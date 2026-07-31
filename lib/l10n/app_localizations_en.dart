@@ -1281,7 +1281,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deactivateBranchButton => 'Deactivate Branch';
 
   @override
-  String get ordersListTitle => 'Pesanan';
+  String get ordersListTitle => 'Orders';
 
   @override
   String get ordersListSubtitle => 'Kelola semua pesanan laundry Anda';
@@ -1299,10 +1299,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orderProcessingStatus => 'Diproses';
 
   @override
-  String get orderCompletedStatus => 'Selesai';
+  String get orderCompletedStatus => 'Completed';
 
   @override
-  String get orderCancelledStatus => 'Dibatalkan';
+  String get orderCancelledStatus => 'Cancelled';
 
   @override
   String get orderTotalOrdersLabel => 'Total Pesanan';
@@ -1314,13 +1314,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orderRetryButtonLabel => 'Try Again';
 
   @override
-  String get orderNoOrdersLabel => 'Tidak ada pesanan';
+  String get orderNoOrdersLabel => 'No orders yet';
 
   @override
   String get orderNoOrdersSubtitle => 'Buat pesanan baru untuk memulai';
 
   @override
-  String get orderCreateOrderButtonLabel => 'Buat Pesanan';
+  String get orderCreateOrderButtonLabel => 'Create your first order now';
 
   @override
   String get orderSessionNotFoundError =>
@@ -2048,4 +2048,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unnamedBranchFallback => 'Unnamed Branch';
+
+  @override
+  String get orderNoOrdersInBranch => 'No orders in this branch';
+
+  @override
+  String get orderSuggestNewOrChangeBranch =>
+      'Please add a new order or try selecting a different branch filter.';
+
+  @override
+  String get orderStatusWaiting => 'Waiting';
+
+  @override
+  String get orderStatusWashing => 'Washing';
+
+  @override
+  String get orderStatusDrying => 'Drying';
+
+  @override
+  String get orderStatusIroning => 'Ironing';
+
+  @override
+  String get orderStatusQualityCheck => 'Quality Check';
+
+  @override
+  String get orderStatusReady => 'Ready to Pick Up';
+
+  @override
+  String get orderTypePickup => 'Pickup';
+
+  @override
+  String get orderTypeWalkIn => 'Walk-in';
+
+  @override
+  String get orderDeliveryDelivery => 'Delivery';
+
+  @override
+  String get orderDeliverySelfPickup => 'Self-Pickup';
+
+  @override
+  String get orderServiceMoreSuffix => 'others';
+
+  @override
+  String get orderTotalPaymentLabel => 'Total Payment';
+
+  @override
+  String get orderItemsLabel => 'items';
 }

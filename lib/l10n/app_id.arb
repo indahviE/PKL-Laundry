@@ -1110,5 +1110,27 @@
       }
     }
   },
-  "unnamedBranchFallback": "Cabang Tanpa Nama"
+  "unnamedBranchFallback": "Cabang Tanpa Nama",
+  "ordersListTitle": "Pesanan",
+  "orderCompletedStatus": "Selesai",
+  "orderCancelledStatus": "Dibatalkan",
+  "orderNoOrdersLabel": "Belum ada pesanan",
+  "orderCreateOrderButtonLabel": "Buat pesanan pertama Anda sekarang",
+  "orderNoOrdersInBranch": "Belum ada pesanan di cabang ini",
+  "orderSuggestNewOrChangeBranch": "Silakan tambahkan pesanan baru atau coba pilih filter cabang yang berbeda.",
+  "orderStatusWaiting": "Menunggu",
+  "orderStatusConfirmed": "Dikonfirmasi",
+  "orderStatusProcessing": "Diproses",
+  "orderStatusWashing": "Dicuci",
+  "orderStatusDrying": "Dikeringkan",
+  "orderStatusIroning": "Disetrika",
+  "orderStatusQualityCheck": "Cek Kualitas",
+  "orderStatusReady": "Siap Diambil",
+  "orderTypePickup": "Dijemput",
+  "orderTypeWalkIn": "Walk-in",
+  "orderDeliveryDelivery": "Diantar",
+  "orderDeliverySelfPickup": "Ambil Sendiri",
+  "orderServiceMoreSuffix": "lainnya",
+  "orderTotalPaymentLabel": "Total Pembayaran",
+  "orderItemsLabel": "item"
 }

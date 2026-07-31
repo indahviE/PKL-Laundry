@@ -1316,13 +1316,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get orderRetryButtonLabel => 'Coba Lagi';
 
   @override
-  String get orderNoOrdersLabel => 'Tidak ada pesanan';
+  String get orderNoOrdersLabel => 'Belum ada pesanan';
 
   @override
   String get orderNoOrdersSubtitle => 'Buat pesanan baru untuk memulai';
 
   @override
-  String get orderCreateOrderButtonLabel => 'Buat Pesanan';
+  String get orderCreateOrderButtonLabel =>
+      'Buat pesanan pertama Anda sekarang';
 
   @override
   String get orderSessionNotFoundError =>
@@ -2060,4 +2061,50 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get unnamedBranchFallback => 'Cabang Tanpa Nama';
+
+  @override
+  String get orderNoOrdersInBranch => 'Belum ada pesanan di cabang ini';
+
+  @override
+  String get orderSuggestNewOrChangeBranch =>
+      'Silakan tambahkan pesanan baru atau coba pilih filter cabang yang berbeda.';
+
+  @override
+  String get orderStatusWaiting => 'Menunggu';
+
+  @override
+  String get orderStatusWashing => 'Dicuci';
+
+  @override
+  String get orderStatusDrying => 'Dikeringkan';
+
+  @override
+  String get orderStatusIroning => 'Disetrika';
+
+  @override
+  String get orderStatusQualityCheck => 'Cek Kualitas';
+
+  @override
+  String get orderStatusReady => 'Siap Diambil';
+
+  @override
+  String get orderTypePickup => 'Dijemput';
+
+  @override
+  String get orderTypeWalkIn => 'Walk-in';
+
+  @override
+  String get orderDeliveryDelivery => 'Diantar';
+
+  @override
+  String get orderDeliverySelfPickup => 'Ambil Sendiri';
+
+  @override
+  String get orderServiceMoreSuffix => 'lainnya';
+
+  @override
+  String get orderTotalPaymentLabel => 'Total Pembayaran';
+
+  @override
+  String get orderItemsLabel => 'item';
 }
