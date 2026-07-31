@@ -236,10 +236,18 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (ctx) => _ConfirmDeliverySheet(order: order),
+        builder: (ctx) => ConfirmDeliverySheet(
+          orderId: order.id,
+          customerName: order.customerName,
+          orderNumber: order.orderNumber,
+        ),
       );
       if (confirmed == true) {
+<<<<<<< HEAD
         _showSnack(AppLocalizations.of(context)!.markedDeliveredSnackbar(order.orderNumber));
+=======
+        _showSnack('${order.orderNumber} ditandai sudah diantar & selesai');
+>>>>>>> cbb8896a5b0c84bb0a127fc08e55b701b145e878
       }
     } else {
       await _markDelivered(order);
@@ -674,7 +682,7 @@ class _AddScheduleModeSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Dibungkus SingleChildScrollView + viewInsets/viewPadding bawah (sama
-    // seperti _ConfirmPickupSheet & _ConfirmDeliverySheet di file ini),
+    // seperti _ConfirmPickupSheet & ConfirmDeliverySheet di file ini),
     // supaya tidak overflow di layar pendek atau saat ada safe-area/gesture
     // bar di bawah (sempat overflow ~7px sebelum fix ini).
     return Padding(
@@ -1334,22 +1342,33 @@ class _ConfirmPickupSheet extends StatefulWidget {
 }
 
 /// Bottom sheet konfirmasi antar: pilih kurir (opsional) lalu tandai order
-/// sudah diantar. Dropdown kurir hanya menampilkan karyawan aktif dengan
-/// posisi mengandung "kurir" (dicocokkan case-insensitive, karena posisi
-/// karyawan diketik manual/dipilih dari dropdown teks bebas di
-/// CreateEmployeeScreen). Kalau tidak ada karyawan berposisi kurir sama
-/// sekali, sheet tetap bisa dikonfirmasi tanpa memilih siapa pun - supaya
-/// tidak memblokir alur kerja owner yang belum sempat input data karyawan.
-class _ConfirmDeliverySheet extends ConsumerStatefulWidget {
-  final Order order;
+/// sudah diantar (dan sekaligus 'completed' - lihat markDelivered).
+/// DIBUAT PUBLIC supaya bisa direuse langsung dari OrderDetailScreen
+/// (tombol "Jadwalkan Pengantaran" saat status ready & deliveryType
+/// delivery), bukan cuma dari layar Antar Jemput ini. Dropdown kurir
+/// hanya menampilkan karyawan aktif dengan posisi mengandung "kurir"
+/// (dicocokkan case-insensitive, karena posisi karyawan diketik manual/
+/// dipilih dari dropdown teks bebas di CreateEmployeeScreen). Kalau
+/// tidak ada karyawan berposisi kurir sama sekali, sheet tetap bisa
+/// dikonfirmasi tanpa memilih siapa pun - supaya tidak memblokir alur
+/// kerja owner yang belum sempat input data karyawan.
+class ConfirmDeliverySheet extends ConsumerStatefulWidget {
+  final String orderId;
+  final String? customerName;
+  final String orderNumber;
 
-  const _ConfirmDeliverySheet({required this.order});
+  const ConfirmDeliverySheet({
+    Key? key,
+    required this.orderId,
+    this.customerName,
+    required this.orderNumber,
+  }) : super(key: key);
 
   @override
-  ConsumerState<_ConfirmDeliverySheet> createState() => _ConfirmDeliverySheetState();
+  ConsumerState<ConfirmDeliverySheet> createState() => _ConfirmDeliverySheetState();
 }
 
-class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
+class _ConfirmDeliverySheetState extends ConsumerState<ConfirmDeliverySheet> {
   List<Employee> _couriers = [];
   bool _isLoadingCouriers = true;
   String? _couriersError;
@@ -1390,9 +1409,10 @@ class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
       await OrderRepository(userId: uid).markDelivered(
-        widget.order.id,
+        widget.orderId,
         courierId: _selectedCourier?.id,
         courierName: _selectedCourier?.fullName,
+        markAsCompleted: true,
       );
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
@@ -1435,7 +1455,11 @@ class _ConfirmDeliverySheetState extends ConsumerState<_ConfirmDeliverySheet> {
               ),
               const SizedBox(height: 4),
               Text(
+<<<<<<< HEAD
                 AppLocalizations.of(context)!.confirmDeliverySubtitle(widget.order.customerName ?? AppLocalizations.of(context)!.customerFallbackLabel, widget.order.orderNumber),
+=======
+                'Antar cucian ${widget.customerName ?? "pelanggan"} (${widget.orderNumber})',
+>>>>>>> cbb8896a5b0c84bb0a127fc08e55b701b145e878
                 style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
               ),
               const SizedBox(height: 22),

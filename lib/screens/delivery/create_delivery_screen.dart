@@ -58,18 +58,37 @@ class _DS {
       );
 }
 
-
 /// "Jadwalkan Antar Jemput" - layar untuk membuat RENCANA jadwal jemput
-/// atau antar untuk order yang sudah ada (dipilih dari daftar), lengkap
-/// dengan cabang, alamat, tanggal, jam & kurir. Ini BEDA dari
-/// PickupDeliveryScreen yang menandai order SUDAH BENERAN dijemput/diantar
-/// - layar ini cuma menyimpan rencana (lihat OrderRepository.scheduleLogistics()),
-/// jadi tidak mengubah pickup_date/delivery_date/status sama sekali.
+/// atau antar untuk order yang sudah ada, lengkap dengan cabang, alamat,
+/// tanggal, jam & kurir. Ini BEDA dari PickupDeliveryScreen yang menandai
+/// order SUDAH BENERAN dijemput/diantar - layar ini cuma menyimpan rencana
+/// (lihat OrderRepository.scheduleLogistics()), jadi tidak mengubah
+/// pickup_date/delivery_date/status sama sekali.
+///
+/// UPDATED: nambah `preselectedOrderId` - dipakai saat layar ini dibuka
+/// LANGSUNG dari OrderDetailScreen (tombol "Jadwalkan Pengantaran" saat
+/// status ready & deliveryType delivery). Kalau field ini diisi:
+/// - mode dikunci ke 'pengantaran' (mode toggle disembunyikan)
+/// - order picker disembunyikan, diganti kartu info singkat (order sudah
+///   pasti, gak perlu dicari/dipilih lagi dari daftar)
+/// - cabang otomatis ke-lock sesuai laundryId order tsb, dropdown-nya
+///   dikunci (disabled) supaya tidak ke-reset _selectedOrder secara tidak
+///   sengaja
 class CreateDeliveryScheduleScreen extends ConsumerStatefulWidget {
   /// Mode awal saat layar dibuka - 'penjemputan' atau 'pengantaran'.
+  /// Diabaikan kalau [preselectedOrderId] diisi (mode dipaksa 'pengantaran').
   final String initialMode;
 
-  const CreateDeliveryScheduleScreen({Key? key, this.initialMode = 'penjemputan'}) : super(key: key);
+  /// Kalau diisi, layar ini dibuka LANGSUNG untuk 1 order tertentu (dari
+  /// OrderDetailScreen). Mode dikunci ke 'pengantaran', picker order & mode
+  /// toggle disembunyikan, dan cabang ikut ter-lock ke laundryId order tsb.
+  final String? preselectedOrderId;
+
+  const CreateDeliveryScheduleScreen({
+    Key? key,
+    this.initialMode = 'penjemputan',
+    this.preselectedOrderId,
+  }) : super(key: key);
 
   @override
   ConsumerState<CreateDeliveryScheduleScreen> createState() => _CreateDeliveryScheduleScreenState();
@@ -82,6 +101,10 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
   static const _pickupAccent = Color(0xFFB197FC);
 
   Color get _modeAccent => _mode == 'penjemputan' ? _pickupAccent : _DS.primary;
+
+  /// True kalau layar ini dibuka dengan order sudah ditentukan dari luar
+  /// (OrderDetailScreen) - mode & order picker jadi read-only/disembunyikan.
+  bool get _isLocked => widget.preselectedOrderId != null;
 
   late String _mode; // 'penjemputan' | 'pengantaran'
   final _addressController = TextEditingController();
@@ -105,14 +128,18 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
   Laundry? _selectedLaundry;
 
   bool _isLoadingOrders = false;
+  bool _isLoadingPreselected = false;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _mode = widget.initialMode;
+    _mode = widget.preselectedOrderId != null ? 'pengantaran' : widget.initialMode;
     _fetchCouriers();
     _fetchLaundries();
+    if (widget.preselectedOrderId != null) {
+      _fetchPreselectedOrder();
+    }
   }
 
   @override
@@ -146,8 +173,69 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
         _laundries = all.where((l) => l.isActive).toList();
         _isLoadingLaundries = false;
       });
+      // Kalau order sudah ke-fetch duluan (race antara dua Future async
+      // ini), langsung coba lock cabang begitu daftar cabang siap.
+      _lockBranchToOrder();
     } catch (_) {
       if (mounted) setState(() => _isLoadingLaundries = false);
+    }
+  }
+
+  /// Ambil order yang sudah ditentukan dari OrderDetailScreen. Kalau order
+  /// ini kebetulan sudah punya logisticsSchedule mode 'pengantaran' (mis.
+  /// dari CreateOrderScreen), prefill tanggal/jam/alamatnya juga - sama
+  /// pola prefill-nya dengan _pickOrder() di alur non-locked.
+  Future<void> _fetchPreselectedOrder() async {
+    setState(() => _isLoadingPreselected = true);
+    try {
+      final order = await ref.read(orderRepositoryProvider).getOrder(widget.preselectedOrderId!);
+      if (!mounted) return;
+
+      if (order == null) {
+        _showSnack('Pesanan tidak ditemukan', isError: true);
+        setState(() => _isLoadingPreselected = false);
+        return;
+      }
+
+      setState(() {
+        _selectedOrder = order;
+        _prefilledFromOrder = false;
+        _isLoadingPreselected = false;
+
+        final schedule = order.logisticsSchedule;
+        if (schedule != null && schedule.mode == 'pengantaran') {
+          if (schedule.scheduledAt != null) {
+            _selectedDate = schedule.scheduledAt;
+            _selectedTime = TimeOfDay.fromDateTime(schedule.scheduledAt!);
+            _prefilledFromOrder = true;
+          }
+          if ((schedule.address ?? '').isNotEmpty) {
+            _addressController.text = schedule.address!;
+          }
+          if ((schedule.courierId ?? '').isNotEmpty) {
+            final match = _couriers.where((c) => c.id == schedule.courierId);
+            if (match.isNotEmpty) _selectedCourier = match.first;
+          }
+        }
+      });
+
+      _lockBranchToOrder();
+    } catch (e) {
+      if (mounted) {
+        _showSnack('Gagal memuat pesanan: $e', isError: true);
+        setState(() => _isLoadingPreselected = false);
+      }
+    }
+  }
+
+  /// Set cabang otomatis sesuai laundryId order - dipanggil dari 2 tempat
+  /// (setelah order & setelah daftar cabang selesai fetch), karena
+  /// keduanya async dan urutan selesainya gak pasti mana duluan.
+  void _lockBranchToOrder() {
+    if (!_isLocked || _selectedOrder == null || _laundries.isEmpty) return;
+    final match = _laundries.where((l) => l.id == _selectedOrder!.laundryId);
+    if (match.isNotEmpty && mounted) {
+      setState(() => _selectedLaundry = match.first);
     }
   }
 
@@ -211,7 +299,6 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                             style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w600),
                           ),
                           subtitle: Text(order.orderNumber, style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant)),
-                          
                           onTap: () {
                             setState(() {
                               _selectedOrder = order;
@@ -324,8 +411,16 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
             notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
           );
       if (mounted) {
+<<<<<<< HEAD
         _showSnack(AppLocalizations.of(context)!.scheduleSaveSuccess);
         Navigator.of(context).maybePop();
+=======
+        _showSnack('Jadwal berhasil disimpan');
+        // pop(true) - bukan maybePop() - supaya pemanggil (khususnya
+        // OrderDetailScreen lewat _openScheduleDeliverySheet) tau jadwal
+        // berhasil disimpan dan bisa refresh datanya.
+        Navigator.of(context).pop(true);
+>>>>>>> cbb8896a5b0c84bb0a127fc08e55b701b145e878
       }
     } catch (e) {
       _showSnack(AppLocalizations.of(context)!.scheduleSaveError(e.toString()), isError: true);
@@ -363,10 +458,12 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildModeToggle(),
+                          _isLocked ? _buildLockedOrderInfo() : _buildModeToggle(),
                           const SizedBox(height: AppTheme.xl),
-                          _buildOrderPicker(),
-                          const SizedBox(height: AppTheme.lg),
+                          if (!_isLocked) ...[
+                            _buildOrderPicker(),
+                            const SizedBox(height: AppTheme.lg),
+                          ],
                           _buildBranchPicker(),
                           const SizedBox(height: AppTheme.lg),
                           _buildAddressField(),
@@ -426,10 +523,56 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
           const SizedBox(width: 12),
           Expanded(
             child: Text(
+<<<<<<< HEAD
               AppLocalizations.of(context)!.scheduleDeliveryScreenTitle,
+=======
+              _isLocked ? 'Jadwalkan Pengantaran' : 'Jadwalkan Antar Jemput',
+>>>>>>> cbb8896a5b0c84bb0a127fc08e55b701b145e878
               style: _DS.headlineMd(color: _DS.navy),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Kartu info order saat mode locked (dibuka dari OrderDetailScreen) -
+  /// menggantikan mode toggle, karena mode & order-nya sudah pasti dan
+  /// tidak boleh diubah dari sini.
+  Widget _buildLockedOrderInfo() {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.md),
+      decoration: BoxDecoration(
+        color: _DS.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(color: _DS.primary.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.call_made_rounded, color: _DS.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Menjadwalkan Pengantaran',
+                  style: GoogleFonts.beVietnamPro(fontSize: 12, fontWeight: FontWeight.w700, color: _DS.primary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _isLoadingPreselected
+                      ? 'Memuat pesanan...'
+                      : (_selectedOrder != null
+                          ? '${_selectedOrder!.orderNumber} (${_selectedOrder!.customerName ?? "Pelanggan"})'
+                          : 'Pesanan tidak ditemukan'),
+                  style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w600, color: _DS.onSurface),
+                ),
+              ],
+            ),
+          ),
+          if (_isLoadingPreselected)
+            const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
         ],
       ),
     );
@@ -633,12 +776,18 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                           ),
                         ))
                     .toList(),
-                onChanged: (val) => setState(() {
-                  _selectedLaundry = val;
-                  // Order yang sudah dipilih mungkin dari cabang lain, jadi
-                  // direset supaya konsisten dengan cabang barunya.
-                  _selectedOrder = null;
-                }),
+                // Dikunci saat _isLocked - order & cabangnya sudah pasti
+                // ditentukan dari OrderDetailScreen, jadi tidak boleh
+                // diganti manual dari sini (kalau diganti, _selectedOrder
+                // yang sudah ke-lock bisa jadi tidak konsisten lagi).
+                onChanged: _isLocked
+                    ? null
+                    : (val) => setState(() {
+                          _selectedLaundry = val;
+                          // Order yang sudah dipilih mungkin dari cabang lain,
+                          // jadi direset supaya konsisten dengan cabang barunya.
+                          _selectedOrder = null;
+                        }),
                 decoration: InputDecoration(
                   hintText: AppLocalizations.of(context)!.selectBranchHint,
                   hintStyle: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
