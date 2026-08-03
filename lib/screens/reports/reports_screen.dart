@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -155,6 +156,24 @@ class _WeekOption {
 /// 168 -> 140, plus padding internal & font di kedua card dikecilin dikit
 /// supaya proporsinya pas — lebar card sekarang beneran ngepas sama teks
 /// nama bulan/rentang minggu, bukan lebar kosong nganggur kayak sebelumnya.
+///
+/// UPDATED (v8): v7 mencoba pakai IntrinsicWidth supaya lebar card ngikutin
+/// teks secara otomatis, TAPI IntrinsicWidth gak kompatibel dengan
+/// SingleChildScrollView di dalam list bulan/minggu (ScrollView gak
+/// mendukung intrinsic width secara benar), akibatnya card malah balik
+/// selebar constraint layar — persis bug yang dilaporkan user (dropdown
+/// jauh lebih lebar dari teksnya, sampai mepet/kepotong tepi kanan layar).
+/// Fix: ukur lebar teks langsung pakai TextPainter (_measureTextWidth) di
+/// _openMonthPicker/_openWeekPicker SEBELUM overlay dibuat, lalu pasang
+/// SizedBox(width: computedWidth) yang pas ke teks + sedikit padding
+/// wajar (bukan mepet banget, bukan juga lebar kosong). IntrinsicWidth
+/// dibuang total dari kedua fungsi ini.
+///
+/// UPDATED (v10): user minta kedua dropdown (bulan & minggu) sedikit
+/// digedein — bukan redesign total, cuma dinaikkan tipis: font item,
+/// padding internal, tinggi baris, dan cap lebar maksimum masing-masing
+/// dinaikkan ~1pt/1-2px supaya kerasa lebih lega tapi tetap ringkas &
+/// proporsional (lihat _openMonthPicker/_openWeekPicker + kedua card).
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({Key? key}) : super(key: key);
 
@@ -194,23 +213,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
   OverlayEntry? _monthPickerBarrier;
   OverlayEntry? _monthPickerCard;
 
-  /// Lebar dropdown bulan — dipakai bareng di overlay (_openMonthPicker)
-  /// dan di isinya (_MonthYearPickerCard) biar gak ada dua angka beda yang
-  /// harus disinkron manual.
-  ///
-  /// UPDATED (v5): masih kelebaran di v4 (152px kerasa lebar buat 1 baris
-  /// nama bulan). Diperketat lagi ke 132px, DAN sekarang dibungkus
-  /// ClipRRect di overlay-nya (lihat _openMonthPicker/_openWeekPicker)
-  /// supaya lebar tampilan dijamin gak pernah bisa "bocor" melebihi
-  /// angka ini, apapun yang terjadi di dalam list-nya.
-  ///
-  /// UPDATED (v7): nebak angka fixed (108px dst) ternyata gak pernah pas
-  /// di semua kondisi (font rendering beda-beda per device/browser).
-  /// Sekarang card dibungkus IntrinsicWidth di _openMonthPicker — lebar
-  /// beneran ngikutin teks bulan terpanjang secara otomatis. Konstanta
-  /// ini sekarang cuma jadi CAP maksimum (jaring pengaman) buat dx
-  /// overflow-check & ConstrainedBox, bukan target lebar lagi.
-  static const double _monthPickerWidth = 160;
+  /// CAP maksimum lebar dropdown bulan (jaring pengaman kalau ada locale
+  /// dengan nama bulan super panjang). Lebar SEBENARNYA yang dipakai
+  /// dihitung dinamis per-buka lewat _measureTextWidth di _openMonthPicker
+  /// (lihat catatan v8 di atas class) — konstanta ini cuma batas atas.
+  /// (v10: dinaikkan tipis 160 -> 175 seiring font & padding item naik.)
+  static const double _monthPickerWidth = 205;
 
   /// Tinggi maksimum area scroll daftar bulan (12 bulan, 1 kolom) di
   /// dalam _MonthYearPickerCard, supaya card gak jadi kepanjangan ke
@@ -227,14 +235,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
   OverlayEntry? _weekPickerBarrier;
   OverlayEntry? _weekPickerCard;
 
-  // Sedikit lebih lebar dari month picker karena tiap baris minggu
-  // nampilin juga rentang tanggalnya (mis. "1 - 7 Agu"), bukan cuma nama.
-  //
-  // UPDATED (v7): sama kayak month picker — sekarang dibungkus
-  // IntrinsicWidth di _openWeekPicker, lebar ngikutin teks "Minggu X" +
-  // rentang tanggal terpanjang secara otomatis. Konstanta ini cuma CAP
-  // maksimum (jaring pengaman), bukan target lebar.
-  static const double _weekPickerWidth = 190;
+  /// CAP maksimum lebar dropdown minggu — sama alasan dengan
+  /// _monthPickerWidth di atas, lebar sebenarnya dihitung dinamis di
+  /// _openWeekPicker. (v10: dinaikkan tipis 190 -> 210.)
+  static const double _weekPickerWidth = 250;
   static const double _weekPickerListMaxHeight = 220;
 
   // Minggu spesifik yang dipilih lewat dropdown (null = belum pilih
@@ -310,6 +314,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return weeks;
   }
 
+  /// BARU (v8): ukur lebar sebuah teks (dalam satu baris, dengan style
+  /// tertentu) secara presisi lewat TextPainter — dipakai buat menghitung
+  /// lebar dropdown bulan/minggu supaya beneran ngepas ke konten
+  /// terlebarnya, bukan ditebak angka fixed atau (yang ternyata gagal)
+  /// dibiarkan IntrinsicWidth yang mengukur otomatis (lihat catatan v8
+  /// di atas class kenapa IntrinsicWidth gak bisa dipakai di sini).
+  double _measureTextWidth(String text, TextStyle style) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: ui.TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    return painter.width;
+  }
+
   // Dipakai supaya fetch pertama cuma jalan sekali. Dipanggil dari
   // didChangeDependencies (bukan initState) karena kedua fetch di bawah
   // butuh AppLocalizations.of(context) SEBELUM await pertama — dan
@@ -350,14 +369,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
   /// di-tap (lihat catatan di field _monthPickerLink).
   ///
   /// UPDATED (v3): sebelum insert overlay, cek dulu posisi global chip
-  /// (_monthChipKey) vs lebar layar. Kalau card selebar _monthPickerWidth
+  /// (_monthChipKey) vs lebar layar. Kalau card selebar computedWidth
   /// bakal nabrak/kepotong tepi kanan layar kalau nempel rata kiri chip,
   /// geser ke kiri (dx negatif) secukupnya biar mepet tepi layar
   /// (minus edgePadding) — posisi vertikal (dy) tetap gak berubah.
   ///
-  /// UPDATED (v5): dibungkus ClipRRect di luar Container-nya — jaring
-  /// pengaman tambahan supaya lebar tampilan gak PERNAH bisa melebihi
-  /// _monthPickerWidth, apapun penyebabnya di dalam list.
+  /// UPDATED (v8): lebar card sekarang DIHITUNG dari teks nama bulan
+  /// terpanjang (lewat _measureTextWidth), bukan ditebak angka fixed
+  /// atau diserahkan ke IntrinsicWidth (yang gagal karena ada
+  /// SingleChildScrollView di dalamnya — lihat catatan v8 di atas class).
+  /// Hasilnya dipasang lewat SizedBox(width: computedWidth) dengan sedikit
+  /// padding "napas" supaya teks gak mepet banget ke tepi card tapi juga
+  /// gak nyisain ruang kosong berlebih seperti sebelumnya.
+  ///
+  /// UPDATED (v10): itemStyle & komponen lebar dinaikkan tipis (lihat
+  /// catatan v10 di atas class) supaya card kerasa sedikit lebih lega.
   void _openMonthPicker(BuildContext context) {
     if (_monthPickerCard != null) {
       _closeMonthPicker();
@@ -366,6 +392,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
     _closeWeekPicker();
 
     final overlay = Overlay.of(context);
+    final locale = Localizations.localeOf(context).languageCode;
+
+    // Ukur nama bulan terpanjang di locale aktif dengan style yang sama
+    // persis dengan yang dipakai buat render tiap item bulan di
+    // _MonthYearPickerCard, supaya hasil ukur match dengan tampilan asli.
+    double maxLabelWidth = 0;
+    final itemStyle = _DS.bodySm(weight: FontWeight.w600).copyWith(fontSize: 14.5);
+    for (int m = 1; m <= 12; m++) {
+      final label = DateFormat.MMMM(locale).format(DateTime(2024, m));
+      final w = _measureTextWidth(label, itemStyle);
+      if (w > maxLabelWidth) maxLabelWidth = w;
+    }
+    // Komponen lebar: teks + padding horizontal item (11+11) + border item
+    // (1+1) + padding luar card (9+9) + sedikit napas ekstra (22) supaya
+    // gak kelihatan mepet banget. Di-clamp ke [120, _monthPickerWidth]
+    // sebagai jaring pengaman batas bawah/atas.
+    final computedWidth =
+        (maxLabelWidth + 22 + 2 + 18 + 22).clamp(120.0, _monthPickerWidth);
 
     const edgePadding = 12.0;
     double dx = 0;
@@ -373,7 +417,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     if (chipBox != null) {
       final chipGlobalX = chipBox.localToGlobal(Offset.zero).dx;
       final screenWidth = MediaQuery.of(context).size.width;
-      final overflow = (chipGlobalX + _monthPickerWidth + edgePadding) - screenWidth;
+      final overflow = (chipGlobalX + computedWidth + edgePadding) - screenWidth;
       if (overflow > 0) {
         dx = -overflow;
       }
@@ -389,43 +433,46 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
 
     _monthPickerCard = OverlayEntry(
-      builder: (_) => CompositedTransformFollower(
-        link: _monthPickerLink,
-        showWhenUnlinked: false,
-        offset: Offset(dx, 50),
-        child: Material(
-          color: Colors.transparent,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: _DS.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: _DS.cardShadow,
-              ),
-              // IntrinsicWidth = card cuma selebar konten terlebarnya
-              // (nama bulan terpanjang), BUKAN angka px yang ditebak
-              // manual. ConstrainedBox di bawah cuma jaring pengaman
-              // (minWidth biar gak kekecilan, maxWidth biar gak kebablasan
-              // kalau ada locale dengan nama bulan super panjang).
-              child: IntrinsicWidth(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 90, maxWidth: _monthPickerWidth),
-                  child: _MonthYearPickerCard(
-                    listMaxHeight: _monthPickerListMaxHeight,
-                    initialMonth: _selectedMonth,
-                    onSelected: (month) {
-                      setState(() {
-                        _selectedPeriod = 2;
-                        _selectedMonth = month;
-                        // Bulan acuan berubah -> minggu spesifik yang lagi
-                        // kepilih (kalau ada) jadi gak relevan lagi.
-                        _selectedWeek = null;
-                      });
-                      _fetchReportsData();
-                      _closeMonthPicker();
-                    },
-                  ),
+      // UPDATED (v9): CompositedTransformFollower dibungkus Positioned di
+      // sini — INI akar masalah dropdown yang kelebaran, bukan soal
+      // SizedBox di dalamnya. Overlay memperlakukan child yang gak
+      // dibungkus Positioned sebagai "non-positioned", dan child seperti
+      // itu DIPAKSA dapat tight-constraint selebar layar penuh oleh
+      // render object Overlay — jadi SizedBox(width: computedWidth) di
+      // dalamnya sama sekali gak berpengaruh (constraint tight menang,
+      // SizedBox gak bisa lebih kecil dari itu). Dengan Positioned(width:
+      // computedWidth), child ini jadi dianggap "positioned" dan BENERAN
+      // dikasih constraint selebar computedWidth, bukan selebar layar.
+      builder: (_) => Positioned(
+        width: computedWidth,
+        child: CompositedTransformFollower(
+          link: _monthPickerLink,
+          showWhenUnlinked: false,
+          offset: Offset(dx, 50),
+          child: Material(
+            color: Colors.transparent,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _DS.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: _DS.cardShadow,
+                ),
+                child: _MonthYearPickerCard(
+                  listMaxHeight: _monthPickerListMaxHeight,
+                  initialMonth: _selectedMonth,
+                  onSelected: (month) {
+                    setState(() {
+                      _selectedPeriod = 2;
+                      _selectedMonth = month;
+                      // Bulan acuan berubah -> minggu spesifik yang lagi
+                      // kepilih (kalau ada) jadi gak relevan lagi.
+                      _selectedWeek = null;
+                    });
+                    _fetchReportsData();
+                    _closeMonthPicker();
+                  },
                 ),
               ),
             ),
@@ -450,6 +497,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
   /// biar gak kepotong, dibungkus ClipRRect buat jaring pengaman lebar).
   /// Daftar minggunya dihitung dari _selectedMonth (_weeksOfMonth), jadi
   /// otomatis ikut bulan yang lagi jadi acuan "Per Bulan".
+  ///
+  /// UPDATED (v8): sama seperti _openMonthPicker — lebar card sekarang
+  /// dihitung dari _measureTextWidth (label "Minggu X" + rentang tanggal
+  /// terpanjang), dipasang lewat SizedBox, bukan IntrinsicWidth.
+  ///
+  /// UPDATED (v10): line1Style/line2Style & komponen lebar dinaikkan tipis
+  /// (lihat catatan v10 di atas class) supaya card kerasa sedikit lebih
+  /// lega.
   void _openWeekPicker(BuildContext context) {
     if (_weekPickerCard != null) {
       _closeWeekPicker();
@@ -459,6 +514,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     final overlay = Overlay.of(context);
     final weeks = _weeksOfMonth(_selectedMonth);
+    final locale = Localizations.localeOf(context).languageCode;
+    final dayFmt = DateFormat('d MMM', locale);
+
+    // Ukur baris "Minggu X" (bold) dan baris rentang tanggal (kecil) buat
+    // tiap minggu, style-nya harus sama persis dengan yang dipakai buat
+    // render di _WeekPickerCard supaya hasil ukur match tampilan asli.
+    double maxLineWidth = 0;
+    final line1Style = _DS.bodySm(weight: FontWeight.w700).copyWith(fontSize: 14);
+    final line2Style = _DS.bodySm().copyWith(fontSize: 12.5);
+    for (final w in weeks) {
+      final w1 = _measureTextWidth('Minggu ${w.index}', line1Style);
+      final w2 = _measureTextWidth('${dayFmt.format(w.start)} - ${dayFmt.format(w.end)}', line2Style);
+      if (w1 > maxLineWidth) maxLineWidth = w1;
+      if (w2 > maxLineWidth) maxLineWidth = w2;
+    }
+    // Komponen lebar: teks + padding horizontal item (14+14) + border item
+    // (1+1) + padding luar card (8+8) + sedikit napas ekstra (22).
+    // Di-clamp ke [140, _weekPickerWidth] sebagai jaring pengaman.
+    final computedWidth =
+        (maxLineWidth + 28 + 2 + 16 + 22).clamp(140.0, _weekPickerWidth);
 
     const edgePadding = 12.0;
     double dx = 0;
@@ -466,7 +541,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     if (chipBox != null) {
       final chipGlobalX = chipBox.localToGlobal(Offset.zero).dx;
       final screenWidth = MediaQuery.of(context).size.width;
-      final overflow = (chipGlobalX + _weekPickerWidth + edgePadding) - screenWidth;
+      final overflow = (chipGlobalX + computedWidth + edgePadding) - screenWidth;
       if (overflow > 0) {
         dx = -overflow;
       }
@@ -482,40 +557,41 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
 
     _weekPickerCard = OverlayEntry(
-      builder: (_) => CompositedTransformFollower(
-        link: _weekPickerLink,
-        showWhenUnlinked: false,
-        offset: Offset(dx, 50),
-        child: Material(
-          color: Colors.transparent,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: _DS.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: _DS.cardShadow,
-              ),
-              // Sama kayak month picker: lebar ngikutin konten
-              // (label "Minggu X" + rentang tanggal terpanjang), bukan
-              // angka fixed yang ditebak.
-              child: IntrinsicWidth(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 110, maxWidth: _weekPickerWidth),
-                  child: _WeekPickerCard(
-                    listMaxHeight: _weekPickerListMaxHeight,
-                    monthAnchor: _selectedMonth,
-                    weeks: weeks,
-                    selectedWeek: _selectedWeek,
-                    onSelected: (week) {
-                      setState(() {
-                        _selectedPeriod = 1;
-                        _selectedWeek = week;
-                      });
-                      _fetchReportsData();
-                      _closeWeekPicker();
-                    },
-                  ),
+      // UPDATED (v9): sama seperti _openMonthPicker — CompositedTransformFollower
+      // dibungkus Positioned(width: computedWidth). Tanpa ini, Overlay
+      // memaksa child selebar layar penuh (non-positioned child dapat
+      // tight-constraint sebesar theatre), dan SizedBox di dalamnya gak
+      // berdaya melawan itu — inilah akar masalah dropdown yang kelebaran,
+      // bukan soal cara ngukur lebar tekstnya.
+      builder: (_) => Positioned(
+        width: computedWidth,
+        child: CompositedTransformFollower(
+          link: _weekPickerLink,
+          showWhenUnlinked: false,
+          offset: Offset(dx, 50),
+          child: Material(
+            color: Colors.transparent,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _DS.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: _DS.cardShadow,
+                ),
+                child: _WeekPickerCard(
+                  listMaxHeight: _weekPickerListMaxHeight,
+                  monthAnchor: _selectedMonth,
+                  weeks: weeks,
+                  selectedWeek: _selectedWeek,
+                  onSelected: (week) {
+                    setState(() {
+                      _selectedPeriod = 1;
+                      _selectedWeek = week;
+                    });
+                    _fetchReportsData();
+                    _closeWeekPicker();
+                  },
                 ),
               ),
             ),
@@ -1786,14 +1862,23 @@ class _StatCard extends StatelessWidget {
 /// sejajar ke samping), yang gampang kepotong di layar sempit karena
 /// butuh ruang horizontal lebar. Sekarang jadi LIST VERTIKAL 1 kolom —
 /// Jan, Feb, Mar, ... tersusun ke bawah — supaya card bisa jauh lebih
-/// ramping (cuma selebar widget.width, ~152px) dan gak pernah kepotong
-/// di layar HP manapun. Daftarnya dibungkus SizedBox+ListView supaya
-/// bisa di-scroll kalau tingginya (12 bulan) melebihi listMaxHeight.
+/// ramping dan gak pernah kepotong di layar HP manapun. Daftarnya
+/// dibungkus SizedBox+ListView supaya bisa di-scroll kalau tingginya
+/// (12 bulan) melebihi listMaxHeight.
 ///
-/// UPDATED (v6): padding luar & dalam item dikecilin (nyesuain lebar
-/// card yang sekarang cuma 108px), font item diperkecil dikit juga
-/// (12.5 -> 11.5) biar nama bulan terpanjang tetep muat 1 baris tanpa
-/// kepotong dan gak berasa sempit/numpuk.
+/// UPDATED (v6): padding luar & dalam item dikecilin, font item diperkecil
+/// dikit juga biar nama bulan terpanjang tetep muat 1 baris tanpa kepotong
+/// dan gak berasa sempit/numpuk.
+///
+/// UPDATED (v8): lebar card sekarang di-set dari luar (SizedBox di
+/// _openMonthPicker, dihitung dari _measureTextWidth) — widget ini
+/// SENGAJA gak lagi mengandalkan IntrinsicWidth (gak kompatibel dengan
+/// SingleChildScrollView di bawah), dibiarkan mengisi lebar constraint
+/// yang dikasih parent apa adanya.
+///
+/// UPDATED (v10): item bulan dinaikkan tipis — height 32 -> 34, padding
+/// horizontal 8 -> 9, font 11.5 -> 12.5 — biar list kerasa sedikit lebih
+/// lega (lihat catatan v10 di atas class ReportsScreen).
 class _MonthYearPickerCard extends StatefulWidget {
   final double listMaxHeight;
   final DateTime initialMonth;
@@ -1824,17 +1909,6 @@ class _MonthYearPickerCardState extends State<_MonthYearPickerCard> {
     final locale = Localizations.localeOf(context).languageCode;
     final canGoNextYear = _displayYear < now.year;
 
-    // UPDATED (v7): dulu ListView.separated di dalam SizedBox(width:
-    // widget.width) — lebarnya HARUS ditebak manual karena ListView
-    // (dibangun di atas Viewport) gak support intrinsic width, jadi kalau
-    // dibungkus IntrinsicWidth dari parent bakal error/di-skip dan lebar
-    // parent gak ke-influence oleh isinya.
-    // Sekarang list-nya SingleChildScrollView + Column biasa — widget ini
-    // BISA dihitung intrinsic width-nya (max dari lebar semua nama bulan),
-    // jadi IntrinsicWidth di _openMonthPicker bisa "nanya" ke sini seberapa
-    // lebar konten aslinya, dan card otomatis ngepas — gak perlu tebak px
-    // lagi. crossAxisAlignment.stretch bikin tiap baris bulan tetep
-    // selebar bulan terlebar (bukan cuma selebar teksnya sendiri-sendiri).
     return Padding(
       padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
       child: Column(
@@ -1895,8 +1969,8 @@ class _MonthYearPickerCardState extends State<_MonthYearPickerCard> {
                       onTap: isFuture ? null : () => widget.onSelected(DateTime(_displayYear, month, 1)),
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        height: 32,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 11),
                         alignment: Alignment.centerLeft,
                         decoration: BoxDecoration(
                           color: isSelected ? _DS.navy : (isFuture ? _DS.canvas : _DS.surface),
@@ -1908,7 +1982,7 @@ class _MonthYearPickerCardState extends State<_MonthYearPickerCard> {
                           style: _DS.bodySm(
                             color: isSelected ? Colors.white : (isFuture ? _DS.outlineVariant : _DS.onSurfaceVariant),
                             weight: FontWeight.w600,
-                          ).copyWith(fontSize: 11.5),
+                          ).copyWith(fontSize: 14.5),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1934,9 +2008,16 @@ class _MonthYearPickerCardState extends State<_MonthYearPickerCard> {
 /// internal (semua kontrol lewat parent, beda dengan month picker yang
 /// punya state _displayYear buat navigasi tahun).
 ///
-/// UPDATED (v6): padding & font item dikecilin (nyesuain lebar card yang
-/// sekarang cuma 140px) supaya baris "Minggu X" + rentang tanggal tetep
-/// muat rapi 1 baris tanpa kepotong.
+/// UPDATED (v6): padding & font item dikecilin supaya baris "Minggu X" +
+/// rentang tanggal tetep muat rapi 1 baris tanpa kepotong.
+///
+/// UPDATED (v8): sama seperti _MonthYearPickerCard — lebar card sekarang
+/// di-set dari luar (SizedBox di _openWeekPicker), IntrinsicWidth dibuang.
+///
+/// UPDATED (v10): item minggu dinaikkan tipis — padding horizontal 8 -> 10,
+/// padding vertical 6 -> 7, font baris "Minggu X" 11 -> 12, font rentang
+/// tanggal 9.5 -> 10.5 — biar list kerasa sedikit lebih lega (lihat
+/// catatan v10 di atas class ReportsScreen).
 class _WeekPickerCard extends StatelessWidget {
   final double listMaxHeight;
   final DateTime monthAnchor;
@@ -1960,10 +2041,6 @@ class _WeekPickerCard extends StatelessWidget {
     final monthLabel = DateFormat.yMMMM(locale).format(monthAnchor);
     final dayFmt = DateFormat('d MMM', locale);
 
-    // UPDATED (v7): sama alasan kayak _MonthYearPickerCard — Column biasa
-    // (bukan ListView) supaya IntrinsicWidth di parent bisa ngukur lebar
-    // konten asli (label "Minggu X" + rentang tanggal terpanjang) dan
-    // card otomatis ngepas, gak perlu nebak angka px.
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
       child: Column(
@@ -2000,7 +2077,7 @@ class _WeekPickerCard extends StatelessWidget {
                       onTap: isFuture ? null : () => onSelected(week),
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                         decoration: BoxDecoration(
                           color: isSelected ? _DS.navy : (isFuture ? _DS.canvas : _DS.surface),
                           borderRadius: BorderRadius.circular(8),
@@ -2015,7 +2092,7 @@ class _WeekPickerCard extends StatelessWidget {
                               style: _DS.bodySm(
                                 color: isSelected ? Colors.white : (isFuture ? _DS.outlineVariant : _DS.onSurface),
                                 weight: FontWeight.w700,
-                              ).copyWith(fontSize: 11),
+                              ).copyWith(fontSize: 14),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -2024,7 +2101,7 @@ class _WeekPickerCard extends StatelessWidget {
                               '${dayFmt.format(week.start)} - ${dayFmt.format(week.end)}',
                               style: _DS.bodySm(
                                 color: isSelected ? Colors.white70 : _DS.outlineVariant,
-                              ).copyWith(fontSize: 9.5),
+                              ).copyWith(fontSize: 12.5),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
