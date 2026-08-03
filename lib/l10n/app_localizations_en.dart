@@ -276,6 +276,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get periodThisWeek => 'This Week';
 
   @override
+  String weekNumberLabel(int index) {
+    return 'Week $index';
+  }
+
+  @override
+  String weekNumberRangeLabel(int index, String start, String end) {
+    return 'Week $index ($start - $end)';
+  }
+
+  @override
   String get periodThisMonth => 'This Month';
 
   @override

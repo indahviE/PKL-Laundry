@@ -127,6 +127,28 @@
   "reportsSubtitle": "Pantau performa bisnis laundry Anda",
   "periodToday": "Hari Ini",
   "periodThisWeek": "Minggu Ini",
+  "weekNumberLabel": "Minggu {index}",
+  "@weekNumberLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "weekNumberRangeLabel": "Minggu {index} ({start} - {end})",
+  "@weekNumberRangeLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "periodThisMonth": "Bulan Ini",
   "periodThisYear": "Tahun Ini",
   "printButtonShort": "Cetak",

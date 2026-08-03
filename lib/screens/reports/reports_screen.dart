@@ -174,6 +174,14 @@ class _WeekOption {
 /// padding internal, tinggi baris, dan cap lebar maksimum masing-masing
 /// dinaikkan ~1pt/1-2px supaya kerasa lebih lega tapi tetap ringkas &
 /// proporsional (lihat _openMonthPicker/_openWeekPicker + kedua card).
+///
+/// UPDATED (v11): label minggu ("Minggu X" / "Minggu X (tgl - tgl)")
+/// sebelumnya hardcode Bahasa Indonesia langsung di kode (gak ikut
+/// locale aktif) di 3 tempat: _buildWeekDropdownChip, _WeekPickerCard,
+/// dan _exportToPdf. Sekarang semua lewat AppLocalizations
+/// (t.weekNumberLabel / t.weekNumberRangeLabel) supaya ikut berubah ke
+/// English kalau locale app di-switch ke EN — konsisten dengan semua
+/// string lain di file ini yang sudah lewat `t.xxx`.
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({Key? key}) : super(key: key);
 
@@ -505,6 +513,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
   /// UPDATED (v10): line1Style/line2Style & komponen lebar dinaikkan tipis
   /// (lihat catatan v10 di atas class) supaya card kerasa sedikit lebih
   /// lega.
+  ///
+  /// UPDATED (v11): label "Minggu X" yang dipakai buat ngukur lebar
+  /// sekarang lewat t.weekNumberLabel (ikut locale aktif), bukan literal
+  /// string 'Minggu ${w.index}' — biar hasil ukur match sama teks yang
+  /// beneran dirender di _WeekPickerCard saat locale EN aktif.
   void _openWeekPicker(BuildContext context) {
     if (_weekPickerCard != null) {
       _closeWeekPicker();
@@ -516,6 +529,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final weeks = _weeksOfMonth(_selectedMonth);
     final locale = Localizations.localeOf(context).languageCode;
     final dayFmt = DateFormat('d MMM', locale);
+    final t = AppLocalizations.of(context)!;
 
     // Ukur baris "Minggu X" (bold) dan baris rentang tanggal (kecil) buat
     // tiap minggu, style-nya harus sama persis dengan yang dipakai buat
@@ -524,7 +538,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final line1Style = _DS.bodySm(weight: FontWeight.w700).copyWith(fontSize: 14);
     final line2Style = _DS.bodySm().copyWith(fontSize: 12.5);
     for (final w in weeks) {
-      final w1 = _measureTextWidth('Minggu ${w.index}', line1Style);
+      final w1 = _measureTextWidth(t.weekNumberLabel(w.index), line1Style);
       final w2 = _measureTextWidth('${dayFmt.format(w.start)} - ${dayFmt.format(w.end)}', line2Style);
       if (w1 > maxLineWidth) maxLineWidth = w1;
       if (w2 > maxLineWidth) maxLineWidth = w2;
@@ -942,16 +956,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
       // (mis. "Agustus 2026") supaya PDF-nya jelas laporan bulan yang mana
       // — bukan cuma teks generik "Bulan Ini" yang ambigu.
       // Kalau period-nya "Minggu Ini" DAN user udah pilih minggu spesifik
-      // lewat dropdown, pakai label "Minggu X (tgl - tgl)" biar jelas
-      // minggu mana yang dilaporin — bukan cuma teks generik "Minggu Ini".
+      // lewat dropdown, pakai label "Minggu X (tgl - tgl)" (lewat
+      // t.weekNumberRangeLabel supaya ikut locale aktif — lihat catatan
+      // v11 di atas class) biar jelas minggu mana yang dilaporin — bukan
+      // cuma teks generik "Minggu Ini".
       final String periodLabel;
       if (_selectedPeriod == 2) {
         periodLabel = _monthYearLabel(context);
       } else if (_selectedPeriod == 1 && _selectedWeek != null) {
         final locale = Localizations.localeOf(context).languageCode;
         final dayFmt = DateFormat('d MMM', locale);
-        periodLabel =
-            'Minggu ${_selectedWeek!.index} (${dayFmt.format(_selectedWeek!.start)} - ${dayFmt.format(_selectedWeek!.end)})';
+        periodLabel = t.weekNumberRangeLabel(
+          _selectedWeek!.index,
+          dayFmt.format(_selectedWeek!.start),
+          dayFmt.format(_selectedWeek!.end),
+        );
       } else {
         periodLabel = _periodLabels(t)[_selectedPeriod];
       }
@@ -1356,10 +1375,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
   /// kayak chip bulan), isinya daftar minggu di bulan acuan _selectedMonth
   /// (Minggu 1, Minggu 2, ... sampai minggu terakhir). Labelnya berubah
   /// jadi "Minggu X" begitu user pilih minggu spesifik.
+  ///
+  /// UPDATED (v11): label "Minggu X" sekarang lewat t.weekNumberLabel
+  /// (ikut locale aktif), bukan literal string 'Minggu ${...}'.
   Widget _buildWeekDropdownChip(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     final isSelected = _selectedPeriod == 1;
-    final label = (isSelected && _selectedWeek != null) ? 'Minggu ${_selectedWeek!.index}' : t.periodThisWeek;
+    final label = (isSelected && _selectedWeek != null)
+        ? t.weekNumberLabel(_selectedWeek!.index)
+        : t.periodThisWeek;
 
     return CompositedTransformTarget(
       link: _weekPickerLink,
@@ -2018,6 +2042,10 @@ class _MonthYearPickerCardState extends State<_MonthYearPickerCard> {
 /// padding vertical 6 -> 7, font baris "Minggu X" 11 -> 12, font rentang
 /// tanggal 9.5 -> 10.5 — biar list kerasa sedikit lebih lega (lihat
 /// catatan v10 di atas class ReportsScreen).
+///
+/// UPDATED (v11): baris "Minggu X" sekarang lewat t.weekNumberLabel
+/// (ikut locale aktif via AppLocalizations.of(context)), bukan literal
+/// string 'Minggu ${week.index}'.
 class _WeekPickerCard extends StatelessWidget {
   final double listMaxHeight;
   final DateTime monthAnchor;
@@ -2038,6 +2066,7 @@ class _WeekPickerCard extends StatelessWidget {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final locale = Localizations.localeOf(context).languageCode;
+    final t = AppLocalizations.of(context)!;
     final monthLabel = DateFormat.yMMMM(locale).format(monthAnchor);
     final dayFmt = DateFormat('d MMM', locale);
 
@@ -2088,7 +2117,7 @@ class _WeekPickerCard extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Minggu ${week.index}',
+                              t.weekNumberLabel(week.index),
                               style: _DS.bodySm(
                                 color: isSelected ? Colors.white : (isFuture ? _DS.outlineVariant : _DS.onSurface),
                                 weight: FontWeight.w700,

@@ -127,6 +127,28 @@
   "reportsSubtitle": "Monitor your laundry business performance",
   "periodToday": "Today",
   "periodThisWeek": "This Week",
+  "weekNumberLabel": "Week {index}",
+  "@weekNumberLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "weekNumberRangeLabel": "Week {index} ({start} - {end})",
+  "@weekNumberRangeLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "periodThisMonth": "This Month",
   "periodThisYear": "This Year",
   "printButtonShort": "Print",
