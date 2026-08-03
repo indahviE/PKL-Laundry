@@ -410,10 +410,10 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
             width: 40,
             height: 40,
             decoration: const BoxDecoration(
-              color: Color(0xFFD1E4FF),
+              color: Color(0xFF2196F3),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.add_rounded, color: Color(0xFF0B3B66), size: 22),
+            child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
           ),
         ),
       ],
@@ -732,7 +732,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
               icon: const Icon(Icons.person_add_outlined, size: 18),
               label: Text(l10n.addCustomerButton, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: const Color(0xFF2196F3),
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: AppTheme.xl, vertical: AppTheme.md),
