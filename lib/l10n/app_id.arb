@@ -912,7 +912,7 @@
   "statNeedsPickupTitle": "Perlu Dijemput",
   "statReadyDeliveryTitle": "Siap Diantar",
   "statSelfServiceTitle": "Ambil Sendiri",
-  "noOrdersTitle": "Tidak ada pesanan",
+  "noOrdersTitle": "Tidak ada pesanan", 
   "noOrdersFilterSubtitle": "Belum ada pesanan yang cocok dengan filter ini",
   "selectScheduleModeSubtitle": "Pilih mode jadwal yang mau dibuat",
   "schedulePickupTileTitle": "Jadwalkan Penjemputan",
