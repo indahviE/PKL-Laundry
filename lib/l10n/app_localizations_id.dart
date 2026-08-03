@@ -275,6 +275,16 @@ class AppLocalizationsId extends AppLocalizations {
   String get periodThisWeek => 'Minggu Ini';
 
   @override
+  String weekNumberLabel(int index) {
+    return 'Minggu $index';
+  }
+
+  @override
+  String weekNumberRangeLabel(int index, String start, String end) {
+    return 'Minggu $index ($start - $end)';
+  }
+
+  @override
   String get periodThisMonth => 'Bulan Ini';
 
   @override

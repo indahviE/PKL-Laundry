@@ -590,6 +590,18 @@ abstract class AppLocalizations {
   /// **'Minggu Ini'**
   String get periodThisWeek;
 
+  /// No description provided for @weekNumberLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Minggu {index}'**
+  String weekNumberLabel(int index);
+
+  /// No description provided for @weekNumberRangeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Minggu {index} ({start} - {end})'**
+  String weekNumberRangeLabel(int index, String start, String end);
+
   /// No description provided for @periodThisMonth.
   ///
   /// In id, this message translates to:
