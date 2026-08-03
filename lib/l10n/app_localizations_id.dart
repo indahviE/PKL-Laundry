@@ -635,7 +635,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get companyNotSetupError =>
-      'Perusahaan belum dibuat. Selesaikan proses onboarding (setup perusahaan) terlebih dahulu.';
+      'Perusahaan belum diatur. Selesaikan onboarding terlebih dahulu.';
 
   @override
   String get addServiceSuccess => 'Layanan berhasil ditambahkan!';
@@ -2704,4 +2704,115 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get markCompletedButtonLabel => 'Tandai Selesai';
+
+  @override
+  String get createOrderSubtitle => 'Buat dan kelola pesanan laundry baru';
+
+  @override
+  String get noBranchesForOrderError =>
+      'Belum ada cabang laundry. Tambahkan cabang dulu sebelum membuat pesanan.';
+
+  @override
+  String fillWeightForItemError(String itemName) {
+    return 'Isi berat (kg) untuk \"$itemName\" terlebih dahulu';
+  }
+
+  @override
+  String get businessContextNotReadyError =>
+      'Data perusahaan/cabang belum siap. Coba lagi sebentar.';
+
+  @override
+  String get selectedCustomerNotFoundError =>
+      'Pelanggan yang dipilih tidak ditemukan, coba pilih ulang.';
+
+  @override
+  String get orderCreatedSuccess => 'Pesanan berhasil dibuat!';
+
+  @override
+  String genericErrorTemplate(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get orderTypeSelfDropoffLabel => 'Antar Sendiri';
+
+  @override
+  String get orderDataSectionLabel => 'Data Pesanan';
+
+  @override
+  String get incomingLaundryLabel => 'Baju Masuk *';
+
+  @override
+  String get outgoingLaundryLabel => 'Baju Keluar *';
+
+  @override
+  String get remainingBillPayLaterNotice =>
+      'Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.';
+
+  @override
+  String get orderNotesFieldLabel => 'Catatan (Opsional)';
+
+  @override
+  String get orderNotesFieldHint => 'Tulis catatan khusus untuk pesanan ini';
+
+  @override
+  String get pickupPaymentPendingNotice =>
+      'Metode & status pembayaran akan dikonfirmasi lagi setelah berat/jumlah cucian diketahui.';
+
+  @override
+  String get branchFieldLabel => 'Cabang *';
+
+  @override
+  String get selectBranchForOrderHint => 'Pilih cabang untuk pesanan ini';
+
+  @override
+  String get selectBranchRequiredError => 'Pilih cabang terlebih dahulu';
+
+  @override
+  String get customerFieldLabel => 'Pelanggan *';
+
+  @override
+  String get selectCustomerRequiredError => 'Pilih pelanggan terlebih dahulu';
+
+  @override
+  String get noCustomersForOrderHint =>
+      'Belum ada pelanggan. Tambahkan pelanggan dulu sebelum membuat pesanan.';
+
+  @override
+  String get noCustomersInBranchHint =>
+      'Belum ada pelanggan yang terdaftar di cabang ini. Tambahkan pelanggan baru, atau cek penempatan cabang pelanggan yang sudah ada.';
+
+  @override
+  String get orderItemsSectionLabel => 'Item Pesanan';
+
+  @override
+  String get noItemsTapServiceHint =>
+      'Belum ada item. Ketuk salah satu layanan di atas untuk menambahkannya.';
+
+  @override
+  String get noActiveServicesForOrderHint =>
+      'Belum ada layanan aktif. Tambahkan layanan dulu di menu Layanan sebelum membuat pesanan.';
+
+  @override
+  String get pickupScheduleLabel => 'Jadwal Jemput (Opsional)';
+
+  @override
+  String get pickupScheduleOptionalHint =>
+      'Kosongkan kalau belum tau jamnya - bisa dijadwalkan belakangan di menu Antar Jemput.';
+
+  @override
+  String get itemsFilledAtPickupConfirmationHint =>
+      'Item akan diisi saat konfirmasi jemput';
+
+  @override
+  String get savingLabel => 'Sedang Menyimpan...';
+
+  @override
+  String get dateFieldFallbackLabel => 'Tanggal';
+
+  @override
+  String get timeFieldFallbackLabel => 'Jam';
+
+  @override
+  String get perKgUnitSuffix => '/kg';
 }

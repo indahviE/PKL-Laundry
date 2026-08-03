@@ -636,7 +636,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get companyNotSetupError =>
-      'Company not created yet. Please complete the onboarding (company setup) first.';
+      'Company not set up yet. Please complete onboarding first.';
 
   @override
   String get addServiceSuccess => 'Service added successfully!';
@@ -1405,7 +1405,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'User session not found. Please log in again.';
 
   @override
-  String get createOrderAppBarTitle => 'Buat Pesanan Baru';
+  String get createOrderAppBarTitle => 'Create New Order';
 
   @override
   String get createOrderSectionTitle => 'Detail Pesanan';
@@ -1417,7 +1417,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectCustomerLabel => 'Pelanggan';
 
   @override
-  String get selectCustomerHint => 'Pilih pelanggan';
+  String get selectCustomerHint => 'Select customer';
 
   @override
   String get selectServiceLabel => 'Pilih Layanan';
@@ -1453,7 +1453,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeServiceItemButton => 'Hapus';
 
   @override
-  String get saveOrderButton => 'Simpan Pesanan';
+  String get saveOrderButton => 'Save Order';
 
   @override
   String get createOrderSuccess => 'Pesanan berhasil dibuat!';
@@ -2694,4 +2694,115 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get markCompletedButtonLabel => 'Mark as Completed';
+
+  @override
+  String get createOrderSubtitle => 'Create and manage a new laundry order';
+
+  @override
+  String get noBranchesForOrderError =>
+      'No laundry branches yet. Add a branch first before creating an order.';
+
+  @override
+  String fillWeightForItemError(String itemName) {
+    return 'Please enter the weight (kg) for \"$itemName\" first';
+  }
+
+  @override
+  String get businessContextNotReadyError =>
+      'Company/branch data is not ready yet. Please try again shortly.';
+
+  @override
+  String get selectedCustomerNotFoundError =>
+      'Selected customer not found, please choose again.';
+
+  @override
+  String get orderCreatedSuccess => 'Order created successfully!';
+
+  @override
+  String genericErrorTemplate(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get orderTypeSelfDropoffLabel => 'Self Drop-off';
+
+  @override
+  String get orderDataSectionLabel => 'Order Data';
+
+  @override
+  String get incomingLaundryLabel => 'Incoming Laundry *';
+
+  @override
+  String get outgoingLaundryLabel => 'Outgoing Laundry *';
+
+  @override
+  String get remainingBillPayLaterNotice =>
+      'The remaining balance can be settled later from the order detail page.';
+
+  @override
+  String get orderNotesFieldLabel => 'Notes (Optional)';
+
+  @override
+  String get orderNotesFieldHint => 'Write any special notes for this order';
+
+  @override
+  String get pickupPaymentPendingNotice =>
+      'Payment method & status will be confirmed again once the laundry weight/quantity is known.';
+
+  @override
+  String get branchFieldLabel => 'Branch *';
+
+  @override
+  String get selectBranchForOrderHint => 'Select a branch for this order';
+
+  @override
+  String get selectBranchRequiredError => 'Please select a branch first';
+
+  @override
+  String get customerFieldLabel => 'Customer *';
+
+  @override
+  String get selectCustomerRequiredError => 'Please select a customer first';
+
+  @override
+  String get noCustomersForOrderHint =>
+      'No customers yet. Add a customer first before creating an order.';
+
+  @override
+  String get noCustomersInBranchHint =>
+      'No customers are registered at this branch yet. Add a new customer, or check the branch assignment of existing customers.';
+
+  @override
+  String get orderItemsSectionLabel => 'Order Items';
+
+  @override
+  String get noItemsTapServiceHint =>
+      'No items yet. Tap one of the services above to add it.';
+
+  @override
+  String get noActiveServicesForOrderHint =>
+      'No active services yet. Add a service first from the Services menu before creating an order.';
+
+  @override
+  String get pickupScheduleLabel => 'Pickup Schedule (Optional)';
+
+  @override
+  String get pickupScheduleOptionalHint =>
+      'Leave blank if you don\'t know the time yet — it can be scheduled later from the Pickup & Delivery menu.';
+
+  @override
+  String get itemsFilledAtPickupConfirmationHint =>
+      'Items will be filled in when confirming pickup';
+
+  @override
+  String get savingLabel => 'Saving...';
+
+  @override
+  String get dateFieldFallbackLabel => 'Date';
+
+  @override
+  String get timeFieldFallbackLabel => 'Time';
+
+  @override
+  String get perKgUnitSuffix => '/kg';
 }

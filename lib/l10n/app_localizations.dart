@@ -1241,7 +1241,7 @@ abstract class AppLocalizations {
   /// No description provided for @companyNotSetupError.
   ///
   /// In id, this message translates to:
-  /// **'Perusahaan belum dibuat. Selesaikan proses onboarding (setup perusahaan) terlebih dahulu.'**
+  /// **'Perusahaan belum diatur. Selesaikan onboarding terlebih dahulu.'**
   String get companyNotSetupError;
 
   /// No description provided for @addServiceSuccess.
@@ -4945,6 +4945,198 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Tandai Selesai'**
   String get markCompletedButtonLabel;
+
+  /// No description provided for @createOrderSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Buat dan kelola pesanan laundry baru'**
+  String get createOrderSubtitle;
+
+  /// No description provided for @noBranchesForOrderError.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada cabang laundry. Tambahkan cabang dulu sebelum membuat pesanan.'**
+  String get noBranchesForOrderError;
+
+  /// No description provided for @fillWeightForItemError.
+  ///
+  /// In id, this message translates to:
+  /// **'Isi berat (kg) untuk \"{itemName}\" terlebih dahulu'**
+  String fillWeightForItemError(String itemName);
+
+  /// No description provided for @businessContextNotReadyError.
+  ///
+  /// In id, this message translates to:
+  /// **'Data perusahaan/cabang belum siap. Coba lagi sebentar.'**
+  String get businessContextNotReadyError;
+
+  /// No description provided for @selectedCustomerNotFoundError.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan yang dipilih tidak ditemukan, coba pilih ulang.'**
+  String get selectedCustomerNotFoundError;
+
+  /// No description provided for @orderCreatedSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan berhasil dibuat!'**
+  String get orderCreatedSuccess;
+
+  /// No description provided for @genericErrorTemplate.
+  ///
+  /// In id, this message translates to:
+  /// **'Error: {error}'**
+  String genericErrorTemplate(String error);
+
+  /// No description provided for @orderTypeSelfDropoffLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Antar Sendiri'**
+  String get orderTypeSelfDropoffLabel;
+
+  /// No description provided for @orderDataSectionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Data Pesanan'**
+  String get orderDataSectionLabel;
+
+  /// No description provided for @incomingLaundryLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Baju Masuk *'**
+  String get incomingLaundryLabel;
+
+  /// No description provided for @outgoingLaundryLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Baju Keluar *'**
+  String get outgoingLaundryLabel;
+
+  /// No description provided for @remainingBillPayLaterNotice.
+  ///
+  /// In id, this message translates to:
+  /// **'Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.'**
+  String get remainingBillPayLaterNotice;
+
+  /// No description provided for @orderNotesFieldLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan (Opsional)'**
+  String get orderNotesFieldLabel;
+
+  /// No description provided for @orderNotesFieldHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Tulis catatan khusus untuk pesanan ini'**
+  String get orderNotesFieldHint;
+
+  /// No description provided for @pickupPaymentPendingNotice.
+  ///
+  /// In id, this message translates to:
+  /// **'Metode & status pembayaran akan dikonfirmasi lagi setelah berat/jumlah cucian diketahui.'**
+  String get pickupPaymentPendingNotice;
+
+  /// No description provided for @branchFieldLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang *'**
+  String get branchFieldLabel;
+
+  /// No description provided for @selectBranchForOrderHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih cabang untuk pesanan ini'**
+  String get selectBranchForOrderHint;
+
+  /// No description provided for @selectBranchRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih cabang terlebih dahulu'**
+  String get selectBranchRequiredError;
+
+  /// No description provided for @customerFieldLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan *'**
+  String get customerFieldLabel;
+
+  /// No description provided for @selectCustomerRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih pelanggan terlebih dahulu'**
+  String get selectCustomerRequiredError;
+
+  /// No description provided for @noCustomersForOrderHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada pelanggan. Tambahkan pelanggan dulu sebelum membuat pesanan.'**
+  String get noCustomersForOrderHint;
+
+  /// No description provided for @noCustomersInBranchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada pelanggan yang terdaftar di cabang ini. Tambahkan pelanggan baru, atau cek penempatan cabang pelanggan yang sudah ada.'**
+  String get noCustomersInBranchHint;
+
+  /// No description provided for @orderItemsSectionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Item Pesanan'**
+  String get orderItemsSectionLabel;
+
+  /// No description provided for @noItemsTapServiceHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada item. Ketuk salah satu layanan di atas untuk menambahkannya.'**
+  String get noItemsTapServiceHint;
+
+  /// No description provided for @noActiveServicesForOrderHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada layanan aktif. Tambahkan layanan dulu di menu Layanan sebelum membuat pesanan.'**
+  String get noActiveServicesForOrderHint;
+
+  /// No description provided for @pickupScheduleLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jadwal Jemput (Opsional)'**
+  String get pickupScheduleLabel;
+
+  /// No description provided for @pickupScheduleOptionalHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Kosongkan kalau belum tau jamnya - bisa dijadwalkan belakangan di menu Antar Jemput.'**
+  String get pickupScheduleOptionalHint;
+
+  /// No description provided for @itemsFilledAtPickupConfirmationHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Item akan diisi saat konfirmasi jemput'**
+  String get itemsFilledAtPickupConfirmationHint;
+
+  /// No description provided for @savingLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang Menyimpan...'**
+  String get savingLabel;
+
+  /// No description provided for @dateFieldFallbackLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanggal'**
+  String get dateFieldFallbackLabel;
+
+  /// No description provided for @timeFieldFallbackLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam'**
+  String get timeFieldFallbackLabel;
+
+  /// No description provided for @perKgUnitSuffix.
+  ///
+  /// In id, this message translates to:
+  /// **'/kg'**
+  String get perKgUnitSuffix;
 }
 
 class _AppLocalizationsDelegate
