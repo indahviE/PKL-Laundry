@@ -254,18 +254,6 @@ abstract class AppLocalizations {
   /// **'Balas percakapan dari semua user'**
   String get manageCsChatSubtitle;
 
-  /// No description provided for @chatTitle.
-  ///
-  /// In id, this message translates to:
-  /// **'Chat'**
-  String get chatTitle;
-
-  /// No description provided for @chatSubtitle.
-  ///
-  /// In id, this message translates to:
-  /// **'Balasan'**
-  String get chatSubtitle;
-
   /// No description provided for @sectionOther.
   ///
   /// In id, this message translates to:
@@ -4298,54 +4286,6 @@ abstract class AppLocalizations {
   /// **'Buka menu Orders, pilih pesanan aktif, status akan otomatis update mengikuti tahap pengerjaan.'**
   String get faqTrackAnswer;
 
-  /// No description provided for @chatCsScreenTitle.
-  ///
-  /// In id, this message translates to:
-  /// **'Chat dan CS'**
-  String get chatCsScreenTitle;
-
-  /// No description provided for @sendMessageError.
-  ///
-  /// In id, this message translates to:
-  /// **'Gagal mengirim pesan: {error}'**
-  String sendMessageError(String error);
-
-  /// No description provided for @chatEmptyStateMessage.
-  ///
-  /// In id, this message translates to:
-  /// **'Belum ada percakapan.\nKetik pesan di bawah buat mulai chat dengan CS.'**
-  String get chatEmptyStateMessage;
-
-  /// No description provided for @chatCsInputHint.
-  ///
-  /// In id, this message translates to:
-  /// **'Tulis pesan ke CS...'**
-  String get chatCsInputHint;
-
-  /// No description provided for @chatBotGreeting.
-  ///
-  /// In id, this message translates to:
-  /// **'Hai! Aku asisten virtual NetWash. Pilih topik di bawah atau ketik pertanyaanmu, nanti aku bantu jawab.'**
-  String get chatBotGreeting;
-
-  /// No description provided for @chatBotSuggestedQuestionsLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Pertanyaan yang sering ditanyakan'**
-  String get chatBotSuggestedQuestionsLabel;
-
-  /// No description provided for @chatBotFallbackMessage.
-  ///
-  /// In id, this message translates to:
-  /// **'Maaf, aku belum punya jawaban untuk itu. Coba pilih salah satu topik di bawah, atau hubungi tim kami lewat WhatsApp.'**
-  String get chatBotFallbackMessage;
-
-  /// No description provided for @chatBotContactWhatsappButton.
-  ///
-  /// In id, this message translates to:
-  /// **'Hubungi via WhatsApp'**
-  String get chatBotContactWhatsappButton;
-
   /// No description provided for @chatBotTopicBranchQuestion.
   ///
   /// In id, this message translates to:
@@ -4357,12 +4297,6 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Caranya:\n1. Dari dashboard, buka menu Cabang.\n2. Ketuk \"Cabang Baru\".\n3. Isi nama cabang, kode cabang, kota, provinsi, dan alamat lengkap.\n4. Kalau perlu, isi juga nomor telepon, email cabang, dan titik lokasi di peta.\n5. Isi kapasitas harian (jumlah pesanan maksimal per hari).\n6. Atur jam operasional per hari, atau centang \"Gunakan jam yang sama untuk semua hari\".\n7. Ketuk \"Simpan Data Cabang\".'**
   String get chatBotTopicBranchAnswer;
-
-  /// No description provided for @chatBotTopicBranchShortLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Cabang'**
-  String get chatBotTopicBranchShortLabel;
 
   /// No description provided for @chatBotTopicEmployeeQuestion.
   ///
@@ -4376,12 +4310,6 @@ abstract class AppLocalizations {
   /// **'Caranya:\n1. Dari dashboard, buka menu Kelola Karyawan.\n2. Ketuk \"Karyawan Baru\".\n3. Isi nama lengkap, nomor telepon, dan (opsional) email & alamat.\n4. Isi kode karyawan, posisi, dan cabang penempatannya.\n5. Isi tanggal bergabung, gaji pokok, dan komisi per transaksi (opsional).\n6. Atur hak akses fitur (bisa buat pesanan, kelola pelanggan, lihat laporan).\n7. Aktifkan \"Akses Aplikasi\" kalau karyawan ini boleh login ke aplikasi.\n8. Ketuk \"Simpan Karyawan\".'**
   String get chatBotTopicEmployeeAnswer;
 
-  /// No description provided for @chatBotTopicEmployeeShortLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Karyawan'**
-  String get chatBotTopicEmployeeShortLabel;
-
   /// No description provided for @chatBotTopicServiceQuestion.
   ///
   /// In id, this message translates to:
@@ -4393,12 +4321,6 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Caranya:\n1. Dari dashboard, buka menu Layanan.\n2. Ketuk \"Layanan Baru\".\n3. Isi nama layanan dan deskripsi (opsional).\n4. Pilih jenis layanan: Per Berat, Per Item, atau Express.\n5. Isi harga (per Kg/Item, atau harga dasar + biaya express) dan berat minimum kalau ada.\n6. Atur estimasi waktu pengerjaan (jam atau hari).\n7. Pilih cabang mana saja yang menyediakan layanan ini, atau biarkan kosong supaya tersedia di semua cabang.\n8. Ketuk \"Simpan Layanan\".'**
   String get chatBotTopicServiceAnswer;
-
-  /// No description provided for @chatBotTopicServiceShortLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Layanan'**
-  String get chatBotTopicServiceShortLabel;
 
   /// No description provided for @chatBotTopicOrderQuestion.
   ///
@@ -4412,12 +4334,6 @@ abstract class AppLocalizations {
   /// **'Caranya:\n1. Dari dashboard, ketuk \"Pesanan Baru\".\n2. Pilih cabang dan pelanggan (tambahkan pelanggan baru dulu kalau belum ada).\n3. Ketuk salah satu layanan untuk menambahkannya ke pesanan, lalu isi berat/jumlahnya.\n4. Kalau perlu, atur jadwal pickup, atau kosongkan dan jadwalkan nanti dari menu Pickup & Delivery.\n5. Pilih metode pembayaran dan apakah lunas atau bayar DP.\n6. Kalau DP, isi jumlah yang dibayar di muka.\n7. Ketuk \"Simpan Pesanan\".'**
   String get chatBotTopicOrderAnswer;
 
-  /// No description provided for @chatBotTopicOrderShortLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Pesanan'**
-  String get chatBotTopicOrderShortLabel;
-
   /// No description provided for @chatBotTopicReportQuestion.
   ///
   /// In id, this message translates to:
@@ -4430,12 +4346,6 @@ abstract class AppLocalizations {
   /// **'Caranya:\n1. Dari dashboard, buka menu Laporan.\n2. Pilih periode: Hari Ini, Minggu Ini, Bulan Ini, atau Tahun Ini.\n3. Lihat ringkasan pendapatan, pelanggan baru, rata-rata pesanan, dan pertumbuhan.\n4. Scroll ke bawah untuk lihat grafik tren pendapatan dan pendapatan per layanan.\n5. Cek Completion Rate untuk lihat persentase pesanan yang sudah selesai.\n6. Ketuk \"Cetak Laporan\" kalau mau ekspor ke PDF.'**
   String get chatBotTopicReportAnswer;
 
-  /// No description provided for @chatBotTopicReportShortLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Laporan'**
-  String get chatBotTopicReportShortLabel;
-
   /// No description provided for @chatBotTopicLanguageQuestion.
   ///
   /// In id, this message translates to:
@@ -4447,18 +4357,6 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Caranya:\n1. Buka menu Pengaturan.\n2. Ketuk menu Bahasa.\n3. Pilih bahasa yang diinginkan (Indonesia/English).\n4. Perubahan langsung diterapkan ke seluruh aplikasi.'**
   String get chatBotTopicLanguageAnswer;
-
-  /// No description provided for @chatBotTopicLanguageShortLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Bahasa'**
-  String get chatBotTopicLanguageShortLabel;
-
-  /// No description provided for @chatBotAutoReplyNotice.
-  ///
-  /// In id, this message translates to:
-  /// **'Jawaban otomatis, bukan CS manusia langsung.'**
-  String get chatBotAutoReplyNotice;
 
   /// No description provided for @orderDetailStatusPending.
   ///

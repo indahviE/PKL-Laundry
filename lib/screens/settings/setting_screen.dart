@@ -223,15 +223,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   _sectionLabel(t.sectionOther),
                                   _buildSectionCard([
                                     _buildTile(
-                                      icon: Icons.chat_bubble_outline_rounded,
-                                      title: t.chatTitle,
-                                      subtitle: t.chatSubtitle,
-                                      color: _Palette.cyan,
-                                      background: _Palette.cyanSoft,
-                                      onTap: () =>
-                                          context.push('/settings/chat-cs'),
-                                    ),
-                                    _buildTile(
                                       icon: Icons.help_outline_rounded,
                                       title: t.helpTitle,
                                       subtitle: t.helpSubtitle,

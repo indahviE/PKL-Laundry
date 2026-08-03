@@ -93,12 +93,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get manageCsChatSubtitle => 'Reply to conversations from all users';
 
   @override
-  String get chatTitle => 'Chat';
-
-  @override
-  String get chatSubtitle => 'Replies';
-
-  @override
   String get sectionOther => 'Others';
 
   @override
@@ -2326,35 +2320,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Open the Orders menu, select the active order, and the status will update automatically as it progresses.';
 
   @override
-  String get chatCsScreenTitle => 'Chat and CS';
-
-  @override
-  String sendMessageError(String error) {
-    return 'Failed to send message: $error';
-  }
-
-  @override
-  String get chatEmptyStateMessage =>
-      'No conversation yet.\nType a message below to start chatting with CS.';
-
-  @override
-  String get chatCsInputHint => 'Write a message to CS...';
-
-  @override
-  String get chatBotGreeting =>
-      'Hi! I\'m the NetWash virtual assistant. Pick a topic below or type your question, and I\'ll do my best to help.';
-
-  @override
-  String get chatBotSuggestedQuestionsLabel => 'Frequently asked questions';
-
-  @override
-  String get chatBotFallbackMessage =>
-      'Sorry, I don\'t have an answer for that yet. Try one of the topics below, or contact our team via WhatsApp.';
-
-  @override
-  String get chatBotContactWhatsappButton => 'Contact via WhatsApp';
-
-  @override
   String get chatBotTopicBranchQuestion => 'How do I add a new branch?';
 
   @override
@@ -2362,17 +2327,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Here\'s how:\n1. From the dashboard, open the Branches menu.\n2. Tap \"New Branch\".\n3. Fill in the branch name, code, city, province, and full address.\n4. Optionally add the branch phone number, email, and map location.\n5. Set the daily capacity (max orders per day).\n6. Set operating hours per day, or check \"Use same hours for all days\".\n7. Tap \"Save Branch Data\".';
 
   @override
-  String get chatBotTopicBranchShortLabel => 'Branches';
-
-  @override
   String get chatBotTopicEmployeeQuestion => 'How do I add a new employee?';
 
   @override
   String get chatBotTopicEmployeeAnswer =>
       'Here\'s how:\n1. From the dashboard, open Manage Employees.\n2. Tap \"New Employee\".\n3. Fill in their full name, phone number, and optionally email & address.\n4. Fill in the employee code, position, and assigned branch.\n5. Set the hire date, base salary, and commission per transaction (optional).\n6. Choose which features they can access (create orders, manage customers, view reports).\n7. Turn on \"App Access\" if they should be able to log in to the app.\n8. Tap \"Save Employee\".';
-
-  @override
-  String get chatBotTopicEmployeeShortLabel => 'Employees';
 
   @override
   String get chatBotTopicServiceQuestion =>
@@ -2383,17 +2342,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Here\'s how:\n1. From the dashboard, open the Services menu.\n2. Tap \"New Service\".\n3. Fill in the service name and description (optional).\n4. Choose the service type: By Weight, By Item, or Express.\n5. Fill in the price (per Kg/Item, or base price + express fee) and minimum weight if any.\n6. Set the estimated turnaround time (hours or days).\n7. Choose which branches offer this service, or leave it empty to make it available at all branches.\n8. Tap \"Save Service\".';
 
   @override
-  String get chatBotTopicServiceShortLabel => 'Services';
-
-  @override
   String get chatBotTopicOrderQuestion => 'How do I create a new order?';
 
   @override
   String get chatBotTopicOrderAnswer =>
       'Here\'s how:\n1. From the dashboard, tap \"New Order\".\n2. Select the branch and customer (add a new customer first if needed).\n3. Tap a service to add it to the order, then enter the weight/quantity for each item.\n4. Optionally set a pickup schedule, or leave it blank and schedule it later from Pickup & Delivery.\n5. Choose the payment method and whether it\'s paid in full or a down payment (DP).\n6. If DP, enter the amount paid up front.\n7. Tap \"Save Order\".';
-
-  @override
-  String get chatBotTopicOrderShortLabel => 'Orders';
 
   @override
   String get chatBotTopicReportQuestion => 'How do I view my business reports?';
@@ -2403,21 +2356,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Here\'s how:\n1. From the dashboard, open the Reports menu.\n2. Choose a period: Today, This Week, This Month, or This Year.\n3. View the summary: revenue, new customers, average order, and growth.\n4. Scroll down for the revenue trend chart and revenue per service.\n5. Check the Completion Rate to see the percentage of finished orders.\n6. Tap \"Print Report\" if you want to export it as a PDF.';
 
   @override
-  String get chatBotTopicReportShortLabel => 'Reports';
-
-  @override
   String get chatBotTopicLanguageQuestion =>
       'How do I change the app language?';
 
   @override
   String get chatBotTopicLanguageAnswer =>
       'Here\'s how:\n1. Open the Settings menu.\n2. Tap the Language menu.\n3. Choose the language you want (Indonesian/English).\n4. The change applies to the whole app immediately.';
-
-  @override
-  String get chatBotTopicLanguageShortLabel => 'Language';
-
-  @override
-  String get chatBotAutoReplyNotice => 'Automated answers, not a live agent.';
 
   @override
   String get orderDetailStatusPending => 'Waiting';

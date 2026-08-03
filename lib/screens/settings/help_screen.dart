@@ -88,6 +88,12 @@ List<_FaqSection> _faqSections(AppLocalizations t) => [
             keywords: const ['layanan', 'harga', 'service', 'pricing'],
           ),
           _Faq(
+            question: t.chatBotTopicOrderQuestion,
+            answer: t.chatBotTopicOrderAnswer,
+            icon: Icons.add_shopping_cart_outlined,
+            keywords: const ['buat pesanan', 'new order', 'create order', 'input pesanan'],
+          ),
+          _Faq(
             question: t.chatBotTopicReportQuestion,
             answer: t.chatBotTopicReportAnswer,
             icon: Icons.bar_chart_outlined,
