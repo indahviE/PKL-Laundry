@@ -9,6 +9,22 @@
   "sectionPreference": "Preferences",
   "notificationTitle": "Notifications",
   "notificationSubtitle": "Manage app notifications",
+  "notifPrefOrderStatusTitle": "Order status",
+  "notifPrefOrderStatusSubtitle": "Laundry updates, ready for pickup, etc.",
+  "notifPrefPromoTitle": "Promos and discounts",
+  "notifPrefPromoSubtitle": "Special offers for you",
+  "notifPrefReminderTitle": "Reminders",
+  "notifPrefReminderSubtitle": "Pickup and delivery schedule",
+  "notifPrefChatCsTitle": "Chat and CS",
+  "notifPrefChatCsSubtitle": "Replies from customer service",
+  "notifPrefSaveError": "Failed to save preference: {error}",
+  "@notifPrefSaveError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "notificationsPanelTitle": "New Orders",
   "pendingOrdersNotifSubtitle": "{count} orders waiting to be processed",
   "@pendingOrdersNotifSubtitle": {
@@ -29,6 +45,8 @@
   "sectionOther": "Others",
   "helpTitle": "Help",
   "helpSubtitle": "FAQ & support",
+  "helpSectionGeneralTitle": "General Questions",
+  "helpSectionAppGuideTitle": "App Guide",
   "aboutTitle": "About App",
   "logoutButton": "Log Out",
   "logoutDialogTitle": "Log Out?",
@@ -318,7 +336,7 @@
   "emptyBranchSelectionMeansAllHint": "Leave empty to be available at all branches.",
   "sessionNotFoundError": "User session not found. Please log in again.",
   "orderSessionNotFoundError": "User session not found. Please log in again.",
-  "companyNotSetupError": "Company not created yet. Please complete the onboarding (company setup) first.",
+  "companyNotSetupError": "Company not set up yet. Please complete onboarding first.",
   "addServiceSuccess": "Service added successfully!",
   "addServiceError": "Failed to add service: {error}",
   "@addServiceError": {
@@ -1121,7 +1139,7 @@
       "code": {
         "type": "String"
       }
-    } 
+    }
   },
   "unnamedBranchFallback": "Unnamed Branch",
   "ordersListTitle": "Orders",
@@ -1182,6 +1200,29 @@
   },
   "chatEmptyStateMessage": "No conversation yet.\nType a message below to start chatting with CS.",
   "chatCsInputHint": "Write a message to CS...",
+  "chatBotGreeting": "Hi! I'm the NetWash virtual assistant. Pick a topic below or type your question, and I'll do my best to help.",
+  "chatBotSuggestedQuestionsLabel": "Frequently asked questions",
+  "chatBotFallbackMessage": "Sorry, I don't have an answer for that yet. Try one of the topics below, or contact our team via WhatsApp.",
+  "chatBotContactWhatsappButton": "Contact via WhatsApp",
+  "chatBotTopicBranchQuestion": "How do I add a new branch?",
+  "chatBotTopicBranchAnswer": "Here's how:\n1. From the dashboard, open the Branches menu.\n2. Tap \"New Branch\".\n3. Fill in the branch name, code, city, province, and full address.\n4. Optionally add the branch phone number, email, and map location.\n5. Set the daily capacity (max orders per day).\n6. Set operating hours per day, or check \"Use same hours for all days\".\n7. Tap \"Save Branch Data\".",
+  "chatBotTopicBranchShortLabel": "Branches",
+  "chatBotTopicEmployeeQuestion": "How do I add a new employee?",
+  "chatBotTopicEmployeeAnswer": "Here's how:\n1. From the dashboard, open Manage Employees.\n2. Tap \"New Employee\".\n3. Fill in their full name, phone number, and optionally email & address.\n4. Fill in the employee code, position, and assigned branch.\n5. Set the hire date, base salary, and commission per transaction (optional).\n6. Choose which features they can access (create orders, manage customers, view reports).\n7. Turn on \"App Access\" if they should be able to log in to the app.\n8. Tap \"Save Employee\".",
+  "chatBotTopicEmployeeShortLabel": "Employees",
+  "chatBotTopicServiceQuestion": "How do I add a wash service and set its price?",
+  "chatBotTopicServiceAnswer": "Here's how:\n1. From the dashboard, open the Services menu.\n2. Tap \"New Service\".\n3. Fill in the service name and description (optional).\n4. Choose the service type: By Weight, By Item, or Express.\n5. Fill in the price (per Kg/Item, or base price + express fee) and minimum weight if any.\n6. Set the estimated turnaround time (hours or days).\n7. Choose which branches offer this service, or leave it empty to make it available at all branches.\n8. Tap \"Save Service\".",
+  "chatBotTopicServiceShortLabel": "Services",
+  "chatBotTopicOrderQuestion": "How do I create a new order?",
+  "chatBotTopicOrderAnswer": "Here's how:\n1. From the dashboard, tap \"New Order\".\n2. Select the branch and customer (add a new customer first if needed).\n3. Tap a service to add it to the order, then enter the weight/quantity for each item.\n4. Optionally set a pickup schedule, or leave it blank and schedule it later from Pickup & Delivery.\n5. Choose the payment method and whether it's paid in full or a down payment (DP).\n6. If DP, enter the amount paid up front.\n7. Tap \"Save Order\".",
+  "chatBotTopicOrderShortLabel": "Orders",
+  "chatBotTopicReportQuestion": "How do I view my business reports?",
+  "chatBotTopicReportAnswer": "Here's how:\n1. From the dashboard, open the Reports menu.\n2. Choose a period: Today, This Week, This Month, or This Year.\n3. View the summary: revenue, new customers, average order, and growth.\n4. Scroll down for the revenue trend chart and revenue per service.\n5. Check the Completion Rate to see the percentage of finished orders.\n6. Tap \"Print Report\" if you want to export it as a PDF.",
+  "chatBotTopicReportShortLabel": "Reports",
+  "chatBotTopicLanguageQuestion": "How do I change the app language?",
+  "chatBotTopicLanguageAnswer": "Here's how:\n1. Open the Settings menu.\n2. Tap the Language menu.\n3. Choose the language you want (Indonesian/English).\n4. The change applies to the whole app immediately.",
+  "chatBotTopicLanguageShortLabel": "Language",
+  "chatBotAutoReplyNotice": "Automated answers, not a live agent.",
   "subtotalLabel": "Subtotal",
   "taxLabel": "Tax",
   "orderDetailStatusPending": "Waiting",
@@ -1214,13 +1255,17 @@
   "statusUpdateSuccess": "Status successfully changed to {status}",
   "@statusUpdateSuccess": {
     "placeholders": {
-      "status": { "type": "String" }
+      "status": {
+        "type": "String"
+      }
     }
   },
   "statusUpdateError": "Failed to update status: {error}",
   "@statusUpdateError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "paymentRecordSuccess": "Payment recorded successfully",
@@ -1233,88 +1278,122 @@
   "receiptDownloadError": "Failed to download receipt: {error}",
   "@receiptDownloadError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "cancellationReasonRequiredError": "Cancellation reason is required",
   "cancelOrderError": "Failed to cancel order: {error}",
   "@cancelOrderError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "cancellationRequestSubmitted": "Cancellation request submitted, awaiting approval",
   "cancellationRequestSubmitError": "Failed to submit request: {error}",
   "@cancellationRequestSubmitError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "cancellationRequestApproved": "Cancellation request approved, order cancelled",
   "cancellationRequestApproveError": "Failed to approve request: {error}",
   "@cancellationRequestApproveError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "cancellationRequestRejected": "Cancellation request rejected",
   "cancellationRequestRejectError": "Failed to reject request: {error}",
   "@cancellationRequestRejectError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "deliveryScheduleSuccess": "Delivery scheduled successfully",
   "statusChangedNoteTemplate": "Status changed to {status}",
   "@statusChangedNoteTemplate": {
     "placeholders": {
-      "status": { "type": "String" }
+      "status": {
+        "type": "String"
+      }
     }
   },
   "orderCancelledNoteTemplate": "Order cancelled: {reason}",
   "@orderCancelledNoteTemplate": {
     "placeholders": {
-      "reason": { "type": "String" }
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "cancellationRequestedNoteTemplate": "Cancellation requested by {name}: {reason}",
   "@cancellationRequestedNoteTemplate": {
     "placeholders": {
-      "name": { "type": "String" },
-      "reason": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "cancellationApprovedNoteTemplate": "Cancellation request approved by {name}",
   "@cancellationApprovedNoteTemplate": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "cancellationRejectedNoteTemplate": "Cancellation request rejected by {name}",
   "@cancellationRejectedNoteTemplate": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "whatsappOrderReadyDeliveryMessage": "Hi {name}, this is Netwash 😊. Your order ({orderNumber}) is complete and will be delivered to your address shortly. Thanks for waiting 🙏",
   "@whatsappOrderReadyDeliveryMessage": {
     "placeholders": {
-      "name": { "type": "String" },
-      "orderNumber": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "orderNumber": {
+        "type": "String"
+      }
     }
   },
   "whatsappOrderReadyPickupMessage": "Hi {name}, this is Netwash 😊. Your order ({orderNumber}) is complete and ready. Would you like it delivered or will you pick it up yourself?",
   "@whatsappOrderReadyPickupMessage": {
     "placeholders": {
-      "name": { "type": "String" },
-      "orderNumber": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "orderNumber": {
+        "type": "String"
+      }
     }
   },
   "whatsappContactMessage": "Hi {name}, this is Netwash regarding order {orderNumber}.",
   "@whatsappContactMessage": {
     "placeholders": {
-      "name": { "type": "String" },
-      "orderNumber": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "orderNumber": {
+        "type": "String"
+      }
     }
   },
   "receiptWhatsappTitle": "Netwash Order Receipt",
@@ -1331,7 +1410,9 @@
   "remainingBillDialogLabel": "Remaining bill: {amount}",
   "@remainingBillDialogLabel": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "amountPaidFieldLabel": "Amount Paid",
@@ -1355,7 +1436,9 @@
   "itemCountValueTemplate": "{count} items",
   "@itemCountValueTemplate": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "serviceLabel": "Service",
@@ -1374,13 +1457,17 @@
   "requestedByLabel": "Requested by {name}",
   "@requestedByLabel": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "reasonLabel": "Reason: {reason}",
   "@reasonLabel": {
     "placeholders": {
-      "reason": { "type": "String" }
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "employeeFallbackLabel": "Employee",
@@ -1402,15 +1489,26 @@
   "createOrderAppBarTitle": "Create New Order",
   "saveOrderButton": "Save Order",
   "createOrderSubtitle": "Create and manage a new laundry order",
-  "companyNotSetupError": "Company not set up yet. Please complete onboarding first.",
   "noBranchesForOrderError": "No laundry branches yet. Add a branch first before creating an order.",
   "fillWeightForItemError": "Please enter the weight (kg) for \"{itemName}\" first",
-  "@fillWeightForItemError": {"placeholders": {"itemName": {"type": "String"}}},
+  "@fillWeightForItemError": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
   "businessContextNotReadyError": "Company/branch data is not ready yet. Please try again shortly.",
   "selectedCustomerNotFoundError": "Selected customer not found, please choose again.",
   "orderCreatedSuccess": "Order created successfully!",
   "genericErrorTemplate": "Error: {error}",
-  "@genericErrorTemplate": {"placeholders": {"error": {"type": "String"}}},
+  "@genericErrorTemplate": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "orderTypeSelfDropoffLabel": "Self Drop-off",
   "orderDataSectionLabel": "Order Data",
   "incomingLaundryLabel": "Incoming Laundry *",

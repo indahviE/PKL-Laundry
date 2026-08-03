@@ -36,6 +36,35 @@ class AppLocalizationsId extends AppLocalizations {
   String get notificationSubtitle => 'Atur pemberitahuan aplikasi';
 
   @override
+  String get notifPrefOrderStatusTitle => 'Status pesanan';
+
+  @override
+  String get notifPrefOrderStatusSubtitle => 'Update cuci, siap diambil, dll';
+
+  @override
+  String get notifPrefPromoTitle => 'Promo dan diskon';
+
+  @override
+  String get notifPrefPromoSubtitle => 'Penawaran spesial untukmu';
+
+  @override
+  String get notifPrefReminderTitle => 'Pengingat';
+
+  @override
+  String get notifPrefReminderSubtitle => 'Jadwal ambil dan antar cucian';
+
+  @override
+  String get notifPrefChatCsTitle => 'Chat dan CS';
+
+  @override
+  String get notifPrefChatCsSubtitle => 'Balasan dari customer service';
+
+  @override
+  String notifPrefSaveError(String error) {
+    return 'Gagal menyimpan preferensi: $error';
+  }
+
+  @override
   String get notificationsPanelTitle => 'Pesanan Baru';
 
   @override
@@ -76,6 +105,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get helpSubtitle => 'FAQ & dukungan';
+
+  @override
+  String get helpSectionGeneralTitle => 'Pertanyaan Umum';
+
+  @override
+  String get helpSectionAppGuideTitle => 'Panduan Aplikasi';
 
   @override
   String get aboutTitle => 'Tentang Aplikasi';
@@ -2314,6 +2349,91 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get chatCsInputHint => 'Tulis pesan ke CS...';
+
+  @override
+  String get chatBotGreeting =>
+      'Hai! Aku asisten virtual NetWash. Pilih topik di bawah atau ketik pertanyaanmu, nanti aku bantu jawab.';
+
+  @override
+  String get chatBotSuggestedQuestionsLabel =>
+      'Pertanyaan yang sering ditanyakan';
+
+  @override
+  String get chatBotFallbackMessage =>
+      'Maaf, aku belum punya jawaban untuk itu. Coba pilih salah satu topik di bawah, atau hubungi tim kami lewat WhatsApp.';
+
+  @override
+  String get chatBotContactWhatsappButton => 'Hubungi via WhatsApp';
+
+  @override
+  String get chatBotTopicBranchQuestion =>
+      'Bagaimana cara menambah cabang baru?';
+
+  @override
+  String get chatBotTopicBranchAnswer =>
+      'Caranya:\n1. Dari dashboard, buka menu Cabang.\n2. Ketuk \"Cabang Baru\".\n3. Isi nama cabang, kode cabang, kota, provinsi, dan alamat lengkap.\n4. Kalau perlu, isi juga nomor telepon, email cabang, dan titik lokasi di peta.\n5. Isi kapasitas harian (jumlah pesanan maksimal per hari).\n6. Atur jam operasional per hari, atau centang \"Gunakan jam yang sama untuk semua hari\".\n7. Ketuk \"Simpan Data Cabang\".';
+
+  @override
+  String get chatBotTopicBranchShortLabel => 'Cabang';
+
+  @override
+  String get chatBotTopicEmployeeQuestion =>
+      'Bagaimana cara menambah karyawan baru?';
+
+  @override
+  String get chatBotTopicEmployeeAnswer =>
+      'Caranya:\n1. Dari dashboard, buka menu Kelola Karyawan.\n2. Ketuk \"Karyawan Baru\".\n3. Isi nama lengkap, nomor telepon, dan (opsional) email & alamat.\n4. Isi kode karyawan, posisi, dan cabang penempatannya.\n5. Isi tanggal bergabung, gaji pokok, dan komisi per transaksi (opsional).\n6. Atur hak akses fitur (bisa buat pesanan, kelola pelanggan, lihat laporan).\n7. Aktifkan \"Akses Aplikasi\" kalau karyawan ini boleh login ke aplikasi.\n8. Ketuk \"Simpan Karyawan\".';
+
+  @override
+  String get chatBotTopicEmployeeShortLabel => 'Karyawan';
+
+  @override
+  String get chatBotTopicServiceQuestion =>
+      'Bagaimana cara menambah layanan cuci dan mengatur harganya?';
+
+  @override
+  String get chatBotTopicServiceAnswer =>
+      'Caranya:\n1. Dari dashboard, buka menu Layanan.\n2. Ketuk \"Layanan Baru\".\n3. Isi nama layanan dan deskripsi (opsional).\n4. Pilih jenis layanan: Per Berat, Per Item, atau Express.\n5. Isi harga (per Kg/Item, atau harga dasar + biaya express) dan berat minimum kalau ada.\n6. Atur estimasi waktu pengerjaan (jam atau hari).\n7. Pilih cabang mana saja yang menyediakan layanan ini, atau biarkan kosong supaya tersedia di semua cabang.\n8. Ketuk \"Simpan Layanan\".';
+
+  @override
+  String get chatBotTopicServiceShortLabel => 'Layanan';
+
+  @override
+  String get chatBotTopicOrderQuestion =>
+      'Bagaimana cara membuat pesanan baru?';
+
+  @override
+  String get chatBotTopicOrderAnswer =>
+      'Caranya:\n1. Dari dashboard, ketuk \"Pesanan Baru\".\n2. Pilih cabang dan pelanggan (tambahkan pelanggan baru dulu kalau belum ada).\n3. Ketuk salah satu layanan untuk menambahkannya ke pesanan, lalu isi berat/jumlahnya.\n4. Kalau perlu, atur jadwal pickup, atau kosongkan dan jadwalkan nanti dari menu Pickup & Delivery.\n5. Pilih metode pembayaran dan apakah lunas atau bayar DP.\n6. Kalau DP, isi jumlah yang dibayar di muka.\n7. Ketuk \"Simpan Pesanan\".';
+
+  @override
+  String get chatBotTopicOrderShortLabel => 'Pesanan';
+
+  @override
+  String get chatBotTopicReportQuestion =>
+      'Bagaimana cara melihat laporan bisnis saya?';
+
+  @override
+  String get chatBotTopicReportAnswer =>
+      'Caranya:\n1. Dari dashboard, buka menu Laporan.\n2. Pilih periode: Hari Ini, Minggu Ini, Bulan Ini, atau Tahun Ini.\n3. Lihat ringkasan pendapatan, pelanggan baru, rata-rata pesanan, dan pertumbuhan.\n4. Scroll ke bawah untuk lihat grafik tren pendapatan dan pendapatan per layanan.\n5. Cek Completion Rate untuk lihat persentase pesanan yang sudah selesai.\n6. Ketuk \"Cetak Laporan\" kalau mau ekspor ke PDF.';
+
+  @override
+  String get chatBotTopicReportShortLabel => 'Laporan';
+
+  @override
+  String get chatBotTopicLanguageQuestion =>
+      'Bagaimana cara mengganti bahasa aplikasi?';
+
+  @override
+  String get chatBotTopicLanguageAnswer =>
+      'Caranya:\n1. Buka menu Pengaturan.\n2. Ketuk menu Bahasa.\n3. Pilih bahasa yang diinginkan (Indonesia/English).\n4. Perubahan langsung diterapkan ke seluruh aplikasi.';
+
+  @override
+  String get chatBotTopicLanguageShortLabel => 'Bahasa';
+
+  @override
+  String get chatBotAutoReplyNotice =>
+      'Jawaban otomatis, bukan CS manusia langsung.';
 
   @override
   String get orderDetailStatusPending => 'Menunggu';
