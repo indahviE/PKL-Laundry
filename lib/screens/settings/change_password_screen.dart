@@ -2,7 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../core/themes/app_theme.dart';
+/// Local design tokens — DISAMAIN PERSIS dengan _DS di
+/// reports_screen.dart / services_list_screen.dart (Be Vietnam Pro,
+/// navy/primary NetWash, card putih shadow tipis, tombol back bulat).
+/// Tetap lokal di file ini (bukan dipindah ke app_theme.dart) mengikuti
+/// pola yang sudah dipakai di layar-layar lain, jadi gak ada layar lain
+/// yang ikut berubah tampilannya.
+class _DS {
+  static const canvas = Color(0xFFF5F7FA);
+  static const surface = Colors.white;
+  static const onSurface = Color(0xFF1B1C1C);
+  static const onSurfaceVariant = Color(0xFF404752);
+  static const outlineVariant = Color(0xFFBFC7D4);
+
+  static const navy = Color(0xFF0B3B66);
+  static const primary = Color(0xFF0061A4);
+
+  static const danger = Color(0xFFE03131);
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static TextStyle headlineMd({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
+        color: color ?? onSurface,
+        letterSpacing: -0.2,
+      );
+
+  static TextStyle bodyMd({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
+        fontSize: 14,
+        fontWeight: weight ?? FontWeight.w400,
+        color: color ?? onSurface,
+      );
+
+  static TextStyle bodySm({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
+        fontSize: 12.5,
+        fontWeight: weight ?? FontWeight.w400,
+        color: color ?? onSurfaceVariant,
+      );
+
+  static TextStyle labelBold({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: color ?? onSurfaceVariant,
+      );
+}
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -95,24 +145,25 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: _DS.canvas,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 640),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildHeader(context),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-                    child: _isPasswordProvider
-                        ? _buildForm()
-                        : _buildUnavailableNotice(),
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildTopBar(context),
+                    const SizedBox(height: 16),
+                    _buildHeader(),
+                    const SizedBox(height: 22),
+                    _isPasswordProvider ? _buildFormCard() : _buildUnavailableNotice(),
+                  ],
+                ),
               ),
             ),
           ),
@@ -121,109 +172,148 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  /// Tombol back bulat — disamain persis sama tombol back di
+  /// reports_screen.dart / services_list_screen.dart (lingkaran putih,
+  /// shadow tipis, ikon navy).
+  Widget _buildTopBar(BuildContext context) {
+    return Row(
+      children: [
+        InkWell(
+          onTap: () => Navigator.pop(context),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _DS.surface,
+              shape: BoxShape.circle,
+              boxShadow: _DS.cardShadow,
+            ),
+            child: const Icon(Icons.arrow_back_rounded, size: 20, color: _DS.navy),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Header — icon box biru muda + judul navy, pola sama dengan
+  /// _buildHeader di reports_screen.dart / services_list_screen.dart.
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD1E4FF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.lock_outline_rounded, color: _DS.navy, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            'Ubah Password',
+            style: _DS.headlineMd(color: _DS.navy),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Card putih rounded shadow — bungkus form ganti password, konsisten
+  /// sama gaya card KPI/breakdown di reports_screen.dart.
+  Widget _buildFormCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 20, 24, 28),
-      decoration: const BoxDecoration(
-        gradient: AppTheme.brandGradient,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            'Ubah Password',
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _sectionLabel('Password Lama'),
-          _buildPasswordField(
-            controller: _oldPasswordController,
-            obscure: _obscureOld,
-            onToggle: () => setState(() => _obscureOld = !_obscureOld),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Password lama wajib diisi';
-              return null;
-            },
-          ),
-          const SizedBox(height: 18),
-          _sectionLabel('Password Baru'),
-          _buildPasswordField(
-            controller: _newPasswordController,
-            obscure: _obscureNew,
-            onToggle: () => setState(() => _obscureNew = !_obscureNew),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Password baru wajib diisi';
-              if (v.length < 6) return 'Minimal 6 karakter';
-              if (v == _oldPasswordController.text) {
-                return 'Password baru gak boleh sama dengan yang lama';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 18),
-          _sectionLabel('Konfirmasi Password Baru'),
-          _buildPasswordField(
-            controller: _confirmPasswordController,
-            obscure: _obscureConfirm,
-            onToggle: () => setState(() => _obscureConfirm = !_obscureConfirm),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Konfirmasi password wajib diisi';
-              if (v != _newPasswordController.text) {
-                return 'Konfirmasi tidak cocok dengan password baru';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 32),
-          _buildSaveButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUnavailableNotice() {
-    return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: AppTheme.borderColor),
+        color: _DS.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: _DS.cardShadow,
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _sectionLabel('Password Lama'),
+            _buildPasswordField(
+              controller: _oldPasswordController,
+              obscure: _obscureOld,
+              onToggle: () => setState(() => _obscureOld = !_obscureOld),
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Password lama wajib diisi';
+                return null;
+              },
+            ),
+            const SizedBox(height: 18),
+            _sectionLabel('Password Baru'),
+            _buildPasswordField(
+              controller: _newPasswordController,
+              obscure: _obscureNew,
+              onToggle: () => setState(() => _obscureNew = !_obscureNew),
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Password baru wajib diisi';
+                if (v.length < 6) return 'Minimal 6 karakter';
+                if (v == _oldPasswordController.text) {
+                  return 'Password baru gak boleh sama dengan yang lama';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 18),
+            _sectionLabel('Konfirmasi Password Baru'),
+            _buildPasswordField(
+              controller: _confirmPasswordController,
+              obscure: _obscureConfirm,
+              onToggle: () => setState(() => _obscureConfirm = !_obscureConfirm),
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Konfirmasi password wajib diisi';
+                if (v != _newPasswordController.text) {
+                  return 'Konfirmasi tidak cocok dengan password baru';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 28),
+            _buildSaveButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Notice provider lain (mis. Google) — disamain ke gaya card putih
+  /// rounded shadow, ikon & teks pakai token _DS.
+  Widget _buildUnavailableNotice() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _DS.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: _DS.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline_rounded, color: AppTheme.primaryColor),
-          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD1E4FF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.info_outline_rounded, color: _DS.navy, size: 20),
+          ),
+          const SizedBox(height: 14),
           Text(
             'Akun kamu login pakai provider lain (misalnya Google), jadi gak ada password yang bisa diubah di sini.',
-            style: GoogleFonts.poppins(
-              fontSize: 13.5,
-              color: AppTheme.textSecondary,
-            ),
+            style: _DS.bodySm(),
           ),
         ],
       ),
@@ -232,14 +322,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   Widget _sectionLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8, left: 4),
+      padding: const EdgeInsets.only(bottom: 8, left: 2),
       child: Text(
         text,
-        style: GoogleFonts.poppins(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: AppTheme.textTertiary,
-        ),
+        style: _DS.labelBold(),
       ),
     );
   }
@@ -253,35 +339,34 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return TextFormField(
       controller: controller,
       obscureText: obscure,
-      style: GoogleFonts.poppins(fontSize: 14.5, color: AppTheme.textPrimary),
+      style: _DS.bodyMd(),
       validator: validator,
       decoration: InputDecoration(
-        prefixIcon: Icon(Icons.lock_outline_rounded,
-            color: AppTheme.primaryColor, size: 20),
+        prefixIcon: const Icon(Icons.lock_outline_rounded, color: _DS.navy, size: 20),
         suffixIcon: IconButton(
           icon: Icon(
             obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-            color: AppTheme.textTertiary,
+            color: _DS.onSurfaceVariant,
             size: 20,
           ),
           onPressed: onToggle,
         ),
         filled: true,
-        fillColor: AppTheme.cardColor,
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        fillColor: _DS.canvas,
+        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          borderSide: BorderSide(color: AppTheme.borderColor),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: _DS.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          borderSide: BorderSide(color: AppTheme.borderColor),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: _DS.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.4),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: _DS.primary, width: 1.5),
         ),
+        errorStyle: _DS.bodySm(color: _DS.danger).copyWith(fontSize: 11.5),
       ),
     );
   }
@@ -292,11 +377,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       child: ElevatedButton(
         onPressed: _isSaving ? null : _save,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryColor,
+          backgroundColor: _DS.navy,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         child: _isSaving
@@ -310,10 +395,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               )
             : Text(
                 'Simpan Password Baru',
-                style: GoogleFonts.poppins(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: _DS.bodyMd(color: Colors.white, weight: FontWeight.w600),
               ),
       ),
     );
