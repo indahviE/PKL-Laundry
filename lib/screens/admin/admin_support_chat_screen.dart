@@ -9,9 +9,8 @@ import '../../repositories/admin_support_repository.dart';
 import 'admin_guard.dart';
 
 /// Detail 1 percakapan CS, dilihat & dibalas dari sisi admin.
-/// Bubble di-mirror dari ChatCsScreen: di sini 'cs' (tim CS/kita) yang
-/// ditaro di kanan, 'user' (business owner) di kiri -- kebalikan dari
-/// ChatCsScreen punya user.
+/// Di sini 'cs' (tim CS/kita) yang ditaro di kanan, 'user' (business
+/// owner) di kiri -- kebalikan dari sisi user.
 class AdminSupportChatScreen extends ConsumerStatefulWidget {
   final String userId;
   final String? businessName;

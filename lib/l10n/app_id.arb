@@ -9,6 +9,22 @@
   "sectionPreference": "Preferensi",
   "notificationTitle": "Notifikasi",
   "notificationSubtitle": "Atur pemberitahuan aplikasi",
+  "notifPrefOrderStatusTitle": "Status pesanan",
+  "notifPrefOrderStatusSubtitle": "Update cuci, siap diambil, dll",
+  "notifPrefPromoTitle": "Promo dan diskon",
+  "notifPrefPromoSubtitle": "Penawaran spesial untukmu",
+  "notifPrefReminderTitle": "Pengingat",
+  "notifPrefReminderSubtitle": "Jadwal ambil dan antar cucian",
+  "notifPrefChatCsTitle": "Chat dan CS",
+  "notifPrefChatCsSubtitle": "Balasan dari customer service",
+  "notifPrefSaveError": "Gagal menyimpan preferensi: {error}",
+  "@notifPrefSaveError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "notificationsPanelTitle": "Pesanan Baru",
   "pendingOrdersNotifSubtitle": "{count} pesanan menunggu diproses",
   "@pendingOrdersNotifSubtitle": {
@@ -24,11 +40,11 @@
   "sectionCsTeam": "Tim CS",
   "manageCsChatTitle": "Kelola Chat CS",
   "manageCsChatSubtitle": "Balas percakapan dari semua user",
-  "chatTitle": "Chat",
-  "chatSubtitle": "Balasan",
   "sectionOther": "Lainnya",
   "helpTitle": "Bantuan",
   "helpSubtitle": "FAQ & dukungan",
+  "helpSectionGeneralTitle": "Pertanyaan Umum",
+  "helpSectionAppGuideTitle": "Panduan Aplikasi",
   "aboutTitle": "Tentang Aplikasi",
   "logoutButton": "Keluar / Logout",
   "logoutDialogTitle": "Keluar Akun?",
@@ -316,7 +332,7 @@
   "tryDifferentKeywordFilterHint": "Coba ubah kata kunci atau filter",
   "emptyBranchSelectionMeansAllHint": "Kosongkan semua untuk tersedia di semua cabang.",
   "sessionNotFoundError": "Sesi pengguna tidak ditemukan. Silakan login kembali.",
-  "companyNotSetupError": "Perusahaan belum dibuat. Selesaikan proses onboarding (setup perusahaan) terlebih dahulu.",
+  "companyNotSetupError": "Perusahaan belum diatur. Selesaikan onboarding terlebih dahulu.",
   "addServiceSuccess": "Layanan berhasil ditambahkan!",
   "addServiceError": "Gagal menambahkan layanan: {error}",
   "@addServiceError": {
@@ -912,7 +928,7 @@
   "statNeedsPickupTitle": "Perlu Dijemput",
   "statReadyDeliveryTitle": "Siap Diantar",
   "statSelfServiceTitle": "Ambil Sendiri",
-  "noOrdersTitle": "Tidak ada pesanan",
+  "noOrdersTitle": "Tidak ada pesanan", 
   "noOrdersFilterSubtitle": "Belum ada pesanan yang cocok dengan filter ini",
   "selectScheduleModeSubtitle": "Pilih mode jadwal yang mau dibuat",
   "schedulePickupTileTitle": "Jadwalkan Penjemputan",
@@ -1218,17 +1234,18 @@
   "faqPaymentAnswer": "Kami menerima transfer bank, e-wallet, dan pembayaran tunai langsung ke kurir.",
   "faqTrackQuestion": "Cara lacak status pesanan?",
   "faqTrackAnswer": "Buka menu Orders, pilih pesanan aktif, status akan otomatis update mengikuti tahap pengerjaan.",
-  "chatCsScreenTitle": "Chat dan CS",
-  "sendMessageError": "Gagal mengirim pesan: {error}",
-  "@sendMessageError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "chatEmptyStateMessage": "Belum ada percakapan.\nKetik pesan di bawah buat mulai chat dengan CS.",
-  "chatCsInputHint": "Tulis pesan ke CS...",
+  "chatBotTopicBranchQuestion": "Bagaimana cara menambah cabang baru?",
+  "chatBotTopicBranchAnswer": "Caranya:\n1. Dari dashboard, buka menu Cabang.\n2. Ketuk \"Cabang Baru\".\n3. Isi nama cabang, kode cabang, kota, provinsi, dan alamat lengkap.\n4. Kalau perlu, isi juga nomor telepon, email cabang, dan titik lokasi di peta.\n5. Isi kapasitas harian (jumlah pesanan maksimal per hari).\n6. Atur jam operasional per hari, atau centang \"Gunakan jam yang sama untuk semua hari\".\n7. Ketuk \"Simpan Data Cabang\".",
+  "chatBotTopicEmployeeQuestion": "Bagaimana cara menambah karyawan baru?",
+  "chatBotTopicEmployeeAnswer": "Caranya:\n1. Dari dashboard, buka menu Kelola Karyawan.\n2. Ketuk \"Karyawan Baru\".\n3. Isi nama lengkap, nomor telepon, dan (opsional) email & alamat.\n4. Isi kode karyawan, posisi, dan cabang penempatannya.\n5. Isi tanggal bergabung, gaji pokok, dan komisi per transaksi (opsional).\n6. Atur hak akses fitur (bisa buat pesanan, kelola pelanggan, lihat laporan).\n7. Aktifkan \"Akses Aplikasi\" kalau karyawan ini boleh login ke aplikasi.\n8. Ketuk \"Simpan Karyawan\".",
+  "chatBotTopicServiceQuestion": "Bagaimana cara menambah layanan cuci dan mengatur harganya?",
+  "chatBotTopicServiceAnswer": "Caranya:\n1. Dari dashboard, buka menu Layanan.\n2. Ketuk \"Layanan Baru\".\n3. Isi nama layanan dan deskripsi (opsional).\n4. Pilih jenis layanan: Per Berat, Per Item, atau Express.\n5. Isi harga (per Kg/Item, atau harga dasar + biaya express) dan berat minimum kalau ada.\n6. Atur estimasi waktu pengerjaan (jam atau hari).\n7. Pilih cabang mana saja yang menyediakan layanan ini, atau biarkan kosong supaya tersedia di semua cabang.\n8. Ketuk \"Simpan Layanan\".",
+  "chatBotTopicOrderQuestion": "Bagaimana cara membuat pesanan baru?",
+  "chatBotTopicOrderAnswer": "Caranya:\n1. Dari dashboard, ketuk \"Pesanan Baru\".\n2. Pilih cabang dan pelanggan (tambahkan pelanggan baru dulu kalau belum ada).\n3. Ketuk salah satu layanan untuk menambahkannya ke pesanan, lalu isi berat/jumlahnya.\n4. Kalau perlu, atur jadwal pickup, atau kosongkan dan jadwalkan nanti dari menu Pickup & Delivery.\n5. Pilih metode pembayaran dan apakah lunas atau bayar DP.\n6. Kalau DP, isi jumlah yang dibayar di muka.\n7. Ketuk \"Simpan Pesanan\".",
+  "chatBotTopicReportQuestion": "Bagaimana cara melihat laporan bisnis saya?",
+  "chatBotTopicReportAnswer": "Caranya:\n1. Dari dashboard, buka menu Laporan.\n2. Pilih periode: Hari Ini, Minggu Ini, Bulan Ini, atau Tahun Ini.\n3. Lihat ringkasan pendapatan, pelanggan baru, rata-rata pesanan, dan pertumbuhan.\n4. Scroll ke bawah untuk lihat grafik tren pendapatan dan pendapatan per layanan.\n5. Cek Completion Rate untuk lihat persentase pesanan yang sudah selesai.\n6. Ketuk \"Cetak Laporan\" kalau mau ekspor ke PDF.",
+  "chatBotTopicLanguageQuestion": "Bagaimana cara mengganti bahasa aplikasi?",
+  "chatBotTopicLanguageAnswer": "Caranya:\n1. Buka menu Pengaturan.\n2. Ketuk menu Bahasa.\n3. Pilih bahasa yang diinginkan (Indonesia/English).\n4. Perubahan langsung diterapkan ke seluruh aplikasi.",
   "orderDetailStatusPending": "Menunggu",
   "orderDetailStatusConfirmed": "Dikonfirmasi",
   "orderDetailStatusInProgress": "Diproses",
@@ -1259,13 +1276,17 @@
   "statusUpdateSuccess": "Status berhasil diubah menjadi {status}",
   "@statusUpdateSuccess": {
     "placeholders": {
-      "status": { "type": "String" }
+      "status": {
+        "type": "String"
+      }
     }
   },
   "statusUpdateError": "Gagal mengupdate status: {error}",
   "@statusUpdateError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "paymentRecordSuccess": "Pembayaran berhasil dicatat",
@@ -1278,88 +1299,122 @@
   "receiptDownloadError": "Gagal mengunduh struk: {error}",
   "@receiptDownloadError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "cancellationReasonRequiredError": "Alasan pembatalan wajib diisi",
   "cancelOrderError": "Gagal membatalkan pesanan: {error}",
   "@cancelOrderError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "cancellationRequestSubmitted": "Pengajuan pembatalan terkirim, menunggu persetujuan",
   "cancellationRequestSubmitError": "Gagal mengirim pengajuan: {error}",
   "@cancellationRequestSubmitError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "cancellationRequestApproved": "Pengajuan pembatalan disetujui, pesanan dibatalkan",
   "cancellationRequestApproveError": "Gagal menyetujui pengajuan: {error}",
   "@cancellationRequestApproveError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "cancellationRequestRejected": "Pengajuan pembatalan ditolak",
   "cancellationRequestRejectError": "Gagal menolak pengajuan: {error}",
   "@cancellationRequestRejectError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "deliveryScheduleSuccess": "Pengantaran berhasil dijadwalkan",
   "statusChangedNoteTemplate": "Status diubah ke {status}",
   "@statusChangedNoteTemplate": {
     "placeholders": {
-      "status": { "type": "String" }
+      "status": {
+        "type": "String"
+      }
     }
   },
   "orderCancelledNoteTemplate": "Pesanan dibatalkan: {reason}",
   "@orderCancelledNoteTemplate": {
     "placeholders": {
-      "reason": { "type": "String" }
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "cancellationRequestedNoteTemplate": "Pengajuan pembatalan oleh {name}: {reason}",
   "@cancellationRequestedNoteTemplate": {
     "placeholders": {
-      "name": { "type": "String" },
-      "reason": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "cancellationApprovedNoteTemplate": "Pengajuan pembatalan disetujui oleh {name}",
   "@cancellationApprovedNoteTemplate": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "cancellationRejectedNoteTemplate": "Pengajuan pembatalan ditolak oleh {name}",
   "@cancellationRejectedNoteTemplate": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "whatsappOrderReadyDeliveryMessage": "Halo kak {name}!, ini Netwash 😊 . Pesanan kamu ({orderNumber}) sudah selesai dan akan segera kami antar ke alamat kakak ya. Ditunggu ya kak 🙏",
   "@whatsappOrderReadyDeliveryMessage": {
     "placeholders": {
-      "name": { "type": "String" },
-      "orderNumber": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "orderNumber": {
+        "type": "String"
+      }
     }
   },
   "whatsappOrderReadyPickupMessage": "Halo kak {name}!, ini Netwash 😊 . Pesanan kamu ({orderNumber}) sudah selesai dan siap. Mau diantar ke alamat atau mau diambil sendiri ya?",
   "@whatsappOrderReadyPickupMessage": {
     "placeholders": {
-      "name": { "type": "String" },
-      "orderNumber": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "orderNumber": {
+        "type": "String"
+      }
     }
   },
   "whatsappContactMessage": "Halo kak {name}, ini dari Netwash terkait pesanan {orderNumber}.",
   "@whatsappContactMessage": {
     "placeholders": {
-      "name": { "type": "String" },
-      "orderNumber": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "orderNumber": {
+        "type": "String"
+      }
     }
   },
   "receiptWhatsappTitle": "Struk Pesanan - Netwash",
@@ -1376,7 +1431,9 @@
   "remainingBillDialogLabel": "Sisa tagihan: {amount}",
   "@remainingBillDialogLabel": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "amountPaidFieldLabel": "Nominal Dibayar",
@@ -1400,7 +1457,9 @@
   "itemCountValueTemplate": "{count} item",
   "@itemCountValueTemplate": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "serviceLabel": "Layanan",
@@ -1419,13 +1478,17 @@
   "requestedByLabel": "Diajukan oleh {name}",
   "@requestedByLabel": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "reasonLabel": "Alasan: {reason}",
   "@reasonLabel": {
     "placeholders": {
-      "reason": { "type": "String" }
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "employeeFallbackLabel": "Karyawan",
@@ -1442,5 +1505,51 @@
   "finishDryingButtonLabel": "Selesai Dikeringkan",
   "finishIroningButtonLabel": "Selesai Disetrika",
   "passQualityCheckButtonLabel": "Lolos Cek Kualitas",
-  "markCompletedButtonLabel": "Tandai Selesai"
+  "markCompletedButtonLabel": "Tandai Selesai",
+  "createOrderSubtitle": "Buat dan kelola pesanan laundry baru",
+  "noBranchesForOrderError": "Belum ada cabang laundry. Tambahkan cabang dulu sebelum membuat pesanan.",
+  "fillWeightForItemError": "Isi berat (kg) untuk \"{itemName}\" terlebih dahulu",
+  "@fillWeightForItemError": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "businessContextNotReadyError": "Data perusahaan/cabang belum siap. Coba lagi sebentar.",
+  "selectedCustomerNotFoundError": "Pelanggan yang dipilih tidak ditemukan, coba pilih ulang.",
+  "orderCreatedSuccess": "Pesanan berhasil dibuat!",
+  "genericErrorTemplate": "Error: {error}",
+  "@genericErrorTemplate": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "orderTypeSelfDropoffLabel": "Antar Sendiri",
+  "orderDataSectionLabel": "Data Pesanan",
+  "incomingLaundryLabel": "Baju Masuk *",
+  "outgoingLaundryLabel": "Baju Keluar *",
+  "remainingBillPayLaterNotice": "Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.",
+  "orderNotesFieldLabel": "Catatan (Opsional)",
+  "orderNotesFieldHint": "Tulis catatan khusus untuk pesanan ini",
+  "pickupPaymentPendingNotice": "Metode & status pembayaran akan dikonfirmasi lagi setelah berat/jumlah cucian diketahui.",
+  "branchFieldLabel": "Cabang *",
+  "selectBranchForOrderHint": "Pilih cabang untuk pesanan ini",
+  "selectBranchRequiredError": "Pilih cabang terlebih dahulu",
+  "customerFieldLabel": "Pelanggan *",
+  "selectCustomerRequiredError": "Pilih pelanggan terlebih dahulu",
+  "noCustomersForOrderHint": "Belum ada pelanggan. Tambahkan pelanggan dulu sebelum membuat pesanan.",
+  "noCustomersInBranchHint": "Belum ada pelanggan yang terdaftar di cabang ini. Tambahkan pelanggan baru, atau cek penempatan cabang pelanggan yang sudah ada.",
+  "orderItemsSectionLabel": "Item Pesanan",
+  "noItemsTapServiceHint": "Belum ada item. Ketuk salah satu layanan di atas untuk menambahkannya.",
+  "noActiveServicesForOrderHint": "Belum ada layanan aktif. Tambahkan layanan dulu di menu Layanan sebelum membuat pesanan.",
+  "pickupScheduleLabel": "Jadwal Jemput (Opsional)",
+  "pickupScheduleOptionalHint": "Kosongkan kalau belum tau jamnya - bisa dijadwalkan belakangan di menu Antar Jemput.",
+  "itemsFilledAtPickupConfirmationHint": "Item akan diisi saat konfirmasi jemput",
+  "savingLabel": "Sedang Menyimpan...",
+  "dateFieldFallbackLabel": "Tanggal",
+  "timeFieldFallbackLabel": "Jam",
+  "perKgUnitSuffix": "/kg"
 }

@@ -25,7 +25,6 @@ import '../../screens/settings/setting_screen.dart';
 import '../../screens/settings/edit_profile_screen.dart';
 import '../../screens/settings/change_password_screen.dart';
 import '../../screens/settings/notifications_screen.dart';
-import '../../screens/settings/chat_cs_screen.dart';
 import '../../screens/admin/admin_support_list_screen.dart';
 import '../../screens/admin/admin_support_chat_screen.dart';
 import '../../screens/settings/help_screen.dart';
@@ -418,11 +417,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings/notifications',
         name: 'settings-notifications',
         builder: (context, state) => const NotificationsScreen(),
-      ),
-      GoRoute(
-        path: '/settings/chat-cs',
-        name: 'settings-chat-cs',
-        builder: (context, state) => const ChatCsScreen(),
       ),
       GoRoute(
         path: '/settings/help',

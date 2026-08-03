@@ -36,6 +36,35 @@ class AppLocalizationsId extends AppLocalizations {
   String get notificationSubtitle => 'Atur pemberitahuan aplikasi';
 
   @override
+  String get notifPrefOrderStatusTitle => 'Status pesanan';
+
+  @override
+  String get notifPrefOrderStatusSubtitle => 'Update cuci, siap diambil, dll';
+
+  @override
+  String get notifPrefPromoTitle => 'Promo dan diskon';
+
+  @override
+  String get notifPrefPromoSubtitle => 'Penawaran spesial untukmu';
+
+  @override
+  String get notifPrefReminderTitle => 'Pengingat';
+
+  @override
+  String get notifPrefReminderSubtitle => 'Jadwal ambil dan antar cucian';
+
+  @override
+  String get notifPrefChatCsTitle => 'Chat dan CS';
+
+  @override
+  String get notifPrefChatCsSubtitle => 'Balasan dari customer service';
+
+  @override
+  String notifPrefSaveError(String error) {
+    return 'Gagal menyimpan preferensi: $error';
+  }
+
+  @override
   String get notificationsPanelTitle => 'Pesanan Baru';
 
   @override
@@ -63,12 +92,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get manageCsChatSubtitle => 'Balas percakapan dari semua user';
 
   @override
-  String get chatTitle => 'Chat';
-
-  @override
-  String get chatSubtitle => 'Balasan';
-
-  @override
   String get sectionOther => 'Lainnya';
 
   @override
@@ -76,6 +99,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get helpSubtitle => 'FAQ & dukungan';
+
+  @override
+  String get helpSectionGeneralTitle => 'Pertanyaan Umum';
+
+  @override
+  String get helpSectionAppGuideTitle => 'Panduan Aplikasi';
 
   @override
   String get aboutTitle => 'Tentang Aplikasi';
@@ -635,7 +664,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get companyNotSetupError =>
-      'Perusahaan belum dibuat. Selesaikan proses onboarding (setup perusahaan) terlebih dahulu.';
+      'Perusahaan belum diatur. Selesaikan onboarding terlebih dahulu.';
 
   @override
   String get addServiceSuccess => 'Layanan berhasil ditambahkan!';
@@ -2301,19 +2330,52 @@ class AppLocalizationsId extends AppLocalizations {
       'Buka menu Orders, pilih pesanan aktif, status akan otomatis update mengikuti tahap pengerjaan.';
 
   @override
-  String get chatCsScreenTitle => 'Chat dan CS';
+  String get chatBotTopicBranchQuestion =>
+      'Bagaimana cara menambah cabang baru?';
 
   @override
-  String sendMessageError(String error) {
-    return 'Gagal mengirim pesan: $error';
-  }
+  String get chatBotTopicBranchAnswer =>
+      'Caranya:\n1. Dari dashboard, buka menu Cabang.\n2. Ketuk \"Cabang Baru\".\n3. Isi nama cabang, kode cabang, kota, provinsi, dan alamat lengkap.\n4. Kalau perlu, isi juga nomor telepon, email cabang, dan titik lokasi di peta.\n5. Isi kapasitas harian (jumlah pesanan maksimal per hari).\n6. Atur jam operasional per hari, atau centang \"Gunakan jam yang sama untuk semua hari\".\n7. Ketuk \"Simpan Data Cabang\".';
 
   @override
-  String get chatEmptyStateMessage =>
-      'Belum ada percakapan.\nKetik pesan di bawah buat mulai chat dengan CS.';
+  String get chatBotTopicEmployeeQuestion =>
+      'Bagaimana cara menambah karyawan baru?';
 
   @override
-  String get chatCsInputHint => 'Tulis pesan ke CS...';
+  String get chatBotTopicEmployeeAnswer =>
+      'Caranya:\n1. Dari dashboard, buka menu Kelola Karyawan.\n2. Ketuk \"Karyawan Baru\".\n3. Isi nama lengkap, nomor telepon, dan (opsional) email & alamat.\n4. Isi kode karyawan, posisi, dan cabang penempatannya.\n5. Isi tanggal bergabung, gaji pokok, dan komisi per transaksi (opsional).\n6. Atur hak akses fitur (bisa buat pesanan, kelola pelanggan, lihat laporan).\n7. Aktifkan \"Akses Aplikasi\" kalau karyawan ini boleh login ke aplikasi.\n8. Ketuk \"Simpan Karyawan\".';
+
+  @override
+  String get chatBotTopicServiceQuestion =>
+      'Bagaimana cara menambah layanan cuci dan mengatur harganya?';
+
+  @override
+  String get chatBotTopicServiceAnswer =>
+      'Caranya:\n1. Dari dashboard, buka menu Layanan.\n2. Ketuk \"Layanan Baru\".\n3. Isi nama layanan dan deskripsi (opsional).\n4. Pilih jenis layanan: Per Berat, Per Item, atau Express.\n5. Isi harga (per Kg/Item, atau harga dasar + biaya express) dan berat minimum kalau ada.\n6. Atur estimasi waktu pengerjaan (jam atau hari).\n7. Pilih cabang mana saja yang menyediakan layanan ini, atau biarkan kosong supaya tersedia di semua cabang.\n8. Ketuk \"Simpan Layanan\".';
+
+  @override
+  String get chatBotTopicOrderQuestion =>
+      'Bagaimana cara membuat pesanan baru?';
+
+  @override
+  String get chatBotTopicOrderAnswer =>
+      'Caranya:\n1. Dari dashboard, ketuk \"Pesanan Baru\".\n2. Pilih cabang dan pelanggan (tambahkan pelanggan baru dulu kalau belum ada).\n3. Ketuk salah satu layanan untuk menambahkannya ke pesanan, lalu isi berat/jumlahnya.\n4. Kalau perlu, atur jadwal pickup, atau kosongkan dan jadwalkan nanti dari menu Pickup & Delivery.\n5. Pilih metode pembayaran dan apakah lunas atau bayar DP.\n6. Kalau DP, isi jumlah yang dibayar di muka.\n7. Ketuk \"Simpan Pesanan\".';
+
+  @override
+  String get chatBotTopicReportQuestion =>
+      'Bagaimana cara melihat laporan bisnis saya?';
+
+  @override
+  String get chatBotTopicReportAnswer =>
+      'Caranya:\n1. Dari dashboard, buka menu Laporan.\n2. Pilih periode: Hari Ini, Minggu Ini, Bulan Ini, atau Tahun Ini.\n3. Lihat ringkasan pendapatan, pelanggan baru, rata-rata pesanan, dan pertumbuhan.\n4. Scroll ke bawah untuk lihat grafik tren pendapatan dan pendapatan per layanan.\n5. Cek Completion Rate untuk lihat persentase pesanan yang sudah selesai.\n6. Ketuk \"Cetak Laporan\" kalau mau ekspor ke PDF.';
+
+  @override
+  String get chatBotTopicLanguageQuestion =>
+      'Bagaimana cara mengganti bahasa aplikasi?';
+
+  @override
+  String get chatBotTopicLanguageAnswer =>
+      'Caranya:\n1. Buka menu Pengaturan.\n2. Ketuk menu Bahasa.\n3. Pilih bahasa yang diinginkan (Indonesia/English).\n4. Perubahan langsung diterapkan ke seluruh aplikasi.';
 
   @override
   String get orderDetailStatusPending => 'Menunggu';
@@ -2704,4 +2766,115 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get markCompletedButtonLabel => 'Tandai Selesai';
+
+  @override
+  String get createOrderSubtitle => 'Buat dan kelola pesanan laundry baru';
+
+  @override
+  String get noBranchesForOrderError =>
+      'Belum ada cabang laundry. Tambahkan cabang dulu sebelum membuat pesanan.';
+
+  @override
+  String fillWeightForItemError(String itemName) {
+    return 'Isi berat (kg) untuk \"$itemName\" terlebih dahulu';
+  }
+
+  @override
+  String get businessContextNotReadyError =>
+      'Data perusahaan/cabang belum siap. Coba lagi sebentar.';
+
+  @override
+  String get selectedCustomerNotFoundError =>
+      'Pelanggan yang dipilih tidak ditemukan, coba pilih ulang.';
+
+  @override
+  String get orderCreatedSuccess => 'Pesanan berhasil dibuat!';
+
+  @override
+  String genericErrorTemplate(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get orderTypeSelfDropoffLabel => 'Antar Sendiri';
+
+  @override
+  String get orderDataSectionLabel => 'Data Pesanan';
+
+  @override
+  String get incomingLaundryLabel => 'Baju Masuk *';
+
+  @override
+  String get outgoingLaundryLabel => 'Baju Keluar *';
+
+  @override
+  String get remainingBillPayLaterNotice =>
+      'Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.';
+
+  @override
+  String get orderNotesFieldLabel => 'Catatan (Opsional)';
+
+  @override
+  String get orderNotesFieldHint => 'Tulis catatan khusus untuk pesanan ini';
+
+  @override
+  String get pickupPaymentPendingNotice =>
+      'Metode & status pembayaran akan dikonfirmasi lagi setelah berat/jumlah cucian diketahui.';
+
+  @override
+  String get branchFieldLabel => 'Cabang *';
+
+  @override
+  String get selectBranchForOrderHint => 'Pilih cabang untuk pesanan ini';
+
+  @override
+  String get selectBranchRequiredError => 'Pilih cabang terlebih dahulu';
+
+  @override
+  String get customerFieldLabel => 'Pelanggan *';
+
+  @override
+  String get selectCustomerRequiredError => 'Pilih pelanggan terlebih dahulu';
+
+  @override
+  String get noCustomersForOrderHint =>
+      'Belum ada pelanggan. Tambahkan pelanggan dulu sebelum membuat pesanan.';
+
+  @override
+  String get noCustomersInBranchHint =>
+      'Belum ada pelanggan yang terdaftar di cabang ini. Tambahkan pelanggan baru, atau cek penempatan cabang pelanggan yang sudah ada.';
+
+  @override
+  String get orderItemsSectionLabel => 'Item Pesanan';
+
+  @override
+  String get noItemsTapServiceHint =>
+      'Belum ada item. Ketuk salah satu layanan di atas untuk menambahkannya.';
+
+  @override
+  String get noActiveServicesForOrderHint =>
+      'Belum ada layanan aktif. Tambahkan layanan dulu di menu Layanan sebelum membuat pesanan.';
+
+  @override
+  String get pickupScheduleLabel => 'Jadwal Jemput (Opsional)';
+
+  @override
+  String get pickupScheduleOptionalHint =>
+      'Kosongkan kalau belum tau jamnya - bisa dijadwalkan belakangan di menu Antar Jemput.';
+
+  @override
+  String get itemsFilledAtPickupConfirmationHint =>
+      'Item akan diisi saat konfirmasi jemput';
+
+  @override
+  String get savingLabel => 'Sedang Menyimpan...';
+
+  @override
+  String get dateFieldFallbackLabel => 'Tanggal';
+
+  @override
+  String get timeFieldFallbackLabel => 'Jam';
+
+  @override
+  String get perKgUnitSuffix => '/kg';
 }

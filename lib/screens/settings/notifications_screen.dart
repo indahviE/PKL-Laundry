@@ -22,32 +22,32 @@ class _NotifPref {
   });
 }
 
-final List<_NotifPref> _prefDefs = [
-  _NotifPref(
-    key: 'status_pesanan',
-    title: 'Status pesanan',
-    subtitle: 'Update cuci, siap diambil, dll',
-    icon: Icons.local_shipping_outlined,
-  ),
-  _NotifPref(
-    key: 'promo',
-    title: 'Promo dan diskon',
-    subtitle: 'Penawaran spesial untukmu',
-    icon: Icons.sell_outlined,
-  ),
-  _NotifPref(
-    key: 'pengingat',
-    title: 'Pengingat',
-    subtitle: 'Jadwal ambil dan antar cucian',
-    icon: Icons.schedule_outlined,
-  ),
-  _NotifPref(
-    key: 'chat_cs',
-    title: 'Chat dan CS',
-    subtitle: 'Balasan dari customer service',
-    icon: Icons.chat_bubble_outline,
-  ),
-];
+List<_NotifPref> _buildPrefDefs(AppLocalizations t) => [
+      _NotifPref(
+        key: 'status_pesanan',
+        title: t.notifPrefOrderStatusTitle,
+        subtitle: t.notifPrefOrderStatusSubtitle,
+        icon: Icons.local_shipping_outlined,
+      ),
+      _NotifPref(
+        key: 'promo',
+        title: t.notifPrefPromoTitle,
+        subtitle: t.notifPrefPromoSubtitle,
+        icon: Icons.sell_outlined,
+      ),
+      _NotifPref(
+        key: 'pengingat',
+        title: t.notifPrefReminderTitle,
+        subtitle: t.notifPrefReminderSubtitle,
+        icon: Icons.schedule_outlined,
+      ),
+      _NotifPref(
+        key: 'chat_cs',
+        title: t.notifPrefChatCsTitle,
+        subtitle: t.notifPrefChatCsSubtitle,
+        icon: Icons.chat_bubble_outline,
+      ),
+    ];
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -71,13 +71,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final uid = _uid;
     if (uid == null) return;
 
+    final t = AppLocalizations.of(context)!;
     final repo = ref.read(userRepositoryProvider);
     try {
       await repo.updateNotificationPrefs(uid, {key: newValue});
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menyimpan preferensi: $e')),
+        SnackBar(content: Text(t.notifPrefSaveError(e.toString()))),
       );
     }
     // Tidak perlu setState manual -- StreamBuilder di bawah otomatis
@@ -122,7 +123,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                               }
                               final prefs =
                                   snapshot.data?.notifPrefs ?? const {};
-                              return _buildSectionCard(prefs);
+                              return _buildSectionCard(t, prefs);
                             },
                           ),
                   ),
@@ -167,7 +168,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     );
   }
 
-  Widget _buildSectionCard(Map<String, bool> prefs) {
+  Widget _buildSectionCard(AppLocalizations t, Map<String, bool> prefs) {
+    final prefDefs = _buildPrefDefs(t);
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
@@ -181,8 +183,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         ],
       ),
       child: Column(
-        children: List.generate(_prefDefs.length, (index) {
-          final def = _prefDefs[index];
+        children: List.generate(prefDefs.length, (index) {
+          final def = prefDefs[index];
           // Default true kalau field belum pernah disimpan di Firestore
           // (user lama / belum pernah buka halaman ini).
           final value = prefs[def.key] ?? true;
@@ -236,7 +238,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   ],
                 ),
               ),
-              if (index != _prefDefs.length - 1)
+              if (index != prefDefs.length - 1)
                 Divider(
                   height: 1,
                   indent: 70,

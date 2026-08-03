@@ -86,11 +86,12 @@ class _LaundryOption {
 
   _LaundryOption({required this.id, required this.name});
 
-  factory _LaundryOption.fromFirestore(DocumentSnapshot doc) {
+  factory _LaundryOption.fromFirestore(DocumentSnapshot doc, {required String unnamedFallback}) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
+    final rawName = data['name'] as String?;
     return _LaundryOption(
       id: doc.id,
-      name: (data['name'] ?? 'Cabang Tanpa Nama') as String,
+      name: (rawName == null || rawName.isEmpty) ? unnamedFallback : rawName,
     );
   }
 }
@@ -204,6 +205,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   List<_CustomerOption> get _filteredCustomers =>
       _customers.where((c) => c.laundryId != null && c.laundryId == _selectedLaundryId).toList();
 
+  /// Shortcut ke AppLocalizations - dipakai di seluruh method state ini
+  /// (build maupun non-build, mis. handler validasi/snackbar) karena
+  /// State selalu punya akses ke `context` sendiri.
+  AppLocalizations get _t => AppLocalizations.of(context)!;
+
   /// Metode pembayaran nyata yang dipakai laundry ini:
   /// cash, transfer, debit (EDC), ewallet.
   ///
@@ -213,25 +219,25 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   /// transfer -> customer transfer sendiri, admin perlu cek mutasi dulu,
   /// jadi tetap 'pending' (paid_amount 0) sampai dikonfirmasi manual dari
   /// OrderDetailScreen.
-  late final List<Map<String, dynamic>> _paymentMethods = [
-    {'id': 'cash', 'label': 'Tunai', 'icon': Icons.payments_outlined},
-    {'id': 'transfer', 'label': 'Transfer Bank', 'icon': Icons.account_balance_outlined},
-    {'id': 'debit', 'label': 'Kartu Debit', 'icon': Icons.credit_card_outlined},
-    {'id': 'ewallet', 'label': 'E-Wallet', 'icon': Icons.account_balance_wallet_outlined},
-  ];
+  List<Map<String, dynamic>> _paymentMethods(AppLocalizations t) => [
+        {'id': 'cash', 'label': t.paymentMethodCash, 'icon': Icons.payments_outlined},
+        {'id': 'transfer', 'label': t.paymentMethodTransfer, 'icon': Icons.account_balance_outlined},
+        {'id': 'debit', 'label': t.paymentMethodDebit, 'icon': Icons.credit_card_outlined},
+        {'id': 'ewallet', 'label': t.paymentMethodEwallet, 'icon': Icons.account_balance_wallet_outlined},
+      ];
 
   bool get _isInstantMethod =>
       _selectedPaymentMethod == 'cash' || _selectedPaymentMethod == 'debit' || _selectedPaymentMethod == 'ewallet';
 
-  late final List<Map<String, dynamic>> _orderTypes = [
-    {'id': 'walk_in', 'label': 'Antar Sendiri', 'icon': Icons.storefront_outlined},
-    {'id': 'pickup', 'label': 'Dijemput', 'icon': Icons.call_received_rounded},
-  ];
+  List<Map<String, dynamic>> _orderTypes(AppLocalizations t) => [
+        {'id': 'walk_in', 'label': t.orderTypeSelfDropoffLabel, 'icon': Icons.storefront_outlined},
+        {'id': 'pickup', 'label': t.orderTypePickup, 'icon': Icons.call_received_rounded},
+      ];
 
-  late final List<Map<String, dynamic>> _deliveryTypes = [
-    {'id': 'self_pickup', 'label': 'Ambil Sendiri', 'icon': Icons.storefront_outlined},
-    {'id': 'delivery', 'label': 'Diantar', 'icon': Icons.call_made_rounded},
-  ];
+  List<Map<String, dynamic>> _deliveryTypes(AppLocalizations t) => [
+        {'id': 'self_pickup', 'label': t.orderDeliverySelfPickup, 'icon': Icons.storefront_outlined},
+        {'id': 'delivery', 'label': t.orderDeliveryDelivery, 'icon': Icons.call_made_rounded},
+      ];
 
   @override
   void initState() {
@@ -270,13 +276,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        throw 'Sesi tidak ditemukan, silakan login ulang.';
+        throw _t.sessionNotFoundError;
       }
       final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
 
       final companiesSnap = await userDocRef.collection('companies').limit(1).get();
       if (companiesSnap.docs.isEmpty) {
-        throw 'Perusahaan belum diatur. Selesaikan onboarding terlebih dahulu.';
+        throw _t.companyNotSetupError;
       }
       final companyId = companiesSnap.docs.first.id;
 
@@ -286,10 +292,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           .where('is_active', isEqualTo: true)
           .get();
       if (laundriesSnap.docs.isEmpty) {
-        throw 'Belum ada cabang laundry. Tambahkan cabang dulu sebelum membuat pesanan.';
+        throw _t.noBranchesForOrderError;
       }
 
-      final laundries = laundriesSnap.docs.map((d) => _LaundryOption.fromFirestore(d)).toList();
+      final laundries = laundriesSnap.docs
+          .map((d) => _LaundryOption.fromFirestore(d, unnamedFallback: _t.unnamedBranchFallback))
+          .toList();
 
       setState(() {
         _companyId = companyId;
@@ -318,7 +326,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        throw 'Sesi tidak ditemukan, silakan login ulang.';
+        throw _t.sessionNotFoundError;
       }
 
       final snapshot = await FirebaseFirestore.instance
@@ -350,7 +358,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        throw 'Sesi tidak ditemukan, silakan login ulang.';
+        throw _t.sessionNotFoundError;
       }
 
       final allServices = await _serviceRepository.streamServices().first;
@@ -396,7 +404,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   String _servicePriceLabel(Service service) {
     final price = _servicePrice(service);
-    final suffix = service.pricingType == PricingType.perKg ? '/kg' : '/item';
+    final suffix = service.pricingType == PricingType.perKg ? _t.perKgUnitSuffix : _t.unitPerItemSuffix;
     return '${_formatCurrency(price)}$suffix';
   }
 
@@ -476,19 +484,19 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
     if (!_isPickupOrder) {
       if (_orderItems.isEmpty) {
-        _showError('Tambahkan minimal 1 item pesanan');
+        _showError(_t.minOneItemError);
         return;
       }
       for (final item in _orderItems) {
         if (item.pricingType == PricingType.perKg && item.weight <= 0) {
-          _showError('Isi berat (kg) untuk "${item.name}" terlebih dahulu');
+          _showError(_t.fillWeightForItemError(item.name));
           return;
         }
       }
     }
 
     if (_companyId == null || _selectedLaundryId == null) {
-      _showError(_businessContextError ?? 'Data perusahaan/cabang belum siap. Coba lagi sebentar.');
+      _showError(_businessContextError ?? _t.businessContextNotReadyError);
       return;
     }
 
@@ -522,11 +530,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         final rawDp = _dpAmountController.text.replaceAll(RegExp(r'[^0-9]'), '');
         final dp = double.tryParse(rawDp) ?? 0;
         if (dp <= 0) {
-          _showError('Isi nominal DP terlebih dahulu');
+          _showError(_t.dpAmountRequiredError);
           return;
         }
         if (dp >= totalAmount) {
-          _showError('Nominal DP harus lebih kecil dari total. Pilih "Lunas" kalau bayar penuh.');
+          _showError(_t.dpAmountTooLargeError);
           return;
         }
         paidNow = dp;
@@ -538,7 +546,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        throw 'Sesi tidak ditemukan, silakan login ulang.';
+        throw _t.sessionNotFoundError;
       }
 
       // FIX: firstWhere tanpa orElse bisa lempar StateError mentah kalau
@@ -548,7 +556,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       // dan tampil sebagai snackbar merah - bukan crash gak jelas.
       final selectedCustomer = _customers.firstWhere(
         (c) => c.id == _selectedCustomerId,
-        orElse: () => throw 'Pelanggan yang dipilih tidak ditemukan, coba pilih ulang.',
+        orElse: () => throw _t.selectedCustomerNotFoundError,
       );
 
       final PaymentStatus paymentStatus = paidNow <= 0
@@ -626,16 +634,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pesanan berhasil dibuat!'),
-            backgroundColor: Color(0xFF51CF66),
+          SnackBar(
+            content: Text(_t.orderCreatedSuccess),
+            backgroundColor: const Color(0xFF51CF66),
           ),
         );
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        _showError('Error: ${e.toString()}');
+        _showError(_t.genericErrorTemplate(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -670,13 +678,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   String _formatScheduleDate(DateTime? date) {
-    if (date == null) return 'Tanggal';
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    if (date == null) return _t.dateFieldFallbackLabel;
+    final months = _t.localeName.startsWith('id')
+        ? const ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+        : const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
   String _formatScheduleTime(TimeOfDay? time) {
-    if (time == null) return 'Jam';
+    if (time == null) return _t.timeFieldFallbackLabel;
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
@@ -737,6 +747,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   /// sama sekali). Ditaruh di atas form biar owner langsung ngeh kenapa
   /// gak bisa lanjut, alih-alih baru ketauan pas klik Simpan.
   Widget _buildBusinessContextError(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(AppTheme.md),
       decoration: BoxDecoration(
@@ -755,7 +766,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ),
           TextButton(
             onPressed: _fetchBusinessContext,
-            child: Text('Coba lagi', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+            child: Text(t.orderRetryButtonLabel, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -805,7 +816,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                'Buat dan kelola pesanan laundry baru',
+                t.createOrderSubtitle,
                 style: GoogleFonts.poppins(
                   fontSize: 12.5,
                   color: AppTheme.textSecondary,
@@ -846,6 +857,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   /// Isinya 3 section (Data Pesanan, Item Pesanan, Ringkasan Harga)
   /// dipisahkan pakai divider tipis + label, bukan card terpisah lagi.
   Widget _buildMainCard(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(AppTheme.lg),
       decoration: BoxDecoration(
@@ -864,7 +876,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _sectionLabel('Data Pesanan'),
+            _sectionLabel(t.orderDataSectionLabel),
 
             // Dropdown cabang - CUMA muncul kalau owner punya lebih dari
             // 1 cabang aktif (lihat _showLaundryDropdown). Owner paket
@@ -881,8 +893,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             const SizedBox(height: AppTheme.lg),
 
             _buildToggleGroup(
-              label: 'Baju Masuk *',
-              options: _orderTypes,
+              label: t.incomingLaundryLabel,
+              options: _orderTypes(t),
               selectedId: _selectedOrderType,
               onSelected: _handleOrderTypeChanged,
             ),
@@ -896,8 +908,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             const SizedBox(height: AppTheme.lg),
 
             _buildToggleGroup(
-              label: 'Baju Keluar *',
-              options: _deliveryTypes,
+              label: t.outgoingLaundryLabel,
+              options: _deliveryTypes(t),
               selectedId: _selectedDeliveryType,
               onSelected: (id) => setState(() => _selectedDeliveryType = id),
             ),
@@ -913,12 +925,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             // beneran dipakai baru dipilih pas konfirmasi jemput
             // (_ConfirmPickupSheet), setelah berat/qty riil diketahui.
             _isPickupOrder
-                ? _buildPickupPaymentNotice()
+                ? _buildPickupPaymentNotice(t)
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Metode Pembayaran *',
+                        '${t.paymentMethodLabel} *',
                         style: GoogleFonts.poppins(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
@@ -932,7 +944,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           return Wrap(
                             spacing: AppTheme.sm,
                             runSpacing: AppTheme.sm,
-                            children: _paymentMethods.map((method) {
+                            children: _paymentMethods(t).map((method) {
                               final isSelected = _selectedPaymentMethod == method['id'];
                               return SizedBox(
                                 width: itemWidth,
@@ -984,8 +996,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       const SizedBox(height: AppTheme.sm),
                       Text(
                         _selectedPaymentMethod == 'transfer'
-                            ? 'Status pembayaran akan "Belum Dibayar" sampai dikonfirmasi manual di halaman detail pesanan.'
-                            : 'Metode ini dianggap dibayar langsung di kasir/saat itu juga.',
+                            ? t.transferPaymentPendingNotice
+                            : t.instantPaymentNotice,
                         style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
                       ),
 
@@ -996,7 +1008,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           children: [
                             Expanded(
                               child: _buildPaymentOptionChip(
-                                label: 'Lunas',
+                                label: t.fullPaymentLabel,
                                 isSelected: _isFullPayment,
                                 onTap: () => setState(() => _isFullPayment = true),
                               ),
@@ -1004,7 +1016,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             const SizedBox(width: AppTheme.sm),
                             Expanded(
                               child: _buildPaymentOptionChip(
-                                label: 'DP (Sebagian)',
+                                label: t.partialPaymentLabel,
                                 isSelected: !_isFullPayment,
                                 onTap: () => setState(() => _isFullPayment = false),
                               ),
@@ -1014,14 +1026,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         if (!_isFullPayment) ...[
                           const SizedBox(height: AppTheme.md),
                           AppInput(
-                            label: 'Nominal DP',
+                            label: t.dpAmountLabel,
                             controller: _dpAmountController,
-                            hintText: 'Contoh: 20000',
+                            hintText: t.dpAmountHint,
                             prefixIcon: Icons.payments_outlined,
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.',
+                            t.remainingBillPayLaterNotice,
                             style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
                           ),
                         ],
@@ -1032,9 +1044,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             const SizedBox(height: AppTheme.lg),
 
             AppInput(
-              label: 'Catatan (Opsional)',
+              label: t.orderNotesFieldLabel,
               controller: _notesController,
-              hintText: 'Tulis catatan khusus untuk pesanan ini',
+              hintText: t.orderNotesFieldHint,
               prefixIcon: Icons.note_outlined,
               maxLines: 3,
             ),
@@ -1055,7 +1067,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   /// Info box pengganti section Metode Pembayaran, khusus order pickup.
   /// Menjelaskan kenapa pembayaran gak bisa ditentukan di layar ini -
   /// akan diminta lagi pas konfirmasi jemput setelah barang ditimbang.
-  Widget _buildPickupPaymentNotice() {
+  Widget _buildPickupPaymentNotice(AppLocalizations t) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppTheme.md),
@@ -1070,7 +1082,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           const SizedBox(width: AppTheme.sm),
           Expanded(
             child: Text(
-              'Metode & status pembayaran akan dikonfirmasi lagi setelah berat/jumlah cucian diketahui.',
+              t.pickupPaymentPendingNotice,
               style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
             ),
           ),
@@ -1082,6 +1094,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   /// Dropdown pilih cabang. Cuma dipanggil kalau _showLaundryDropdown
   /// true (owner punya lebih dari 1 cabang aktif).
   Widget _buildLaundryDropdown(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     if (_isLoadingBusinessContext) {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: AppTheme.lg),
@@ -1116,9 +1129,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               ))
           .toList(),
       decoration: InputDecoration(
-        labelText: 'Cabang *',
+        labelText: t.branchFieldLabel,
         labelStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
-        hintText: 'Pilih cabang untuk pesanan ini',
+        hintText: t.selectBranchForOrderHint,
         hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
         prefixIcon: Icon(Icons.storefront_outlined, color: AppTheme.textTertiary),
         filled: true,
@@ -1138,7 +1151,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Pilih cabang terlebih dahulu';
+          return t.selectBranchRequiredError;
         }
         return null;
       },
@@ -1249,6 +1262,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   /// Kalau dikosongin, admin/dispatcher tetap bisa melengkapinya belakangan
   /// lewat CreateDeliveryScheduleScreen.
   Widget _buildPickupScheduleFields() {
+    final t = _t;
     return Container(
       padding: const EdgeInsets.all(AppTheme.md),
       decoration: BoxDecoration(
@@ -1263,7 +1277,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               Icon(Icons.event_available_outlined, size: 15, color: AppTheme.textSecondary),
               const SizedBox(width: 6),
               Text(
-                'Jadwal Jemput (Opsional)',
+                t.pickupScheduleLabel,
                 style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
               ),
             ],
@@ -1338,7 +1352,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Kosongkan kalau belum tau jamnya - bisa dijadwalkan belakangan di menu Antar Jemput.',
+            t.pickupScheduleOptionalHint,
             style: GoogleFonts.poppins(fontSize: 10.5, color: AppTheme.textTertiary),
           ),
         ],
@@ -1379,7 +1393,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             ),
             TextButton(
               onPressed: _fetchCustomers,
-              child: Text('Coba lagi', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+              child: Text(t.orderRetryButtonLabel, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -1396,7 +1410,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           borderRadius: BorderRadius.circular(_chipRadius),
         ),
         child: Text(
-          'Belum ada pelanggan. Tambahkan pelanggan dulu sebelum membuat pesanan.',
+          t.noCustomersForOrderHint,
           style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
         ),
       );
@@ -1413,7 +1427,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           borderRadius: BorderRadius.circular(_chipRadius),
         ),
         child: Text(
-          'Belum ada pelanggan yang terdaftar di cabang ini. Tambahkan pelanggan baru, atau cek penempatan cabang pelanggan yang sudah ada.',
+          t.noCustomersInBranchHint,
           style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
         ),
       );
@@ -1435,7 +1449,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               ))
           .toList(),
       decoration: InputDecoration(
-        labelText: 'Pelanggan *',
+        labelText: t.customerFieldLabel,
         labelStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
         hintText: t.selectCustomerHint,
         hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
@@ -1457,7 +1471,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Pilih pelanggan terlebih dahulu';
+          return t.selectCustomerRequiredError;
         }
         return null;
       },
@@ -1481,11 +1495,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   /// perKg tetap pakai input berat (TextField desimal, kg), item perItem
   /// tetap pakai stepper qty (+/-).
   Widget _buildOrderItemsSection(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     if (_isPickupOrder) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionLabel('Item Pesanan'),
+          _sectionLabel(t.orderItemsSectionLabel),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(AppTheme.md),
@@ -1500,7 +1515,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 const SizedBox(width: AppTheme.sm),
                 Expanded(
                   child: Text(
-                    'Item akan diisi saat konfirmasi jemput',
+                    t.itemsFilledAtPickupConfirmationHint,
                     style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
                   ),
                 ),
@@ -1514,11 +1529,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('Jenis Layanan'),
+        _sectionLabel(t.serviceTypeSectionLabel),
         _buildServicePicker(context),
         const SizedBox(height: AppTheme.lg),
         Text(
-          'Item Pesanan',
+          t.orderItemsSectionLabel,
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -1535,7 +1550,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               borderRadius: BorderRadius.circular(_chipRadius),
             ),
             child: Text(
-              'Belum ada item. Ketuk salah satu layanan di atas untuk menambahkannya.',
+              t.noItemsTapServiceHint,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
             ),
@@ -1608,8 +1623,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       children: [
                         Text(
                           isPerKg
-                              ? '${_formatCurrency(item.price)} / kg'
-                              : '${_formatCurrency(item.price)} / item',
+                              ? '${_formatCurrency(item.price)} ${t.perKgUnitSuffix}'
+                              : '${_formatCurrency(item.price)}${t.unitPerItemSuffix}',
                           style: GoogleFonts.poppins(
                             fontSize: 11,
                             color: AppTheme.textTertiary,
@@ -1698,6 +1713,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   /// dari implementasi sebelumnya, cuma dipindah supaya tampil inline
   /// alih-alih di dalam dialog.
   Widget _buildServicePicker(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     if (_isLoadingServices) {
       return Container(
         height: 96,
@@ -1729,7 +1745,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             ),
             TextButton(
               onPressed: _fetchServices,
-              child: Text('Coba lagi', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+              child: Text(t.orderRetryButtonLabel, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -1744,7 +1760,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           borderRadius: BorderRadius.circular(_chipRadius),
         ),
         child: Text(
-          'Belum ada layanan aktif. Tambahkan layanan dulu di menu Layanan sebelum membuat pesanan.',
+          t.noActiveServicesForOrderHint,
           style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
         ),
       );
@@ -1898,7 +1914,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ),
                   const SizedBox(width: AppTheme.md),
                   Text(
-                    'Sedang Menyimpan...',
+                    t.savingLabel,
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                   ),
                 ],

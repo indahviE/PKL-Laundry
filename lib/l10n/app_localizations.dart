@@ -152,6 +152,60 @@ abstract class AppLocalizations {
   /// **'Atur pemberitahuan aplikasi'**
   String get notificationSubtitle;
 
+  /// No description provided for @notifPrefOrderStatusTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Status pesanan'**
+  String get notifPrefOrderStatusTitle;
+
+  /// No description provided for @notifPrefOrderStatusSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Update cuci, siap diambil, dll'**
+  String get notifPrefOrderStatusSubtitle;
+
+  /// No description provided for @notifPrefPromoTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Promo dan diskon'**
+  String get notifPrefPromoTitle;
+
+  /// No description provided for @notifPrefPromoSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Penawaran spesial untukmu'**
+  String get notifPrefPromoSubtitle;
+
+  /// No description provided for @notifPrefReminderTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengingat'**
+  String get notifPrefReminderTitle;
+
+  /// No description provided for @notifPrefReminderSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Jadwal ambil dan antar cucian'**
+  String get notifPrefReminderSubtitle;
+
+  /// No description provided for @notifPrefChatCsTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Chat dan CS'**
+  String get notifPrefChatCsTitle;
+
+  /// No description provided for @notifPrefChatCsSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Balasan dari customer service'**
+  String get notifPrefChatCsSubtitle;
+
+  /// No description provided for @notifPrefSaveError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menyimpan preferensi: {error}'**
+  String notifPrefSaveError(String error);
+
   /// No description provided for @notificationsPanelTitle.
   ///
   /// In id, this message translates to:
@@ -200,18 +254,6 @@ abstract class AppLocalizations {
   /// **'Balas percakapan dari semua user'**
   String get manageCsChatSubtitle;
 
-  /// No description provided for @chatTitle.
-  ///
-  /// In id, this message translates to:
-  /// **'Chat'**
-  String get chatTitle;
-
-  /// No description provided for @chatSubtitle.
-  ///
-  /// In id, this message translates to:
-  /// **'Balasan'**
-  String get chatSubtitle;
-
   /// No description provided for @sectionOther.
   ///
   /// In id, this message translates to:
@@ -229,6 +271,18 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'FAQ & dukungan'**
   String get helpSubtitle;
+
+  /// No description provided for @helpSectionGeneralTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pertanyaan Umum'**
+  String get helpSectionGeneralTitle;
+
+  /// No description provided for @helpSectionAppGuideTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Panduan Aplikasi'**
+  String get helpSectionAppGuideTitle;
 
   /// No description provided for @aboutTitle.
   ///
@@ -1241,7 +1295,7 @@ abstract class AppLocalizations {
   /// No description provided for @companyNotSetupError.
   ///
   /// In id, this message translates to:
-  /// **'Perusahaan belum dibuat. Selesaikan proses onboarding (setup perusahaan) terlebih dahulu.'**
+  /// **'Perusahaan belum diatur. Selesaikan onboarding terlebih dahulu.'**
   String get companyNotSetupError;
 
   /// No description provided for @addServiceSuccess.
@@ -4232,29 +4286,77 @@ abstract class AppLocalizations {
   /// **'Buka menu Orders, pilih pesanan aktif, status akan otomatis update mengikuti tahap pengerjaan.'**
   String get faqTrackAnswer;
 
-  /// No description provided for @chatCsScreenTitle.
+  /// No description provided for @chatBotTopicBranchQuestion.
   ///
   /// In id, this message translates to:
-  /// **'Chat dan CS'**
-  String get chatCsScreenTitle;
+  /// **'Bagaimana cara menambah cabang baru?'**
+  String get chatBotTopicBranchQuestion;
 
-  /// No description provided for @sendMessageError.
+  /// No description provided for @chatBotTopicBranchAnswer.
   ///
   /// In id, this message translates to:
-  /// **'Gagal mengirim pesan: {error}'**
-  String sendMessageError(String error);
+  /// **'Caranya:\n1. Dari dashboard, buka menu Cabang.\n2. Ketuk \"Cabang Baru\".\n3. Isi nama cabang, kode cabang, kota, provinsi, dan alamat lengkap.\n4. Kalau perlu, isi juga nomor telepon, email cabang, dan titik lokasi di peta.\n5. Isi kapasitas harian (jumlah pesanan maksimal per hari).\n6. Atur jam operasional per hari, atau centang \"Gunakan jam yang sama untuk semua hari\".\n7. Ketuk \"Simpan Data Cabang\".'**
+  String get chatBotTopicBranchAnswer;
 
-  /// No description provided for @chatEmptyStateMessage.
+  /// No description provided for @chatBotTopicEmployeeQuestion.
   ///
   /// In id, this message translates to:
-  /// **'Belum ada percakapan.\nKetik pesan di bawah buat mulai chat dengan CS.'**
-  String get chatEmptyStateMessage;
+  /// **'Bagaimana cara menambah karyawan baru?'**
+  String get chatBotTopicEmployeeQuestion;
 
-  /// No description provided for @chatCsInputHint.
+  /// No description provided for @chatBotTopicEmployeeAnswer.
   ///
   /// In id, this message translates to:
-  /// **'Tulis pesan ke CS...'**
-  String get chatCsInputHint;
+  /// **'Caranya:\n1. Dari dashboard, buka menu Kelola Karyawan.\n2. Ketuk \"Karyawan Baru\".\n3. Isi nama lengkap, nomor telepon, dan (opsional) email & alamat.\n4. Isi kode karyawan, posisi, dan cabang penempatannya.\n5. Isi tanggal bergabung, gaji pokok, dan komisi per transaksi (opsional).\n6. Atur hak akses fitur (bisa buat pesanan, kelola pelanggan, lihat laporan).\n7. Aktifkan \"Akses Aplikasi\" kalau karyawan ini boleh login ke aplikasi.\n8. Ketuk \"Simpan Karyawan\".'**
+  String get chatBotTopicEmployeeAnswer;
+
+  /// No description provided for @chatBotTopicServiceQuestion.
+  ///
+  /// In id, this message translates to:
+  /// **'Bagaimana cara menambah layanan cuci dan mengatur harganya?'**
+  String get chatBotTopicServiceQuestion;
+
+  /// No description provided for @chatBotTopicServiceAnswer.
+  ///
+  /// In id, this message translates to:
+  /// **'Caranya:\n1. Dari dashboard, buka menu Layanan.\n2. Ketuk \"Layanan Baru\".\n3. Isi nama layanan dan deskripsi (opsional).\n4. Pilih jenis layanan: Per Berat, Per Item, atau Express.\n5. Isi harga (per Kg/Item, atau harga dasar + biaya express) dan berat minimum kalau ada.\n6. Atur estimasi waktu pengerjaan (jam atau hari).\n7. Pilih cabang mana saja yang menyediakan layanan ini, atau biarkan kosong supaya tersedia di semua cabang.\n8. Ketuk \"Simpan Layanan\".'**
+  String get chatBotTopicServiceAnswer;
+
+  /// No description provided for @chatBotTopicOrderQuestion.
+  ///
+  /// In id, this message translates to:
+  /// **'Bagaimana cara membuat pesanan baru?'**
+  String get chatBotTopicOrderQuestion;
+
+  /// No description provided for @chatBotTopicOrderAnswer.
+  ///
+  /// In id, this message translates to:
+  /// **'Caranya:\n1. Dari dashboard, ketuk \"Pesanan Baru\".\n2. Pilih cabang dan pelanggan (tambahkan pelanggan baru dulu kalau belum ada).\n3. Ketuk salah satu layanan untuk menambahkannya ke pesanan, lalu isi berat/jumlahnya.\n4. Kalau perlu, atur jadwal pickup, atau kosongkan dan jadwalkan nanti dari menu Pickup & Delivery.\n5. Pilih metode pembayaran dan apakah lunas atau bayar DP.\n6. Kalau DP, isi jumlah yang dibayar di muka.\n7. Ketuk \"Simpan Pesanan\".'**
+  String get chatBotTopicOrderAnswer;
+
+  /// No description provided for @chatBotTopicReportQuestion.
+  ///
+  /// In id, this message translates to:
+  /// **'Bagaimana cara melihat laporan bisnis saya?'**
+  String get chatBotTopicReportQuestion;
+
+  /// No description provided for @chatBotTopicReportAnswer.
+  ///
+  /// In id, this message translates to:
+  /// **'Caranya:\n1. Dari dashboard, buka menu Laporan.\n2. Pilih periode: Hari Ini, Minggu Ini, Bulan Ini, atau Tahun Ini.\n3. Lihat ringkasan pendapatan, pelanggan baru, rata-rata pesanan, dan pertumbuhan.\n4. Scroll ke bawah untuk lihat grafik tren pendapatan dan pendapatan per layanan.\n5. Cek Completion Rate untuk lihat persentase pesanan yang sudah selesai.\n6. Ketuk \"Cetak Laporan\" kalau mau ekspor ke PDF.'**
+  String get chatBotTopicReportAnswer;
+
+  /// No description provided for @chatBotTopicLanguageQuestion.
+  ///
+  /// In id, this message translates to:
+  /// **'Bagaimana cara mengganti bahasa aplikasi?'**
+  String get chatBotTopicLanguageQuestion;
+
+  /// No description provided for @chatBotTopicLanguageAnswer.
+  ///
+  /// In id, this message translates to:
+  /// **'Caranya:\n1. Buka menu Pengaturan.\n2. Ketuk menu Bahasa.\n3. Pilih bahasa yang diinginkan (Indonesia/English).\n4. Perubahan langsung diterapkan ke seluruh aplikasi.'**
+  String get chatBotTopicLanguageAnswer;
 
   /// No description provided for @orderDetailStatusPending.
   ///
@@ -4945,6 +5047,198 @@ abstract class AppLocalizations {
   /// In id, this message translates to:
   /// **'Tandai Selesai'**
   String get markCompletedButtonLabel;
+
+  /// No description provided for @createOrderSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Buat dan kelola pesanan laundry baru'**
+  String get createOrderSubtitle;
+
+  /// No description provided for @noBranchesForOrderError.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada cabang laundry. Tambahkan cabang dulu sebelum membuat pesanan.'**
+  String get noBranchesForOrderError;
+
+  /// No description provided for @fillWeightForItemError.
+  ///
+  /// In id, this message translates to:
+  /// **'Isi berat (kg) untuk \"{itemName}\" terlebih dahulu'**
+  String fillWeightForItemError(String itemName);
+
+  /// No description provided for @businessContextNotReadyError.
+  ///
+  /// In id, this message translates to:
+  /// **'Data perusahaan/cabang belum siap. Coba lagi sebentar.'**
+  String get businessContextNotReadyError;
+
+  /// No description provided for @selectedCustomerNotFoundError.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan yang dipilih tidak ditemukan, coba pilih ulang.'**
+  String get selectedCustomerNotFoundError;
+
+  /// No description provided for @orderCreatedSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan berhasil dibuat!'**
+  String get orderCreatedSuccess;
+
+  /// No description provided for @genericErrorTemplate.
+  ///
+  /// In id, this message translates to:
+  /// **'Error: {error}'**
+  String genericErrorTemplate(String error);
+
+  /// No description provided for @orderTypeSelfDropoffLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Antar Sendiri'**
+  String get orderTypeSelfDropoffLabel;
+
+  /// No description provided for @orderDataSectionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Data Pesanan'**
+  String get orderDataSectionLabel;
+
+  /// No description provided for @incomingLaundryLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Baju Masuk *'**
+  String get incomingLaundryLabel;
+
+  /// No description provided for @outgoingLaundryLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Baju Keluar *'**
+  String get outgoingLaundryLabel;
+
+  /// No description provided for @remainingBillPayLaterNotice.
+  ///
+  /// In id, this message translates to:
+  /// **'Sisa tagihan bisa dilunasi nanti lewat halaman detail pesanan.'**
+  String get remainingBillPayLaterNotice;
+
+  /// No description provided for @orderNotesFieldLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan (Opsional)'**
+  String get orderNotesFieldLabel;
+
+  /// No description provided for @orderNotesFieldHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Tulis catatan khusus untuk pesanan ini'**
+  String get orderNotesFieldHint;
+
+  /// No description provided for @pickupPaymentPendingNotice.
+  ///
+  /// In id, this message translates to:
+  /// **'Metode & status pembayaran akan dikonfirmasi lagi setelah berat/jumlah cucian diketahui.'**
+  String get pickupPaymentPendingNotice;
+
+  /// No description provided for @branchFieldLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang *'**
+  String get branchFieldLabel;
+
+  /// No description provided for @selectBranchForOrderHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih cabang untuk pesanan ini'**
+  String get selectBranchForOrderHint;
+
+  /// No description provided for @selectBranchRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih cabang terlebih dahulu'**
+  String get selectBranchRequiredError;
+
+  /// No description provided for @customerFieldLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan *'**
+  String get customerFieldLabel;
+
+  /// No description provided for @selectCustomerRequiredError.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih pelanggan terlebih dahulu'**
+  String get selectCustomerRequiredError;
+
+  /// No description provided for @noCustomersForOrderHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada pelanggan. Tambahkan pelanggan dulu sebelum membuat pesanan.'**
+  String get noCustomersForOrderHint;
+
+  /// No description provided for @noCustomersInBranchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada pelanggan yang terdaftar di cabang ini. Tambahkan pelanggan baru, atau cek penempatan cabang pelanggan yang sudah ada.'**
+  String get noCustomersInBranchHint;
+
+  /// No description provided for @orderItemsSectionLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Item Pesanan'**
+  String get orderItemsSectionLabel;
+
+  /// No description provided for @noItemsTapServiceHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada item. Ketuk salah satu layanan di atas untuk menambahkannya.'**
+  String get noItemsTapServiceHint;
+
+  /// No description provided for @noActiveServicesForOrderHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada layanan aktif. Tambahkan layanan dulu di menu Layanan sebelum membuat pesanan.'**
+  String get noActiveServicesForOrderHint;
+
+  /// No description provided for @pickupScheduleLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jadwal Jemput (Opsional)'**
+  String get pickupScheduleLabel;
+
+  /// No description provided for @pickupScheduleOptionalHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Kosongkan kalau belum tau jamnya - bisa dijadwalkan belakangan di menu Antar Jemput.'**
+  String get pickupScheduleOptionalHint;
+
+  /// No description provided for @itemsFilledAtPickupConfirmationHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Item akan diisi saat konfirmasi jemput'**
+  String get itemsFilledAtPickupConfirmationHint;
+
+  /// No description provided for @savingLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang Menyimpan...'**
+  String get savingLabel;
+
+  /// No description provided for @dateFieldFallbackLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanggal'**
+  String get dateFieldFallbackLabel;
+
+  /// No description provided for @timeFieldFallbackLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam'**
+  String get timeFieldFallbackLabel;
+
+  /// No description provided for @perKgUnitSuffix.
+  ///
+  /// In id, this message translates to:
+  /// **'/kg'**
+  String get perKgUnitSuffix;
 }
 
 class _AppLocalizationsDelegate

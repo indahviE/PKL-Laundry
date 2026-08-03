@@ -36,6 +36,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationSubtitle => 'Manage app notifications';
 
   @override
+  String get notifPrefOrderStatusTitle => 'Order status';
+
+  @override
+  String get notifPrefOrderStatusSubtitle =>
+      'Laundry updates, ready for pickup, etc.';
+
+  @override
+  String get notifPrefPromoTitle => 'Promos and discounts';
+
+  @override
+  String get notifPrefPromoSubtitle => 'Special offers for you';
+
+  @override
+  String get notifPrefReminderTitle => 'Reminders';
+
+  @override
+  String get notifPrefReminderSubtitle => 'Pickup and delivery schedule';
+
+  @override
+  String get notifPrefChatCsTitle => 'Chat and CS';
+
+  @override
+  String get notifPrefChatCsSubtitle => 'Replies from customer service';
+
+  @override
+  String notifPrefSaveError(String error) {
+    return 'Failed to save preference: $error';
+  }
+
+  @override
   String get notificationsPanelTitle => 'New Orders';
 
   @override
@@ -63,12 +93,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get manageCsChatSubtitle => 'Reply to conversations from all users';
 
   @override
-  String get chatTitle => 'Chat';
-
-  @override
-  String get chatSubtitle => 'Replies';
-
-  @override
   String get sectionOther => 'Others';
 
   @override
@@ -76,6 +100,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get helpSubtitle => 'FAQ & support';
+
+  @override
+  String get helpSectionGeneralTitle => 'General Questions';
+
+  @override
+  String get helpSectionAppGuideTitle => 'App Guide';
 
   @override
   String get aboutTitle => 'About App';
@@ -636,7 +666,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get companyNotSetupError =>
-      'Company not created yet. Please complete the onboarding (company setup) first.';
+      'Company not set up yet. Please complete onboarding first.';
 
   @override
   String get addServiceSuccess => 'Service added successfully!';
@@ -1405,7 +1435,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'User session not found. Please log in again.';
 
   @override
-  String get createOrderAppBarTitle => 'Buat Pesanan Baru';
+  String get createOrderAppBarTitle => 'Create New Order';
 
   @override
   String get createOrderSectionTitle => 'Detail Pesanan';
@@ -1417,7 +1447,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectCustomerLabel => 'Pelanggan';
 
   @override
-  String get selectCustomerHint => 'Pilih pelanggan';
+  String get selectCustomerHint => 'Select customer';
 
   @override
   String get selectServiceLabel => 'Pilih Layanan';
@@ -1453,7 +1483,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeServiceItemButton => 'Hapus';
 
   @override
-  String get saveOrderButton => 'Simpan Pesanan';
+  String get saveOrderButton => 'Save Order';
 
   @override
   String get createOrderSuccess => 'Pesanan berhasil dibuat!';
@@ -2290,19 +2320,48 @@ class AppLocalizationsEn extends AppLocalizations {
       'Open the Orders menu, select the active order, and the status will update automatically as it progresses.';
 
   @override
-  String get chatCsScreenTitle => 'Chat and CS';
+  String get chatBotTopicBranchQuestion => 'How do I add a new branch?';
 
   @override
-  String sendMessageError(String error) {
-    return 'Failed to send message: $error';
-  }
+  String get chatBotTopicBranchAnswer =>
+      'Here\'s how:\n1. From the dashboard, open the Branches menu.\n2. Tap \"New Branch\".\n3. Fill in the branch name, code, city, province, and full address.\n4. Optionally add the branch phone number, email, and map location.\n5. Set the daily capacity (max orders per day).\n6. Set operating hours per day, or check \"Use same hours for all days\".\n7. Tap \"Save Branch Data\".';
 
   @override
-  String get chatEmptyStateMessage =>
-      'No conversation yet.\nType a message below to start chatting with CS.';
+  String get chatBotTopicEmployeeQuestion => 'How do I add a new employee?';
 
   @override
-  String get chatCsInputHint => 'Write a message to CS...';
+  String get chatBotTopicEmployeeAnswer =>
+      'Here\'s how:\n1. From the dashboard, open Manage Employees.\n2. Tap \"New Employee\".\n3. Fill in their full name, phone number, and optionally email & address.\n4. Fill in the employee code, position, and assigned branch.\n5. Set the hire date, base salary, and commission per transaction (optional).\n6. Choose which features they can access (create orders, manage customers, view reports).\n7. Turn on \"App Access\" if they should be able to log in to the app.\n8. Tap \"Save Employee\".';
+
+  @override
+  String get chatBotTopicServiceQuestion =>
+      'How do I add a wash service and set its price?';
+
+  @override
+  String get chatBotTopicServiceAnswer =>
+      'Here\'s how:\n1. From the dashboard, open the Services menu.\n2. Tap \"New Service\".\n3. Fill in the service name and description (optional).\n4. Choose the service type: By Weight, By Item, or Express.\n5. Fill in the price (per Kg/Item, or base price + express fee) and minimum weight if any.\n6. Set the estimated turnaround time (hours or days).\n7. Choose which branches offer this service, or leave it empty to make it available at all branches.\n8. Tap \"Save Service\".';
+
+  @override
+  String get chatBotTopicOrderQuestion => 'How do I create a new order?';
+
+  @override
+  String get chatBotTopicOrderAnswer =>
+      'Here\'s how:\n1. From the dashboard, tap \"New Order\".\n2. Select the branch and customer (add a new customer first if needed).\n3. Tap a service to add it to the order, then enter the weight/quantity for each item.\n4. Optionally set a pickup schedule, or leave it blank and schedule it later from Pickup & Delivery.\n5. Choose the payment method and whether it\'s paid in full or a down payment (DP).\n6. If DP, enter the amount paid up front.\n7. Tap \"Save Order\".';
+
+  @override
+  String get chatBotTopicReportQuestion => 'How do I view my business reports?';
+
+  @override
+  String get chatBotTopicReportAnswer =>
+      'Here\'s how:\n1. From the dashboard, open the Reports menu.\n2. Choose a period: Today, This Week, This Month, or This Year.\n3. View the summary: revenue, new customers, average order, and growth.\n4. Scroll down for the revenue trend chart and revenue per service.\n5. Check the Completion Rate to see the percentage of finished orders.\n6. Tap \"Print Report\" if you want to export it as a PDF.';
+
+  @override
+  String get chatBotTopicLanguageQuestion =>
+      'How do I change the app language?';
+
+  @override
+  String get chatBotTopicLanguageAnswer =>
+      'Here\'s how:\n1. Open the Settings menu.\n2. Tap the Language menu.\n3. Choose the language you want (Indonesian/English).\n4. The change applies to the whole app immediately.';
 
   @override
   String get orderDetailStatusPending => 'Waiting';
@@ -2694,4 +2753,115 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get markCompletedButtonLabel => 'Mark as Completed';
+
+  @override
+  String get createOrderSubtitle => 'Create and manage a new laundry order';
+
+  @override
+  String get noBranchesForOrderError =>
+      'No laundry branches yet. Add a branch first before creating an order.';
+
+  @override
+  String fillWeightForItemError(String itemName) {
+    return 'Please enter the weight (kg) for \"$itemName\" first';
+  }
+
+  @override
+  String get businessContextNotReadyError =>
+      'Company/branch data is not ready yet. Please try again shortly.';
+
+  @override
+  String get selectedCustomerNotFoundError =>
+      'Selected customer not found, please choose again.';
+
+  @override
+  String get orderCreatedSuccess => 'Order created successfully!';
+
+  @override
+  String genericErrorTemplate(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get orderTypeSelfDropoffLabel => 'Self Drop-off';
+
+  @override
+  String get orderDataSectionLabel => 'Order Data';
+
+  @override
+  String get incomingLaundryLabel => 'Incoming Laundry *';
+
+  @override
+  String get outgoingLaundryLabel => 'Outgoing Laundry *';
+
+  @override
+  String get remainingBillPayLaterNotice =>
+      'The remaining balance can be settled later from the order detail page.';
+
+  @override
+  String get orderNotesFieldLabel => 'Notes (Optional)';
+
+  @override
+  String get orderNotesFieldHint => 'Write any special notes for this order';
+
+  @override
+  String get pickupPaymentPendingNotice =>
+      'Payment method & status will be confirmed again once the laundry weight/quantity is known.';
+
+  @override
+  String get branchFieldLabel => 'Branch *';
+
+  @override
+  String get selectBranchForOrderHint => 'Select a branch for this order';
+
+  @override
+  String get selectBranchRequiredError => 'Please select a branch first';
+
+  @override
+  String get customerFieldLabel => 'Customer *';
+
+  @override
+  String get selectCustomerRequiredError => 'Please select a customer first';
+
+  @override
+  String get noCustomersForOrderHint =>
+      'No customers yet. Add a customer first before creating an order.';
+
+  @override
+  String get noCustomersInBranchHint =>
+      'No customers are registered at this branch yet. Add a new customer, or check the branch assignment of existing customers.';
+
+  @override
+  String get orderItemsSectionLabel => 'Order Items';
+
+  @override
+  String get noItemsTapServiceHint =>
+      'No items yet. Tap one of the services above to add it.';
+
+  @override
+  String get noActiveServicesForOrderHint =>
+      'No active services yet. Add a service first from the Services menu before creating an order.';
+
+  @override
+  String get pickupScheduleLabel => 'Pickup Schedule (Optional)';
+
+  @override
+  String get pickupScheduleOptionalHint =>
+      'Leave blank if you don\'t know the time yet — it can be scheduled later from the Pickup & Delivery menu.';
+
+  @override
+  String get itemsFilledAtPickupConfirmationHint =>
+      'Items will be filled in when confirming pickup';
+
+  @override
+  String get savingLabel => 'Saving...';
+
+  @override
+  String get dateFieldFallbackLabel => 'Date';
+
+  @override
+  String get timeFieldFallbackLabel => 'Time';
+
+  @override
+  String get perKgUnitSuffix => '/kg';
 }
