@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import untuk HapticFeedback
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,7 +10,7 @@ import '../../models/user_model.dart';
 import '../../repositories/user_repository.dart';
 
 class _NotifPref {
-  final String key; // cocok dengan key di UserModel.notifPrefs / Firestore
+  final String key; // Cocok dengan key di UserModel.notifPrefs / Firestore
   final String title;
   final String subtitle;
   final IconData icon;
@@ -24,28 +25,16 @@ class _NotifPref {
 
 List<_NotifPref> _buildPrefDefs(AppLocalizations t) => [
       _NotifPref(
-        key: 'status_pesanan',
-        title: t.notifPrefOrderStatusTitle,
-        subtitle: t.notifPrefOrderStatusSubtitle,
-        icon: Icons.local_shipping_outlined,
+        key: 'haptic_feedback',
+        title: 'Getaran Tombol',
+        subtitle: 'Berikan getaran halus saat menekan tombol atau navigasi',
+        icon: Icons.vibration_rounded,
       ),
       _NotifPref(
-        key: 'promo',
-        title: t.notifPrefPromoTitle,
-        subtitle: t.notifPrefPromoSubtitle,
-        icon: Icons.sell_outlined,
-      ),
-      _NotifPref(
-        key: 'pengingat',
-        title: t.notifPrefReminderTitle,
-        subtitle: t.notifPrefReminderSubtitle,
-        icon: Icons.schedule_outlined,
-      ),
-      _NotifPref(
-        key: 'chat_cs',
-        title: t.notifPrefChatCsTitle,
-        subtitle: t.notifPrefChatCsSubtitle,
-        icon: Icons.chat_bubble_outline,
+        key: 'in_app_sound',
+        title: 'Suara Aplikasi',
+        subtitle: 'Bunyi efek saat konfirmasi transaksi atau klik menu',
+        icon: Icons.volume_up_rounded,
       ),
     ];
 
@@ -71,6 +60,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final uid = _uid;
     if (uid == null) return;
 
+    // Memberikan efek getar fisik secara langsung saat switch 'haptic_feedback' dinyalakan
+    if (newValue && key == 'haptic_feedback') {
+      HapticFeedback.mediumImpact();
+    }
+
     final t = AppLocalizations.of(context)!;
     final repo = ref.read(userRepositoryProvider);
     try {
@@ -81,8 +75,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         SnackBar(content: Text(t.notifPrefSaveError(e.toString()))),
       );
     }
-    // Tidak perlu setState manual -- StreamBuilder di bawah otomatis
-    // re-render begitu Firestore konfirmasi perubahan.
   }
 
   @override
@@ -151,8 +143,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                color: Colors.white, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 4),
           Text(
@@ -186,7 +181,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         children: List.generate(prefDefs.length, (index) {
           final def = prefDefs[index];
           // Default true kalau field belum pernah disimpan di Firestore
-          // (user lama / belum pernah buka halaman ini).
           final value = prefs[def.key] ?? true;
           return Column(
             children: [
@@ -202,8 +196,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         color: AppTheme.primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(11),
                       ),
-                      child: Icon(def.icon,
-                          color: AppTheme.primaryColor, size: 20),
+                      child: Icon(
+                        def.icon,
+                        color: AppTheme.primaryColor,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
