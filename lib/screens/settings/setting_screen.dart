@@ -10,21 +10,22 @@ import '../../models/user_model.dart';
 import '../../repositories/user_repository.dart';
 
 // ============================================================
-// PALETTE — disamakan dengan code.html: biru (#2196F3) sebagai
-// primary, background & card putih bersih (bukan hijau/teal),
-// badge kategori warna-warni bentuk lingkaran seperti di mockup.
+// PALETTE — disamain PERSIS sama _DS di services_list_screen.dart
+// ("NetWash Utility System"): primary #0061A4, navy #0B3B66,
+// canvas #F5F7FA. Badge kategori tetap warna-warni bentuk lingkaran
+// seperti mockup, cuma primary & canvas-nya yang disamakan.
 // ============================================================
 class _Palette {
-  static const canvas = Colors.white;
+  static const canvas = Color(0xFFF5F7FA);
   static const surface = Colors.white;
 
-  static const primary = Color(0xFF2196F3);
-  static const primaryDark = Color(0xFF1769AA);
-  static const primaryContainer = Color(0xFFE3F2FD);
+  static const primary = Color(0xFF0061A4);
+  static const primaryDark = Color(0xFF0B3B66); // = navy di halaman Layanan
+  static const primaryContainer = Color(0xFFD1E4FF);
 
   static const ink = Color(0xFF1B1C1C);
   static const inkSoft = Color(0xFF404752);
-  static const inkFaint = Color(0xFF707883);
+  static const inkFaint = Color(0xFF9CA3AF);
   static const divider = Color(0xFFBFC7D4);
 
   static const error = Color(0xFFBA1A1A);
@@ -43,7 +44,7 @@ class _Palette {
   static const gray = Color(0xFF4B5563);
   static const graySoft = Color(0xFFF3F4F6);
 
-  static const radiusLg = 18.0;
+  static const radiusLg = 20.0;
 }
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -89,8 +90,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: Container(
                       color: _Palette.canvas,
                       padding: EdgeInsets.fromLTRB(
-                        isMobile ? 8 : 12,
-                        isMobile ? 8 : 12,
+                        isMobile ? 16 : 24,
+                        isMobile ? 12 : 16,
                         isMobile ? 8 : 12,
                         4,
                       ),
@@ -278,7 +279,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         title: Text(
           t.languageTitle,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.beVietnamPro(
             fontWeight: FontWeight.w600,
             color: _Palette.ink,
           ),
@@ -289,7 +290,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             RadioListTile<String>(
               value: 'id',
               groupValue: currentLocale.languageCode,
-              title: Text('Indonesia', style: GoogleFonts.poppins()),
+              title: Text('Indonesia', style: GoogleFonts.beVietnamPro()),
               activeColor: _Palette.primary,
               onChanged: (value) {
                 ref.read(localeProvider.notifier).setLocale(const Locale('id'));
@@ -299,7 +300,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             RadioListTile<String>(
               value: 'en',
               groupValue: currentLocale.languageCode,
-              title: Text('English', style: GoogleFonts.poppins()),
+              title: Text('English', style: GoogleFonts.beVietnamPro()),
               activeColor: _Palette.primary,
               onChanged: (value) {
                 ref.read(localeProvider.notifier).setLocale(const Locale('en'));
@@ -319,29 +320,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildTopBar(BuildContext context, AppLocalizations t) {
     return Row(
       children: [
-        IconButton(
-          onPressed: () {
-            final scaffold = Scaffold.maybeOf(context);
-            if (scaffold != null && scaffold.hasDrawer) {
-              scaffold.openDrawer();
-            }
-          },
-          icon: const Icon(Icons.menu_rounded, color: _Palette.primary),
-        ),
         Expanded(
           child: Text(
             t.settingsTitle,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.beVietnamPro(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: _Palette.primary,
+              color: _Palette.primaryDark,
             ),
           ),
         ),
         IconButton(
-          onPressed: () {},
+          onPressed: () => context.push('/settings/notifications'),
           icon: const Icon(Icons.notifications_outlined,
-              color: _Palette.primary),
+              color: _Palette.primaryDark),
         ),
       ],
     );
@@ -368,12 +360,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: _Palette.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: _Palette.primary.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -408,7 +400,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: (photoUrl == null || photoUrl.isEmpty)
                         ? Text(
                             name.isNotEmpty ? name[0].toUpperCase() : '?',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.beVietnamPro(
                               fontSize: avatarSize * 0.36,
                               fontWeight: FontWeight.w700,
                               color: _Palette.primary,
@@ -446,7 +438,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.beVietnamPro(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                     color: _Palette.ink,
@@ -463,7 +455,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 child: Text(
                   t.roleOwner.toUpperCase(),
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.beVietnamPro(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.4,
@@ -480,7 +472,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.beVietnamPro(
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
                 color: _Palette.inkSoft,
@@ -502,7 +494,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               child: Text(
                 t.editProfileTitle,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.beVietnamPro(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -519,7 +511,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       padding: const EdgeInsets.only(bottom: 10, top: 4, left: 4),
       child: Text(
         text,
-        style: GoogleFonts.poppins(
+        style: GoogleFonts.beVietnamPro(
           fontSize: 13,
           fontWeight: FontWeight.w600,
           color: _Palette.inkFaint,
@@ -536,9 +528,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         borderRadius: BorderRadius.circular(_Palette.radiusLg),
         boxShadow: [
           BoxShadow(
-            color: _Palette.primary.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -580,7 +572,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.beVietnamPro(
                           fontSize: 14.5,
                           fontWeight: FontWeight.w500,
                           color: _Palette.ink,
@@ -589,7 +581,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.beVietnamPro(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w400,
                           color: _Palette.inkSoft,
@@ -622,7 +614,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         icon: const Icon(Icons.logout_rounded, size: 19),
         label: Text(
           t.logoutButton,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.beVietnamPro(
             fontSize: 14.5,
             fontWeight: FontWeight.w600,
           ),
@@ -648,21 +640,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         title: Text(
           t.logoutDialogTitle,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.beVietnamPro(
             fontWeight: FontWeight.w600,
             color: _Palette.ink,
           ),
         ),
         content: Text(
           t.logoutDialogContent,
-          style: GoogleFonts.poppins(color: _Palette.inkSoft),
+          style: GoogleFonts.beVietnamPro(color: _Palette.inkSoft),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               t.cancel,
-              style: GoogleFonts.poppins(color: _Palette.inkSoft),
+              style: GoogleFonts.beVietnamPro(color: _Palette.inkSoft),
             ),
           ),
           TextButton(
@@ -675,7 +667,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             },
             child: Text(
               t.logout,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.beVietnamPro(
                 fontWeight: FontWeight.w600,
                 color: _Palette.error,
               ),

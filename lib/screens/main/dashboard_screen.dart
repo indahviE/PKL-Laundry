@@ -17,22 +17,29 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  // Warna sekarang mengikuti AppTheme supaya tema dashboard
-  // konsisten dengan halaman lain (mis. OrdersListScreen).
-  static Color get primaryBlue => AppTheme.primaryColor;
-  static Color get deepBlue => AppTheme.primaryColor.withOpacity(0.85);
-  static Color get textBlue => AppTheme.primaryColor;
-  // Disamain dengan _DS.canvas di services_list_screen.dart (#F5F7FA),
-  // supaya warna canvas dashboard konsisten sama halaman Layanan —
-  // sebelumnya pakai #FBF9F8 yang keliatan agak krem/beda nuansa.
+  // Disamain PERSIS sama _DS di services_list_screen.dart ("NetWash
+  // Utility System") — primary #0061A4, navy #0B3B66, card pakai shadow
+  // (bukan border), font Be Vietnam Pro. Supaya Dashboard & halaman
+  // Layanan senada, bukan cuma warna canvas/surface-nya doang.
+  static const Color primaryBlue = Color(0xFF0061A4);
+  static const Color deepBlue = Color(0xFF0B3B66);
+  static const Color textBlue = Color(0xFF0061A4);
   static const Color bgColor = Color(0xFFF5F7FA);
-  // Disamain dengan _DS.surface di services_list_screen.dart (Colors.white),
-  // supaya card di dashboard & halaman Layanan senada persis.
   static const Color cardColor = Colors.white;
-  static Color get textPrimary => AppTheme.textPrimary;
-  static Color get textSecondary => AppTheme.textSecondary;
-  static Color get textTertiary => AppTheme.textTertiary;
-  static Color get borderColor => AppTheme.borderColor;
+  static const Color textPrimary = Color(0xFF1B1C1C);
+  static const Color textSecondary = Color(0xFF404752);
+  static const Color textTertiary = Color(0xFF9CA3AF);
+  static const Color borderColor = Color(0xFFBFC7D4);
+
+  /// Shadow buat card, ngegantiin border tipis — sama kayak _DS.cardShadow
+  /// di services_list_screen.dart.
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
 
   // Status dismiss checklist onboarding secara lokal
   bool _setupDismissed = false;
@@ -103,9 +110,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: bgColor,
       body: DefaultTextStyle.merge(
-        // Menerapkan font Poppins ke seluruh teks di dalam dashboard ini,
-        // sama seperti font yang dipakai di OrdersListScreen.
-        style: GoogleFonts.poppins(),
+        // Font Be Vietnam Pro, disamain sama services_list_screen.dart
+        // (bagian dari NetWash Utility System design).
+        style: GoogleFonts.beVietnamPro(),
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxContentWidth),
@@ -1016,8 +1023,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.all(AppTheme.lg),
                   decoration: BoxDecoration(
                     color: cardColor,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                    border: Border.all(color: borderColor),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: cardShadow,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1270,8 +1277,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           padding: const EdgeInsets.all(AppTheme.lg),
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            border: Border.all(color: borderColor),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: cardShadow,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1433,8 +1440,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.all(AppTheme.md),
               decoration: BoxDecoration(
                 color: cardColor,
-                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                border: Border.all(color: borderColor),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: cardShadow,
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
