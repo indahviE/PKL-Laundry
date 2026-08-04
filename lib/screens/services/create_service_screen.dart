@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/service.dart';
@@ -130,7 +131,10 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
   void _handleSubmit() async {
     final l10n = AppLocalizations.of(context)!;
 
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      AppFeedback.playSound(ref, AppSound.error);   // tambahin ini
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -213,24 +217,14 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
 
       if (mounted) {
       AppFeedback.playSound(ref, AppSound.success);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.addServiceSuccess),
-          backgroundColor: const Color(0xFF51CF66),
-        ),
-      );
+      AppSnackbar.success(context, l10n.addServiceSuccess);
       context.pop();
     }
     } catch (e) {
-      if (mounted) {
-        AppFeedback.playSound(ref, AppSound.error);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.addServiceError(e.toString())),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
+    if (mounted) {
+      AppFeedback.playSound(ref, AppSound.error);
+      AppSnackbar.error(context, l10n.addServiceError(e.toString()));
+    }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

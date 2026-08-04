@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -19,8 +20,22 @@ void main() async {
   );
 
   // 2. Setup Offline Persistence
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
+  //
+  // Khusus WEB: persistence dimatikan. SDK Firestore versi web punya bug
+  // yang lumayan sering muncul (INTERNAL ASSERTION FAILED: Unexpected
+  // state) kalau koneksi sempat putus-nyambung sementara ada listener
+  // aktif — state cache lokal (IndexedDB) jadi corrupt dan SEMUA request
+  // Firestore berikutnya ikut gagal sampai browser di-reload/cache
+  // dibersihkan manual. Karena development sering ngetes kondisi network
+  // gak stabil (throttling/offline lewat DevTools, pindah wifi, dst),
+  // mendingan dimatikan aja di web daripada harus reload browser tiap
+  // kali kejadian.
+  //
+  // Mobile (Android/iOS) TETAP pakai persistence seperti biasa - platform
+  // itu implementasinya beda (native SQLite-based), jauh lebih stabil
+  // dan memang untungnya besar buat UX offline-first di HP.
+  FirebaseFirestore.instance.settings = Settings(
+    persistenceEnabled: !kIsWeb,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 

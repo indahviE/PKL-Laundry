@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/services/app_feedback.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/themes/app_theme.dart';
 import '../../models/laundry.dart';
@@ -549,7 +551,7 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
   // ==========================================================
   // HAPUS PERMANEN
   // ==========================================================
-  void _confirmDelete(BuildContext context, AppLocalizations l10n, ServiceRepository repo, Service service) {
+void _confirmDelete(BuildContext context, AppLocalizations l10n, ServiceRepository repo, Service service) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -575,21 +577,13 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
               try {
                 await repo.deleteService(service.id);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(l10n.deleteServiceSuccess(service.name)),
-                      backgroundColor: Colors.green[600],
-                    ),
-                  );
+                  AppFeedback.playSound(ref, AppSound.success);
+                  AppSnackbar.success(context, l10n.deleteServiceSuccess(service.name));
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(l10n.deleteServiceError(e.toString())),
-                      backgroundColor: Colors.red[600],
-                    ),
-                  );
+                  AppFeedback.playSound(ref, AppSound.error);
+                  AppSnackbar.error(context, l10n.deleteServiceError(e.toString()));
                 }
               }
             },
