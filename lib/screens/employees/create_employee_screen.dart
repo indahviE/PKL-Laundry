@@ -102,6 +102,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
     'Manajer',
     'Kasir',
     'Operator Cuci',
+    'Quality Control',
     'Kurir',
     'Staff Gudang',
   ];

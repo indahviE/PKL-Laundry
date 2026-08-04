@@ -3,63 +3,45 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/themes/design_tokens.dart';
 import '../../models/employee.dart';
 import '../../models/laundry.dart';
 import '../../repositories/employee_repository.dart';
 import '../../repositories/laundry_repository.dart';
 import '../../l10n/app_localizations.dart';
 
-/// Local design tokens matching the new "NetWash Utility System" design
-/// (samain persis dengan ServicesListScreen & CreateEmployeeScreen: canvas
-/// abu kebiruan, kartu putih shadow lembut, Be Vietnam Pro). Sengaja TIDAK
-/// menyentuh AppTheme global, biar layar lain gak ikut berubah.
+// ============================================
+// DESIGN TOKENS
+// Sebelumnya class `_DS` lokal di file ini punya token yang tumpang
+// tindih persis dengan `_c...` di OrderDetailScreen (canvas, onSurface,
+// primary, dst nilainya sama). Sekarang keduanya digabung jadi satu
+// sumber kebenaran di lib/core/themes/design_tokens.dart (DesignTokens).
+//
+// `_DS` dipertahankan di sini sebagai alias tipis ke DesignTokens supaya
+// SELURUH pemakaian `_DS.xxx` di bawah tidak perlu diganti satu-satu -
+// nilainya 100% sama dengan sebelumnya.
+// ============================================
 class _DS {
-  static const canvas = Color(0xFFF5F7FA);
-  static const surface = Colors.white;
-  static const onSurface = Color(0xFF1B1C1C);
-  static const onSurfaceVariant = Color(0xFF404752);
-  static const outline = Color(0xFF707883);
-  static const outlineVariant = Color(0xFFBFC7D4);
+  static const canvas = DesignTokens.canvas;
+  static const surface = DesignTokens.surface;
+  static const onSurface = DesignTokens.onSurface;
+  static const onSurfaceVariant = DesignTokens.onSurfaceVariant;
+  static const outline = DesignTokens.outline;
+  static const outlineVariant = DesignTokens.outlineVariant;
 
-  static const navy = Color(0xFF0B3B66);
-  static const primary = Color(0xFF0061A4);
-  static const primaryFixed = Color(0xFFD1E4FF);
+  static const navy = DesignTokens.navy;
+  static const primary = DesignTokens.primary;
+  static const primaryFixed = DesignTokens.primaryFixed;
 
-  static const error = Color(0xFFBA1A1A);
-  static const success = Color(0xFF27AE60);
+  static const error = DesignTokens.error;
+  static const success = DesignTokens.success;
 
-  static List<BoxShadow> get cardShadow => [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 12,
-          offset: const Offset(0, 4),
-        ),
-      ];
+  static List<BoxShadow> get cardShadow => DesignTokens.cardShadow;
 
-  static TextStyle headlineMd({Color? color}) => GoogleFonts.beVietnamPro(
-        fontSize: 19,
-        fontWeight: FontWeight.w700,
-        color: color ?? onSurface,
-        letterSpacing: -0.2,
-      );
-
-  static TextStyle bodyMd({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
-        fontSize: 14,
-        fontWeight: weight ?? FontWeight.w400,
-        color: color ?? onSurface,
-      );
-
-  static TextStyle bodySm({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
-        fontSize: 12.5,
-        fontWeight: weight ?? FontWeight.w400,
-        color: color ?? onSurfaceVariant,
-      );
-
-  static TextStyle labelBold({Color? color}) => GoogleFonts.beVietnamPro(
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
-        color: color ?? onSurfaceVariant,
-      );
+  static TextStyle headlineMd({Color? color}) => DesignTokens.headlineMd(color: color);
+  static TextStyle bodyMd({Color? color, FontWeight? weight}) => DesignTokens.bodyMd(color: color, weight: weight);
+  static TextStyle bodySm({Color? color, FontWeight? weight}) => DesignTokens.bodySm(color: color, weight: weight);
+  static TextStyle labelBold({Color? color}) => DesignTokens.labelBold(color: color);
 }
 
 /// Provider untuk mengambil data karyawan secara real-time
@@ -95,8 +77,8 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
 
   /// Warna badge per role/jabatan, dipakai konsisten di dropdown filter role
   /// maupun badge role pada kartu karyawan (sesuai mockup: Manajer biru,
-  /// Kasir hijau, Operator Cuci oranye, Kurir ungu). Role di luar daftar ini
-  /// (jabatan custom) jatuh ke warna primary theme.
+  /// Kasir hijau, Operator Cuci oranye, Kurir ungu, Quality Control teal).
+  /// Role di luar daftar ini (jabatan custom) jatuh ke warna primary theme.
   Color _roleColor(String position) {
     switch (position.trim().toLowerCase()) {
       case 'manajer':
@@ -105,6 +87,8 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
         return const Color(0xFF27AE60);
       case 'operator cuci':
         return const Color(0xFFF2994A);
+      case 'quality control':
+        return const Color(0xFF17A398);
       case 'kurir':
         return const Color(0xFF9B51E0);
       default:
@@ -201,7 +185,9 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     // ada (supaya jabatan custom tetap muncul sebagai pilihan), dengan fallback
     // ke daftar role standar kalau datanya masih kosong.
     final rolesFromData = allEmployees.map((e) => e.position).where((p) => p.trim().isNotEmpty).toSet().toList()..sort();
-    final availableRoles = rolesFromData.isNotEmpty ? rolesFromData : ['Manajer', 'Kasir', 'Operator Cuci', 'Kurir'];
+    final availableRoles = rolesFromData.isNotEmpty
+        ? rolesFromData
+        : ['Manajer', 'Kasir', 'Operator Cuci', 'Quality Control', 'Kurir', 'Staff Gudang'];
 
     return LayoutBuilder(
       builder: (context, constraints) {

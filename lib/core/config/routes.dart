@@ -60,6 +60,7 @@ import '../../screens/delivery/pickup_delivery_screen.dart';
 
 import '../../screens/employees/employees_list_screen.dart';
 import '../../screens/employees/employee_detail_screen.dart';
+// import '../../screens/employees/employee_activity_history_screen.dart';
 import '../../screens/laundries/laundries_list_screen.dart';
 import '../../screens/laundries/laundry_detail_screen.dart';
 import '../../screens/services/services_list_screen.dart';
@@ -298,6 +299,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return EmployeeDetailScreen(employeeId: id);
         },
       ),
+      // GoRoute(
+      //   path: '/employees/:employeeId/activity',
+      //   name: 'employee-activity-history',
+      //   builder: (context, state) {
+      //     final id = state.pathParameters['employeeId'] ?? '';
+      //     return EmployeeActivityHistoryScreen(employeeId: id);
+      //   },
+      // ),
       GoRoute(
 
       path: '/employees/:employeeId/edit',

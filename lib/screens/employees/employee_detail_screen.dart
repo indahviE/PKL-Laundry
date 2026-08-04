@@ -356,14 +356,11 @@ class EmployeeDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // 5. Menu tambahan - Riwayat Aktivitas & Reset Password
-                // (placeholder, belum ada route/repository untuk ini).
                 _buildMenuRow(
                   context,
                   icon: Icons.history,
                   label: AppLocalizations.of(context)!.activityHistoryLabel,
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(AppLocalizations.of(context)!.activityHistoryUnavailable, style: GoogleFonts.beVietnamPro())),
-                  ),
+                  onTap: () => context.push('/employees/${employee.id}/activity'),
                 ),
                 const SizedBox(height: 12),
                 _buildMenuRow(

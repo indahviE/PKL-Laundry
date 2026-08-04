@@ -14,6 +14,7 @@ import '../../core/services/app_feedback.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../delivery/create_delivery_screen.dart' show CreateDeliveryScheduleScreen;
 import '../../core/themes/app_theme.dart';
+import '../../core/themes/design_tokens.dart';
 import '../../models/order.dart';
 import '../../models/transaction.dart';
 import '../../models/user_model.dart';
@@ -24,40 +25,46 @@ import '../../repositories/employee_repository.dart';
 import '../../l10n/app_localizations.dart';
 
 // ============================================
-// DESIGN TOKENS (dari DESIGN.md / code.html referensi "Order Detail -
-// NetWash"). Di-hardcode di sini - sama pola dengan OrdersListScreen -
-// biar layar ini presisi sama referensi desain, terlepas dari nilai
-// AppTheme lama (yang sebelumnya dipakai screen ini, gaya Poppins/biru
-// generik).
+// DESIGN TOKENS
+// Sebelumnya di-hardcode lokal di file ini (const Color _c...) - sama
+// pola dengan class _DS di EmployeesListScreen, tapi keduanya punya
+// token yang tumpang tindih (canvas, onSurface, primary, dst nilainya
+// sama persis, cuma didefinisikan 2x di tempat berbeda).
+//
+// Sekarang digabung jadi SATU sumber kebenaran di
+// lib/core/themes/design_tokens.dart (class DesignTokens), dipakai
+// bareng oleh OrderDetailScreen & EmployeesListScreen. Alias singkat di
+// bawah ini cuma buat minimalisir perubahan di seluruh file - nilainya
+// 100% sama dengan sebelumnya, cuma sumbernya sekarang satu.
 // ============================================
-const Color _cSurface = Color(0xFFF5F7FA); // disamain sama _DS.canvas di services_list_screen.dart
-const Color _cSurfaceContainerLow = Color(0xFFF5F3F3);
-const Color _cSurfaceContainer = Color(0xFFF0EDED);
-const Color _cSurfaceContainerHighest = Color(0xFFE4E2E1);
-const Color _cCard = Color(0xFFFFFFFF);
-const Color _cOnSurface = Color(0xFF1B1C1C);
-const Color _cOnSurfaceVariant = Color(0xFF404752);
-const Color _cOutlineVariant = Color(0xFFBFC7D4);
-const Color _cPrimary = Color(0xFF0061A4);
-const Color _cPrimaryContainer = Color(0xFF2196F3);
-const Color _cPrimaryFixed = Color(0xFFD1E4FF); // bg chip "estimasi"/ring aktif
-const Color _cOnPrimaryFixedVariant = Color(0xFF00497D); // teks di atas primaryFixed
-const Color _cSecondary = Color(0xFF5B5F61);
-const Color _cSecondaryContainer = Color(0xFFE0E3E6);
-const Color _cTertiaryFixed = Color(0xFFD6E5EF); // bg ikon cabang
-const Color _cOnTertiaryFixed = Color(0xFF0F1D25);
-const Color _cError = Color(0xFFBA1A1A);
-const Color _cGreenBg = Color(0xFFDCFCE7);
-const Color _cGreenText = Color(0xFF15803D);
-const Color _cYellowBg = Color(0xFFFEF9C3);
-const Color _cYellowText = Color(0xFFA16207);
-const Color _cRedBg = Color(0xFFFEE2E2);
-const Color _cRedText = Color(0xFFB91C1C);
+const Color _cSurface = DesignTokens.canvas;
+const Color _cSurfaceContainerLow = DesignTokens.surfaceContainerLow;
+const Color _cSurfaceContainer = DesignTokens.surfaceContainer;
+const Color _cSurfaceContainerHighest = DesignTokens.surfaceContainerHighest;
+const Color _cCard = DesignTokens.surface;
+const Color _cOnSurface = DesignTokens.onSurface;
+const Color _cOnSurfaceVariant = DesignTokens.onSurfaceVariant;
+const Color _cOutlineVariant = DesignTokens.outlineVariant;
+const Color _cPrimary = DesignTokens.primary;
+const Color _cPrimaryContainer = DesignTokens.primaryContainer;
+const Color _cPrimaryFixed = DesignTokens.primaryFixed;
+const Color _cOnPrimaryFixedVariant = DesignTokens.onPrimaryFixedVariant;
+const Color _cSecondary = DesignTokens.secondary;
+const Color _cSecondaryContainer = DesignTokens.secondaryContainer;
+const Color _cTertiaryFixed = DesignTokens.tertiaryFixed;
+const Color _cOnTertiaryFixed = DesignTokens.onTertiaryFixed;
+const Color _cError = DesignTokens.error;
+const Color _cGreenBg = DesignTokens.greenBg;
+const Color _cGreenText = DesignTokens.greenText;
+const Color _cYellowBg = DesignTokens.yellowBg;
+const Color _cYellowText = DesignTokens.yellowText;
+const Color _cRedBg = DesignTokens.redBg;
+const Color _cRedText = DesignTokens.redText;
 
 // Radius token dari referensi (tailwind config): DEFAULT/lg = 16px,
 // xl = 20px (dipakai untuk card & tombol besar), full = pill.
-const double _rLg = 16;
-const double _rXl = 20;
+const double _rLg = DesignTokens.radiusLg;
+const double _rXl = DesignTokens.radiusXl;
 
 /// Model item pesanan
 class _OrderLineItem {
@@ -704,13 +711,13 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-  if (!mounted) return;
-  if (isError) {
-    AppSnackbar.error(context, message);
-  } else {
-    AppSnackbar.success(context, message);
+    if (!mounted) return;
+    if (isError) {
+      AppSnackbar.error(context, message);
+    } else {
+      AppSnackbar.success(context, message);
+    }
   }
-}
 
   /// Handle update status -> tulis ke Firestore: update field `status`,
   /// tambah entri baru ke `status_history`, dan set `actual_completion`
