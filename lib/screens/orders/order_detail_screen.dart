@@ -11,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/app_feedback.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../delivery/create_delivery_screen.dart' show CreateDeliveryScheduleScreen;
 import '../../core/themes/app_theme.dart';
 import '../../models/order.dart';
@@ -703,14 +704,13 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: GoogleFonts.beVietnamPro()),
-        backgroundColor: isError ? _cError : _cGreenText,
-      ),
-    );
+  if (!mounted) return;
+  if (isError) {
+    AppSnackbar.error(context, message);
+  } else {
+    AppSnackbar.success(context, message);
   }
+}
 
   /// Handle update status -> tulis ke Firestore: update field `status`,
   /// tambah entri baru ke `status_history`, dan set `actual_completion`

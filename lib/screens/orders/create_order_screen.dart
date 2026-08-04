@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/app_input.dart';
@@ -472,9 +473,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   void _showError(String message) {
     AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
     AppFeedback.playSound(ref, AppSound.error);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppTheme.errorColor),
-    );
+    AppSnackbar.error(context, message);
   }
 
   /// Handle save order -> lewat OrderRepository.createOrder(), yang
@@ -639,12 +638,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
       if (mounted) {
         AppFeedback.haptic(ref);
         AppFeedback.playSound(ref, AppSound.success);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_t.orderCreatedSuccess),
-            backgroundColor: const Color(0xFF51CF66),
-          ),
-        );
+        AppSnackbar.success(context, _t.orderCreatedSuccess);
         Navigator.pop(context, true);
       }
     } catch (e) {

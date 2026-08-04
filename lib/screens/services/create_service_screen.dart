@@ -8,6 +8,7 @@ import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/service.dart';
 import '../../repositories/laundry_repository.dart';
+import '../../core/services/app_feedback.dart';
 import '../../providers/auth_provider.dart';
 import '../../repositories/service_repository.dart';
 
@@ -211,16 +212,18 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       await serviceRepository.addService(newService);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.addServiceSuccess),
-            backgroundColor: const Color(0xFF51CF66),
-          ),
-        );
-        context.pop();
-      }
+      AppFeedback.playSound(ref, AppSound.success);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.addServiceSuccess),
+          backgroundColor: const Color(0xFF51CF66),
+        ),
+      );
+      context.pop();
+    }
     } catch (e) {
       if (mounted) {
+        AppFeedback.playSound(ref, AppSound.error);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.addServiceError(e.toString())),
