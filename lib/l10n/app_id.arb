@@ -1490,6 +1490,7 @@
   "paymentSectionLabel": "Pembayaran",
   "paidAmountLabel": "Sudah Dibayar",
   "remainingBillLabel": "Sisa Tagihan",
+  "orderStatusPendingPayment": "Belum Lunas",
   "confirmPaymentButtonLabel": "Konfirmasi Pembayaran",
   "downloadReceiptButtonLabel": "Download Struk",
   "sendReceiptWhatsappButtonLabel": "Kirim Struk via WA",

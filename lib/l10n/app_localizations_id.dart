@@ -2701,6 +2701,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get remainingBillLabel => 'Sisa Tagihan';
 
   @override
+  String get orderStatusPendingPayment => 'Belum Lunas';
+
+  @override
   String get confirmPaymentButtonLabel => 'Konfirmasi Pembayaran';
 
   @override
