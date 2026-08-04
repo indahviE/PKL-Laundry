@@ -2536,6 +2536,34 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get assignOperatorDialogTitle => 'Select Operator';
+
+  @override
+  String assignOperatorDialogSubtitle(String stage) {
+    return 'Who will handle the $stage stage?';
+  }
+
+  @override
+  String get assignOperatorFieldLabel => 'Operator';
+
+  @override
+  String get assignOperatorEmptyState =>
+      'No active employees available to assign';
+
+  @override
+  String get assignOperatorConfirmButtonLabel => 'Assign & Continue';
+
+  @override
+  String currentOperatorLabel(String name) {
+    return 'Currently handled by $name';
+  }
+
+  @override
+  String activityLogByOperatorLabel(String name) {
+    return 'by $name';
+  }
+
+  @override
   String orderCancelledNoteTemplate(String reason) {
     return 'Order cancelled: $reason';
   }

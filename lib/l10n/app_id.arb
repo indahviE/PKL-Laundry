@@ -1371,6 +1371,34 @@
       }
     }
   },
+  "assignOperatorDialogTitle": "Pilih Operator",
+  "assignOperatorDialogSubtitle": "Siapa yang akan mengerjakan tahap {stage}?",
+  "@assignOperatorDialogSubtitle": {
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "assignOperatorFieldLabel": "Operator",
+  "assignOperatorEmptyState": "Belum ada karyawan aktif yang bisa ditugaskan",
+  "assignOperatorConfirmButtonLabel": "Tugaskan & Lanjut",
+  "currentOperatorLabel": "Sedang dikerjakan oleh {name}",
+  "@currentOperatorLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "activityLogByOperatorLabel": "oleh {name}",
+  "@activityLogByOperatorLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "orderCancelledNoteTemplate": "Pesanan dibatalkan: {reason}",
   "@orderCancelledNoteTemplate": {
     "placeholders": {

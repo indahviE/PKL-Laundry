@@ -158,19 +158,47 @@ class OrderRepository {
     );
   }
 
-  Future<void> updateOrderStatus(String orderId, OrderStatus newStatus, {String? note}) async {
+  /// [employeeId]/[employeeName] diisi kalau tahap tujuan (newStatus)
+  /// butuh penugasan operator per-tahap (mis. washing/drying/ironing/
+  /// qualityCheck) - dicatat SEKALIGUS di entri riwayat status baru (jadi
+  /// otomatis merangkap sebagai activity log, tanpa collection terpisah)
+  /// DAN di field assignedEmployee* order (biar gampang ditampilkan tanpa
+  /// harus ngubek-ngubek statusHistory buat tahu siapa yang lagi pegang
+  /// order sekarang).
+  ///
+  /// [clearAssignedEmployee] dipakai begitu order lewat dari tahap proses
+  /// (mis. pindah ke 'ready') - operator sudah tidak "memegang" order lagi,
+  /// walau jejaknya tetap ada permanen di statusHistory.
+  Future<void> updateOrderStatus(
+    String orderId,
+    OrderStatus newStatus, {
+    String? note,
+    String? employeeId,
+    String? employeeName,
+    bool clearAssignedEmployee = false,
+  }) async {
     final order = await getOrder(orderId);
     if (order == null) throw Exception('Order tidak ditemukan');
 
     final now = DateTime.now();
     final updatedHistory = [
       ...order.statusHistory,
-      StatusHistory(status: newStatus, timestamp: now, note: note),
+      StatusHistory(
+        status: newStatus,
+        timestamp: now,
+        note: note,
+        employeeId: employeeId,
+        employeeName: employeeName,
+      ),
     ];
 
     await _ordersRef.doc(orderId).update({
       'status': newStatus.name,
       'status_history': updatedHistory.map((e) => e.toJson()).toList(),
+      if (employeeId != null) 'assigned_employee_id': employeeId,
+      if (employeeName != null) 'assigned_employee_name': employeeName,
+      if (clearAssignedEmployee) 'assigned_employee_id': null,
+      if (clearAssignedEmployee) 'assigned_employee_name': null,
       'updated_at': now,
     });
   }

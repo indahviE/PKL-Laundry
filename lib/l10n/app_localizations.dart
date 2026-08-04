@@ -4652,6 +4652,48 @@ abstract class AppLocalizations {
   /// **'Status diubah ke {status}'**
   String statusChangedNoteTemplate(String status);
 
+  /// No description provided for @assignOperatorDialogTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih Operator'**
+  String get assignOperatorDialogTitle;
+
+  /// No description provided for @assignOperatorDialogSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Siapa yang akan mengerjakan tahap {stage}?'**
+  String assignOperatorDialogSubtitle(String stage);
+
+  /// No description provided for @assignOperatorFieldLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Operator'**
+  String get assignOperatorFieldLabel;
+
+  /// No description provided for @assignOperatorEmptyState.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada karyawan aktif yang bisa ditugaskan'**
+  String get assignOperatorEmptyState;
+
+  /// No description provided for @assignOperatorConfirmButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Tugaskan & Lanjut'**
+  String get assignOperatorConfirmButtonLabel;
+
+  /// No description provided for @currentOperatorLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang dikerjakan oleh {name}'**
+  String currentOperatorLabel(String name);
+
+  /// No description provided for @activityLogByOperatorLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'oleh {name}'**
+  String activityLogByOperatorLabel(String name);
+
   /// No description provided for @orderCancelledNoteTemplate.
   ///
   /// In id, this message translates to:

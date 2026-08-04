@@ -2549,6 +2549,34 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get assignOperatorDialogTitle => 'Pilih Operator';
+
+  @override
+  String assignOperatorDialogSubtitle(String stage) {
+    return 'Siapa yang akan mengerjakan tahap $stage?';
+  }
+
+  @override
+  String get assignOperatorFieldLabel => 'Operator';
+
+  @override
+  String get assignOperatorEmptyState =>
+      'Belum ada karyawan aktif yang bisa ditugaskan';
+
+  @override
+  String get assignOperatorConfirmButtonLabel => 'Tugaskan & Lanjut';
+
+  @override
+  String currentOperatorLabel(String name) {
+    return 'Sedang dikerjakan oleh $name';
+  }
+
+  @override
+  String activityLogByOperatorLabel(String name) {
+    return 'oleh $name';
+  }
+
+  @override
   String orderCancelledNoteTemplate(String reason) {
     return 'Pesanan dibatalkan: $reason';
   }

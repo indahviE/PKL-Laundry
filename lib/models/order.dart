@@ -105,16 +105,32 @@ class StatusHistory {
   final DateTime timestamp;
   final String? note;
 
+  /// Operator (karyawan) yang menangani order pada saat status ini
+  /// dicatat - khusus tahap proses (washing/drying/ironing/qualityCheck)
+  /// yang memang butuh penugasan per-tahap. Null untuk tahap yang tidak
+  /// butuh operator (mis. pending/confirmed/ready/completed) atau untuk
+  /// entri lama sebelum fitur ini ada.
+  ///
+  /// Field ini SEKALIGUS berfungsi sebagai riwayat aktivitas karyawan -
+  /// sengaja tidak dibuat collection terpisah supaya datanya tidak dobel
+  /// (lihat OrderRepository.updateOrderStatus).
+  final String? employeeId;
+  final String? employeeName;
+
   StatusHistory({
     required this.status,
     required this.timestamp,
     this.note,
+    this.employeeId,
+    this.employeeName,
   });
 
   Map<String, dynamic> toJson() => {
     'status': status.name,
     'timestamp': timestamp,
     'note': note,
+    'employee_id': employeeId,
+    'employee_name': employeeName,
   };
 
   factory StatusHistory.fromJson(Map<String, dynamic> json) {
@@ -125,6 +141,8 @@ class StatusHistory {
       ),
       timestamp: dateTimeFromSnapshot(json['timestamp']),
       note: json['note'],
+      employeeId: json['employee_id'],
+      employeeName: json['employee_name'],
     );
   }
 }
@@ -276,6 +294,16 @@ class Order extends BaseModel {
   /// Null kalau belum pernah dijadwalkan sama sekali.
   final LogisticsSchedule? logisticsSchedule;
 
+  /// Operator (karyawan) yang SEDANG memegang order ini di tahap proses
+  /// yang aktif sekarang (washing/drying/ironing/qualityCheck) - beda
+  /// dengan [employeeId] di atas yang biasanya diisi kasir pembuat order.
+  /// Di-reset ke null begitu order lewat dari tahap proses (mis. sampai
+  /// 'ready'), karena sudah tidak ada operator yang "memegang" order.
+  /// Riwayat siapa mengerjakan tahap apa tetap tersimpan permanen di
+  /// masing-masing entri [statusHistory].
+  final String? assignedEmployeeId;
+  final String? assignedEmployeeName;
+
   Order({
     required super.id,
     required super.createdAt,
@@ -312,6 +340,8 @@ class Order extends BaseModel {
     this.courierId,
     this.courierName,
     this.logisticsSchedule,
+    this.assignedEmployeeId,
+    this.assignedEmployeeName,
   });
 
   /// True kalau order ini butuh driver buat jemput baju ke lokasi pelanggan.
@@ -366,6 +396,9 @@ class Order extends BaseModel {
     String? courierId,
     String? courierName,
     LogisticsSchedule? logisticsSchedule,
+    String? assignedEmployeeId,
+    String? assignedEmployeeName,
+    bool clearAssignedEmployee = false,
   }) {
     return Order(
       id: id ?? this.id,
@@ -403,6 +436,12 @@ class Order extends BaseModel {
       courierId: courierId ?? this.courierId,
       courierName: courierName ?? this.courierName,
       logisticsSchedule: logisticsSchedule ?? this.logisticsSchedule,
+      // clearAssignedEmployee sengaja dicek eksplisit (bukan cuma `??`)
+      // supaya ada cara untuk RESET operator jadi null lagi (mis. begitu
+      // order lewat dari tahap proses) - pola `??` biasa tidak bisa
+      // dipakai untuk sengaja menghapus nilai lama.
+      assignedEmployeeId: clearAssignedEmployee ? null : (assignedEmployeeId ?? this.assignedEmployeeId),
+      assignedEmployeeName: clearAssignedEmployee ? null : (assignedEmployeeName ?? this.assignedEmployeeName),
     );
   }
 
@@ -443,6 +482,8 @@ class Order extends BaseModel {
       'courier_id': courierId,
       'courier_name': courierName,
       'logistics_schedule': logisticsSchedule?.toJson(),
+      'assigned_employee_id': assignedEmployeeId,
+      'assigned_employee_name': assignedEmployeeName,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };
@@ -498,6 +539,8 @@ class Order extends BaseModel {
       logisticsSchedule: json['logistics_schedule'] != null
           ? LogisticsSchedule.fromJson(Map<String, dynamic>.from(json['logistics_schedule'] as Map))
           : null,
+      assignedEmployeeId: json['assigned_employee_id'],
+      assignedEmployeeName: json['assigned_employee_name'],
     );
   }
 }

@@ -14,8 +14,10 @@ import '../../core/themes/app_theme.dart';
 import '../../models/order.dart';
 import '../../models/transaction.dart';
 import '../../models/user_model.dart';
+import '../../models/employee.dart';
 import '../../repositories/order_repository.dart';
 import '../../repositories/user_repository.dart';
+import '../../repositories/employee_repository.dart';
 import '../../l10n/app_localizations.dart';
 
 // ============================================
@@ -76,8 +78,17 @@ class _StatusHistoryEntry {
   final String status;
   final DateTime? timestamp;
   final String note;
+  // Operator yang menangani tahap ini - kosong kalau tahapnya memang
+  // tidak butuh operator (mis. pending/confirmed/ready/completed) atau
+  // entri lama sebelum fitur penugasan per-tahap ada.
+  final String employeeName;
 
-  _StatusHistoryEntry({required this.status, required this.timestamp, required this.note});
+  _StatusHistoryEntry({
+    required this.status,
+    required this.timestamp,
+    required this.note,
+    this.employeeName = '',
+  });
 
   factory _StatusHistoryEntry.fromMap(Map<String, dynamic> map) {
     final ts = map['timestamp'];
@@ -85,8 +96,17 @@ class _StatusHistoryEntry {
       status: (map['status'] ?? '') as String,
       timestamp: ts is Timestamp ? ts.toDate() : null,
       note: (map['note'] ?? '') as String,
+      employeeName: (map['employee_name'] ?? '') as String,
     );
   }
+}
+
+/// Hasil pilihan dari dialog pemilih operator (_showAssignOperatorDialog).
+class _SelectedOperator {
+  final String id;
+  final String name;
+
+  _SelectedOperator({required this.id, required this.name});
 }
 
 /// Data pengajuan pembatalan (users/{uid}/orders/{orderId}.cancellation_request).
@@ -187,6 +207,13 @@ class _OrderDetailData {
   // --- Pembatalan ---
   final _CancellationRequestData? cancellationRequest;
 
+  // --- Penugasan operator per-tahap ---
+  // Siapa yang SEDANG memegang order ini di tahap proses aktif (washing/
+  // drying/ironing/qualityCheck). Kosong kalau belum ditugaskan atau
+  // order sudah lewat dari tahap proses.
+  final String assignedEmployeeId;
+  final String assignedEmployeeName;
+
   _OrderDetailData({
     required this.orderNumber,
     required this.customerName,
@@ -206,6 +233,8 @@ class _OrderDetailData {
     required this.deliveryType,
     required this.laundryId,
     this.cancellationRequest,
+    this.assignedEmployeeId = '',
+    this.assignedEmployeeName = '',
   });
 
   /// True kalau ada pengajuan pembatalan yang masih menunggu approval.
@@ -246,6 +275,16 @@ class _OrderDetailData {
     return null;
   }
 
+  /// Cari nama operator yang menangani tahap tertentu dari riwayat
+  /// (dipakai timeline untuk nampilin "oleh Budi" di tahap yang sudah
+  /// lewat). Null kalau tahap itu tidak punya operator tercatat.
+  String? operatorForStatus(String status) {
+    for (final h in statusHistory) {
+      if (h.status == status && h.employeeName.isNotEmpty) return h.employeeName;
+    }
+    return null;
+  }
+
   factory _OrderDetailData.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
     final orderDate = data['order_date'];
@@ -274,6 +313,8 @@ class _OrderDetailData {
       cancellationRequest: rawCancellationRequest is Map
           ? _CancellationRequestData.fromMap(Map<String, dynamic>.from(rawCancellationRequest))
           : null,
+      assignedEmployeeId: (data['assigned_employee_id'] ?? '') as String,
+      assignedEmployeeName: (data['assigned_employee_name'] ?? '') as String,
     );
   }
 }
@@ -292,6 +333,30 @@ const List<String> _statusFlow = [
   'ready',
   'completed',
 ];
+
+/// Tahap proses yang butuh penugasan operator per-tahap - beda operator
+/// boleh ditugaskan untuk tiap tahap (mis. Budi nyuci, Ani nyetrika).
+/// Begitu order maju ke salah satu status ini, owner/kasir WAJIB pilih
+/// dulu siapa operatornya lewat dialog (lihat
+/// _OrderDetailScreenState._showAssignOperatorDialog), dan pilihan itu
+/// otomatis tercatat sebagai riwayat aktivitas (StatusHistory.employeeId/
+/// employeeName) SEKALIGUS jadi "sedang dikerjakan oleh" order.
+const List<String> _stagesRequiringOperator = ['washing', 'drying', 'ironing', 'qualityCheck'];
+
+/// Jabatan mana saja yang boleh muncul di dropdown pemilih operator untuk
+/// tiap tahap - SENGAJA dibatasi, bukan "semua karyawan aktif", karena
+/// posisi seperti Manajer/Kasir/Kurir/Staff Gudang bukan yang benar-benar
+/// pegang mesin cuci. Cuma "Operator Cuci" (lihat _positionOptions di
+/// CreateEmployeeScreen) yang relevan untuk keempat tahap proses ini.
+/// Dipisah jadi map (bukan konstanta tunggal) supaya gampang dibedakan
+/// per tahap kalau nanti ada jabatan baru yang lebih spesifik (mis.
+/// "Operator Setrika" khusus tahap ironing).
+const Map<String, List<String>> _allowedPositionsByStage = {
+  'washing': ['Operator Cuci'],
+  'drying': ['Operator Cuci'],
+  'ironing': ['Operator Cuci'],
+  'qualityCheck': ['Operator Cuci'],
+};
 
 /// Pesanan cuma bisa dibatalkan (langsung atau lewat pengajuan) selama
 /// MASIH 'pending' (belum dikonfirmasi). Begitu dikonfirmasi (atau tahap
@@ -657,7 +722,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   /// NOTE: alur ubah status ini SENGAJA tetap pakai raw Firestore call
   /// (bukan lewat OrderRepository) - scope refactor kali ini difokuskan
   /// ke bagian pembayaran saja.
-  Future<void> _handleUpdateStatus(String newStatus, {String? note}) async {
+  Future<void> _handleUpdateStatus(
+    String newStatus, {
+    String? note,
+    String? employeeId,
+    String? employeeName,
+  }) async {
     if (_order == null) return;
 
     setState(() => _isUpdatingStatus = true);
@@ -667,6 +737,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         'status': newStatus,
         'timestamp': Timestamp.now(),
         'note': note ?? _t.statusChangedNoteTemplate(_getStatusLabel(newStatus)),
+        'employee_id': employeeId,
+        'employee_name': employeeName,
       };
 
       final updateData = <String, dynamic>{
@@ -674,6 +746,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         'status_history': FieldValue.arrayUnion([historyEntry]),
         'updated_at': FieldValue.serverTimestamp(),
       };
+
+      if (employeeId != null && employeeName != null) {
+        // Tahap tujuan butuh operator (washing/drying/ironing/qualityCheck)
+        // - simpan juga sebagai "sedang dikerjakan oleh" di level order.
+        updateData['assigned_employee_id'] = employeeId;
+        updateData['assigned_employee_name'] = employeeName;
+      } else if (!_stagesRequiringOperator.contains(newStatus)) {
+        // Order sudah lewat dari tahap proses (mis. jadi 'ready') - tidak
+        // ada lagi operator yang "memegang" order, walau jejaknya tetap
+        // permanen di status_history.
+        updateData['assigned_employee_id'] = FieldValue.delete();
+        updateData['assigned_employee_name'] = FieldValue.delete();
+      }
 
       if (newStatus == 'completed') {
         updateData['actual_completion'] = FieldValue.serverTimestamp();
@@ -693,6 +778,143 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     } finally {
       if (mounted) setState(() => _isUpdatingStatus = false);
     }
+  }
+
+  /// Titik masuk tombol "maju status" di bottom action bar. Kalau tahap
+  /// tujuan termasuk yang butuh operator (_stagesRequiringOperator),
+  /// munculin dulu dialog pemilihan operator - order TIDAK maju status
+  /// kalau dialog dibatalkan / belum pilih siapa-siapa. Tahap lain
+  /// (pending -> confirmed, ready -> completed, dst) langsung jalan
+  /// seperti biasa tanpa perlu pilih operator.
+  Future<void> _handleAdvanceStatus(String nextStatus, String nextLabel) async {
+    if (!_stagesRequiringOperator.contains(nextStatus)) {
+      await _handleUpdateStatus(nextStatus, note: nextLabel);
+      return;
+    }
+
+    final selected = await _showAssignOperatorDialog(nextStatus);
+    if (selected == null) return; // dibatalkan - status tidak berubah
+
+    await _handleUpdateStatus(
+      nextStatus,
+      note: nextLabel,
+      employeeId: selected.id,
+      employeeName: selected.name,
+    );
+  }
+
+  /// Dialog pemilihan operator untuk tahap proses tertentu - daftar
+  /// karyawan aktif di cabang yang sama dengan order (fallback ke semua
+  /// karyawan aktif kalau order lama belum punya laundryId). Mengembalikan
+  /// null kalau dialog dibatalkan.
+  Future<_SelectedOperator?> _showAssignOperatorDialog(String forStatus) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final employeeRepo = EmployeeRepository(userId: user.uid);
+    final laundryId = _order?.laundryId ?? '';
+    final employeesStream = laundryId.isNotEmpty
+        ? employeeRepo.streamEmployeesByLaundry(laundryId)
+        : employeeRepo.streamEmployees();
+
+    String? selectedId;
+    String? selectedName;
+
+    return showDialog<_SelectedOperator>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rLg)),
+            title: Text(
+              _t.assignOperatorDialogTitle,
+              style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cOnSurface),
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _t.assignOperatorDialogSubtitle(_getStatusLabel(forStatus)),
+                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
+                  ),
+                  const SizedBox(height: AppTheme.md),
+                  StreamBuilder<List<Employee>>(
+                    stream: employeesStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        );
+                      }
+                      final allowedPositions = _allowedPositionsByStage[forStatus] ?? const [];
+                      final activeEmployees = (snapshot.data ?? [])
+                          .where((e) => e.isActive && allowedPositions.contains(e.position))
+                          .toList();
+                      if (activeEmployees.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            _t.assignOperatorEmptyState,
+                            style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
+                          ),
+                        );
+                      }
+                      return DropdownButtonFormField<String>(
+                        value: selectedId,
+                        isExpanded: true,
+                        style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _cOnSurface),
+                        items: activeEmployees
+                            .map(
+                              (e) => DropdownMenuItem(
+                                value: e.id,
+                                child: Text(e.fullName, overflow: TextOverflow.ellipsis),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) => setDialogState(() {
+                          selectedId = val;
+                          selectedName = activeEmployees.firstWhere((e) => e.id == val).fullName;
+                        }),
+                        decoration: InputDecoration(
+                          labelText: _t.assignOperatorFieldLabel,
+                          labelStyle: GoogleFonts.beVietnamPro(fontSize: 12.5),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(_t.cancel, style: GoogleFonts.beVietnamPro(color: _cOnSurfaceVariant)),
+              ),
+              ElevatedButton(
+                onPressed: selectedId == null
+                    ? null
+                    : () => Navigator.pop(
+                          dialogContext,
+                          _SelectedOperator(id: selectedId!, name: selectedName ?? ''),
+                        ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _cPrimaryContainer,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(_t.assignOperatorConfirmButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   /// Buka dialog buat catat pembayaran baru (DP, pelunasan, atau konfirmasi
@@ -1639,6 +1861,31 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             _t.trackProgressTitle,
             style: GoogleFonts.beVietnamPro(fontSize: 14, fontWeight: FontWeight.w500, color: _cOnSurfaceVariant),
           ),
+          if (order.assignedEmployeeName.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: _cPrimaryFixed.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.person_pin_circle_outlined, size: 14, color: _cOnPrimaryFixedVariant),
+                  const SizedBox(width: 4),
+                  Text(
+                    _t.currentOperatorLabel(order.assignedEmployeeName),
+                    style: GoogleFonts.beVietnamPro(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: _cOnPrimaryFixedVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           Column(
             children: List.generate(_statusFlow.length, (index) {
@@ -1708,13 +1955,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           if (isPast && ts != null) ...[
                             const SizedBox(height: 2),
                             Text(
-                              '${_formatDate(ts)}, ${_formatTime(ts)}',
+                              order.operatorForStatus(status) != null
+                                  ? '${_formatDate(ts)}, ${_formatTime(ts)} · ${_t.activityLogByOperatorLabel(order.operatorForStatus(status)!)}'
+                                  : '${_formatDate(ts)}, ${_formatTime(ts)}',
                               style: GoogleFonts.beVietnamPro(fontSize: 11, color: _cOnSurfaceVariant),
                             ),
                           ] else if (isCurrent) ...[
                             const SizedBox(height: 2),
                             Text(
-                              _activeStepNote(status),
+                              order.assignedEmployeeName.isNotEmpty && _stagesRequiringOperator.contains(status)
+                                  ? '${_activeStepNote(status)} · ${_t.activityLogByOperatorLabel(order.assignedEmployeeName)}'
+                                  : _activeStepNote(status),
                               style: GoogleFonts.beVietnamPro(fontSize: 11, color: _cOnSurfaceVariant),
                             ),
                           ],
@@ -2423,7 +2674,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     child: ElevatedButton.icon(
                       onPressed: (_isUpdatingStatus || order.hasPendingCancellationRequest)
                           ? null
-                          : () => _handleUpdateStatus(nextStatus, note: nextLabel),
+                          : () => _handleAdvanceStatus(nextStatus, nextLabel),
                       icon: _isUpdatingStatus
                           ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : const Icon(Icons.update, size: 18),
