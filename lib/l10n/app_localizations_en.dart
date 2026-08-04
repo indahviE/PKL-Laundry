@@ -2688,6 +2688,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get remainingBillLabel => 'Remaining Bill';
 
   @override
+  String get orderStatusPendingPayment => 'Unpaid';
+
+  @override
   String get confirmPaymentButtonLabel => 'Confirm Payment';
 
   @override

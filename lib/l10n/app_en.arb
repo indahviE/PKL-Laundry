@@ -1445,6 +1445,7 @@
   "paymentSectionLabel": "Payment",
   "paidAmountLabel": "Amount Paid",
   "remainingBillLabel": "Remaining Bill",
+  "orderStatusPendingPayment": "Unpaid",
   "confirmPaymentButtonLabel": "Confirm Payment",
   "downloadReceiptButtonLabel": "Download Receipt",
   "sendReceiptWhatsappButtonLabel": "Send Receipt via WA",

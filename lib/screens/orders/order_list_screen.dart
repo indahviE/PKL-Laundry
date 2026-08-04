@@ -94,6 +94,20 @@ class OrderItem {
   final String serviceSummary; // ringkasan nama layanan, dari items[].service_name
   final int serviceCount; // jumlah unique services untuk suffix "+X lainnya"
 
+  /// TAMBAHAN: status & jumlah pembayaran - terpisah dari `status` (yang
+  /// itu status PROSES laundry, bukan status bayar). Dibutuhkan supaya
+  /// card bisa nampilin "Belum Lunas" walau order-nya sendiri sudah
+  /// 'completed' (proses selesai, tapi pelanggan baru DP).
+  final String paymentStatus; // 'pending' | 'partial' | 'paid' | 'refunded'
+  final double paidAmount;
+
+  /// Sisa tagihan yang belum dibayar (amount di sini = total_amount).
+  /// Tidak pernah negatif.
+  double get remainingAmount {
+    final remaining = amount - paidAmount;
+    return remaining < 0 ? 0 : remaining;
+  }
+
   OrderItem({
     required this.id,
     required this.orderNumber,
@@ -108,6 +122,8 @@ class OrderItem {
     required this.laundryId,
     required this.serviceSummary,
     required this.serviceCount,
+    required this.paymentStatus,
+    required this.paidAmount,
   });
 
   /// Mapping dari dokumen Firestore users/{uid}/orders/{orderId}
@@ -146,6 +162,8 @@ class OrderItem {
       laundryId: (data['laundry_id'] ?? '') as String,
       serviceSummary: serviceSummary,
       serviceCount: serviceNames.length,
+      paymentStatus: (data['payment_status'] ?? 'pending') as String,
+      paidAmount: ((data['paid_amount'] ?? 0) as num).toDouble(),
     );
   }
 
@@ -785,6 +803,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                 pillText: style.pillText,
                 statusLabel: _getStatusLabel(order.status, t),
                 formattedAmount: _formatCurrency(order.amount),
+                formattedRemaining: _formatCurrency(order.remainingAmount),
                 formattedDate: _formatDate(order.date),
                 cabangName: _laundryNameFor(order.laundryId),
                 onTap: () => context.push('/orders/${order.id}'),
@@ -902,6 +921,7 @@ class _OrderCard extends StatelessWidget {
   final Color pillText;
   final String statusLabel;
   final String formattedAmount;
+  final String formattedRemaining;
   final String formattedDate;
   final String cabangName;
   final VoidCallback onTap;
@@ -913,6 +933,7 @@ class _OrderCard extends StatelessWidget {
     required this.pillText,
     required this.statusLabel,
     required this.formattedAmount,
+    required this.formattedRemaining,
     required this.formattedDate,
     required this.cabangName,
     required this.onTap,
@@ -1043,6 +1064,51 @@ class _OrderCard extends StatelessWidget {
                 ),
               ],
             ),
+            // TAMBAHAN: peringatan sisa tagihan - `formattedAmount` di atas
+            // itu TOTAL TAGIHAN (total_amount), bukan yang sudah dibayar,
+            // jadi tanpa baris ini order yang baru DP bisa kelihatan
+            // "aman"/lunas padahal belum, terutama begitu status prosesnya
+            // sudah 'completed' (dua hal yang beda: status proses vs status
+            // bayar). Cuma muncul kalau masih ada sisa & order belum
+            // dibatalkan (order dibatalkan tidak perlu ditagih lagi).
+            if (order.remainingAmount > 0 && order.status != 'cancelled') ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDECEC),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.error_outline_rounded, size: 14, color: Color(0xFFD64545)),
+                        const SizedBox(width: 4),
+                        Text(
+                          t.orderStatusPendingPayment,
+                          style: GoogleFonts.beVietnamPro(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFFD64545),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '${t.remainingBillLabel}: $formattedRemaining',
+                      style: GoogleFonts.beVietnamPro(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFD64545),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

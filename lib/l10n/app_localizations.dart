@@ -4916,6 +4916,12 @@ abstract class AppLocalizations {
   /// **'Sisa Tagihan'**
   String get remainingBillLabel;
 
+  /// No description provided for @orderStatusPendingPayment.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum Lunas'**
+  String get orderStatusPendingPayment;
+
   /// No description provided for @confirmPaymentButtonLabel.
   ///
   /// In id, this message translates to:
