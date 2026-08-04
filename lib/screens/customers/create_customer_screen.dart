@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/services/app_feedback.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/app_input.dart';
 
@@ -35,14 +38,14 @@ class _LaundryOption {
 /// company_id), sengaja ditambahkan supaya saat CreateOrderScreen pilih
 /// Cabang A, dropdown pelanggan bisa di-filter cuma nampilin pelanggan
 /// Cabang A juga (pola sama seperti employee -> laundry_id).
-class CreateCustomerScreen extends StatefulWidget {
+class CreateCustomerScreen extends ConsumerStatefulWidget {
   const CreateCustomerScreen({Key? key}) : super(key: key);
 
   @override
-  State<CreateCustomerScreen> createState() => _CreateCustomerScreenState();
+  ConsumerState<CreateCustomerScreen> createState() => _CreateCustomerScreenState();
 }
 
-class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
+class _CreateCustomerScreenState extends ConsumerState<CreateCustomerScreen> {
   // Controllers
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
@@ -69,6 +72,15 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
   String? _selectedLaundryId;
 
   bool get _showLaundryDropdown => _laundriesList.length > 1;
+
+  /// Alert error - disamakan persis dengan CreateOrderScreen: pakai
+  /// AppSnackbar (bukan SnackBar bawaan) + getar & suara error lewat
+  /// AppFeedback, supaya rasanya konsisten di seluruh form "Tambah".
+  void _showError(String message) {
+    AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+    AppFeedback.playSound(ref, AppSound.error);
+    AppSnackbar.error(context, message);
+  }
 
   @override
   void initState() {
@@ -152,12 +164,7 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
     }
 
     if (_selectedLaundryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_laundriesError ?? 'Cabang belum siap, coba lagi sebentar.'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      _showError(_laundriesError ?? 'Cabang belum siap, coba lagi sebentar.');
       return;
     }
 
@@ -199,22 +206,16 @@ class _CreateCustomerScreenState extends State<CreateCustomerScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.addCustomerSuccessTesting),
-            backgroundColor: const Color(0xFF51CF66),
-          ),
-        );
+        AppFeedback.haptic(ref);
+        AppFeedback.playSound(ref, AppSound.success);
+        AppSnackbar.success(context, l10n.addCustomerSuccessTesting);
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.addCustomerError(e.toString())),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
+        AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+        AppFeedback.playSound(ref, AppSound.error);
+        _showError(l10n.addCustomerError(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
