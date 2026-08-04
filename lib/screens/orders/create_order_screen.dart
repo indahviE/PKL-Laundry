@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/app_input.dart';
 import '../../models/service.dart';
 import '../../models/order.dart';
+import '../../core/services/app_feedback.dart';
 import '../../repositories/service_repository.dart';
 import '../../repositories/order_repository.dart';
 
@@ -97,14 +99,14 @@ class _LaundryOption {
 }
 
 /// Create Order Screen
-class CreateOrderScreen extends StatefulWidget {
+class CreateOrderScreen extends ConsumerStatefulWidget {
   const CreateOrderScreen({Key? key}) : super(key: key);
 
   @override
-  State<CreateOrderScreen> createState() => _CreateOrderScreenState();
+  ConsumerState<CreateOrderScreen> createState() => _CreateOrderScreenState();
 }
 
-class _CreateOrderScreenState extends State<CreateOrderScreen> {
+class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   // ============================================
   // Radius lokal khusus layar ini, mengikuti pola desain baru
   // (card 16px, chip/field 12-14px, tombol utama pill). Sengaja TIDAK
@@ -468,6 +470,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   void _showError(String message) {
+    AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+    AppFeedback.playSound(ref, AppSound.error);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: AppTheme.errorColor),
     );
@@ -633,6 +637,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       }
 
       if (mounted) {
+        AppFeedback.haptic(ref);
+        AppFeedback.playSound(ref, AppSound.success);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_t.orderCreatedSuccess),
@@ -643,6 +649,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       }
     } catch (e) {
       if (mounted) {
+        AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+        AppFeedback.playSound(ref, AppSound.error);
         _showError(_t.genericErrorTemplate(e.toString()));
       }
     } finally {

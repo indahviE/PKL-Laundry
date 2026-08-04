@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'core/config/routes.dart';
 import 'core/providers/locale.provider.dart';
+import 'core/providers/notif_prefs_provider.dart'; 
 import 'l10n/app_localizations.dart';
 
 void main() async {
@@ -42,6 +43,10 @@ class MyApp extends ConsumerWidget {
 
     // 6. Membaca bahasa yang lagi aktif
     final locale = ref.watch(localeProvider);
+
+    // 👇 Tambahin ini: biar notifPrefs selalu "hidup" & ke-update
+    // selama app jalan, gak peduli lagi di screen mana
+    ref.watch(notifPrefsProvider);
 
     // 7. Menggunakan .router agar sistem navigasi aktif
     return MaterialApp.router(

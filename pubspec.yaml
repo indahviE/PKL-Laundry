@@ -55,6 +55,7 @@ dependencies:
   email_validator: ^2.1.1
   http: ^1.6.0
 
+  audioplayers: ^6.0.0
   shared_preferences: ^2.3.2
 
 dev_dependencies:
@@ -98,3 +99,5 @@ flutter:
   assets:
     - asset/icon/
     - asset/splash/
+    - asset/sounds/success.wav
+    - asset/sounds/error.wav
