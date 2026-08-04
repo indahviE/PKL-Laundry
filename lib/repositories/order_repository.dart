@@ -247,13 +247,6 @@ class OrderRepository {
         .map((snap) => snap.docs.map((d) => PaymentTransaction.fromJson(d.data(), d.id)).toList());
   }
 
-  Future<void> markPickedUp(String orderId, {String? driverNote}) async {
-    await _ordersRef.doc(orderId).update({
-      'pickup_date': DateTime.now(),
-      'updated_at': DateTime.now(),
-    });
-  }
-
   /// Konfirmasi jemput sekaligus mencatat item, berat, DAN pembayaran -
   /// dipanggil dari _ConfirmPickupSheet setelah barang beneran ditimbang.
   ///
@@ -296,6 +289,15 @@ class OrderRepository {
       if (!orderSnap.exists) throw Exception('Order tidak ditemukan.');
 
       final order = Order.fromJson(orderSnap.data() as Map<String, dynamic>, orderSnap.id);
+
+      // Guard: kalau order ini sudah pernah dikonfirmasi jemput (mis. 2
+      // karyawan buka sheet konfirmasi bersamaan), tolak yang kedua supaya
+      // item/berat/pembayaran tidak diam-diam ditimpa oleh submit yang
+      // belakangan menang race-nya.
+      if (order.pickupDate != null) {
+        throw Exception('Order ini sudah ditandai dijemput sebelumnya.');
+      }
+
       final now = DateTime.now();
       final amountDelta = subtotal - order.totalAmount;
 
@@ -349,6 +351,14 @@ class OrderRepository {
   /// ConfirmDeliverySheet). Alur self-service ("Tandai Sudah Diambil")
   /// TIDAK pernah pakai flag ini - status tetap harus ditandai manual
   /// oleh kasir dari OrderDetailScreen.
+  ///
+  /// UPDATED: sekarang jalan dalam Firestore transaction (baca-lalu-tulis
+  /// atomic), bukan `.update()` langsung seperti sebelumnya. Sebelum nulis,
+  /// dicek dulu `delivery_date` order masih null - kalau order ini sudah
+  /// pernah ditandai diantar sebelumnya (mis. 2 kurir/kasir menandai order
+  /// yang sama nyaris bersamaan), submit yang kedua dilempar Exception
+  /// alih-alih diam-diam menimpa courier_id/courier_name yang sudah
+  /// tercatat duluan.
   Future<void> markDelivered(
     String orderId, {
     String? driverNote,
@@ -356,30 +366,39 @@ class OrderRepository {
     String? courierName,
     bool markAsCompleted = false,
   }) async {
+    final orderRef = _ordersRef.doc(orderId);
     final now = DateTime.now();
-    final updateData = <String, dynamic>{
-      'delivery_date': now,
-      'courier_id': courierId,
-      'courier_name': courierName,
-      'updated_at': now,
-    };
 
-    if (markAsCompleted) {
-      final orderSnap = await _ordersRef.doc(orderId).get();
+    await _firestore.runTransaction((txn) async {
+      final orderSnap = await txn.get(orderRef);
       if (!orderSnap.exists) throw Exception('Order tidak ditemukan.');
 
       final order = Order.fromJson(orderSnap.data() as Map<String, dynamic>, orderSnap.id);
-      final updatedHistory = [
-        ...order.statusHistory,
-        StatusHistory(status: OrderStatus.completed, timestamp: now, note: 'Pesanan selesai diantar'),
-      ];
 
-      updateData['status'] = OrderStatus.completed.name;
-      updateData['status_history'] = updatedHistory.map((e) => e.toJson()).toList();
-      updateData['actual_completion'] = now;
-    }
+      if (order.deliveryDate != null) {
+        throw Exception('Order ini sudah ditandai diantar sebelumnya.');
+      }
 
-    await _ordersRef.doc(orderId).update(updateData);
+      final updateData = <String, dynamic>{
+        'delivery_date': now,
+        'courier_id': courierId,
+        'courier_name': courierName,
+        'updated_at': now,
+      };
+
+      if (markAsCompleted) {
+        final updatedHistory = [
+          ...order.statusHistory,
+          StatusHistory(status: OrderStatus.completed, timestamp: now, note: 'Pesanan selesai diantar'),
+        ];
+
+        updateData['status'] = OrderStatus.completed.name;
+        updateData['status_history'] = updatedHistory.map((e) => e.toJson()).toList();
+        updateData['actual_completion'] = now;
+      }
+
+      txn.update(orderRef, updateData);
+    });
   }
 
   /// Menyimpan/melengkapi rencana jadwal jemput/antar untuk 1 order -
