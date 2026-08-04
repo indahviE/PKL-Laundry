@@ -9,6 +9,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/app_feedback.dart';
 import '../delivery/create_delivery_screen.dart' show CreateDeliveryScheduleScreen;
 import '../../core/themes/app_theme.dart';
 import '../../models/order.dart';
@@ -423,19 +425,14 @@ Color _paymentFg(String status) {
 }
 
 /// Order Detail Screen
-class OrderDetailScreen extends StatefulWidget {
+class OrderDetailScreen extends ConsumerStatefulWidget {
   final String orderId;
-
-  const OrderDetailScreen({
-    Key? key,
-    required this.orderId,
-  }) : super(key: key);
-
+  const OrderDetailScreen({Key? key, required this.orderId}) : super(key: key);
   @override
-  State<OrderDetailScreen> createState() => _OrderDetailScreenState();
+  ConsumerState<OrderDetailScreen> createState() => _OrderDetailScreenState();
 }
 
-class _OrderDetailScreenState extends State<OrderDetailScreen> {
+class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   bool _isLoading = true;
   bool _isUpdatingStatus = false;
   bool _isGeneratingReceipt = false;
@@ -722,6 +719,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   /// NOTE: alur ubah status ini SENGAJA tetap pakai raw Firestore call
   /// (bukan lewat OrderRepository) - scope refactor kali ini difokuskan
   /// ke bagian pembayaran saja.
+  ///
+  /// RESOLVED (merge dari 2 branch):
+  /// - dari branch fitur "assign operator": parameter employeeId/
+  ///   employeeName + logic assigned_employee_* di updateData.
+  /// - dari branch "app feedback sound": AppFeedback.playSound() di
+  ///   jalur sukses maupun gagal.
   Future<void> _handleUpdateStatus(
     String newStatus, {
     String? note,
@@ -767,12 +770,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       await _ordersRef.doc(widget.orderId).update(updateData);
 
       if (mounted) {
+        AppFeedback.playSound(ref, AppSound.success);
         _showSnack(_t.statusUpdateSuccess(_getStatusLabel(newStatus)));
       }
 
       await _fetchOrder();
     } catch (e) {
       if (mounted) {
+        AppFeedback.playSound(ref, AppSound.error);
         _showSnack(_t.statusUpdateError(e.toString()), isError: true);
       }
     } finally {

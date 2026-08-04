@@ -49,6 +49,7 @@ import '../../screens/customers/customers_list_screen.dart';
 import '../../screens/customers/customer_detail_screen.dart';
 import '../../screens/customers/create_customer_screen.dart';
 import '../../screens/customers/edit_customer_screen.dart';
+import '../../screens/customers/customer_order_history_screen.dart';
 
 // --- Reports ---
 import '../../screens/reports/reports_screen.dart';
@@ -317,6 +318,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/customers/:customerId/edit',
         name: 'customer-edit',
         builder: (context, state) => EditCustomerScreen(
+          customerId: state.pathParameters['customerId'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/customers/:customerId/orders',
+        name: 'customer-orders',
+        builder: (context, state) => CustomerOrderHistoryScreen(
           customerId: state.pathParameters['customerId'] ?? '',
         ),
       ),

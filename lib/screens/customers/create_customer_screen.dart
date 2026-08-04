@@ -9,7 +9,7 @@ import '../../widgets/common/app_input.dart';
 // Disamain persis dengan _cSurface di order_list_screen.dart /
 // customer_detail_screen.dart (#FBF9F8) — sebelumnya pakai
 // AppTheme.backgroundColor (getter) yang keliatan agak kebiruan.
-const Color _cSurface = Color(0xFFFBF9F8);
+const Color _cSurface = Color(0xFFF5F7FA);
 
 /// Opsi cabang buat dropdown, di-fetch dari users/{uid}/laundries
 /// (sesuai Blueprint §3.2.3).

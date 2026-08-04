@@ -674,9 +674,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
         ),
         TextButton(
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.viewAllOrdersComingSoon)),
-            );
+            context.push('/customers/${widget.customerId}/orders');
           },
           child: Text(
             l10n.viewAllLabel,
