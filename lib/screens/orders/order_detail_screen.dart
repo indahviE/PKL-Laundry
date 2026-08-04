@@ -9,6 +9,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/app_feedback.dart';
 import '../delivery/create_delivery_screen.dart' show CreateDeliveryScheduleScreen;
 import '../../core/themes/app_theme.dart';
 import '../../models/order.dart';
@@ -358,19 +360,14 @@ Color _paymentFg(String status) {
 }
 
 /// Order Detail Screen
-class OrderDetailScreen extends StatefulWidget {
+// SESUDAH
+class OrderDetailScreen extends ConsumerStatefulWidget {
   final String orderId;
-
-  const OrderDetailScreen({
-    Key? key,
-    required this.orderId,
-  }) : super(key: key);
-
+  const OrderDetailScreen({Key? key, required this.orderId}) : super(key: key);
   @override
-  State<OrderDetailScreen> createState() => _OrderDetailScreenState();
+  ConsumerState<OrderDetailScreen> createState() => _OrderDetailScreenState();
 }
-
-class _OrderDetailScreenState extends State<OrderDetailScreen> {
+class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   bool _isLoading = true;
   bool _isUpdatingStatus = false;
   bool _isGeneratingReceipt = false;
@@ -658,42 +655,43 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   /// (bukan lewat OrderRepository) - scope refactor kali ini difokuskan
   /// ke bagian pembayaran saja.
   Future<void> _handleUpdateStatus(String newStatus, {String? note}) async {
-    if (_order == null) return;
+  if (_order == null) return;
 
-    setState(() => _isUpdatingStatus = true);
+  setState(() => _isUpdatingStatus = true);
 
-    try {
-      final historyEntry = {
-        'status': newStatus,
-        'timestamp': Timestamp.now(),
-        'note': note ?? _t.statusChangedNoteTemplate(_getStatusLabel(newStatus)),
-      };
+  try {
+    final historyEntry = {
+      'status': newStatus,
+      'timestamp': Timestamp.now(),
+      'note': note ?? _t.statusChangedNoteTemplate(_getStatusLabel(newStatus)),
+    };
 
-      final updateData = <String, dynamic>{
-        'status': newStatus,
-        'status_history': FieldValue.arrayUnion([historyEntry]),
-        'updated_at': FieldValue.serverTimestamp(),
-      };
+    final updateData = <String, dynamic>{
+      'status': newStatus,
+      'status_history': FieldValue.arrayUnion([historyEntry]),
+      'updated_at': FieldValue.serverTimestamp(),
+    };
 
-      if (newStatus == 'completed') {
-        updateData['actual_completion'] = FieldValue.serverTimestamp();
-      }
-
-      await _ordersRef.doc(widget.orderId).update(updateData);
-
-      if (mounted) {
-        _showSnack(_t.statusUpdateSuccess(_getStatusLabel(newStatus)));
-      }
-
-      await _fetchOrder();
-    } catch (e) {
-      if (mounted) {
-        _showSnack(_t.statusUpdateError(e.toString()), isError: true);
-      }
-    } finally {
-      if (mounted) setState(() => _isUpdatingStatus = false);
+    if (newStatus == 'completed') {
+      updateData['actual_completion'] = FieldValue.serverTimestamp();
     }
+
+    await _ordersRef.doc(widget.orderId).update(updateData);
+
+    if (mounted) {
+      AppFeedback.playSound(ref, AppSound.success);
+      _showSnack(_t.statusUpdateSuccess(_getStatusLabel(newStatus)));  // ✅ pakai newStatus
+    }
+    await _fetchOrder();
+  } catch (e) {
+    if (mounted) {
+      AppFeedback.playSound(ref, AppSound.error);
+      _showSnack(_t.statusUpdateError(e.toString()), isError: true);  // ✅ pakai statusUpdateError
+    }
+  } finally {
+    if (mounted) setState(() => _isUpdatingStatus = false);
   }
+}
 
   /// Buka dialog buat catat pembayaran baru (DP, pelunasan, atau konfirmasi
   /// transfer) lewat OrderRepository.recordPayment() - atomic: menulis 1
