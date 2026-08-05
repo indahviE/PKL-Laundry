@@ -2593,7 +2593,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String whatsappOrderReadyPickupMessage(String name, String orderNumber) {
-    return 'Hi $name, this is Netwash 😊. Your order ($orderNumber) is complete and ready. Would you like it delivered or will you pick it up yourself?';
+    return 'Hi $name! This is Netwash 😊. Your order ($orderNumber) is complete and ready for pickup, what time would you like to pick it up? We\'ll be waiting 🙏';
   }
 
   @override

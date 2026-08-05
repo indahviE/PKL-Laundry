@@ -111,8 +111,26 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
         _couriers = all.where((e) => e.isActive && e.position.toLowerCase().contains('kurir')).toList();
         _isLoadingCouriers = false;
       });
+      _lockCourierToOrder();
     } catch (_) {
       if (mounted) setState(() => _isLoadingCouriers = false);
+    }
+  }
+
+  /// Cocokkan courierId dari order.logisticsSchedule ke daftar _couriers -
+  /// dipanggil di 2 tempat (akhir _fetchCouriers DAN akhir
+  /// _fetchPreselectedOrder), sama pola dengan _lockBranchToOrder, supaya
+  /// gak masalah siapa yang kelar duluan (race condition). Sebelumnya
+  /// pencocokan kurir cuma dicoba SEKALI inline di _fetchPreselectedOrder -
+  /// kalau _couriers masih kosong di titik itu (fetch-nya belum kelar),
+  /// kurir yang harusnya ke-prefill jadi gak muncul, padahal datanya ada.
+  void _lockCourierToOrder() {
+    if (_selectedOrder == null || _couriers.isEmpty || _selectedCourier != null) return;
+    final courierId = _selectedOrder!.logisticsSchedule?.courierId;
+    if (courierId == null || courierId.isEmpty) return;
+    final match = _couriers.where((c) => c.id == courierId);
+    if (match.isNotEmpty && mounted) {
+      setState(() => _selectedCourier = match.first);
     }
   }
 
@@ -159,14 +177,14 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
           if ((schedule.address ?? '').isNotEmpty) {
             _addressController.text = schedule.address!;
           }
-          if ((schedule.courierId ?? '').isNotEmpty) {
-            final match = _couriers.where((c) => c.id == schedule.courierId);
-            if (match.isNotEmpty) _selectedCourier = match.first;
-          }
+          // Kurir DIPINDAH ke _lockCourierToOrder() - dipanggil di bawah
+          // + di akhir _fetchCouriers(), supaya aman kapan pun _couriers
+          // selesai dimuat duluan.
         }
       });
 
       _lockBranchToOrder();
+      _lockCourierToOrder();
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;

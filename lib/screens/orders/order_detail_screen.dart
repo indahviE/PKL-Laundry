@@ -231,6 +231,14 @@ class _OrderDetailData {
   // sebelum pelanggan beneran dikabarin dulu.
   final bool readyNotified;
 
+  // --- Jadwal pengantaran (khusus delivery) ---
+  // True kalau order ini SUDAH punya logistics_schedule tersimpan (hasil
+  // dari CreateDeliveryScheduleScreen). Dipakai supaya tombol "Jadwalkan
+  // Pengantaran" berubah jadi "Ubah Jadwal Pengantaran" kalau sudah ada
+  // jadwal - biar karyawan gak salah kira ini masih perlu dijadwalkan
+  // dari nol / gak sengaja ngulang alur jadwal.
+  final bool hasLogisticsSchedule;
+
   _OrderDetailData({
     required this.orderNumber,
     required this.customerName,
@@ -253,6 +261,7 @@ class _OrderDetailData {
     this.assignedEmployeeId = '',
     this.assignedEmployeeName = '',
     this.readyNotified = false,
+    this.hasLogisticsSchedule = false,
   });
 
   /// True kalau ada pengajuan pembatalan yang masih menunggu approval.
@@ -334,6 +343,11 @@ class _OrderDetailData {
       assignedEmployeeId: (data['assigned_employee_id'] ?? '') as String,
       assignedEmployeeName: (data['assigned_employee_name'] ?? '') as String,
       readyNotified: (data['ready_notified'] ?? false) as bool,
+      // Field 'logistics_schedule' diasumsikan disimpan sebagai Map non-null
+      // begitu CreateDeliveryScheduleScreen berhasil nyimpen jadwal. Kalau
+      // ternyata nama field-nya beda di Firestore kamu, tinggal ganti key
+      // di sini.
+      hasLogisticsSchedule: data['logistics_schedule'] != null,
     );
   }
 }
@@ -372,9 +386,9 @@ const List<String> _stagesRequiringOperator = ['washing', 'drying', 'ironing', '
 /// "Operator Setrika" khusus tahap ironing).
 const Map<String, List<String>> _allowedPositionsByStage = {
   'washing': ['Operator Cuci'],
-  'drying': ['Operator Pengering', 'Operator Cuci'], // Boleh juga masukkan 'Operator Cuci' jika orangnya sama
+  'drying': ['Operator Pengering'],
   'ironing': ['Operator Setrika'],
-  'qualityCheck': ['Quality Control', 'Operator Setrika'],
+  'qualityCheck': ['Quality Control'],
 };
 
 /// Pesanan cuma bisa dibatalkan (langsung atau lewat pengajuan) selama
@@ -449,7 +463,8 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<OrderDetailScreen> createState() => _OrderDetailScreenState();
 }
 
-class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
+class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
+  with WidgetsBindingObserver {
   bool _isLoading = true;
   bool _isUpdatingStatus = false;
   bool _isGeneratingReceipt = false;
@@ -465,6 +480,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   String _currentUserName = '';
   StreamSubscription<UserModel?>? _roleSub;
   bool _isSubmittingCancelAction = false;
+
+  /// True selagi nunggu user balik dari WhatsApp setelah nge-tap
+  /// "Kabari Pelanggan" (ready, self-pickup). Dipakai di
+  /// didChangeAppLifecycleState buat mutuskan apakah perlu munculin
+  /// dialog konfirmasi "sudah kirim belum" pas app di-resume.
+  bool _awaitingReadyNotifyConfirmation = false;
 
   // Nama cabang (resolved dari laundryId) - null selama masih loading
   // atau kalau order.laundryId kosong (order lama sebelum fitur cabang).
@@ -484,14 +505,28 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _fetchOrder();
     _listenToCurrentUserRole();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _roleSub?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _awaitingReadyNotifyConfirmation) {
+      _awaitingReadyNotifyConfirmation = false;
+      // Kasih jeda dikit supaya transisi resume-nya mulus dulu sebelum
+      // dialog muncul, daripada nyempil pas masih animasi balik ke app.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showConfirmMessageSentDialog();
+      });
+    }
   }
 
   /// Dengerin role user yang lagi login dari profilnya sendiri
@@ -840,6 +875,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
     String? selectedId;
     String? selectedName;
+    // Guard supaya listener di fieldViewBuilder cuma nempel sekali, bukan
+    // numpuk tiap kali StatefulBuilder rebuild.
+    bool listenerAttached = false;
 
     return showDialog<_SelectedOperator>(
       context: context,
@@ -871,10 +909,20 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                         );
                       }
-                      final allowedPositions = _allowedPositionsByStage[forStatus] ?? const [];
+                      // Cocokkan posisi tanpa peduli spasi ekstra / beda
+                      // huruf besar-kecil (mis. "operator cuci " vs
+                      // "Operator Cuci") - sebelumnya exact-match bikin
+                      // karyawan yang posisinya ditulis beda dikit gak
+                      // kedeteksi, atau malah karyawan salah bagian ikut
+                      // ke-loloskan kalau posisinya ternyata kosong/aneh.
+                      final allowedPositions = (_allowedPositionsByStage[forStatus] ?? const [])
+                          .map((p) => p.trim().toLowerCase())
+                          .toSet();
                       final activeEmployees = (snapshot.data ?? [])
-                          .where((e) => e.isActive && allowedPositions.contains(e.position))
-                          .toList();
+                          .where((e) => e.isActive && allowedPositions.contains(e.position.trim().toLowerCase()))
+                          .toList()
+                        ..sort((a, b) => a.fullName.compareTo(b.fullName));
+
                       if (activeEmployees.isEmpty) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -884,27 +932,74 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           ),
                         );
                       }
-                      return DropdownButtonFormField<String>(
-                        value: selectedId,
-                        isExpanded: true,
-                        style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _cOnSurface),
-                        items: activeEmployees
-                            .map(
-                              (e) => DropdownMenuItem(
-                                value: e.id,
-                                child: Text(e.fullName, overflow: TextOverflow.ellipsis),
+
+                      return Autocomplete<Employee>(
+                        displayStringForOption: (e) => e.fullName,
+                        optionsBuilder: (textEditingValue) {
+                          final query = textEditingValue.text.trim().toLowerCase();
+                          if (query.isEmpty) return activeEmployees;
+                          return activeEmployees.where((e) => e.fullName.toLowerCase().startsWith(query));
+                        },
+                        onSelected: (e) {
+                          setDialogState(() {
+                            selectedId = e.id;
+                            selectedName = e.fullName;
+                          });
+                        },
+                        fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
+                          if (!listenerAttached) {
+                            listenerAttached = true;
+                            // Kalau teks diubah manual sampai gak lagi
+                            // cocok sama nama yang terakhir dipilih,
+                            // batalkan pilihan - tombol konfirmasi
+                            // ke-disable lagi, jadi gak bisa asal ketik
+                            // nama tanpa milih dari daftar beneran.
+                            textController.addListener(() {
+                              if (selectedName != null && textController.text != selectedName) {
+                                setDialogState(() {
+                                  selectedId = null;
+                                  selectedName = null;
+                                });
+                              }
+                            });
+                          }
+                          return TextField(
+                            controller: textController,
+                            focusNode: focusNode,
+                            style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _cOnSurface),
+                            decoration: InputDecoration(
+                              labelText: _t.assignOperatorFieldLabel,
+                              labelStyle: GoogleFonts.beVietnamPro(fontSize: 12.5),
+                              prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        },
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 4,
+                              borderRadius: BorderRadius.circular(12),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxHeight: 200),
+                                child: ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  itemBuilder: (context, index) {
+                                    final e = options.elementAt(index);
+                                    return ListTile(
+                                      dense: true,
+                                      title: Text(e.fullName, style: GoogleFonts.beVietnamPro(fontSize: 13.5)),
+                                      onTap: () => onSelected(e),
+                                    );
+                                  },
+                                ),
                               ),
-                            )
-                            .toList(),
-                        onChanged: (val) => setDialogState(() {
-                          selectedId = val;
-                          selectedName = activeEmployees.firstWhere((e) => e.id == val).fullName;
-                        }),
-                        decoration: InputDecoration(
-                          labelText: _t.assignOperatorFieldLabel,
-                          labelStyle: GoogleFonts.beVietnamPro(fontSize: 12.5),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
@@ -1118,8 +1213,49 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final launched = await _launchWhatsappMessage(order.customerPhone, message);
     if (!launched) return;
 
-    await _markReadyNotified();
-    if (mounted) await _fetchOrder();
+    _awaitingReadyNotifyConfirmation = true;
+  }
+
+  /// Ditampilkan begitu user balik ke app setelah _notifyReadyForPickup
+  /// membuka WhatsApp. Cuma di titik INI ready_notified beneran ditulis
+  /// ke Firestore - kalau user pilih "Belum", tombol "Kabari Pelanggan"
+  /// tetap muncul supaya bisa dicoba lagi.
+  void _showConfirmMessageSentDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rLg)),
+        title: Text(
+          'Sudah dikirim?',
+          style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cOnSurface),
+        ),
+        content: Text(
+          'Apakah pesan "pesanan siap diambil" sudah berhasil dikirim ke pelanggan lewat WhatsApp?',
+          style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('Belum', style: GoogleFonts.beVietnamPro(color: _cOnSurfaceVariant)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _markReadyNotified();
+              if (mounted) await _fetchOrder();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _cPrimaryContainer,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text('Ya, Sudah', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Kontak umum ke pelanggan (tombol "Hubungi Pelanggan" di action bar),
@@ -2643,7 +2779,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   /// preselectedOrderId supaya CreateDeliveryScheduleScreen tidak perlu
   /// nyari/milih order lagi dari daftar - mode juga otomatis terkunci ke
   /// 'pengantaran'.
-  Future<void> _openScheduleDeliverySheet(_OrderDetailData order) async {
+  Future<void> _openScheduleDeliverySheet(_OrderDetailData order, {bool isEditing = false}) async {
     final scheduled = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => CreateDeliveryScheduleScreen(
@@ -2653,7 +2789,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     );
 
     if (scheduled == true) {
-      _showSnack(_t.deliveryScheduleSuccess);
+      _showSnack(isEditing ? 'Jadwal pengantaran berhasil diperbarui' : _t.deliveryScheduleSuccess);
       await _fetchOrder();
     }
   }
@@ -2713,11 +2849,20 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                     child: ElevatedButton.icon(
                       onPressed: (_isUpdatingStatus || order.hasPendingCancellationRequest)
                           ? null
-                          : () => _openScheduleDeliverySheet(order),
-                      icon: const Icon(Icons.local_shipping_outlined, size: 18),
-                      label: Text(_t.scheduleDeliveryButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14)),
+                          : () => _openScheduleDeliverySheet(order, isEditing: order.hasLogisticsSchedule),
+                      icon: Icon(
+                        order.hasLogisticsSchedule ? Icons.edit_calendar_outlined : Icons.local_shipping_outlined,
+                        size: 18,
+                      ),
+                      label: Text(
+                        order.hasLogisticsSchedule ? 'Ubah Jadwal Pengantaran' : _t.scheduleDeliveryButtonLabel,
+                        style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _cPrimaryContainer,
+                        // Warna beda dikit begitu udah dijadwalkan - biar
+                        // sekilas kelihatan ini mode "ubah", bukan "buat
+                        // baru", tanpa mesti baca teksnya dulu.
+                        backgroundColor: order.hasLogisticsSchedule ? _cSecondary : _cPrimaryContainer,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rXl)),

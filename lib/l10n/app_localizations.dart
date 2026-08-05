@@ -4733,7 +4733,7 @@ abstract class AppLocalizations {
   /// No description provided for @whatsappOrderReadyPickupMessage.
   ///
   /// In id, this message translates to:
-  /// **'Halo kak {name}!, ini Netwash 😊 . Pesanan kamu ({orderNumber}) sudah selesai dan siap. Mau diantar ke alamat atau mau diambil sendiri ya?'**
+  /// **'Halo kak {name}!, ini Netwash 😊 . Pesanan kamu ({orderNumber}) sudah selesai dan siap diambil oleh kakak, mau diambil jam berapa ya kak?. Ditunggu ya 🙏'**
   String whatsappOrderReadyPickupMessage(String name, String orderNumber);
 
   /// No description provided for @whatsappContactMessage.
