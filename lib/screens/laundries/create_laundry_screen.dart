@@ -3,7 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/services/app_feedback.dart';
 import '../../l10n/app_localizations.dart';
 import '../../repositories/subscription_repository.dart';
 
@@ -55,16 +58,16 @@ class _DS {
 
 const _kFieldFill = Color(0xFFF7F8FA);
 
-class CreateLaundryScreen extends StatefulWidget {
+class CreateLaundryScreen extends ConsumerStatefulWidget {
   final String? laundryId;
 
   const CreateLaundryScreen({Key? key, this.laundryId}) : super(key: key);
 
   @override
-  State<CreateLaundryScreen> createState() => _CreateLaundryScreenState();
+  ConsumerState<CreateLaundryScreen> createState() => _CreateLaundryScreenState();
 }
 
-class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
+class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
   final _formKey = GlobalKey<FormState>();
 
   bool get isEditMode => widget.laundryId != null;
@@ -87,6 +90,17 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
 
   // Loading khusus saat mengambil data existing di mode edit
   bool _isLoadingInitialData = false;
+
+  /// Alert error - disamakan persis dengan CreateOrderScreen: pakai
+  /// AppSnackbar (bukan SnackBar bawaan) + getar & suara error lewat
+  /// AppFeedback, supaya rasanya konsisten di seluruh form "Tambah"/"Edit"
+  /// (dipakai baik untuk mode create maupun edit cabang, karena keduanya
+  /// lewat layar & method yang sama).
+  void _showError(String message) {
+    AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+    AppFeedback.playSound(ref, AppSound.error);
+    AppSnackbar.error(context, message);
+  }
 
   // List Perusahaan (untuk dropdown company_id)
   List<Map<String, dynamic>> _companiesList = [];
@@ -182,9 +196,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       final data = doc.data();
       if (data == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.branchDataNotFoundError), backgroundColor: Colors.redAccent),
-          );
+          _showError(AppLocalizations.of(context)!.branchDataNotFoundError);
           context.pop();
         }
         return;
@@ -222,9 +234,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.loadBranchDataError(e.toString())), backgroundColor: Colors.redAccent),
-        );
+        _showError(AppLocalizations.of(context)!.loadBranchDataError(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isLoadingInitialData = false);
@@ -385,9 +395,7 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
   Future<void> _saveLaundry() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCompanyId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.companyNotSelectedWarning), backgroundColor: Colors.orangeAccent),
-      );
+      _showError(AppLocalizations.of(context)!.companyNotSelectedWarning);
       return;
     }
 
@@ -470,19 +478,14 @@ class _CreateLaundryScreenState extends State<CreateLaundryScreen> {
 
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isEditMode ? l10n.branchUpdateSuccess : l10n.branchAddSuccess),
-            backgroundColor: const Color(0xFF51CF66),
-          ),
-        );
+        AppFeedback.haptic(ref);
+        AppFeedback.playSound(ref, AppSound.success);
+        AppSnackbar.success(context, isEditMode ? l10n.branchUpdateSuccess : l10n.branchAddSuccess);
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.saveBranchError(e.toString())), backgroundColor: Colors.redAccent),
-        );
+        _showError(AppLocalizations.of(context)!.saveBranchError(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
