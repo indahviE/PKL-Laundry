@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../models/employee.dart';
 import '../../repositories/employee_repository.dart';
 import '../../repositories/laundry_repository.dart';
@@ -367,9 +368,7 @@ class EmployeeDetailScreen extends ConsumerWidget {
                   context,
                   icon: Icons.lock_reset_outlined,
                   label: AppLocalizations.of(context)!.resetPasswordLabel,
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(AppLocalizations.of(context)!.resetPasswordUnavailable, style: GoogleFonts.beVietnamPro())),
-                  ),
+                  onTap: () => AppSnackbar.info(context, AppLocalizations.of(context)!.resetPasswordUnavailable),
                 ),
                 const SizedBox(height: AppTheme.xxl),
 

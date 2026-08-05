@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../repositories/subscription_repository.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -493,19 +494,16 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   }
 
   void _showSnack(String message, {bool isError = false, bool isWarning = false, bool isSuccess = false}) {
-    final color = isError
-        ? _DS.error
-        : isWarning
-            ? const Color(0xFFE8590C)
-            : isSuccess
-                ? const Color(0xFF51CF66)
-                : null;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: GoogleFonts.beVietnamPro()),
-        backgroundColor: color,
-      ),
-    );
+    if (!mounted) return;
+    if (isError) {
+      AppSnackbar.error(context, message);
+    } else if (isSuccess) {
+      AppSnackbar.success(context, message);
+    } else {
+      // isWarning maupun default (belum ada varian warning di AppSnackbar,
+      // jadi dipetakan ke info) tetap tampil konsisten dengan toast lain.
+      AppSnackbar.info(context, message);
+    }
   }
 
   @override
