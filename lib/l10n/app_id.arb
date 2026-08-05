@@ -1182,6 +1182,18 @@
   "manageCustomersPermissionShort": "Mengelola Pelanggan",
   "viewReportsPermissionShort": "Melihat Laporan",
   "activityHistoryLabel": "Riwayat Aktivitas",
+  "activityLogEntryLabel": "{stage} · {orderNumber}",
+  "@activityLogEntryLabel": {
+    "placeholders": { "stage": {"type": "String"}, "orderNumber": {"type": "String"} }
+  },
+  "activityHistoryUnavailable": "Riwayat aktivitas belum tersedia.",
+  "today": "Hari Ini",
+  "yesterday": "Kemarin",
+  "loggedInActivityLabel": "Masuk ke akun",
+  "loggedOutActivityLabel": "Keluar dari akun",
+  "latestActivityBadge": "Terbaru",
+  "noActivityYet": "Belum ada aktivitas.",
+  "viewAllActivityLabel": "Lihat semua aktivitas",
   "activityHistoryUnavailable": "Riwayat aktivitas belum tersedia.",
   "resetPasswordLabel": "Reset Password",
   "resetPasswordUnavailable": "Reset password belum tersedia.",

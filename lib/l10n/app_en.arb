@@ -1134,6 +1134,18 @@
   "manageCustomersPermissionShort": "Manage Customers",
   "viewReportsPermissionShort": "View Reports",
   "activityHistoryLabel": "Activity History",
+  "activityLogEntryLabel": "{stage} · {orderNumber}",
+  "@activityLogEntryLabel": {
+    "placeholders": { "stage": {"type": "String"}, "orderNumber": {"type": "String"} }
+  },
+  "activityHistoryUnavailable": "Activity history is not available yet.",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "loggedInActivityLabel": "Logged in",
+  "loggedOutActivityLabel": "Logged out",
+  "latestActivityBadge": "Latest",
+  "noActivityYet": "No activity yet.",
+  "viewAllActivityLabel": "View all activity",
   "activityHistoryUnavailable": "Activity history is not available yet.",
   "resetPasswordLabel": "Reset Password",
   "resetPasswordUnavailable": "Password reset is not available yet.",
