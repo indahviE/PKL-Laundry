@@ -1760,6 +1760,12 @@ abstract class AppLocalizations {
   /// **'Riwayat Pesanan'**
   String get orderHistoryTitle;
 
+  /// Tombol di order detail (status ready, self-pickup) untuk mengabari pelanggan lewat WhatsApp sebelum order ditandai selesai
+  ///
+  /// In id, this message translates to:
+  /// **'Kabari Pelanggan Siap Diambil'**
+  String get notifyReadyForPickupButtonLabel;
+
   /// No description provided for @viewAllOrdersComingSoon.
   ///
   /// In id, this message translates to:

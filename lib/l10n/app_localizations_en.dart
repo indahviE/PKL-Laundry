@@ -942,6 +942,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orderHistoryTitle => 'Order History';
 
   @override
+  String get notifyReadyForPickupButtonLabel => 'Notify Customer It\'s Ready';
+
+  @override
   String get viewAllOrdersComingSoon =>
       'Navigate to full order history will be added';
 
