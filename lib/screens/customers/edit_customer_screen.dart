@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/services/app_feedback.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/app_input.dart';
 
 /// Edit Customer Screen
-class EditCustomerScreen extends StatefulWidget {
+class EditCustomerScreen extends ConsumerStatefulWidget {
   final String customerId;
 
   const EditCustomerScreen({
@@ -16,10 +19,10 @@ class EditCustomerScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<EditCustomerScreen> createState() => _EditCustomerScreenState();
+  ConsumerState<EditCustomerScreen> createState() => _EditCustomerScreenState();
 }
 
-class _EditCustomerScreenState extends State<EditCustomerScreen> {
+class _EditCustomerScreenState extends ConsumerState<EditCustomerScreen> {
   // Controllers
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
@@ -35,6 +38,16 @@ class _EditCustomerScreenState extends State<EditCustomerScreen> {
   bool _isSaving = false;
   String? _errorMessage;
   String? _customerName;
+
+  /// Alert error - disamakan persis dengan CreateOrderScreen/
+  /// CreateCustomerScreen: pakai AppSnackbar (bukan SnackBar bawaan) +
+  /// getar & suara error lewat AppFeedback, supaya rasanya konsisten
+  /// di seluruh form "Tambah"/"Edit".
+  void _showError(String message) {
+    AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+    AppFeedback.playSound(ref, AppSound.error);
+    AppSnackbar.error(context, message);
+  }
 
   @override
   void initState() {
@@ -117,22 +130,14 @@ class _EditCustomerScreenState extends State<EditCustomerScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Pelanggan berhasil diperbarui'),
-            backgroundColor: const Color(0xFF51CF66),
-          ),
-        );
+        AppFeedback.haptic(ref);
+        AppFeedback.playSound(ref, AppSound.success);
+        AppSnackbar.success(context, 'Pelanggan berhasil diperbarui');
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memperbarui pelanggan: $e'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
+        _showError('Gagal memperbarui pelanggan: $e');
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
