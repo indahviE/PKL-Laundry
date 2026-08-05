@@ -99,13 +99,15 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   // daftar ini, posisi itu tetap ditambahkan sebagai item tambahan di
   // dropdown supaya datanya tidak hilang/ke-reset.
   static const List<String> _positionOptions = [
-    'Manajer',
-    'Kasir',
-    'Operator Cuci',
-    'Quality Control',
-    'Kurir',
-    'Staff Gudang',
-  ];
+  'Manajer',
+  'Kasir',
+  'Operator Cuci',
+  'Operator Pengering',
+  'Operator Setrika',
+  'Quality Control',
+  'Kurir',
+  'Staff Gudang',
+];
 
   // Controller input form
   final _fullNameController = TextEditingController();
@@ -353,12 +355,12 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                 title: Text(AppLocalizations.of(context)!.quotaLimitReachedTitle, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
                 content: Text(
                   AppLocalizations.of(context)!.quotaLimitReachedContent,
-                  style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurfaceVariant),
+                  style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => ctx.pop(),
-                    child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.beVietnamPro(color: _DS.onSurfaceVariant)),
+                    child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurfaceVariant)),
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -453,10 +455,10 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
         title: Text(AppLocalizations.of(context)!.deactivateEmployeeTitle, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
         content: Text(
           AppLocalizations.of(context)!.deactivateEmployeeConfirm,
-          style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurfaceVariant),
+          style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
         ),
         actions: [
-          TextButton(onPressed: () => ctx.pop(false), child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.beVietnamPro(color: _DS.onSurfaceVariant))),
+          TextButton(onPressed: () => ctx.pop(false), child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurfaceVariant))),
           TextButton(
             onPressed: () => ctx.pop(true),
             child: Text(AppLocalizations.of(context)!.yesDeactivateButton, style: GoogleFonts.beVietnamPro(color: _DS.error, fontWeight: FontWeight.w600)),

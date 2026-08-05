@@ -363,9 +363,9 @@ const List<String> _stagesRequiringOperator = ['washing', 'drying', 'ironing', '
 /// "Operator Setrika" khusus tahap ironing).
 const Map<String, List<String>> _allowedPositionsByStage = {
   'washing': ['Operator Cuci'],
-  'drying': ['Operator Cuci'],
-  'ironing': ['Operator Cuci'],
-  'qualityCheck': ['Operator Cuci'],
+  'drying': ['Operator Pengering', 'Operator Cuci'], // Boleh juga masukkan 'Operator Cuci' jika orangnya sama
+  'ironing': ['Operator Setrika'],
+  'qualityCheck': ['Quality Control', 'Operator Setrika'],
 };
 
 /// Pesanan cuma bisa dibatalkan (langsung atau lewat pengajuan) selama

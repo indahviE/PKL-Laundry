@@ -114,13 +114,16 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
             employee.fullName.isNotEmpty ? employee.fullName : employee.employeeCode,
             employee.position,
           ),
-          style: _DS.bodySm(color: _DS.onSurfaceVariant),
+          style: _DS.bodySm(color: _DS.onSurfaceVariant).copyWith(fontSize: 13),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.beVietnamPro())),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurfaceVariant)),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(AppLocalizations.of(context)!.yesDeactivateButton, style: GoogleFonts.beVietnamPro(color: _DS.error, fontWeight: FontWeight.w600)),
+            child: Text(AppLocalizations.of(context)!.yesDeactivateButton, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.error)),
           ),
         ],
       ),
