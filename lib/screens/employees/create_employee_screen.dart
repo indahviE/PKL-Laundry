@@ -219,7 +219,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
 
       if (!doc.exists || doc.data() == null) {
         if (mounted) {
-          _showSnack(AppLocalizations.of(context)!.employeeNotFoundError, isError: false, isWarning: true);
+          _showSnack(AppLocalizations.of(context)!.employeeNotFoundError);
           context.pop();
         }
         return;
@@ -248,7 +248,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
       });
     } catch (e) {
       if (mounted) {
-        _showSnack(AppLocalizations.of(context)!.employeeLoadError(e.toString()), isError: true);
+        _showErrorSnack(AppLocalizations.of(context)!.employeeLoadError(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isFetchingEmployee = false);
@@ -311,11 +311,11 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   /// mengecek kuota lagi & tanpa menimpa created_at).
   Future<void> _saveEmployee() async {
     if (!_formKey.currentState!.validate()) {
-      _showSnack(AppLocalizations.of(context)!.completeRequiredFieldsWarning, isWarning: true);
+      _showSnack(AppLocalizations.of(context)!.completeRequiredFieldsWarning);
       return;
     }
     if (_selectedLaundryId == null) {
-      _showSnack(AppLocalizations.of(context)!.branchNotSelectedWarning, isWarning: true);
+      _showSnack(AppLocalizations.of(context)!.branchNotSelectedWarning);
       return;
     }
 
@@ -339,10 +339,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
 
       if (companyIdRef == null || companyIdRef.isEmpty) {
         if (mounted) {
-          _showSnack(
-            AppLocalizations.of(context)!.branchNotLinkedWarning,
-            isWarning: true,
-          );
+          _showSnack(AppLocalizations.of(context)!.branchNotLinkedWarning);
           setState(() => _isLoading = false);
         }
         return;
@@ -432,15 +429,14 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
       }
 
       if (mounted) {
-        _showSnack(
+        _showSuccessSnack(
           _isEditMode ? AppLocalizations.of(context)!.employeeUpdateSuccess : AppLocalizations.of(context)!.employeeAddSuccess,
-          isSuccess: true,
         );
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        _showSnack(AppLocalizations.of(context)!.employeeSaveError(e.toString()), isError: true);
+        _showErrorSnack(AppLocalizations.of(context)!.employeeSaveError(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -487,33 +483,31 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
         'updated_at': FieldValue.serverTimestamp(),
       });
       if (mounted) {
-        _showSnack(AppLocalizations.of(context)!.employeeDeactivatedSuccess, isSuccess: true);
+        _showSuccessSnack(AppLocalizations.of(context)!.employeeDeactivatedSuccess);
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        _showSnack(AppLocalizations.of(context)!.employeeDeactivateError(e.toString()), isError: true);
+        _showErrorSnack(AppLocalizations.of(context)!.employeeDeactivateError(e.toString()));
       }
     }
   }
 
-  void _showSnack(String message, {bool isError = false, bool isWarning = false, bool isSuccess = false}) {
+  void _showSuccessSnack(String message) {
     if (!mounted) return;
-    if (isError) {
-      AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
-      AppFeedback.playSound(ref, AppSound.error);
-      AppSnackbar.error(context, message);
-    } else if (isSuccess) {
-      AppFeedback.haptic(ref);
-      AppFeedback.playSound(ref, AppSound.success);
-      AppSnackbar.success(context, message);
-    } else {
-      // isWarning maupun default dipetakan ke AppSound.notification /
-      // AppSnackbar.info, konsisten sama toast informatif lainnya.
-      AppFeedback.haptic(ref, type: HapticFeedbackType.light);
-      AppFeedback.playSound(ref, AppSound.notification);
-      AppSnackbar.info(context, message);
-    }
+    AppFeedback.playSound(ref, AppSound.success);
+    AppSnackbar.success(context, message);
+  }
+
+  void _showErrorSnack(String message) {
+    if (!mounted) return;
+    AppFeedback.playSound(ref, AppSound.error);
+    AppSnackbar.error(context, message);
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    AppSnackbar.info(context, message);
   }
 
   @override

@@ -2120,6 +2120,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get saveEmployeeButton => 'Simpan Karyawan';
 
   @override
+  String get completeRequiredFieldsWarning =>
+      'Lengkapi dulu data yang wajib diisi';
+
+  @override
   String get employeeDetailTitle => 'Detail Karyawan';
 
   @override

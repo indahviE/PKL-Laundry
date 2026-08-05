@@ -1112,6 +1112,7 @@
   "canViewReportPermission": "Can View Financial Reports",
   "savingButton": "Saving...",
   "saveEmployeeButton": "Save Employee",
+  "completeRequiredFieldsWarning": "Please fill in all required fields",
   "employeeDetailTitle": "Employee Detail",
   "employeeCodeFallback": "Employee {code}",
   "@employeeCodeFallback": {

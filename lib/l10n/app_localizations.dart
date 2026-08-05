@@ -3890,6 +3890,12 @@ abstract class AppLocalizations {
   /// **'Simpan Karyawan'**
   String get saveEmployeeButton;
 
+  /// No description provided for @completeRequiredFieldsWarning.
+  ///
+  /// In id, this message translates to:
+  /// **'Lengkapi dulu data yang wajib diisi'**
+  String get completeRequiredFieldsWarning;
+
   /// No description provided for @employeeDetailTitle.
   ///
   /// In id, this message translates to:
@@ -4733,7 +4739,7 @@ abstract class AppLocalizations {
   /// No description provided for @whatsappOrderReadyPickupMessage.
   ///
   /// In id, this message translates to:
-  /// **'Halo kak {name}!, ini Netwash 😊 . Pesanan kamu ({orderNumber}) sudah selesai dan siap. Mau diantar ke alamat atau mau diambil sendiri ya?'**
+  /// **'Halo kak {name}!, ini Netwash 😊 . Pesanan kamu ({orderNumber}) sudah selesai dan siap diambil oleh kakak, mau diambil jam berapa ya kak?. Ditunggu ya 🙏'**
   String whatsappOrderReadyPickupMessage(String name, String orderNumber);
 
   /// No description provided for @whatsappContactMessage.
