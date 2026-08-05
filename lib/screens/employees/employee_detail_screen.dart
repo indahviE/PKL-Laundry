@@ -63,6 +63,7 @@ class _ActivityItem {
   final String label;
   final String time;
   final String dateGroup;
+  final DateTime? date; 
   final bool isLatest;
 
   const _ActivityItem({
@@ -70,6 +71,7 @@ class _ActivityItem {
     required this.label,
     required this.time,
     required this.dateGroup,
+    required this.date, 
     this.isLatest = false,
   });
 }
@@ -98,20 +100,21 @@ class EmployeeDetailScreen extends ConsumerWidget {
   /// jadi _ActivityItem (model UI). Entri pertama (paling baru, karena
   /// stream sudah di-sort descending) ditandai isLatest.
   List<_ActivityItem> _buildActivityItems(BuildContext context, List<EmployeeActivityEntry> entries) {
-    final l10n = AppLocalizations.of(context)!;
-    return List.generate(entries.length, (i) {
-      final e = entries[i];
-      return _ActivityItem(
-        icon: _iconForActivityStatus(e.status),
-        label: l10n.activityLogEntryLabel(_statusLabelFor(context, e.status), e.orderNumber),
-        time: e.timestamp != null
-            ? '${e.timestamp!.hour.toString().padLeft(2, '0')}.${e.timestamp!.minute.toString().padLeft(2, '0')}'
-            : '-',
-        dateGroup: _dateGroupFor(context, e.timestamp),
-        isLatest: i == 0,
-      );
-    });
-  }
+  final l10n = AppLocalizations.of(context)!;
+  return List.generate(entries.length, (i) {
+    final e = entries[i];
+    return _ActivityItem(
+      icon: _iconForActivityStatus(e.status),
+      label: l10n.activityLogEntryLabel(_statusLabelFor(context, e.status), e.orderNumber),
+      time: e.timestamp != null
+          ? '${e.timestamp!.hour.toString().padLeft(2, '0')}.${e.timestamp!.minute.toString().padLeft(2, '0')}'
+          : '-',
+      dateGroup: _dateGroupFor(context, e.timestamp),
+      date: e.timestamp, // <-- ini yang kemungkinan hilang
+      isLatest: i == 0,
+    );
+  });
+}
 
   IconData _iconForActivityStatus(String status) {
     switch (status) {
@@ -121,6 +124,8 @@ class EmployeeDetailScreen extends ConsumerWidget {
         return Icons.air;
       case 'ironing':
         return Icons.checkroom;
+      case 'courier':                    
+        return Icons.delivery_dining;  
       case 'qualityCheck':
         return Icons.verified;
       default:
@@ -784,9 +789,8 @@ class _ActivityHistoryCardState extends State<_ActivityHistoryCard> {
   bool _expanded = false;
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  DateTime? _selectedDate;
 
-  // Halaman aktif per grup tanggal, supaya tiap grup bisa digeser
-  // independen (mis. "Hari Ini" di halaman 2, "Kemarin" tetap di 1).
   final Map<String, int> _pageByGroup = {};
 
   @override
@@ -795,18 +799,28 @@ class _ActivityHistoryCardState extends State<_ActivityHistoryCard> {
     super.dispose();
   }
 
-  /// Tanpa query: hanya tampilkan aktivitas hari ini. Dengan query: cari
-  /// di label aktivitas/no. order MAUPUN nama grup tanggalnya (jadi ketik
-  /// "Kemarin" atau "4/8/2026" juga bisa langsung nemu).
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
   List<_ActivityItem> _filtered(BuildContext context) {
     final q = _query.trim().toLowerCase();
-    if (q.isEmpty) {
+    Iterable<_ActivityItem> items = widget.activities;
+
+    if (_selectedDate != null) {
+      // Filter tanggal (date picker) diprioritaskan.
+      items = items.where((a) => a.date != null && _isSameDay(a.date!, _selectedDate!));
+    } else if (q.isEmpty) {
+      // Default: belum ada query & belum pilih tanggal -> tampilkan hari ini.
       final todayLabel = AppLocalizations.of(context)!.today;
-      return widget.activities.where((a) => a.dateGroup == todayLabel).toList();
+      items = items.where((a) => a.dateGroup == todayLabel);
     }
-    return widget.activities
-        .where((a) => a.label.toLowerCase().contains(q) || a.dateGroup.toLowerCase().contains(q))
-        .toList();
+
+    if (q.isNotEmpty) {
+      items = items.where((a) =>
+          a.label.toLowerCase().contains(q) || a.dateGroup.toLowerCase().contains(q));
+    }
+
+    return items.toList();
   }
 
   Map<String, List<_ActivityItem>> _groupByDate(List<_ActivityItem> items) {
@@ -815,6 +829,39 @@ class _ActivityHistoryCardState extends State<_ActivityHistoryCard> {
       map.putIfAbsent(item.dateGroup, () => []).add(item);
     }
     return map;
+  }
+
+  Future<void> _pickDate(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? now,
+      firstDate: DateTime(now.year - 2),
+      lastDate: now,
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+                primary: _DS.primary,
+                onPrimary: Colors.white,
+                onSurface: _DS.onSurface,
+              ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _pageByGroup.clear();
+      });
+    }
+  }
+
+  void _clearDate() {
+    setState(() {
+      _selectedDate = null;
+      _pageByGroup.clear();
+    });
   }
 
   @override
@@ -876,36 +923,92 @@ class _ActivityHistoryCardState extends State<_ActivityHistoryCard> {
                       ),
                     )
                   else ...[
-                    // Kotak pencarian: nama aktivitas, no. order, atau
-                    // tanggal (mis. ketik "Kemarin" buat lihat aktivitas
-                    // kemarin, tanpa perlu pindah halaman).
-                    TextField(
-                      controller: _searchController,
-                      onChanged: (v) => setState(() => _query = v),
-                      style: _DS.bodyMd(color: _DS.onSurface).copyWith(fontSize: 13.5),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: 'Cari aktivitas, no. order, atau tanggal...',
-                        hintStyle: _DS.bodySm(color: _DS.onSurfaceVariant.withOpacity(0.7)),
-                        prefixIcon: Icon(Icons.search, size: 18, color: _DS.onSurfaceVariant.withOpacity(0.7)),
-                        suffixIcon: _query.isEmpty
-                            ? null
-                            : InkWell(
-                                onTap: () => setState(() {
-                                  _searchController.clear();
-                                  _query = '';
-                                }),
-                                child: Icon(Icons.close, size: 16, color: _DS.onSurfaceVariant.withOpacity(0.7)),
+                    // Search box + tombol kalender di sampingnya.
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (v) => setState(() => _query = v),
+                            style: _DS.bodyMd(color: _DS.onSurface).copyWith(fontSize: 13.5),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              hintText: 'Cari aktivitas atau no. order...',
+                              hintStyle: _DS.bodySm(color: _DS.onSurfaceVariant.withOpacity(0.7)),
+                              prefixIcon: Icon(Icons.search, size: 18, color: _DS.onSurfaceVariant.withOpacity(0.7)),
+                              suffixIcon: _query.isEmpty
+                                  ? null
+                                  : InkWell(
+                                      onTap: () => setState(() {
+                                        _searchController.clear();
+                                        _query = '';
+                                      }),
+                                      child: Icon(Icons.close, size: 16, color: _DS.onSurfaceVariant.withOpacity(0.7)),
+                                    ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              filled: true,
+                              fillColor: _DS.canvas,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
                               ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        filled: true,
-                        fillColor: _DS.canvas,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () => _pickDate(context),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            height: 42,
+                            width: 42,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: _selectedDate != null ? _DS.primaryFixed : _DS.canvas,
+                              borderRadius: BorderRadius.circular(12),
+                              border: _selectedDate != null
+                                  ? Border.all(color: _DS.primary, width: 1)
+                                  : null,
+                            ),
+                            child: Icon(
+                              Icons.calendar_today_outlined,
+                              size: 18,
+                              color: _selectedDate != null ? _DS.primary : _DS.onSurfaceVariant.withOpacity(0.7),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+
+                    if (_selectedDate != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: _DS.primaryFixed.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                                  style: _DS.bodySm(color: _DS.primary, weight: FontWeight.w700).copyWith(fontSize: 11.5),
+                                ),
+                                const SizedBox(width: 6),
+                                InkWell(
+                                  onTap: _clearDate,
+                                  child: Icon(Icons.close, size: 13, color: _DS.primary),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+
                     const SizedBox(height: 14),
 
                     if (filtered.isEmpty)

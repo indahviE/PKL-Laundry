@@ -224,7 +224,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
                     const SizedBox(height: 22),
                     _buildSearchBar(),
                     const SizedBox(height: AppTheme.lg),
-                    _buildTotalStat(allEmployees.length),
+                    _buildTotalStat(employees.length),
                     const SizedBox(height: AppTheme.lg),
                     _buildStatusChips(),
                     const SizedBox(height: 12),

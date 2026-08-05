@@ -12,9 +12,6 @@ class EmployeeRepository {
   CollectionReference<Map<String, dynamic>> get _employeesRef =>
       _firestore.collection('users').doc(userId).collection('employees');
 
-  /// FIX: previously constructed Employee with `fullName`/`role`, which no
-  /// longer exist on the model - blueprint §3.3.2 links an employee to
-  /// their profile via `profile_id` and calls the job title `position`.
   Future<Employee> addEmployee(Employee employee) async {
     final docRef = _employeesRef.doc();
     final now = DateTime.now();
@@ -75,9 +72,6 @@ class EmployeeRepository {
     });
   }
 
-  /// Soft-terminate rather than delete, so historical orders/payroll still
-  /// resolve `employee_id` to a real record (matches blueprint's
-  /// `termination_date` field, which only makes sense if the doc survives).
   Future<void> terminateEmployee(String employeeId) async {
     await _employeesRef.doc(employeeId).update({
       'is_active': false,
@@ -90,15 +84,18 @@ class EmployeeRepository {
     await _employeesRef.doc(employeeId).delete();
   }
 
-  /// Tahap proses yang dicatat sebagai aktivitas karyawan - sama persis
-  /// dengan _stagesRequiringOperator di OrderDetailScreen.
-  static const _trackedActivityStages = {'washing', 'drying', 'ironing', 'qualityCheck'};
+  /// Tahap proses operasional biasa + aktivitas kurir
+  static const _trackedActivityStages = {
+    'washing',
+    'drying',
+    'ironing',
+    'qualityCheck',
+    'delivered',
+    'delivery',
+    'courier'
+  };
 
-  /// Riwayat aktivitas pengerjaan tahap proses milik 1 karyawan, di-derive
-  /// dari status_history semua order (bukan koleksi terpisah). Dibatasi ke
-  /// [orderLimit] order TERBARU (diurutkan updated_at) supaya tidak perlu
-  /// scan seluruh histori order toko - cukup untuk kebutuhan "aktivitas
-  /// terkini" di halaman detail karyawan.
+  /// Riwayat aktivitas pengerjaan tahap proses & pengantaran kurir milik 1 karyawan
   Stream<List<EmployeeActivityEntry>> streamEmployeeActivityLog(
     String employeeId, {
     int orderLimit = 60,
@@ -116,19 +113,43 @@ class EmployeeRepository {
         final data = doc.data();
         final orderNumber = (data['order_number'] ?? doc.id) as String;
         final rawHistory = (data['status_history'] as List?) ?? [];
+        final courierId = data['courier_id'] ?? data['courierId'];
+
+        // 1. Cek dari status_history (Operator Cuci, Pengering, Setrika, QC, & Kurir jika dicatatkan di history)
         for (final raw in rawHistory) {
           final map = Map<String, dynamic>.from(raw as Map);
-          if (map['employee_id'] != employeeId) continue;
           final status = (map['status'] ?? '') as String;
-          if (!_trackedActivityStages.contains(status)) continue;
-          final ts = map['timestamp'];
-          entries.add(EmployeeActivityEntry(
-            status: status,
-            orderNumber: orderNumber,
-            timestamp: ts is Timestamp ? ts.toDate() : null,
-          ));
+          final empId = map['employee_id'] ?? map['employeeId'];
+
+          if (empId == employeeId && _trackedActivityStages.contains(status)) {
+            final ts = map['timestamp'];
+            entries.add(EmployeeActivityEntry(
+              status: status == 'delivered' || status == 'delivery' ? 'courier' : status,
+              orderNumber: orderNumber,
+              timestamp: ts is Timestamp ? ts.toDate() : null,
+            ));
+          }
+        }
+
+        // 2. Cek khusus aktivitas kurir berdasarkan courierId di order (misal lewat markDelivered)
+        if (courierId == employeeId) {
+          final orderStatus = (data['status'] ?? '') as String;
+          final deliveredAt = data['delivery_date'] ?? data['delivered_at'] ?? data['deliveredAt'];
+          if (orderStatus == 'delivered' || orderStatus == 'completed' || deliveredAt != null) {
+            final ts = data['delivered_at'] ?? data['updated_at'];
+            // Hindari duplikasi jika sudah ter-track di status_history
+            final isAlreadyAdded = entries.any((e) => e.orderNumber == orderNumber && e.status == 'courier');
+            if (!isAlreadyAdded) {
+              entries.add(EmployeeActivityEntry(
+                status: 'courier',
+                orderNumber: orderNumber,
+                timestamp: ts is Timestamp ? ts.toDate() : null,
+              ));
+            }
+          }
         }
       }
+
       entries.sort((a, b) {
         final ta = a.timestamp ?? DateTime.fromMillisecondsSinceEpoch(0);
         final tb = b.timestamp ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -144,19 +165,13 @@ final employeeRepositoryProvider = Provider<EmployeeRepository>((ref) {
   return EmployeeRepository(userId: userId);
 });
 
-/// Stream real-time satu dokumen karyawan berdasarkan ID, dipakai oleh
-/// EmployeeDetailScreen supaya halaman detail langsung ikut ter-update
-/// begitu ada perubahan di Firestore (mis. setelah terminasi).
 final employeeDetailProvider = StreamProvider.family<Employee?, String>((ref, employeeId) {
   final repo = ref.watch(employeeRepositoryProvider);
   return repo.streamEmployee(employeeId);
 });
 
-/// Satu entri riwayat pengerjaan tahap proses (washing/drying/ironing/
-/// qualityCheck) oleh seorang karyawan, di-derive dari status_history
-/// milik order - BUKAN koleksi terpisah, jadi nggak nambah model file.
 class EmployeeActivityEntry {
-  final String status; // 'washing' | 'drying' | 'ironing' | 'qualityCheck'
+  final String status; // 'washing' | 'drying' | 'ironing' | 'qualityCheck' | 'courier'
   final String orderNumber;
   final DateTime? timestamp;
 
@@ -167,8 +182,6 @@ class EmployeeActivityEntry {
   });
 }
 
-/// Stream real-time riwayat aktivitas pengerjaan tahap proses milik 1
-/// karyawan, dipakai oleh EmployeeDetailScreen.
 final employeeActivityLogProvider =
     StreamProvider.family<List<EmployeeActivityEntry>, String>((ref, employeeId) {
   final repo = ref.watch(employeeRepositoryProvider);
