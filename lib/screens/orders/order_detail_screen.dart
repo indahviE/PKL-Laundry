@@ -2822,7 +2822,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
     );
 
     if (scheduled == true) {
-      _showSnack(isEditing ? 'Jadwal pengantaran berhasil diperbarui' : _t.deliveryScheduleSuccess);
+      _showSnack(isEditing ? _t.deliveryScheduleUpdateSuccess : _t.deliveryScheduleSuccess);
       await _fetchOrder();
     }
   }
@@ -2893,7 +2893,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
                         size: 18,
                       ),
                       label: Text(
-                        order.hasLogisticsSchedule ? 'Ubah Jadwal Pengantaran' : _t.scheduleDeliveryButtonLabel,
+                        order.hasLogisticsSchedule ? _t.editDeliveryScheduleButtonLabel : _t.scheduleDeliveryButtonLabel,
                         style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14),
                       ),
                       style: ElevatedButton.styleFrom(

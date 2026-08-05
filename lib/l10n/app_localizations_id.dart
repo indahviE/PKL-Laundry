@@ -2789,6 +2789,30 @@ class AppLocalizationsId extends AppLocalizations {
   String get scheduleDeliveryButtonLabel => 'Jadwalkan Pengantaran';
 
   @override
+  String get editDeliveryScheduleButtonLabel => 'Ubah Jadwal Pengantaran';
+
+  @override
+  String get branchFollowsSelectedOrderHint =>
+      'Cabang mengikuti pesanan yang dipilih';
+
+  @override
+  String get addressAutoFilledFromCustomerHint =>
+      'Alamat otomatis dari data pelanggan - ganti kalau perlu';
+
+  @override
+  String noActiveCourierInBranchHint(String branchName) {
+    return 'Belum ada kurir aktif di cabang $branchName';
+  }
+
+  @override
+  String get courierMatchesScheduleHint =>
+      'Sesuai jadwal yang sudah dibuat - ganti kalau perlu';
+
+  @override
+  String get deliveryScheduleUpdateSuccess =>
+      'Jadwal pengantaran berhasil diperbarui';
+
+  @override
   String get contactCustomerButtonLabel => 'Hubungi Pelanggan';
 
   @override

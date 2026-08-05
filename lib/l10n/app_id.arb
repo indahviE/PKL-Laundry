@@ -1553,6 +1553,19 @@
   "notifyReadyForDeliveryButtonLabel": "Kabari Siap Diantar",
   "notifyViaWhatsappButtonLabel": "Kabari via WhatsApp",
   "scheduleDeliveryButtonLabel": "Jadwalkan Pengantaran",
+  "editDeliveryScheduleButtonLabel": "Ubah Jadwal Pengantaran",
+  "branchFollowsSelectedOrderHint": "Cabang mengikuti pesanan yang dipilih",
+  "addressAutoFilledFromCustomerHint": "Alamat otomatis dari data pelanggan - ganti kalau perlu",
+  "noActiveCourierInBranchHint": "Belum ada kurir aktif di cabang {branchName}",
+  "@noActiveCourierInBranchHint": {
+    "placeholders": {
+      "branchName": {
+        "type": "String"
+      }
+    }
+  },
+  "courierMatchesScheduleHint": "Sesuai jadwal yang sudah dibuat - ganti kalau perlu",
+  "deliveryScheduleUpdateSuccess": "Jadwal pengantaran berhasil diperbarui",
   "contactCustomerButtonLabel": "Hubungi Pelanggan",
   "confirmOrderButtonLabel": "Konfirmasi Pesanan",
   "startProcessButtonLabel": "Mulai Proses",

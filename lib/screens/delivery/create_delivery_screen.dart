@@ -820,7 +820,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  'Cabang mengikuti pesanan yang dipilih',
+                  l10n.branchFollowsSelectedOrderHint,
                   style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.primary, fontStyle: FontStyle.italic),
                 ),
               ),
@@ -878,7 +878,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  'Alamat otomatis dari data pelanggan - ganti kalau perlu',
+                  l10n.addressAutoFilledFromCustomerHint,
                   style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.primary, fontStyle: FontStyle.italic),
                 ),
               ),
@@ -980,7 +980,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
             ),
             child: Text(
               _selectedLaundry != null
-                  ? 'Belum ada kurir aktif di cabang ${_selectedLaundry!.name}'
+                  ? l10n.noActiveCourierInBranchHint(_selectedLaundry!.name)
                   : l10n.noCourierEmployeeScheduleHint,
               style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant),
             ),

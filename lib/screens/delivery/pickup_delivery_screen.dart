@@ -1519,7 +1519,7 @@ class _ConfirmDeliverySheetState extends ConsumerState<ConfirmDeliverySheet> {
                     Icon(Icons.auto_awesome, size: 11, color: _DS.primary),
                     const SizedBox(width: 4),
                     Text(
-                      'Sesuai jadwal yang sudah dibuat - ganti kalau perlu',
+                      l10n.courierMatchesScheduleHint,
                       style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.primary, fontStyle: FontStyle.italic),
                     ),
                   ],

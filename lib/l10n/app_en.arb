@@ -1508,6 +1508,19 @@
   "notifyReadyForDeliveryButtonLabel": "Notify Ready for Delivery",
   "notifyViaWhatsappButtonLabel": "Notify via WhatsApp",
   "scheduleDeliveryButtonLabel": "Schedule Delivery",
+  "editDeliveryScheduleButtonLabel": "Change Delivery Schedule",
+  "deliveryScheduleUpdateSuccess": "Delivery schedule updated successfully",
+  "branchFollowsSelectedOrderHint": "Branch follows the selected order",
+  "addressAutoFilledFromCustomerHint": "Address auto-filled from customer data - change if needed",
+  "noActiveCourierInBranchHint": "No active couriers at {branchName} branch yet",
+  "@noActiveCourierInBranchHint": {
+    "placeholders": {
+      "branchName": {
+        "type": "String"
+      }
+    }
+  },
+  "courierMatchesScheduleHint": "Matches the schedule already set - change if needed",
   "contactCustomerButtonLabel": "Contact Customer",
   "confirmOrderButtonLabel": "Confirm Order",
   "startProcessButtonLabel": "Start Processing",
