@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import '../../core/themes/app_theme.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/services/app_feedback.dart';
@@ -70,10 +71,25 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
   TimeOfDay? _selectedTime;
 
   bool _prefilledFromOrder = false;
+  // TAMBAHAN: true kalau _addressController ke-isi otomatis dari
+  // customers/{customerId}.address (bukan dari jadwal lama atau ketikan
+  // manual) - dipakai buat nampilin hint kecil di bawah field alamat.
+  bool _addressAutoFilledFromCustomer = false;
 
-  List<Employee> _couriers = [];
+  // Semua karyawan aktif posisi kurir (LINTAS CABANG, belum difilter) -
+  // difilter per cabang lewat getter _branchCouriers di bawah, supaya
+  // kurir dari cabang lain gak ikut nongol di dropdown.
+  List<Employee> _allCouriers = [];
   bool _isLoadingCouriers = true;
   Employee? _selectedCourier;
+
+  /// Kurir yang beneran terdaftar di cabang yang sedang aktif
+  /// (_selectedLaundry). Kalau belum ada cabang terpilih, fallback ke
+  /// SEMUA kurir dulu - begitu order/cabang jelas, list ini otomatis
+  /// menyempit ke kurir cabang itu doang.
+  List<Employee> get _branchCouriers => _selectedLaundry == null
+      ? _allCouriers
+      : _allCouriers.where((c) => c.laundryId == _selectedLaundry!.id).toList();
 
   List<Laundry> _laundries = [];
   bool _isLoadingLaundries = true;
@@ -108,7 +124,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
       final repo = EmployeeRepository(userId: uid);
       final all = await repo.streamEmployees().first;
       setState(() {
-        _couriers = all.where((e) => e.isActive && e.position.toLowerCase().contains('kurir')).toList();
+        _allCouriers = all.where((e) => e.isActive && e.position.toLowerCase().contains('kurir')).toList();
         _isLoadingCouriers = false;
       });
       _lockCourierToOrder();
@@ -117,18 +133,20 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     }
   }
 
-  /// Cocokkan courierId dari order.logisticsSchedule ke daftar _couriers -
-  /// dipanggil di 2 tempat (akhir _fetchCouriers DAN akhir
-  /// _fetchPreselectedOrder), sama pola dengan _lockBranchToOrder, supaya
-  /// gak masalah siapa yang kelar duluan (race condition). Sebelumnya
-  /// pencocokan kurir cuma dicoba SEKALI inline di _fetchPreselectedOrder -
-  /// kalau _couriers masih kosong di titik itu (fetch-nya belum kelar),
-  /// kurir yang harusnya ke-prefill jadi gak muncul, padahal datanya ada.
+  /// Cocokkan courierId dari order.logisticsSchedule ke daftar
+  /// _branchCouriers (BUKAN _allCouriers) - dipanggil di beberapa tempat
+  /// (akhir _fetchCouriers, akhir _lockBranchToOrder, dan setelah user
+  /// milih order manual), sama pola race-condition-safe kayak
+  /// _lockBranchToOrder. Sengaja dicocokkan ke _branchCouriers supaya
+  /// kalau data lama nyimpen courierId dari cabang LAIN (efek bug
+  /// sebelumnya yang gak nyaring cabang sama sekali), dia GAK ikut
+  /// ke-prefill lagi - kasir tinggal pilih ulang kurir yang bener buat
+  /// cabang ini.
   void _lockCourierToOrder() {
-    if (_selectedOrder == null || _couriers.isEmpty || _selectedCourier != null) return;
+    if (_selectedOrder == null || _branchCouriers.isEmpty || _selectedCourier != null) return;
     final courierId = _selectedOrder!.logisticsSchedule?.courierId;
     if (courierId == null || courierId.isEmpty) return;
-    final match = _couriers.where((c) => c.id == courierId);
+    final match = _branchCouriers.where((c) => c.id == courierId);
     if (match.isNotEmpty && mounted) {
       setState(() => _selectedCourier = match.first);
     }
@@ -185,6 +203,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
 
       _lockBranchToOrder();
       _lockCourierToOrder();
+      _fetchCustomerAddress(order.customerId);
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
@@ -194,12 +213,54 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     }
   }
 
+  /// Ambil alamat pelanggan dari users/{uid}/customers/{customerId} dan
+  /// prefill ke _addressController - HANYA kalau field alamat masih
+  /// kosong (order belum pernah dijadwalkan sebelumnya dengan alamat
+  /// tersimpan di logisticsSchedule, dan belum diketik manual). Dipanggil
+  /// setiap kali order (otomatis customer-nya) berubah, baik dari mode
+  /// preselected maupun _pickOrder manual.
+  Future<void> _fetchCustomerAddress(String customerId) async {
+    if (customerId.isEmpty) return;
+    if (_addressController.text.trim().isNotEmpty) return;
+    try {
+      final uid = ref.read(orderRepositoryProvider).userId;
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('customers')
+          .doc(customerId)
+          .get();
+      if (!mounted || !doc.exists) return;
+      final address = ((doc.data()?['address'] ?? '') as String).trim();
+      if (address.isEmpty) return;
+      // Cek lagi barangkali sempat diisi manual selagi nunggu fetch ini.
+      if (_addressController.text.trim().isEmpty) {
+        setState(() {
+          _addressController.text = address;
+          _addressAutoFilledFromCustomer = true;
+        });
+      }
+    } catch (_) {
+      // Gagal diam-diam - ini cuma fitur pelengkap, user tetap bisa isi
+      // alamat manual, gak perlu ganggu alur dengan snackbar error.
+    }
+  }
+
+  /// Cocokkan cabang order ke daftar _laundries - TIDAK lagi dibatasi
+  /// hanya untuk mode _isLocked (order dari OrderDetailScreen). Sekarang
+  /// dipanggil juga begitu user milih order manual lewat _pickOrder,
+  /// supaya cabang OTOMATIS ke-detect dari order-nya sendiri, bukan
+  /// harus dipilih manual dulu di dropdown.
   void _lockBranchToOrder() {
-    if (!_isLocked || _selectedOrder == null || _laundries.isEmpty) return;
+    if (_selectedOrder == null || _laundries.isEmpty) return;
     final match = _laundries.where((l) => l.id == _selectedOrder!.laundryId);
     if (match.isNotEmpty && mounted) {
       setState(() => _selectedLaundry = match.first);
     }
+    // Cabang baru ke-tahu -> kurir yang sebelumnya kepilih (kalau dari
+    // cabang lain / belum tepat) perlu dicoba cocokkan ulang ke daftar
+    // kurir cabang ini.
+    _lockCourierToOrder();
   }
 
   bool _matchesMode(Order order) {
@@ -260,6 +321,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                             setState(() {
                               _selectedOrder = order;
                               _prefilledFromOrder = false;
+                              _selectedCourier = null;
 
                               final schedule = order.logisticsSchedule;
                               if (schedule != null && schedule.mode == _mode) {
@@ -271,12 +333,15 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                                 if ((schedule.address ?? '').isNotEmpty) {
                                   _addressController.text = schedule.address!;
                                 }
-                                if ((schedule.courierId ?? '').isNotEmpty) {
-                                  final match = _couriers.where((c) => c.id == schedule.courierId);
-                                  if (match.isNotEmpty) _selectedCourier = match.first;
-                                }
+                                // Kurir & cabang DIPINDAH ke
+                                // _lockBranchToOrder/_lockCourierToOrder di
+                                // bawah - supaya cabang ke-isi OTOMATIS dari
+                                // order ini, dan kurir cuma dicocokkan dari
+                                // kurir yang beneran ada di cabang tsb.
                               }
                             });
+                            _lockBranchToOrder();
+                            _fetchCustomerAddress(order.customerId);
                             Navigator.pop(dialogContext);
                           },
                         );
@@ -724,11 +789,18 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
                           ),
                         ))
                     .toList(),
-                onChanged: _isLocked
+                // Dikunci begitu ADA order terpilih - baik dari mode
+                // preselected (_isLocked) MAUPUN dari _pickOrder manual.
+                // Cabang sekarang MENGIKUTI order, bukan dipilih manual
+                // duluan. Cuma bisa diubah bebas selama belum ada order
+                // sama sekali (dipakai buat nyaring daftar order di
+                // _pickOrder).
+                onChanged: (_isLocked || _selectedOrder != null)
                     ? null
                     : (val) => setState(() {
                           _selectedLaundry = val;
                           _selectedOrder = null;
+                          _selectedCourier = null;
                         }),
                 decoration: InputDecoration(
                   hintText: l10n.selectBranchHint,
@@ -740,6 +812,21 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
               ),
             ),
           ),
+        if (_selectedOrder != null) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, size: 12, color: _DS.primary),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  'Cabang mengikuti pesanan yang dipilih',
+                  style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.primary, fontStyle: FontStyle.italic),
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -774,7 +861,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
             controller: _addressController,
             maxLines: 3,
             style: GoogleFonts.beVietnamPro(fontSize: 13.5),
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) => setState(() => _addressAutoFilledFromCustomer = false),
             decoration: InputDecoration(
               hintText: l10n.addressFieldExampleHint,
               hintStyle: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
@@ -783,6 +870,21 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
             ),
           ),
         ),
+        if (_addressAutoFilledFromCustomer) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, size: 12, color: _DS.primary),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  'Alamat otomatis dari data pelanggan - ganti kalau perlu',
+                  style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.primary, fontStyle: FontStyle.italic),
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -869,7 +971,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
             alignment: Alignment.center,
             child: const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
           )
-        else if (_couriers.isEmpty)
+        else if (_branchCouriers.isEmpty)
           Container(
             padding: const EdgeInsets.all(AppTheme.md),
             decoration: BoxDecoration(
@@ -877,7 +979,9 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
               borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             ),
             child: Text(
-              l10n.noCourierEmployeeScheduleHint,
+              _selectedLaundry != null
+                  ? 'Belum ada kurir aktif di cabang ${_selectedLaundry!.name}'
+                  : l10n.noCourierEmployeeScheduleHint,
               style: GoogleFonts.beVietnamPro(fontSize: 12, color: _DS.onSurfaceVariant),
             ),
           )
@@ -888,7 +992,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
               child: DropdownButtonFormField<Employee>(
                 isExpanded: true,
                 value: _selectedCourier,
-                items: _couriers
+                items: _branchCouriers
                     .map((c) => DropdownMenuItem<Employee>(
                           value: c,
                           child: Text(

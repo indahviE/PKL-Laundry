@@ -244,6 +244,12 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
           orderId: order.id,
           customerName: order.customerName,
           orderNumber: order.orderNumber,
+          // Kalau order ini sudah pernah dijadwalkan (via
+          // CreateDeliveryScheduleScreen), kurirnya udah ketahuan dari
+          // logisticsSchedule - dioper ke sheet supaya langsung
+          // ke-prefill, gak nanya ulang dari nol.
+          scheduledCourierId: order.logisticsSchedule?.courierId,
+          scheduledCourierName: order.logisticsSchedule?.courierName,
         ),
       );
       if (confirmed == true) {
@@ -1367,13 +1373,23 @@ class ConfirmDeliverySheet extends ConsumerStatefulWidget {
   final String orderId;
   final String? customerName;
   final String orderNumber;
+  // Kurir yang SUDAH dipilih sebelumnya di CreateDeliveryScheduleScreen
+  // (dari order.logisticsSchedule) - kalau ada, dropdown di sheet ini
+  // langsung ke-prefill dengan kurir itu, jadi kasir gak perlu milih
+  // ulang dari nol saat konfirmasi "Sudah Diantar". Null berarti order
+  // ini memang belum pernah dijadwalkan lewat sistem (langsung diproses
+  // manual), jadi tetap perlu dipilih di sini.
+  final String? scheduledCourierId;
+  final String? scheduledCourierName;
 
   const ConfirmDeliverySheet({
     Key? key,
     required this.orderId,
     this.customerName,
     required this.orderNumber,
-  }) : super(key: key);
+    this.scheduledCourierId,
+    this.scheduledCourierName,
+  }) : super(key: key); 
 
   @override
   ConsumerState<ConfirmDeliverySheet> createState() => _ConfirmDeliverySheetState();
@@ -1407,11 +1423,25 @@ class _ConfirmDeliverySheetState extends ConsumerState<ConfirmDeliverySheet> {
             .toList();
         _isLoadingCouriers = false;
       });
+      _prefillScheduledCourier();
     } catch (e) {
       setState(() {
         _couriersError = e.toString();
         _isLoadingCouriers = false;
       });
+    }
+  }
+
+  /// Cocokkan widget.scheduledCourierId ke daftar _couriers yang baru
+  /// dimuat - begitu ketemu, langsung set sebagai _selectedCourier supaya
+  /// dropdown udah terisi begitu sheet ini kebuka, gak nyuruh kasir pilih
+  /// ulang kurir yang sebenarnya udah ditentukan sejak jadwal dibuat.
+  void _prefillScheduledCourier() {
+    final courierId = widget.scheduledCourierId;
+    if (courierId == null || courierId.isEmpty || _couriers.isEmpty) return;
+    final match = _couriers.where((c) => c.id == courierId);
+    if (match.isNotEmpty && mounted) {
+      setState(() => _selectedCourier = match.first);
     }
   }
 
@@ -1482,6 +1512,19 @@ class _ConfirmDeliverySheetState extends ConsumerState<ConfirmDeliverySheet> {
                 l10n.assignedCourierLabel,
                 style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.onSurface),
               ),
+              if (_selectedCourier != null && widget.scheduledCourierId == _selectedCourier!.id) ...[
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Icon(Icons.auto_awesome, size: 11, color: _DS.primary),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Sesuai jadwal yang sudah dibuat - ganti kalau perlu',
+                      style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.primary, fontStyle: FontStyle.italic),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: AppTheme.sm),
 
               if (_isLoadingCouriers)
@@ -1723,6 +1766,10 @@ class _OrderLogisticsCard extends StatelessWidget {
     final pickupSchedule = order.logisticsSchedule;
     final hasPickupCourier = category == _LogisticsCategory.needsPickup && (pickupSchedule?.hasCourier ?? false);
     final needsCourierAssignment = category == _LogisticsCategory.needsPickup && !hasPickupCourier;
+    // TAMBAHAN: kalau kategori masih perlu dijemput TAPI belum ada kurir yang
+    // ditugaskan, tombol "Tandai Sudah Dijemput" harus dikunci - jangan sampai
+    // barang ditandai udah dijemput padahal belum jelas siapa yang jemput.
+    final isPickupBlocked = category == _LogisticsCategory.needsPickup && needsCourierAssignment;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -1860,9 +1907,12 @@ class _OrderLogisticsCard extends StatelessWidget {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: isUpdating ? null : (category == _LogisticsCategory.needsPickup ? onMarkPickedUp : onMarkDelivered),
+                            onPressed: (isUpdating || isPickupBlocked)
+                                ? null
+                                : (category == _LogisticsCategory.needsPickup ? onMarkPickedUp : onMarkDelivered),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: categoryColor,
+                              backgroundColor: isPickupBlocked ? _DS.outlineVariant.withOpacity(0.5) : categoryColor,
+                              disabledBackgroundColor: _DS.outlineVariant.withOpacity(0.5),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
@@ -1879,17 +1929,19 @@ class _OrderLogisticsCard extends StatelessWidget {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
-                                        category == _LogisticsCategory.needsPickup ? Icons.check_circle_outline : Icons.check_circle_outline,
+                                        isPickupBlocked ? Icons.person_off_outlined : Icons.check_circle_outline,
                                         size: 16,
                                       ),
                                       const SizedBox(width: 6),
                                       Flexible(
                                         child: Text(
-                                          switch (category) {
-                                            _LogisticsCategory.needsPickup => l10n.markPickedUpButton,
-                                            _LogisticsCategory.selfService => l10n.markSelfPickedUpButton,
-                                            _ => l10n.markDeliveredButton,
-                                          },
+                                          isPickupBlocked
+                                              ? l10n.courierNotAssignedLabel
+                                              : switch (category) {
+                                                  _LogisticsCategory.needsPickup => l10n.markPickedUpButton,
+                                                  _LogisticsCategory.selfService => l10n.markSelfPickedUpButton,
+                                                  _ => l10n.markDeliveredButton,
+                                                },
                                           overflow: TextOverflow.ellipsis,
                                           style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13),
                                         ),
