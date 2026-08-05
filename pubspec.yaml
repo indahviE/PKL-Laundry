@@ -101,3 +101,4 @@ flutter:
     - asset/splash/
     - asset/sounds/success.wav
     - asset/sounds/error.wav
+    - asset/sounds/notif.wav

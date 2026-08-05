@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/notif_prefs_provider.dart';
 
 enum HapticFeedbackType { light, medium, heavy }
-enum AppSound { success, error }
+enum AppSound { success, error, notification }
 
 class AppFeedback {
   static final _player = AudioPlayer();
@@ -34,9 +34,11 @@ class AppFeedback {
 
     // Pakai UrlSource (bukan AssetSource) - path persis sesuai yang
     // ke-serve, tanpa auto-prefix "assets/" yang bikin bingung di web.
-    final path = sound == AppSound.success
-        ? 'asset/sounds/success.wav'
-        : 'asset/sounds/error.wav';
+    final path = switch (sound) {
+      AppSound.success => 'asset/sounds/success.wav',
+      AppSound.error => 'asset/sounds/error.wav',
+      AppSound.notification => 'asset/sounds/notif.wav',
+    };
     try {
       await _player.play(UrlSource(path));
     } catch (e) {
