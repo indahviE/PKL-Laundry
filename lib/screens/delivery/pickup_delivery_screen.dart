@@ -22,6 +22,8 @@ import '../orders/create_order_screen.dart' show OrderItemForm;
 // "Tambah Jadwal" di bawah supaya kedua alur bisa diakses dari 1 tempat.
 // TODO: sesuaikan path ini kalau lokasi filenya berbeda di project kamu.
 import 'create_delivery_screen.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/services/app_feedback.dart';
 
 /// Local design tokens matching the new "NetWash Utility System" design.
 /// Disamakan dengan ServicesListScreen supaya seluruh alur Antar Jemput
@@ -224,7 +226,7 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
     );
 
     if (confirmed == true) {
-      _showSnack(AppLocalizations.of(context)!.markedPickedUpSnackbar(order.orderNumber));
+      _showSuccessSnack(AppLocalizations.of(context)!.markedPickedUpSnackbar(order.orderNumber));
     }
   }
 
@@ -245,7 +247,7 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
         ),
       );
       if (confirmed == true) {
-        _showSnack(AppLocalizations.of(context)!.markedDeliveredCompletedSnackbar(order.orderNumber));
+        _showSuccessSnack(AppLocalizations.of(context)!.markedDeliveredCompletedSnackbar(order.orderNumber));
       }
     } else {
       await _markDelivered(order);
@@ -261,11 +263,11 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
             courierName: courierName,
           );
       if (mounted) {
-        _showSnack(AppLocalizations.of(context)!.markedDeliveredSnackbar(order.orderNumber));
+        _showSuccessSnack(AppLocalizations.of(context)!.markedDeliveredSnackbar(order.orderNumber));
       }
     } catch (e) {
       if (mounted) {
-        _showSnack(AppLocalizations.of(context)!.genericUpdateError(e.toString()), isError: true);
+        _showErrorSnack(AppLocalizations.of(context)!.genericUpdateError(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _updatingOrderId = null);
@@ -295,14 +297,20 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
     );
   }
 
-  void _showSnack(String message, {bool isError = false}) {
+  /// Suara + snackbar hijau untuk aksi yang berhasil, mengikuti pola yang
+  /// sama dengan CreateServiceScreen (AppFeedback.playSound + AppSnackbar).
+  void _showSuccessSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: GoogleFonts.beVietnamPro()),
-        backgroundColor: isError ? _DS.error : null,
-      ),
-    );
+    AppFeedback.playSound(ref, AppSound.success);
+    AppSnackbar.success(context, message);
+  }
+
+  /// Suara + snackbar merah untuk aksi yang gagal, mengikuti pola yang
+  /// sama dengan CreateServiceScreen.
+  void _showErrorSnack(String message) {
+    if (!mounted) return;
+    AppFeedback.playSound(ref, AppSound.error);
+    AppSnackbar.error(context, message);
   }
 
   List<Order> _applyFilters(List<Order> orders) {
@@ -792,16 +800,16 @@ class _AddScheduleModeSheet extends StatelessWidget {
 /// pola-nya dengan _EditServiceSheet & _showRecordPaymentDialog di layar
 /// lain (state loading lokal, showModalBottomSheet, pop(true) kalau
 /// sukses supaya pemanggil bisa nampilin snackbar).
-class _ConfirmPickupSheet extends StatefulWidget {
+class _ConfirmPickupSheet extends ConsumerStatefulWidget {
   final Order order;
 
   const _ConfirmPickupSheet({required this.order});
 
   @override
-  State<_ConfirmPickupSheet> createState() => _ConfirmPickupSheetState();
+  ConsumerState<_ConfirmPickupSheet> createState() => _ConfirmPickupSheetState();
 }
 
-  class _ConfirmPickupSheetState extends State<_ConfirmPickupSheet> {
+class _ConfirmPickupSheetState extends ConsumerState<_ConfirmPickupSheet> {
   late final ServiceRepository _serviceRepository;
   List<Service> _services = [];
   List<OrderItemForm> _items = [];
@@ -958,18 +966,13 @@ class _ConfirmPickupSheet extends StatefulWidget {
     final rawDp = _dpAmountController.text.replaceAll(RegExp(r'[^0-9]'), '');
     final dp = double.tryParse(rawDp) ?? 0;
     if (dp <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.dpAmountRequiredError, style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
-      );
+      AppFeedback.playSound(ref, AppSound.error);
+      AppSnackbar.error(context, l10n.dpAmountRequiredError);
       return null;
     }
     if (dp >= _subtotal) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.dpAmountTooLargeError, style: GoogleFonts.beVietnamPro()),
-          backgroundColor: _DS.error,
-        ),
-      );
+      AppFeedback.playSound(ref, AppSound.error);
+      AppSnackbar.error(context, l10n.dpAmountTooLargeError);
       return null;
     }
     return dp;
@@ -979,20 +982,15 @@ class _ConfirmPickupSheet extends StatefulWidget {
   Future<void> _handleConfirm() async {
     final l10n = AppLocalizations.of(context)!;
     if (_items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.minOneItemError, style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
-      );
+      AppFeedback.playSound(ref, AppSound.error);
+      AppSnackbar.error(context, l10n.minOneItemError);
       return;
     }
 
     for (final item in _items) {
       if (item.pricingType == PricingType.perKg && item.weight <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.weightRequiredError(item.name), style: GoogleFonts.beVietnamPro()),
-            backgroundColor: _DS.error,
-          ),
-        );
+        AppFeedback.playSound(ref, AppSound.error);
+        AppSnackbar.error(context, l10n.weightRequiredError(item.name));
         return;
       }
     }
@@ -1034,12 +1032,14 @@ class _ConfirmPickupSheet extends StatefulWidget {
         paymentStatus: paymentStatus, // TAMBAHAN
       );
 
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) {
+        AppFeedback.playSound(ref, AppSound.success);
+        Navigator.pop(context, true);
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.confirmFailedError(e.toString()), style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
-        );
+        AppFeedback.playSound(ref, AppSound.error);
+        AppSnackbar.error(context, l10n.confirmFailedError(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -1425,13 +1425,15 @@ class _ConfirmDeliverySheetState extends ConsumerState<ConfirmDeliverySheet> {
         courierName: _selectedCourier?.fullName,
         markAsCompleted: true,
       );
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) {
+        AppFeedback.playSound(ref, AppSound.success);
+        Navigator.pop(context, true);
+      }
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.confirmFailedError(e.toString()), style: GoogleFonts.beVietnamPro()), backgroundColor: _DS.error),
-        );
+        AppFeedback.playSound(ref, AppSound.error);
+        AppSnackbar.error(context, l10n.confirmFailedError(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/services/app_feedback.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/employee.dart';
 import '../../models/laundry.dart';
@@ -137,7 +139,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
       final l10n = AppLocalizations.of(context)!;
 
       if (order == null) {
-        _showSnack(l10n.orderNotFoundError, isError: true);
+        _showErrorSnack(l10n.orderNotFoundError);
         setState(() => _isLoadingPreselected = false);
         return;
       }
@@ -168,7 +170,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        _showSnack(l10n.loadOrderError(e.toString()), isError: true);
+        _showErrorSnack(l10n.loadOrderError(e.toString()));
         setState(() => _isLoadingPreselected = false);
       }
     }
@@ -313,15 +315,15 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
   Future<void> _handleSave() async {
     final l10n = AppLocalizations.of(context)!;
     if (_selectedOrder == null) {
-      _showSnack(l10n.selectOrderRequiredError, isError: true);
+      _showErrorSnack(l10n.selectOrderRequiredError);
       return;
     }
     if (_addressController.text.trim().isEmpty) {
-      _showSnack(l10n.addressRequiredError, isError: true);
+      _showErrorSnack(l10n.addressRequiredError);
       return;
     }
     if (_selectedDate == null || _selectedTime == null) {
-      _showSnack(l10n.dateTimeRequiredError, isError: true);
+      _showErrorSnack(l10n.dateTimeRequiredError);
       return;
     }
 
@@ -345,24 +347,31 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
             notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
           );
       if (mounted) {
-        _showSnack(l10n.scheduleSaveSuccess);
+        _showSuccessSnack(l10n.scheduleSaveSuccess);
         Navigator.of(context).pop(true);
       }
     } catch (e) {
-      _showSnack(l10n.scheduleSaveError(e.toString()), isError: true);
+      _showErrorSnack(l10n.scheduleSaveError(e.toString()));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 
-  void _showSnack(String message, {bool isError = false}) {
+  void _showSuccessSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: GoogleFonts.beVietnamPro()),
-        backgroundColor: isError ? _DS.error : null,
-      ),
-    );
+    AppFeedback.playSound(ref, AppSound.success);
+    AppSnackbar.success(context, message);
+  }
+
+  void _showErrorSnack(String message) {
+    if (!mounted) return;
+    AppFeedback.playSound(ref, AppSound.error);
+    AppSnackbar.error(context, message);
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    AppSnackbar.info(context, message);
   }
 
   @override
