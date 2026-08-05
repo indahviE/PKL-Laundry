@@ -3980,11 +3980,59 @@ abstract class AppLocalizations {
   /// **'Riwayat Aktivitas'**
   String get activityHistoryLabel;
 
+  /// No description provided for @activityLogEntryLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'{stage} · {orderNumber}'**
+  String activityLogEntryLabel(String stage, String orderNumber);
+
   /// No description provided for @activityHistoryUnavailable.
   ///
   /// In id, this message translates to:
   /// **'Riwayat aktivitas belum tersedia.'**
   String get activityHistoryUnavailable;
+
+  /// No description provided for @today.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari Ini'**
+  String get today;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In id, this message translates to:
+  /// **'Kemarin'**
+  String get yesterday;
+
+  /// No description provided for @loggedInActivityLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Masuk ke akun'**
+  String get loggedInActivityLabel;
+
+  /// No description provided for @loggedOutActivityLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Keluar dari akun'**
+  String get loggedOutActivityLabel;
+
+  /// No description provided for @latestActivityBadge.
+  ///
+  /// In id, this message translates to:
+  /// **'Terbaru'**
+  String get latestActivityBadge;
+
+  /// No description provided for @noActivityYet.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada aktivitas.'**
+  String get noActivityYet;
+
+  /// No description provided for @viewAllActivityLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Lihat semua aktivitas'**
+  String get viewAllActivityLabel;
 
   /// No description provided for @resetPasswordLabel.
   ///

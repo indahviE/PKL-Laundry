@@ -2158,8 +2158,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityHistoryLabel => 'Activity History';
 
   @override
+  String activityLogEntryLabel(String stage, String orderNumber) {
+    return '$stage · $orderNumber';
+  }
+
+  @override
   String get activityHistoryUnavailable =>
       'Activity history is not available yet.';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String get loggedInActivityLabel => 'Logged in';
+
+  @override
+  String get loggedOutActivityLabel => 'Logged out';
+
+  @override
+  String get latestActivityBadge => 'Latest';
+
+  @override
+  String get noActivityYet => 'No activity yet.';
+
+  @override
+  String get viewAllActivityLabel => 'View all activity';
 
   @override
   String get resetPasswordLabel => 'Reset Password';

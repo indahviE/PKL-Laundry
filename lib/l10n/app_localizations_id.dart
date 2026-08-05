@@ -2168,7 +2168,33 @@ class AppLocalizationsId extends AppLocalizations {
   String get activityHistoryLabel => 'Riwayat Aktivitas';
 
   @override
+  String activityLogEntryLabel(String stage, String orderNumber) {
+    return '$stage · $orderNumber';
+  }
+
+  @override
   String get activityHistoryUnavailable => 'Riwayat aktivitas belum tersedia.';
+
+  @override
+  String get today => 'Hari Ini';
+
+  @override
+  String get yesterday => 'Kemarin';
+
+  @override
+  String get loggedInActivityLabel => 'Masuk ke akun';
+
+  @override
+  String get loggedOutActivityLabel => 'Keluar dari akun';
+
+  @override
+  String get latestActivityBadge => 'Terbaru';
+
+  @override
+  String get noActivityYet => 'Belum ada aktivitas.';
+
+  @override
+  String get viewAllActivityLabel => 'Lihat semua aktivitas';
 
   @override
   String get resetPasswordLabel => 'Reset Password';
