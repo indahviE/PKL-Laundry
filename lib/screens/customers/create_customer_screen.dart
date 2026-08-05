@@ -160,6 +160,11 @@ class _CreateCustomerScreenState extends ConsumerState<CreateCustomerScreen> {
   /// Handle save customer -> tulis ke Firestore: users/{uid}/customers
   Future<void> _handleSaveCustomer(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) {
+      // Selain teks merah kecil di bawah tiap field, sekarang juga
+      // munculin alert (snackbar merah + getar + suara error) - disamakan
+      // dengan CreateDeliveryScreen, supaya user yang gak ngeh ada teks
+      // error di field tetap kelihatan ada yang salah pas pencet Simpan.
+      _showError('Lengkapi data yang wajib diisi terlebih dahulu');
       return;
     }
 
