@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/themes/app_theme.dart';
 import '../../core/themes/design_tokens.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../models/employee.dart';
 import '../../models/laundry.dart';
 import '../../repositories/employee_repository.dart';
@@ -132,9 +133,7 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     if (confirmed == true) {
       await ref.read(employeeRepositoryProvider).terminateEmployee(employee.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.employeeDeactivatedWithCodeSuccess(employee.employeeCode), style: GoogleFonts.beVietnamPro())),
-        );
+        AppSnackbar.success(context, AppLocalizations.of(context)!.employeeDeactivatedWithCodeSuccess(employee.employeeCode));
       }
     }
   }
