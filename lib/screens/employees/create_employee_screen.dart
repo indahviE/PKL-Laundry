@@ -219,7 +219,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
 
       if (!doc.exists || doc.data() == null) {
         if (mounted) {
-          _showSnack(AppLocalizations.of(context)!.employeeNotFoundError);
+          _showErrorSnack(AppLocalizations.of(context)!.employeeNotFoundError);
           context.pop();
         }
         return;
@@ -311,11 +311,11 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   /// mengecek kuota lagi & tanpa menimpa created_at).
   Future<void> _saveEmployee() async {
     if (!_formKey.currentState!.validate()) {
-      _showSnack(AppLocalizations.of(context)!.completeRequiredFieldsWarning);
+      _showErrorSnack(AppLocalizations.of(context)!.completeRequiredFieldsWarning);
       return;
     }
     if (_selectedLaundryId == null) {
-      _showSnack(AppLocalizations.of(context)!.branchNotSelectedWarning);
+      _showErrorSnack(AppLocalizations.of(context)!.branchNotSelectedWarning);
       return;
     }
 
@@ -339,7 +339,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
 
       if (companyIdRef == null || companyIdRef.isEmpty) {
         if (mounted) {
-          _showSnack(AppLocalizations.of(context)!.branchNotLinkedWarning);
+          _showErrorSnack(AppLocalizations.of(context)!.branchNotLinkedWarning);
           setState(() => _isLoading = false);
         }
         return;

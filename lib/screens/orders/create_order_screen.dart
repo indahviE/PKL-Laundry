@@ -493,6 +493,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   /// dalam 1 Firestore transaction.
   Future<void> _handleSaveOrder() async {
     if (!_formKey.currentState!.validate()) {
+      _showErrorSnack(_t.completeRequiredFieldsWarning);
       return;
     }
 
