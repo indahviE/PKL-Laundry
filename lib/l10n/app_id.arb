@@ -1160,6 +1160,7 @@
   "canViewReportPermission": "Dapat Melihat Laporan Keuangan (Report)",
   "savingButton": "Menyimpan...",
   "saveEmployeeButton": "Simpan Karyawan",
+  "completeRequiredFieldsWarning": "Lengkapi dulu data yang wajib diisi",
   "employeeDetailTitle": "Detail Karyawan",
   "employeeCodeFallback": "Karyawan {code}",
   "@employeeCodeFallback": {
