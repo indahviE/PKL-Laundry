@@ -5,18 +5,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/app_feedback.dart';
 
 /// Dashboard Screen - NetWash
 /// Terintegrasi dengan Firebase Firestore (Real-time Streams)
 /// Mengimplementasikan Fitur Gating / Limit Paket Langganan secara Asli
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // Disamain PERSIS sama _DS di services_list_screen.dart ("NetWash
   // Utility System") — primary #0061A4, navy #0B3B66, card pakai shadow
   // (bukan border), font Be Vietnam Pro. Supaya Dashboard & halaman
@@ -44,6 +46,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Status dismiss checklist onboarding secara lokal
   bool _setupDismissed = false;
 
+  // Jumlah pending order terakhir yang sudah "diketahui". null = belum
+  // pernah dapat data sama sekali (baru buka dashboard) -> jangan bunyi
+  // di load pertama, cuma bunyi kalau count-nya NAIK dari nilai ini.
+  int? _lastKnownPendingCount;
   // Cabang yang lagi dipilih di selector atas. 'all' = tampilkan semua
   // cabang. Dipakai buat filter query 'orders' lewat _ordersBaseQuery()
   // di bawah (balance card, notifikasi, chart mingguan, & timeline).
@@ -555,6 +561,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
       stream: pendingQuery.snapshots(),
       builder: (context, snapshot) {
         final pendingCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
+
+        // Bunyiin suara notif HANYA kalau count pending naik dibanding
+        // yang terakhir diketahui - bukan tiap kali snapshot lewat (bisa
+        // ke-trigger juga oleh perubahan field lain di order yang match
+        // query). Load pertama (_lastKnownPendingCount masih null) juga
+        // sengaja tidak dibunyikan, supaya order lama yang udah nunggu
+        // dari sebelum dashboard dibuka nggak ikut kebunyi.
+        if (snapshot.hasData) {
+          final previousCount = _lastKnownPendingCount;
+          if (previousCount != null && pendingCount > previousCount) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) AppFeedback.playSound(ref, AppSound.notification);
+            });
+          }
+          if (previousCount != pendingCount) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _lastKnownPendingCount = pendingCount);
+            });
+          }
+        }
 
         return InkWell(
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
