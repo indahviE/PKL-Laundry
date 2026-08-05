@@ -542,6 +542,10 @@
   "phoneLabel": "Telepon",
   "customerAddressLabel": "Alamat",
   "orderHistoryTitle": "Riwayat Pesanan",
+  "notifyReadyForPickupButtonLabel": "Kabari Pelanggan Siap Diambil",
+  "@notifyReadyForPickupButtonLabel": {
+    "description": "Tombol di order detail (status ready, self-pickup) untuk mengabari pelanggan lewat WhatsApp sebelum order ditandai selesai"
+  },
   "viewAllOrdersComingSoon": "Navigasi ke semua riwayat pesanan akan ditambahkan",
   "noOrderHistoryLabel": "Belum ada riwayat pesanan",
   "orderStatusPending": "Menunggu",
@@ -1445,7 +1449,7 @@
       }
     }
   },
-  "whatsappOrderReadyPickupMessage": "Halo kak {name}!, ini Netwash 😊 . Pesanan kamu ({orderNumber}) sudah selesai dan siap. Mau diantar ke alamat atau mau diambil sendiri ya?",
+  "whatsappOrderReadyPickupMessage": "Halo kak {name}!, ini Netwash 😊 . Pesanan kamu ({orderNumber}) sudah selesai dan siap diambil oleh kakak, mau diambil jam berapa ya kak?. Ditunggu ya 🙏",
   "@whatsappOrderReadyPickupMessage": {
     "placeholders": {
       "name": {

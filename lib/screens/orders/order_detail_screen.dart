@@ -224,6 +224,13 @@ class _OrderDetailData {
   final String assignedEmployeeId;
   final String assignedEmployeeName;
 
+  // --- Notifikasi "siap diambil" (khusus self-pickup) ---
+  // True kalau kasir/owner sudah pernah nge-tap tombol "Kabari Pelanggan"
+  // di tahap 'ready' - dipakai buat gating tombol maju status jadi
+  // 'completed', supaya alur self-pickup gak bisa ditandai selesai
+  // sebelum pelanggan beneran dikabarin dulu.
+  final bool readyNotified;
+
   _OrderDetailData({
     required this.orderNumber,
     required this.customerName,
@@ -245,6 +252,7 @@ class _OrderDetailData {
     this.cancellationRequest,
     this.assignedEmployeeId = '',
     this.assignedEmployeeName = '',
+    this.readyNotified = false,
   });
 
   /// True kalau ada pengajuan pembatalan yang masih menunggu approval.
@@ -325,6 +333,7 @@ class _OrderDetailData {
           : null,
       assignedEmployeeId: (data['assigned_employee_id'] ?? '') as String,
       assignedEmployeeName: (data['assigned_employee_name'] ?? '') as String,
+      readyNotified: (data['ready_notified'] ?? false) as bool,
     );
   }
 }
@@ -1053,10 +1062,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   /// Kirim pesan WA generik lewat wa.me. Dipisah jadi helper sendiri
   /// supaya beberapa aksi WhatsApp lain bisa reuse logic buka-link +
   /// validasi nomor kosong yang sama.
-  Future<void> _launchWhatsappMessage(String phone, String message) async {
+  Future<bool> _launchWhatsappMessage(String phone, String message) async {
     if (phone.isEmpty) {
       _showSnack(_t.customerPhoneUnavailable, isError: true);
-      return;
+      return false;
     }
 
     final normalized = _normalizePhone(phone);
@@ -1065,6 +1074,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     if (!launched && mounted) {
       _showSnack(_t.whatsappOpenError, isError: true);
     }
+    return launched;
   }
 
   /// Buka WhatsApp ke nomor customer, isi pesan otomatis bahwa
@@ -1080,6 +1090,36 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     }
 
     await _launchWhatsappMessage(order.customerPhone, message);
+  }
+
+  /// Simpan penanda bahwa pelanggan sudah dikabari "pesanan siap diambil"
+  /// (self-pickup, status masih 'ready'). Kegagalan nulis ini bukan error
+  /// fatal - WA-nya sudah kebuka duluan, cuma tombol gak otomatis ganti
+  /// sampai halaman di-refresh manual.
+  Future<void> _markReadyNotified() async {
+    try {
+      await _ordersRef.doc(widget.orderId).update({
+        'ready_notified': true,
+        'ready_notified_at': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {
+      // sengaja diabaikan, lihat catatan di atas
+    }
+  }
+
+  /// Kirim WA "pesanan siap diambil" khusus alur self-pickup SAAT STATUS
+  /// MASIH 'ready' - beda dari _openWhatsapp yang jalan di status
+  /// 'completed'. Dipakai supaya kasir gak bisa langsung "Tandai Selesai"
+  /// sebelum beneran ngabarin pelanggan dulu. Begitu WA berhasil kebuka,
+  /// flag ready_notified disimpan dan tombol otomatis berganti jadi
+  /// "Tandai Selesai" (lewat _fetchOrder() di akhir).
+  Future<void> _notifyReadyForPickup(_OrderDetailData order) async {
+    final message = _t.whatsappOrderReadyPickupMessage(order.customerName, order.orderNumber);
+    final launched = await _launchWhatsappMessage(order.customerPhone, message);
+    if (!launched) return;
+
+    await _markReadyNotified();
+    if (mounted) await _fetchOrder();
   }
 
   /// Kontak umum ke pelanggan (tombol "Hubungi Pelanggan" di action bar),
@@ -2626,6 +2666,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     // rencana antar), bukan "Tandai Selesai" biasa - penyelesaiannya baru
     // terjadi belakangan di PickupDeliveryScreen begitu kurir konfirmasi.
     final showScheduleDeliveryButton = order.status == 'ready' && order.isDelivery;
+    // Self-pickup di tahap 'ready' - HARUS kabarin pelanggan dulu lewat WA
+    // sebelum bisa ditandai selesai. Begitu readyNotified == true (sudah
+    // pernah tap tombol ini), baris ini jadi false, dan tombol otomatis
+    // fallback ke tombol maju status normal ("Tandai Selesai").
+    final showNotifyReadyPickupButton = order.status == 'ready' && !order.isDelivery && !order.readyNotified;
 
     return Container(
       decoration: BoxDecoration(
@@ -2671,6 +2716,24 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           : () => _openScheduleDeliverySheet(order),
                       icon: const Icon(Icons.local_shipping_outlined, size: 18),
                       label: Text(_t.scheduleDeliveryButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _cPrimaryContainer,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rXl)),
+                      ),
+                    ),
+                  )
+                else if (showNotifyReadyPickupButton)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: (_isUpdatingStatus || order.hasPendingCancellationRequest)
+                          ? null
+                          : () => _notifyReadyForPickup(order),
+                      icon: const Icon(Icons.chat_outlined, size: 18),
+                      label: Text(_t.notifyReadyForPickupButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _cPrimaryContainer,
                         foregroundColor: Colors.white,

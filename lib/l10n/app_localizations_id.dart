@@ -940,6 +940,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get orderHistoryTitle => 'Riwayat Pesanan';
 
   @override
+  String get notifyReadyForPickupButtonLabel => 'Kabari Pelanggan Siap Diambil';
+
+  @override
   String get viewAllOrdersComingSoon =>
       'Navigasi ke semua riwayat pesanan akan ditambahkan';
 
@@ -2603,7 +2606,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String whatsappOrderReadyPickupMessage(String name, String orderNumber) {
-    return 'Halo kak $name!, ini Netwash 😊 . Pesanan kamu ($orderNumber) sudah selesai dan siap. Mau diantar ke alamat atau mau diambil sendiri ya?';
+    return 'Halo kak $name!, ini Netwash 😊 . Pesanan kamu ($orderNumber) sudah selesai dan siap diambil oleh kakak, mau diambil jam berapa ya kak?. Ditunggu ya 🙏';
   }
 
   @override

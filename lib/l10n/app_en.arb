@@ -544,6 +544,10 @@
   "phoneLabel": "Phone Number",
   "customerAddressLabel": "Full Address",
   "orderHistoryTitle": "Order History",
+  "notifyReadyForPickupButtonLabel": "Notify Customer It's Ready",
+  "@notifyReadyForPickupButtonLabel": {
+    "description": "Button on order detail (status ready, self-pickup) to notify customer via WhatsApp before marking order as completed"
+  },
   "viewAllOrdersComingSoon": "Navigate to full order history will be added",
   "noOrderHistoryLabel": "No order history yet",
   "orderStatusPending": "Pending",
@@ -1400,7 +1404,7 @@
       }
     }
   },
-  "whatsappOrderReadyPickupMessage": "Hi {name}, this is Netwash 😊. Your order ({orderNumber}) is complete and ready. Would you like it delivered or will you pick it up yourself?",
+  "whatsappOrderReadyPickupMessage": "Hi {name}! This is Netwash 😊. Your order ({orderNumber}) is complete and ready for pickup, what time would you like to pick it up? We'll be waiting 🙏",
   "@whatsappOrderReadyPickupMessage": {
     "placeholders": {
       "name": {
