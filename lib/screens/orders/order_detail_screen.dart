@@ -211,6 +211,15 @@ class _OrderDetailData {
   // --- Pengiriman ---
   final String deliveryType; // 'self_pickup' | 'delivery'
 
+  // --- Penjemputan (cara baju MASUK) ---
+  final String orderType; // 'walk_in' | 'pickup'
+  // Null selama baju belum beneran dijemput dari pelanggan - order
+  // dengan order_type 'pickup' dibuat TANPA item dulu (lihat
+  // CreateOrderScreen & PickupDeliveryScreen._ConfirmPickupSheet). Baru
+  // terisi begitu kurir menandai "Sudah Dijemput" lewat
+  // confirmPickupWithItems().
+  final DateTime? pickupDate;
+
   // --- Cabang ---
   final String laundryId; // bisa kosong buat order lama sebelum fitur cabang ada
 
@@ -256,6 +265,8 @@ class _OrderDetailData {
     required this.paymentMethodRaw,
     required this.paidAmount,
     required this.deliveryType,
+    this.orderType = 'walk_in',
+    this.pickupDate,
     required this.laundryId,
     this.cancellationRequest,
     this.assignedEmployeeId = '',
@@ -293,6 +304,17 @@ class _OrderDetailData {
 
   bool get isDelivery => deliveryType == 'delivery';
   IconData get deliveryTypeIcon => isDelivery ? Icons.local_shipping_outlined : Icons.storefront_outlined;
+
+  /// True kalau cara baju masuk adalah dijemput kurir (bukan walk-in).
+  bool get needsPickup => orderType == 'pickup';
+
+  /// True kalau order ini masih NUNGGU baju beneran dijemput dari
+  /// pelanggan - belum ada pickupDate sama sekali. Selama ini true,
+  /// order BELUM punya item/berat yang jelas (order pickup dibuat kosong
+  /// dari awal), jadi belum boleh dimajukan ke tahap proses
+  /// (inProgress/washing/dst) - gak ada yang bisa dicuci kalau barangnya
+  /// aja belum ketahuan ada di tangan siapa.
+  bool get isAwaitingPickup => needsPickup && pickupDate == null;
 
   /// Cari timestamp status tertentu dari riwayat (dipakai timeline).
   DateTime? timestampForStatus(String status) {
@@ -336,6 +358,8 @@ class _OrderDetailData {
       paymentMethodRaw: (data['payment_method'] ?? 'cash') as String,
       paidAmount: ((data['paid_amount'] ?? 0) as num).toDouble(),
       deliveryType: (data['delivery_type'] ?? 'self_pickup') as String,
+      orderType: (data['order_type'] ?? 'walk_in') as String,
+      pickupDate: data['pickup_date'] is Timestamp ? (data['pickup_date'] as Timestamp).toDate() : null,
       laundryId: (data['laundry_id'] ?? '') as String,
       cancellationRequest: rawCancellationRequest is Map
           ? _CancellationRequestData.fromMap(Map<String, dynamic>.from(rawCancellationRequest))
@@ -343,11 +367,13 @@ class _OrderDetailData {
       assignedEmployeeId: (data['assigned_employee_id'] ?? '') as String,
       assignedEmployeeName: (data['assigned_employee_name'] ?? '') as String,
       readyNotified: (data['ready_notified'] ?? false) as bool,
-      // Field 'logistics_schedule' diasumsikan disimpan sebagai Map non-null
-      // begitu CreateDeliveryScheduleScreen berhasil nyimpen jadwal. Kalau
-      // ternyata nama field-nya beda di Firestore kamu, tinggal ganti key
-      // di sini.
-      hasLogisticsSchedule: data['logistics_schedule'] != null,
+      // PENTING: order dengan order_type 'pickup' sudah punya
+// 'logistics_schedule' sejak dibuat (mode: 'penjemputan', diisi dari
+// CreateOrderScreen) - itu bukan jadwal PENGANTARAN. Supaya tombol di
+// bottom action bar cuma berubah jadi "Ubah Jadwal Pengantaran" kalau
+// memang sudah ada jadwal ANTAR (bukan jadwal jemput lama), harus
+// dicocokkan juga mode-nya, bukan cuma cek field-nya ada atau tidak.
+hasLogisticsSchedule: (data['logistics_schedule'] as Map<String, dynamic>?)?['mode'] == 'pengantaran',
     );
   }
 }
@@ -843,6 +869,13 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
   /// (pending -> confirmed, ready -> completed, dst) langsung jalan
   /// seperti biasa tanpa perlu pilih operator.
   Future<void> _handleAdvanceStatus(String nextStatus, String nextLabel) async {
+    // Guard tambahan di level logic (bukan cuma tombol UI) - order
+    // pickup yang barangnya belum beneran dijemput gak boleh dimajukan
+    // lewat 'confirmed', walau entah bagaimana ini sempat terpanggil.
+    if (_order != null && _order!.isAwaitingPickup && _order!.status == 'confirmed') {
+      _showSnack('Tandai barang sudah dijemput dulu di layar Antar Jemput sebelum melanjutkan proses', isError: true);
+      return;
+    }
     if (!_stagesRequiringOperator.contains(nextStatus)) {
       await _handleUpdateStatus(nextStatus, note: nextLabel);
       return;
@@ -2789,7 +2822,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
     );
 
     if (scheduled == true) {
-      _showSnack(isEditing ? 'Jadwal pengantaran berhasil diperbarui' : _t.deliveryScheduleSuccess);
+      _showSnack(isEditing ? _t.deliveryScheduleUpdateSuccess : _t.deliveryScheduleSuccess);
       await _fetchOrder();
     }
   }
@@ -2802,6 +2835,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
     // rencana antar), bukan "Tandai Selesai" biasa - penyelesaiannya baru
     // terjadi belakangan di PickupDeliveryScreen begitu kurir konfirmasi.
     final showScheduleDeliveryButton = order.status == 'ready' && order.isDelivery;
+    // Order pickup yang barangnya belum beneran dijemput gak boleh
+    // dimajukan lewat 'confirmed' - belum ada item/berat yang bisa
+    // diproses sampai kurir menandai "Sudah Dijemput" di layar Antar
+    // Jemput.
+    final blockedByAwaitingPickup = order.isAwaitingPickup && order.status == 'confirmed';
     // Self-pickup di tahap 'ready' - HARUS kabarin pelanggan dulu lewat WA
     // sebelum bisa ditandai selesai. Begitu readyNotified == true (sudah
     // pernah tap tombol ini), baris ini jadi false, dan tombol otomatis
@@ -2855,7 +2893,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
                         size: 18,
                       ),
                       label: Text(
-                        order.hasLogisticsSchedule ? 'Ubah Jadwal Pengantaran' : _t.scheduleDeliveryButtonLabel,
+                        order.hasLogisticsSchedule ? _t.editDeliveryScheduleButtonLabel : _t.scheduleDeliveryButtonLabel,
                         style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -2885,6 +2923,28 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rXl)),
                       ),
+                    ),
+                  )
+                else if (nextStatus != null && nextLabel != null && blockedByAwaitingPickup)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: _cYellowBg,
+                      borderRadius: BorderRadius.circular(_rXl),
+                      border: Border.all(color: _cYellowText.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.local_shipping_outlined, size: 18, color: _cYellowText),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Menunggu baju dijemput dulu dari pelanggan',
+                            style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600, color: _cYellowText, height: 1.4),
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 else if (nextStatus != null && nextLabel != null)

@@ -2802,6 +2802,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scheduleDeliveryButtonLabel => 'Schedule Delivery';
 
   @override
+  String get editDeliveryScheduleButtonLabel => 'Change Delivery Schedule';
+
+  @override
+  String get branchFollowsSelectedOrderHint =>
+      'Branch follows the selected order';
+
+  @override
+  String get addressAutoFilledFromCustomerHint =>
+      'Address auto-filled from customer data - change if needed';
+
+  @override
+  String noActiveCourierInBranchHint(String branchName) {
+    return 'No active couriers at $branchName branch yet';
+  }
+
+  @override
+  String get courierMatchesScheduleHint =>
+      'Matches the schedule already set - change if needed';
+
+  @override
+  String get deliveryScheduleUpdateSuccess =>
+      'Delivery schedule updated successfully';
+
+  @override
   String get contactCustomerButtonLabel => 'Contact Customer';
 
   @override

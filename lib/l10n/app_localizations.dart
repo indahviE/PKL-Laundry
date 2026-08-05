@@ -5114,6 +5114,42 @@ abstract class AppLocalizations {
   /// **'Jadwalkan Pengantaran'**
   String get scheduleDeliveryButtonLabel;
 
+  /// No description provided for @editDeliveryScheduleButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah Jadwal Pengantaran'**
+  String get editDeliveryScheduleButtonLabel;
+
+  /// No description provided for @branchFollowsSelectedOrderHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cabang mengikuti pesanan yang dipilih'**
+  String get branchFollowsSelectedOrderHint;
+
+  /// No description provided for @addressAutoFilledFromCustomerHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat otomatis dari data pelanggan - ganti kalau perlu'**
+  String get addressAutoFilledFromCustomerHint;
+
+  /// No description provided for @noActiveCourierInBranchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada kurir aktif di cabang {branchName}'**
+  String noActiveCourierInBranchHint(String branchName);
+
+  /// No description provided for @courierMatchesScheduleHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Sesuai jadwal yang sudah dibuat - ganti kalau perlu'**
+  String get courierMatchesScheduleHint;
+
+  /// No description provided for @deliveryScheduleUpdateSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Jadwal pengantaran berhasil diperbarui'**
+  String get deliveryScheduleUpdateSuccess;
+
   /// No description provided for @contactCustomerButtonLabel.
   ///
   /// In id, this message translates to:

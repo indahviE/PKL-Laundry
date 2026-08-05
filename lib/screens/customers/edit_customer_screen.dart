@@ -107,6 +107,10 @@ class _EditCustomerScreenState extends ConsumerState<EditCustomerScreen> {
   /// Handle update customer -> update di Firestore: users/{uid}/customers/{customerId}
   Future<void> _handleUpdateCustomer(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) {
+      // Selain teks merah kecil di bawah tiap field, sekarang juga
+      // munculin alert (snackbar merah + getar + suara error) - disamakan
+      // dengan CreateDeliveryScreen/CreateCustomerScreen.
+      _showError('Lengkapi data yang wajib diisi terlebih dahulu');
       return;
     }
 

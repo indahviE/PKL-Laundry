@@ -393,7 +393,14 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
   /// Menyimpan data cabang ke Firestore (create dokumen baru ATAU update
   /// dokumen existing, tergantung isEditMode).
   Future<void> _saveLaundry() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      // Selain teks merah kecil di bawah tiap field, sekarang juga
+      // munculin alert (snackbar merah + getar + suara error) - disamakan
+      // dengan CreateDeliveryScreen/CreateCustomerScreen. Berlaku untuk
+      // mode create MAUPUN edit karena keduanya lewat method ini.
+      _showError('Lengkapi data yang wajib diisi terlebih dahulu');
+      return;
+    }
     if (_selectedCompanyId == null) {
       _showError(AppLocalizations.of(context)!.companyNotSelectedWarning);
       return;
