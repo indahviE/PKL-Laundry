@@ -3890,6 +3890,12 @@ abstract class AppLocalizations {
   /// **'Simpan Karyawan'**
   String get saveEmployeeButton;
 
+  /// No description provided for @completeRequiredFieldsWarning.
+  ///
+  /// In id, this message translates to:
+  /// **'Lengkapi dulu data yang wajib diisi'**
+  String get completeRequiredFieldsWarning;
+
   /// No description provided for @employeeDetailTitle.
   ///
   /// In id, this message translates to:

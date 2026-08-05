@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/themes/app_theme.dart';
 import '../../core/themes/design_tokens.dart';
+import '../../core/services/app_feedback.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../models/employee.dart';
 import '../../models/laundry.dart';
@@ -131,9 +132,19 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     );
 
     if (confirmed == true) {
-      await ref.read(employeeRepositoryProvider).terminateEmployee(employee.id);
-      if (mounted) {
-        AppSnackbar.success(context, AppLocalizations.of(context)!.employeeDeactivatedWithCodeSuccess(employee.employeeCode));
+      try {
+        await ref.read(employeeRepositoryProvider).terminateEmployee(employee.id);
+        if (mounted) {
+          AppFeedback.haptic(ref);
+          AppFeedback.playSound(ref, AppSound.success);
+          AppSnackbar.success(context, AppLocalizations.of(context)!.employeeDeactivatedWithCodeSuccess(employee.employeeCode));
+        }
+      } catch (e) {
+        if (mounted) {
+          AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+          AppFeedback.playSound(ref, AppSound.error);
+          AppSnackbar.error(context, AppLocalizations.of(context)!.employeeDeactivateError(e.toString()));
+        }
       }
     }
   }

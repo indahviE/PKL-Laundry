@@ -470,10 +470,21 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     });
   }
 
-  void _showError(String message) {
-    AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+  void _showSuccessSnack(String message) {
+    if (!mounted) return;
+    AppFeedback.playSound(ref, AppSound.success);
+    AppSnackbar.success(context, message);
+  }
+
+  void _showErrorSnack(String message) {
+    if (!mounted) return;
     AppFeedback.playSound(ref, AppSound.error);
     AppSnackbar.error(context, message);
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    AppSnackbar.info(context, message);
   }
 
   /// Handle save order -> lewat OrderRepository.createOrder(), yang
@@ -487,19 +498,19 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
 
     if (!_isPickupOrder) {
       if (_orderItems.isEmpty) {
-        _showError(_t.minOneItemError);
+        _showErrorSnack(_t.minOneItemError);
         return;
       }
       for (final item in _orderItems) {
         if (item.pricingType == PricingType.perKg && item.weight <= 0) {
-          _showError(_t.fillWeightForItemError(item.name));
+          _showErrorSnack(_t.fillWeightForItemError(item.name));
           return;
         }
       }
     }
 
     if (_companyId == null || _selectedLaundryId == null) {
-      _showError(_businessContextError ?? _t.businessContextNotReadyError);
+      _showErrorSnack(_businessContextError ?? _t.businessContextNotReadyError);
       return;
     }
 
@@ -533,11 +544,11 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
         final rawDp = _dpAmountController.text.replaceAll(RegExp(r'[^0-9]'), '');
         final dp = double.tryParse(rawDp) ?? 0;
         if (dp <= 0) {
-          _showError(_t.dpAmountRequiredError);
+          _showErrorSnack(_t.dpAmountRequiredError);
           return;
         }
         if (dp >= totalAmount) {
-          _showError(_t.dpAmountTooLargeError);
+          _showErrorSnack(_t.dpAmountTooLargeError);
           return;
         }
         paidNow = dp;
@@ -636,17 +647,11 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
       }
 
       if (mounted) {
-        AppFeedback.haptic(ref);
-        AppFeedback.playSound(ref, AppSound.success);
-        AppSnackbar.success(context, _t.orderCreatedSuccess);
+        _showSuccessSnack(_t.orderCreatedSuccess);
         Navigator.pop(context, true);
       }
     } catch (e) {
-      if (mounted) {
-        AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
-        AppFeedback.playSound(ref, AppSound.error);
-        _showError(_t.genericErrorTemplate(e.toString()));
-      }
+      _showErrorSnack(_t.genericErrorTemplate(e.toString()));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

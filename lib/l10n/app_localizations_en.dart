@@ -2110,6 +2110,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveEmployeeButton => 'Save Employee';
 
   @override
+  String get completeRequiredFieldsWarning =>
+      'Please fill in all required fields';
+
+  @override
   String get employeeDetailTitle => 'Employee Detail';
 
   @override
