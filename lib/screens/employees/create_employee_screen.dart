@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/services/app_feedback.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../repositories/subscription_repository.dart';
 import '../../l10n/app_localizations.dart';
@@ -309,7 +310,10 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   /// tambah, atau meng-update dokumen existing saat mode edit (tanpa
   /// mengecek kuota lagi & tanpa menimpa created_at).
   Future<void> _saveEmployee() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      _showSnack(AppLocalizations.of(context)!.completeRequiredFieldsWarning, isWarning: true);
+      return;
+    }
     if (_selectedLaundryId == null) {
       _showSnack(AppLocalizations.of(context)!.branchNotSelectedWarning, isWarning: true);
       return;
@@ -483,7 +487,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
         'updated_at': FieldValue.serverTimestamp(),
       });
       if (mounted) {
-        _showSnack(AppLocalizations.of(context)!.employeeDeactivatedSuccess, isWarning: true);
+        _showSnack(AppLocalizations.of(context)!.employeeDeactivatedSuccess, isSuccess: true);
         context.pop();
       }
     } catch (e) {
@@ -496,12 +500,18 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   void _showSnack(String message, {bool isError = false, bool isWarning = false, bool isSuccess = false}) {
     if (!mounted) return;
     if (isError) {
+      AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+      AppFeedback.playSound(ref, AppSound.error);
       AppSnackbar.error(context, message);
     } else if (isSuccess) {
+      AppFeedback.haptic(ref);
+      AppFeedback.playSound(ref, AppSound.success);
       AppSnackbar.success(context, message);
     } else {
-      // isWarning maupun default (belum ada varian warning di AppSnackbar,
-      // jadi dipetakan ke info) tetap tampil konsisten dengan toast lain.
+      // isWarning maupun default dipetakan ke AppSound.notification /
+      // AppSnackbar.info, konsisten sama toast informatif lainnya.
+      AppFeedback.haptic(ref, type: HapticFeedbackType.light);
+      AppFeedback.playSound(ref, AppSound.notification);
       AppSnackbar.info(context, message);
     }
   }
