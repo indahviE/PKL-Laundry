@@ -1676,11 +1676,17 @@ abstract class AppLocalizations {
   /// **'Hapus'**
   String get deleteButton;
 
-  /// No description provided for @deleteCustomerSuccessTesting.
+  /// No description provided for @deleteCustomerSuccess.
   ///
   /// In id, this message translates to:
-  /// **'Pelanggan berhasil dihapus (Testing mode)'**
-  String get deleteCustomerSuccessTesting;
+  /// **'Pelanggan \"{name}\" berhasil dihapus permanen'**
+  String deleteCustomerSuccess(String name);
+
+  /// No description provided for @deleteCustomerError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menghapus pelanggan: {error}'**
+  String deleteCustomerError(String error);
 
   /// No description provided for @customerDetailTitle.
   ///
@@ -1688,17 +1694,17 @@ abstract class AppLocalizations {
   /// **'Detail Pelanggan'**
   String get customerDetailTitle;
 
-  /// No description provided for @joinedSinceLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Bergabung sejak {date}'**
-  String joinedSinceLabel(String date);
-
   /// No description provided for @activeCustomerLabel.
   ///
   /// In id, this message translates to:
   /// **'Pelanggan Aktif'**
   String get activeCustomerLabel;
+
+  /// No description provided for @joinedSinceLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Bergabung sejak {date}'**
+  String joinedSinceLabel(String date);
 
   /// No description provided for @callButton.
   ///

@@ -897,19 +897,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteButton => 'Delete';
 
   @override
-  String get deleteCustomerSuccessTesting =>
-      'Customer deleted successfully (Testing mode)';
+  String deleteCustomerSuccess(String name) {
+    return 'Customer \"$name\" permanently deleted';
+  }
+
+  @override
+  String deleteCustomerError(String error) {
+    return 'Failed to delete customer: $error';
+  }
 
   @override
   String get customerDetailTitle => 'Customer Detail';
 
   @override
+  String get activeCustomerLabel => 'Active Customer';
+
+  @override
   String joinedSinceLabel(String date) {
     return 'Joined since $date';
   }
-
-  @override
-  String get activeCustomerLabel => 'Active Customer';
 
   @override
   String get callButton => 'Call';

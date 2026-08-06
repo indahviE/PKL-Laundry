@@ -895,19 +895,25 @@ class AppLocalizationsId extends AppLocalizations {
   String get deleteButton => 'Hapus';
 
   @override
-  String get deleteCustomerSuccessTesting =>
-      'Pelanggan berhasil dihapus (Testing mode)';
+  String deleteCustomerSuccess(String name) {
+    return 'Pelanggan \"$name\" berhasil dihapus permanen';
+  }
+
+  @override
+  String deleteCustomerError(String error) {
+    return 'Gagal menghapus pelanggan: $error';
+  }
 
   @override
   String get customerDetailTitle => 'Detail Pelanggan';
 
   @override
+  String get activeCustomerLabel => 'Pelanggan Aktif';
+
+  @override
   String joinedSinceLabel(String date) {
     return 'Bergabung sejak $date';
   }
-
-  @override
-  String get activeCustomerLabel => 'Pelanggan Aktif';
 
   @override
   String get callButton => 'Telepon';

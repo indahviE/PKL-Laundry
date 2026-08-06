@@ -521,8 +521,24 @@
     }
   },
   "deleteButton": "Hapus",
-  "deleteCustomerSuccessTesting": "Pelanggan berhasil dihapus (Testing mode)",
-  "customerDetailTitle": "Detail Pelanggan",
+  "deleteCustomerSuccess": "Pelanggan \"{name}\" berhasil dihapus permanen",
+  "@deleteCustomerSuccess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteCustomerError": "Gagal menghapus pelanggan: {error}",
+  "@deleteCustomerError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+"customerDetailTitle": "Detail Pelanggan",
+  "activeCustomerLabel": "Pelanggan Aktif",
   "joinedSinceLabel": "Bergabung sejak {date}",
   "@joinedSinceLabel": {
     "placeholders": {
@@ -531,7 +547,6 @@
       }
     }
   },
-  "activeCustomerLabel": "Pelanggan Aktif",
   "callButton": "Telepon",
   "openingPhoneApp": "Membuka aplikasi telepon...",
   "whatsappButton": "WhatsApp",

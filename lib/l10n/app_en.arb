@@ -523,8 +523,24 @@
     }
   },
   "deleteButton": "Delete",
-  "deleteCustomerSuccessTesting": "Customer deleted successfully (Testing mode)",
-  "customerDetailTitle": "Customer Detail",
+  "deleteCustomerSuccess": "Customer \"{name}\" permanently deleted",
+  "@deleteCustomerSuccess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteCustomerError": "Failed to delete customer: {error}",
+  "@deleteCustomerError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+"customerDetailTitle": "Customer Detail",
+  "activeCustomerLabel": "Active Customer",
   "joinedSinceLabel": "Joined since {date}",
   "@joinedSinceLabel": {
     "placeholders": {
@@ -533,7 +549,6 @@
       }
     }
   },
-  "activeCustomerLabel": "Active Customer",
   "callButton": "Call",
   "openingPhoneApp": "Opening phone app...",
   "whatsappButton": "WhatsApp",

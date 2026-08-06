@@ -5,7 +5,10 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/services/app_feedback.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Model riwayat pesanan singkat untuk ditampilkan di detail pelanggan
@@ -87,16 +90,16 @@ class _CustomerDetailData {
 /// Customer Detail Screen
 /// Menerima [customerId] dari route (mis. '/customers/:customerId')
 /// lalu fetch datanya dari Firestore: users/{uid}/customers/{customerId}
-class CustomerDetailScreen extends StatefulWidget {
+class CustomerDetailScreen extends ConsumerStatefulWidget {
   final String customerId;
 
   const CustomerDetailScreen({Key? key, required this.customerId}) : super(key: key);
 
   @override
-  State<CustomerDetailScreen> createState() => _CustomerDetailScreenState();
+  ConsumerState<CustomerDetailScreen> createState() => _CustomerDetailScreenState();
 }
 
-class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
+class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
   _CustomerDetailData? _customer;
   bool _isLoading = true;
   String? _errorMessage;
@@ -444,11 +447,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                     ],
                   ),
                 ),
+                const PopupMenuDivider(height: 1),
                 PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
-                      const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                      const Icon(Icons.delete_forever_outlined, size: 18, color: Colors.red),
                       const SizedBox(width: 10),
                       Text(l10n.deleteCustomerMenuItem,
                           style: GoogleFonts.poppins(color: Colors.red, fontSize: 13.5)),
@@ -462,12 +466,24 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
     );
   }
 
+  // Dialog konfirmasi hapus permanen - disamakan gayanya persis dengan
+  // _confirmDelete di ServicesListScreen: icon warning di title, tombol
+  // "Hapus Permanen" merah bold, feedback haptic+sound+AppSnackbar (bukan
+  // ScaffoldMessenger biasa), lalu baru pindah balik ke daftar pelanggan.
   void _showDeleteConfirmation(BuildContext context, AppLocalizations l10n) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: Text(l10n.deleteCustomerConfirmTitle, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red[600], size: 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(l10n.deleteCustomerConfirmTitle, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
         content: Text(
           l10n.deleteCustomerConfirmContent(_customer?.name ?? ''),
           style: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 13.5),
@@ -480,7 +496,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(context); // Tutup dialog dulu
+              final customerName = _customer?.name ?? '';
               try {
                 final user = FirebaseAuth.instance.currentUser;
                 if (user != null) {
@@ -491,22 +508,24 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       .doc(widget.customerId)
                       .delete();
                 }
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.deleteCustomerSuccessTesting)),
-                  );
+                if (context.mounted) {
+                  AppFeedback.haptic(ref);
+                  AppFeedback.playSound(ref, AppSound.success);
+                  AppSnackbar.success(context, l10n.deleteCustomerSuccess(customerName));
+                  context.pop(); // Kembali ke daftar pelanggan
                 }
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.errorColor),
-                  );
+                if (context.mounted) {
+                  AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+                  AppFeedback.playSound(ref, AppSound.error);
+                  AppSnackbar.error(context, l10n.deleteCustomerError(e.toString()));
                 }
               }
             },
-            child: Text(l10n.deleteButton,
-                style: GoogleFonts.poppins(color: Colors.red, fontWeight: FontWeight.w600)),
+            child: Text(
+              l10n.deletePermanentButton,
+              style: GoogleFonts.poppins(color: Colors.red[600], fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
