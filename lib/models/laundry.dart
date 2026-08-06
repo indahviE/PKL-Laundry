@@ -3,18 +3,22 @@ import 'base_model.dart';
 class DayHours {
   final String open;
   final String close;
+  final bool isOpen;
  
-  DayHours({required this.open, required this.close});
+  DayHours({required this.open, required this.close, this.isOpen = true});
  
   factory DayHours.fromJson(Map<String, dynamic>? json) {
     if (json == null) return DayHours(open: '08:00', close: '20:00');
     return DayHours(
       open: json['open'] ?? '08:00',
       close: json['close'] ?? '20:00',
+      // Default true supaya data lama (sebelum field ini ada) tetap
+      // dianggap buka seperti biasa, bukan tiba-tiba jadi libur semua.
+      isOpen: (json['is_open'] ?? true) as bool,
     );
   }
  
-  Map<String, dynamic> toJson() => {'open': open, 'close': close};
+  Map<String, dynamic> toJson() => {'open': open, 'close': close, 'is_open': isOpen};
 }
  
 class OperatingHours {

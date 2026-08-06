@@ -8,6 +8,8 @@ import '../../models/laundry.dart';
 import '../../models/employee.dart';
 import '../../repositories/laundry_repository.dart';
 import '../../l10n/app_localizations.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/services/app_feedback.dart';
 import '../employees/employees_list_screen.dart';
 
 // ---------------------------------------------------------------------------
@@ -81,6 +83,12 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
   // State lokal untuk expand/collapse kartu jam operasional lengkap.
   bool _hoursExpanded = true;
 
+  // State lokal untuk expand/collapse daftar staf cabang - default
+  // TERTUTUP (beda dari jam operasional) karena daftar karyawan bisa
+  // panjang dan bikin halaman jadi berat/kepanjangan kalau selalu
+  // terbuka penuh.
+  bool _staffExpanded = false;
+
   List<String> _dayLabels(AppLocalizations l10n) => [
         l10n.monday,
         l10n.tuesday,
@@ -134,15 +142,13 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
       await ref.read(laundryRepositoryProvider).deleteLaundryBranch(laundry.id);
       if (context.mounted) {
         context.pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.branchDeleteSuccess(laundry.name))),
-        );
+        AppFeedback.playSound(ref, AppSound.success);
+        AppSnackbar.success(context, l10n.branchDeleteSuccess(laundry.name));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.deleteBranchError(e.toString())), backgroundColor: Colors.redAccent),
-        );
+        AppFeedback.playSound(ref, AppSound.error);
+        AppSnackbar.error(context, l10n.deleteBranchError(e.toString()));
       }
     }
   }
@@ -153,11 +159,13 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
         laundry.id,
         {'is_active': !laundry.isActive},
       );
+      if (context.mounted) {
+        AppFeedback.playSound(ref, AppSound.success);
+      }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.toggleStatusError(e.toString())), backgroundColor: Colors.redAccent),
-        );
+        AppFeedback.playSound(ref, AppSound.error);
+        AppSnackbar.error(context, AppLocalizations.of(context)!.toggleStatusError(e.toString()));
       }
     }
   }
@@ -496,7 +504,7 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
                     icon: Icons.schedule_outlined,
                     iconColor: Colors.white,
                     label: l10n.openTodayLabel,
-                    value: '${todayHours.open} - ${todayHours.close}',
+                    value: todayHours.isOpen ? '${todayHours.open} - ${todayHours.close}' : l10n.dayOffLabel,
                     filled: true,
                   ),
                 ),
@@ -610,11 +618,12 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
                       ),
                       Expanded(
                         child: Text(
-                          '${dayHours[i].open} - ${dayHours[i].close}',
+                          dayHours[i].isOpen ? '${dayHours[i].open} - ${dayHours[i].close}' : l10n.dayOffLabel,
                           style: GoogleFonts.beVietnamPro(
                             fontSize: 12.5,
                             fontWeight: isToday ? FontWeight.w600 : FontWeight.w400,
-                            color: isToday ? _kPrimary : _kSecondary,
+                            fontStyle: dayHours[i].isOpen ? FontStyle.normal : FontStyle.italic,
+                            color: isToday ? _kPrimary : (dayHours[i].isOpen ? _kSecondary : _DS.error),
                           ),
                         ),
                       ),
@@ -648,6 +657,9 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
   }
 
   /// Kartu manajer & staf cabang (daftar karyawan dengan laundry_id yang sama).
+  /// Collapsible - defaultnya cuma nampilin judul + jumlah staf (biar
+  /// halaman gak kepanjangan kalau stafnya banyak), tap header buat
+  /// expand/collapse daftarnya, sama pola dengan jam operasional di atas.
   Widget _buildStaffCard(BuildContext context, List<Employee> staff, bool isLoading, AppLocalizations l10n) {
     String displayNameOf(Employee e) => e.fullName.isNotEmpty ? e.fullName : (e.employeeCode.isNotEmpty ? e.employeeCode : '-');
 
@@ -661,71 +673,91 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.groups_outlined, color: _kPrimary, size: 20),
-              const SizedBox(width: 8),
-              _sectionTitle(l10n.staffAtThisBranchLabel(staff.length)),
-            ],
-          ),
-          const SizedBox(height: AppTheme.md),
-          if (isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Center(child: SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))),
-            )
-          else if (staff.isEmpty)
-            Text(
-              l10n.noStaffAtBranch,
-              style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _kSecondary),
-            )
-          else
-            ...staff.map((e) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppTheme.sm),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 14,
-                        backgroundColor: _kPrimary.withOpacity(0.1),
-                        child: Text(
-                          displayNameOf(e)[0].toUpperCase(),
-                          style: GoogleFonts.beVietnamPro(fontSize: 11, color: _kPrimary, fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              displayNameOf(e),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600, color: _kOnSurface),
-                            ),
-                            Text(
-                              e.position,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.beVietnamPro(fontSize: 11, color: _kSecondary),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: (e.isActive ? Colors.green : Colors.grey).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          e.isActive ? l10n.filterActiveLaundries : l10n.resignedLabel,
-                          style: TextStyle(color: e.isActive ? Colors.green : Colors.grey, fontSize: 9.5, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
+          InkWell(
+            onTap: () => setState(() => _staffExpanded = !_staffExpanded),
+            child: Row(
+              children: [
+                Icon(Icons.groups_outlined, color: _kPrimary, size: 20),
+                const SizedBox(width: 8),
+                Expanded(child: _sectionTitle(l10n.staffAtThisBranchLabel(staff.length))),
+                if (isLoading)
+                  const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  AnimatedRotation(
+                    turns: _staffExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(Icons.expand_more, color: _kSecondary, size: 20),
                   ),
-                )),
+              ],
+            ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: const EdgeInsets.only(top: AppTheme.md),
+              child: staff.isEmpty
+                  ? Text(
+                      l10n.noStaffAtBranch,
+                      style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _kSecondary),
+                    )
+                  : Column(
+                      children: staff
+                          .map((e) => Padding(
+                                padding: const EdgeInsets.only(bottom: AppTheme.sm),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 14,
+                                      backgroundColor: _kPrimary.withOpacity(0.1),
+                                      child: Text(
+                                        displayNameOf(e)[0].toUpperCase(),
+                                        style: GoogleFonts.beVietnamPro(fontSize: 11, color: _kPrimary, fontWeight: FontWeight.w700),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            displayNameOf(e),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600, color: _kOnSurface),
+                                          ),
+                                          Text(
+                                            e.position,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.beVietnamPro(fontSize: 11, color: _kSecondary),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: (e.isActive ? Colors.green : Colors.grey).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        e.isActive ? l10n.filterActiveLaundries : l10n.resignedLabel,
+                                        style: TextStyle(color: e.isActive ? Colors.green : Colors.grey, fontSize: 9.5, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ))
+                          .toList(),
+                    ),
+            ),
+            crossFadeState: _staffExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
         ],
       ),
     );
@@ -820,9 +852,8 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.toggleStatusError(e.toString()))),
-        );
+        AppFeedback.playSound(ref, AppSound.error);
+        AppSnackbar.error(context, AppLocalizations.of(context)!.toggleStatusError(e.toString()));
       }
     }
   }

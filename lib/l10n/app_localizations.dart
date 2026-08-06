@@ -2600,6 +2600,12 @@ abstract class AppLocalizations {
   /// **'Tutup Sementara'**
   String get closedTemporarilyLabel;
 
+  /// Label saat cabang libur di hari tertentu (switch jam operasional dimatikan)
+  ///
+  /// In id, this message translates to:
+  /// **'Libur'**
+  String get dayOffLabel;
+
   /// No description provided for @totalStaffLabel.
   ///
   /// In id, this message translates to:
