@@ -767,6 +767,10 @@
     }
   },
   "closedTemporarilyLabel": "Tutup Sementara",
+  "dayOffLabel": "Libur",
+  "@dayOffLabel": {
+    "description": "Label saat cabang libur di hari tertentu (switch jam operasional dimatikan)"
+  },
   "totalStaffLabel": "Total Staf",
   "openTodayLabel": "Jam Buka Hari Ini",
   "staffAtThisBranchLabel": "Staf di Cabang Ini ({count})",

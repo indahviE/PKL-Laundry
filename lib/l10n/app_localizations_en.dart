@@ -1393,6 +1393,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get closedTemporarilyLabel => 'Temporarily Closed';
 
   @override
+  String get dayOffLabel => 'Day Off';
+
+  @override
   String get totalStaffLabel => 'Total Staff';
 
   @override

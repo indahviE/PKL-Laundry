@@ -767,6 +767,10 @@
     }
   },
   "closedTemporarilyLabel": "Temporarily Closed",
+  "dayOffLabel": "Day Off",
+  "@dayOffLabel": {
+    "description": "Label shown when the branch is closed for a specific day (operating hours switch is off)"
+  },
   "totalStaffLabel": "Total Staff",
   "openTodayLabel": "Open Today",
   "staffAtThisBranchLabel": "Staff at This Branch ({count})",

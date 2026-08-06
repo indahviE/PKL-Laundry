@@ -1391,6 +1391,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get closedTemporarilyLabel => 'Tutup Sementara';
 
   @override
+  String get dayOffLabel => 'Libur';
+
+  @override
   String get totalStaffLabel => 'Total Staf';
 
   @override

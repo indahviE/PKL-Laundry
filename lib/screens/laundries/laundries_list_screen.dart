@@ -804,7 +804,9 @@ class _LaundryCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      laundry.isActive ? l10n.openTodayStatus(today.open, today.close) : l10n.closedTemporarilyLabel,
+                      !laundry.isActive
+                          ? l10n.closedTemporarilyLabel
+                          : (today.isOpen ? l10n.openTodayStatus(today.open, today.close) : l10n.dayOffLabel),
                       style: GoogleFonts.beVietnamPro(
                         fontSize: 12,
                         fontStyle: FontStyle.italic,

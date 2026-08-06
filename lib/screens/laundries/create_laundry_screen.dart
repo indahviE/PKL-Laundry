@@ -228,8 +228,13 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
               'close': (rawHours[d['key']]?['close'] ?? '20:00') as String,
             },
         };
+        final loadedEnabled = {
+          for (final d in _days)
+            d['key']!: (rawHours[d['key']]?['is_open'] ?? true) as bool,
+        };
         setState(() {
           _operatingHours = loadedHours;
+          _dayEnabled = loadedEnabled;
         });
       }
     } catch (e) {
@@ -428,11 +433,15 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
       }
 
       // Susun operating_hours sesuai skema §3.2.3 (per hari, key monday..sunday)
+      // + is_open (status switch "libur" per hari) - sebelumnya cuma
+      // dipakai sebagai kontrol UI dan hilang begitu disimpan, sekarang
+      // ikut ditulis ke Firestore supaya toggle libur beneran nyantol.
       final Map<String, dynamic> operatingHoursData = {
         for (final d in _days)
           d['key']!: {
             'open': _operatingHours[d['key']]!['open'],
             'close': _operatingHours[d['key']]!['close'],
+            'is_open': _dayEnabled[d['key']] ?? true,
           },
       };
 
