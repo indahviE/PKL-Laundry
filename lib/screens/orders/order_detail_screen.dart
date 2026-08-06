@@ -2830,6 +2830,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
   Widget _buildBottomActionBar(BuildContext context, _OrderDetailData order) {
     final nextStatus = _nextStatus(order.status);
     final nextLabel = _nextStatusButtonLabel(order.status);
+    // Gating pembayaran - selama status 'ready' tapi belum lunas
+    // (masih DP sebagian / paymentStatus != 'paid'), tombol aksi ready
+    // (jadwalkan antar / kabari siap ambil) belum boleh dipencet.
+    final isFullyPaid = order.paymentStatus == 'paid';
+    final blockedByUnpaidAtReady = order.status == 'ready' && !isFullyPaid;
     // Khusus ready + delivery: tombol maju status diganti "Jadwalkan
     // Pengantaran" (buka CreateDeliveryScheduleScreen buat isi tanggal/jam
     // rencana antar), bukan "Tandai Selesai" biasa - penyelesaiannya baru
@@ -2878,6 +2883,30 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rXl)),
                       ),
+                    ),
+                  )
+                else if (blockedByUnpaidAtReady)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: _cYellowBg,
+                      borderRadius: BorderRadius.circular(_rXl),
+                      border: Border.all(color: _cYellowText.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.payments_outlined, size: 18, color: _cYellowText),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            order.isDelivery
+                                ? 'Selesaikan pembayaran dulu sebelum bisa dijadwalkan diantar'
+                                : 'Selesaikan pembayaran dulu sebelum bisa dikabari siap diambil',
+                            style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600, color: _cYellowText, height: 1.4),
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 else if (showScheduleDeliveryButton)
@@ -2967,7 +2996,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
                       ),
                     ),
                   ),
-                if (nextLabel != null || order.status == 'completed' || showScheduleDeliveryButton)
+                if (nextLabel != null || order.status == 'completed' || showScheduleDeliveryButton || blockedByUnpaidAtReady)
                   const SizedBox(height: AppTheme.sm),
                 SizedBox(
                   width: double.infinity,
