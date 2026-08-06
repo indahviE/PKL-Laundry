@@ -1017,10 +1017,11 @@ class _CustomerCard extends StatelessWidget {
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.3,
+                      height: 1.1,
                       color: AppTheme.textTertiary,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
                     formattedSpent,
                     maxLines: 1,
@@ -1028,6 +1029,7 @@ class _CustomerCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
+                      height: 1.1,
                       color: AppTheme.primaryColor,
                     ),
                   ),
