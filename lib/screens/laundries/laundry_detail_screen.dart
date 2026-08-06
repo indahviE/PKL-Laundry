@@ -11,6 +11,8 @@ import '../../l10n/app_localizations.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/services/app_feedback.dart';
 import '../employees/employees_list_screen.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 // ---------------------------------------------------------------------------
 // Design tokens — diselaraskan dengan referensi visual "Kelola Cabang"
@@ -768,6 +770,7 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
   /// Maps - meniru kartu peta pada referensi visual.
   Widget _buildCapacityLocationCard(BuildContext context, Laundry laundry, AppLocalizations l10n) {
     final hasLocation = laundry.location.lat != 0.0 || laundry.location.lng != 0.0;
+    final latLng = LatLng(laundry.location.lat, laundry.location.lng);
 
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -780,29 +783,51 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
         aspectRatio: 16 / 10,
         child: Stack(
           children: [
-            // NOTE: ini placeholder visual peta (bukan tile map sungguhan,
-            // karena butuh Google Maps API key). Kalau app sudah pakai
-            // google_maps_flutter / Maps Static API di tempat lain, ganti
-            // Container ini dengan widget peta asli + marker di koordinat
-            // laundry.location.
+            // Peta beneran (read-only, tanpa interaksi user - cuma preview)
+            // pakai tile OpenStreetMap via flutter_map, gratis tanpa API key.
+            // Kalau belum ada lokasi tersimpan, tampilkan placeholder abu-abu
+            // seperti sebelumnya supaya gak nge-load tile buat koordinat 0,0.
             Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFE1EAF5), Color(0xFFF2F5F9)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(Icons.map_outlined, size: 56, color: _kPrimary.withOpacity(0.18)),
-                ),
-              ),
+              child: hasLocation
+                  ? FlutterMap(
+                      options: MapOptions(
+                        initialCenter: latLng,
+                        initialZoom: 15,
+                        interactionOptions: const InteractionOptions(
+                          flags: InteractiveFlag.all,
+                        ),
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.netwash.app', // ganti sesuai applicationId kamu
+                        ),
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: latLng,
+                              width: 40,
+                              height: 40,
+                              alignment: Alignment.topCenter,
+                              child: const Icon(Icons.location_on, size: 40, color: _kPrimary),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  : Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFE1EAF5), Color(0xFFF2F5F9)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(Icons.map_outlined, size: 56, color: _kPrimary.withOpacity(0.18)),
+                      ),
+                    ),
             ),
-            if (hasLocation)
-              const Center(
-                child: Icon(Icons.location_on, size: 40, color: _kPrimary),
-              ),
             Positioned(
               left: 12,
               bottom: 12,

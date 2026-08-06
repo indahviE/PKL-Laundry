@@ -8,6 +8,8 @@ import '../../core/themes/app_theme.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/services/app_feedback.dart';
 import '../../l10n/app_localizations.dart';
+import 'package:latlong2/latlong.dart';
+import 'location_picker_screen.dart'; // sesuaikan path
 import '../../repositories/subscription_repository.dart';
 
 /// Local design tokens matching the new "NetWash Utility System" design
@@ -999,27 +1001,54 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
           const SizedBox(height: AppTheme.md),
 
           _fieldLabel(l10n.mapLocationLabel),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _latController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
-                  decoration: _buildInputDecoration(l10n.latitudeHint, null),
-                ),
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () async {
+              LatLng? initial;
+              final lat = double.tryParse(_latController.text.trim());
+              final lng = double.tryParse(_lngController.text.trim());
+              if (lat != null && lng != null) initial = LatLng(lat, lng);
+              final result = await Navigator.push<LatLng>(
+                context,
+                MaterialPageRoute(builder: (_) => LocationPickerScreen(initialLocation: initial)),
+              );
+              if (result != null) {
+                setState(() {
+                  _latController.text = result.latitude.toString();
+                  _lngController.text = result.longitude.toString();
+                });
+              }
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: BoxDecoration(
+                color: _kFieldFill,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _DS.outlineVariant),
               ),
-              const SizedBox(width: AppTheme.md),
-              Expanded(
-                child: TextFormField(
-                  controller: _lngController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurface),
-                  decoration: _buildInputDecoration(l10n.longitudeHint, null),
-                ),
+              child: Row(
+                children: [
+                  Icon(Icons.map_outlined, size: 18, color: _DS.primary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      (_latController.text.isNotEmpty && _lngController.text.isNotEmpty)
+                          ? '${_latController.text}, ${_lngController.text}'
+                          : 'Ketuk untuk pilih lokasi di peta',
+                      style: GoogleFonts.beVietnamPro(
+                        fontSize: 12.5,
+                        color: (_latController.text.isNotEmpty) ? _DS.onSurface : _DS.outline,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, size: 18, color: _DS.outline),
+                ],
               ),
-            ],
-          ),
+            ),
+          ), //k
+          //kl
         ],
       ),
     );
