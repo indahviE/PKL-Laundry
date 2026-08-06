@@ -1175,6 +1175,30 @@
     }
   },
   "employeeDeactivatedWithCodeSuccess": "Employee {code} has been deactivated",
+  "deleteEmployeeConfirmContent": "Employee \"{name}\" will be permanently deleted from the database and CANNOT be recovered.\n\nIf this employee is or has been recorded in transaction history, it's recommended to use the \"Deactivate\" option instead so old history still displays correctly.",
+"@deleteEmployeeConfirmContent": {
+  "placeholders": {
+    "name": {
+      "type": "String"
+    }
+  }
+},
+"deleteEmployeeSuccess": "Employee \"{name}\" permanently deleted",
+"@deleteEmployeeSuccess": {
+  "placeholders": {
+    "name": {
+      "type": "String"
+    }
+  }
+},
+"deleteEmployeeError": "Failed to delete employee: {error}",
+"@deleteEmployeeError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
   "@employeeDeactivatedWithCodeSuccess": {
     "placeholders": {
       "code": {

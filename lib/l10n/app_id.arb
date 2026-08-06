@@ -1223,6 +1223,30 @@
     }
   },
   "employeeDeactivatedWithCodeSuccess": "Karyawan {code} telah dinonaktifkan",
+  "deleteEmployeeConfirmContent": "Karyawan \"{name}\" akan dihapus permanen dari database dan TIDAK BISA dikembalikan.\n\nJika karyawan ini masih atau pernah tercatat dalam riwayat transaksi, sebaiknya gunakan opsi \"Nonaktifkan\" saja agar riwayat lama tetap tampil normal.",
+"@deleteEmployeeConfirmContent": {
+  "placeholders": {
+    "name": {
+      "type": "String"
+    }
+  }
+},
+"deleteEmployeeSuccess": "Karyawan \"{name}\" berhasil dihapus permanen",
+"@deleteEmployeeSuccess": {
+  "placeholders": {
+    "name": {
+      "type": "String"
+    }
+  }
+},
+"deleteEmployeeError": "Gagal menghapus karyawan: {error}",
+"@deleteEmployeeError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
   "@employeeDeactivatedWithCodeSuccess": {
     "placeholders": {
       "code": {

@@ -2238,6 +2238,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String deleteEmployeeConfirmContent(String name) {
+    return 'Employee \"$name\" will be permanently deleted from the database and CANNOT be recovered.\n\nIf this employee is or has been recorded in transaction history, it\'s recommended to use the \"Deactivate\" option instead so old history still displays correctly.';
+  }
+
+  @override
+  String deleteEmployeeSuccess(String name) {
+    return 'Employee \"$name\" permanently deleted';
+  }
+
+  @override
+  String deleteEmployeeError(String error) {
+    return 'Failed to delete employee: $error';
+  }
+
+  @override
   String get unnamedBranchFallback => 'Unnamed Branch';
 
   @override

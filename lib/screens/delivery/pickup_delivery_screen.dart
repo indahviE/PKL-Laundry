@@ -40,6 +40,14 @@ class _DS {
   static const primary = Color(0xFF0061A4);
   static const error = Color(0xFFDC2626);
 
+  // TAMBAHAN: warna aksen reminder pembayaran (oranye), dipakai di pill
+  // "Belum Lunas" pada kartu order & banner peringatan di sheet konfirmasi
+  // pengantaran. Sengaja disamakan persis dengan warna
+  // "courierNotAssignedLabel" yang sudah ada supaya konsisten sebagai
+  // "warna peringatan" di layar ini.
+  static const warning = Color(0xFFE8590C);
+  static const warningBg = Color(0xFFFFF3E0);
+
   static List<BoxShadow> get cardShadow => [
         BoxShadow(
           color: Colors.black.withOpacity(0.05),
@@ -68,6 +76,12 @@ class _DS {
       );
 }
 
+// TAMBAHAN: helper format currency dipakai lintas widget di file ini
+// (pill reminder & banner sheet) - biar gak duplikat logic regex yang
+// sama persis dengan yang sudah ada di _ConfirmPickupSheet.
+String _formatCurrencyGlobal(double amount) {
+  return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}';
+}
 
 /// Kategori tampilan untuk 1 order di layar Antar Jemput.
 /// Ini turunan dari orderType/deliveryType/status/pickupDate/deliveryDate -
@@ -234,6 +248,16 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
   /// lewat sheet, supaya owner bisa pilih siapa yang bertugas. Order
   /// self-service (pelanggan ambil sendiri) tidak butuh kurir sama sekali,
   /// jadi langsung ditandai selesai tanpa membuka sheet.
+  ///
+  /// TAMBAHAN: reminder pembayaran. Order yang belum lunas (paymentStatus
+  /// != paid) SEKARANG selalu dikasih jeda konfirmasi ekstra dulu sebelum
+  /// beneran ditandai selesai diambil/diantar - supaya kasir/kurir gak
+  /// kelewat nyerahin baju padahal masih ada sisa tagihan. Untuk order
+  /// needsDelivery, reminder-nya muncul sebagai banner di dalam
+  /// ConfirmDeliverySheet. Untuk order selfService (yang sebelumnya
+  /// langsung _markDelivered tanpa sheet sama sekali), reminder-nya
+  /// berupa dialog konfirmasi terpisah karena memang belum ada UI
+  /// perantara di jalur itu.
   Future<void> _handleDeliveryTap(Order order) async {
     if (order.needsDelivery) {
       final confirmed = await showModalBottomSheet<bool>(
@@ -250,14 +274,81 @@ class _PickupDeliveryScreenState extends ConsumerState<PickupDeliveryScreen> {
           // ke-prefill, gak nanya ulang dari nol.
           scheduledCourierId: order.logisticsSchedule?.courierId,
           scheduledCourierName: order.logisticsSchedule?.courierName,
+          // TAMBAHAN: info pembayaran, dipakai sheet buat nampilin banner
+          // peringatan kalau masih ada sisa tagihan.
+          isUnpaid: order.paymentStatus != PaymentStatus.paid,
+          remainingAmount: order.totalAmount - order.paidAmount,
         ),
       );
       if (confirmed == true) {
         _showSuccessSnack(AppLocalizations.of(context)!.markedDeliveredCompletedSnackbar(order.orderNumber));
       }
     } else {
+      // TAMBAHAN: self-service gak pernah lewat sheet, jadi reminder-nya
+      // ditaruh sebagai dialog konfirmasi tersendiri di sini - HANYA
+      // muncul kalau memang belum lunas, supaya alur yang sudah lunas
+      // tetap secepat sebelumnya (tanpa klik tambahan).
+      if (order.paymentStatus != PaymentStatus.paid) {
+        final remaining = order.totalAmount - order.paidAmount;
+        final proceed = await _showUnpaidConfirmDialog(
+          orderNumber: order.orderNumber,
+          remainingAmount: remaining,
+        );
+        if (proceed != true) return;
+      }
       await _markDelivered(order);
     }
+  }
+
+  /// TAMBAHAN: dialog konfirmasi "masih ada sisa tagihan, tetap
+  /// lanjutkan?" - dipakai khusus jalur self-service karena jalur itu
+  /// tidak melewati bottom sheet apa pun (langsung _markDelivered).
+  /// Return true kalau kasir memilih tetap lanjut, false/null kalau
+  /// dibatalkan.
+  Future<bool?> _showUnpaidConfirmDialog({
+    required String orderNumber,
+    required double remainingAmount,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: _DS.warning, size: 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Belum Lunas',
+                style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _DS.onSurface),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Order $orderNumber masih punya sisa tagihan ${_formatCurrencyGlobal(remainingAmount)}. '
+          'Tetap tandai sebagai sudah diambil/selesai?',
+          style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _DS.onSurfaceVariant, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.closeButton, style: GoogleFonts.beVietnamPro(color: _DS.onSurfaceVariant)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _DS.warning,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+            ),
+            child: Text('Tetap Lanjutkan', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _markDelivered(Order order, {String? courierId, String? courierName}) async {
@@ -1381,6 +1472,15 @@ class ConfirmDeliverySheet extends ConsumerStatefulWidget {
   // manual), jadi tetap perlu dipilih di sini.
   final String? scheduledCourierId;
   final String? scheduledCourierName;
+  // TAMBAHAN: reminder + input pembayaran - true kalau order ini belum
+  // lunas. Beda dari sekadar reminder pasif: kalau true, sheet ini
+  // nampilin SECTION PEMBAYARAN (metode + nominal) supaya driver bisa
+  // langsung catat uang yang diterima di lapangan saat serah terima -
+  // sama pola atomic-nya dengan OrderRepository.recordPayment() yang
+  // sudah dipakai _showRecordPaymentDialog di OrderDetailScreen. Kalau
+  // order sudah lunas, section ini tidak pernah ditampilkan sama sekali.
+  final bool isUnpaid;
+  final double remainingAmount;
 
   const ConfirmDeliverySheet({
     Key? key,
@@ -1389,6 +1489,8 @@ class ConfirmDeliverySheet extends ConsumerStatefulWidget {
     required this.orderNumber,
     this.scheduledCourierId,
     this.scheduledCourierName,
+    this.isUnpaid = false, // TAMBAHAN
+    this.remainingAmount = 0, // TAMBAHAN
   }) : super(key: key); 
 
   @override
@@ -1402,10 +1504,34 @@ class _ConfirmDeliverySheetState extends ConsumerState<ConfirmDeliverySheet> {
   Employee? _selectedCourier;
   bool _isSaving = false;
 
+  // === TAMBAHAN: state pembayaran, cuma relevan kalau widget.isUnpaid.
+  // TIDAK ADA lagi toggle Lunas/DP di sheet ini (lihat alasan di
+  // _buildPaymentSection) - satu-satunya pilihan driver adalah metode
+  // pembayarannya, nominal narik full otomatis.
+  String _selectedPaymentMethod = 'cash';
+
+  bool get _isInstantMethod =>
+      _selectedPaymentMethod == 'cash' ||
+      _selectedPaymentMethod == 'debit' ||
+      _selectedPaymentMethod == 'ewallet';
+
+  List<Map<String, dynamic>> _paymentMethodsData(AppLocalizations l10n) => [
+        {'id': 'cash', 'label': l10n.cashPaymentLabel, 'icon': Icons.payments_outlined},
+        {'id': 'transfer', 'label': l10n.bankTransferLabel, 'icon': Icons.account_balance_outlined},
+        {'id': 'debit', 'label': l10n.debitCardLabel, 'icon': Icons.credit_card_outlined},
+        {'id': 'ewallet', 'label': l10n.eWalletLabel, 'icon': Icons.account_balance_wallet_outlined},
+      ];
+  // === END TAMBAHAN
+
   @override
   void initState() {
     super.initState();
     _fetchCouriers();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> _fetchCouriers() async {
@@ -1445,11 +1571,39 @@ class _ConfirmDeliverySheetState extends ConsumerState<ConfirmDeliverySheet> {
     }
   }
 
+  // === TAMBAHAN: hitung berapa yang dibayar sekarang. Beda dari
+  // _ConfirmPickupSheet - di sini TIDAK ADA opsi DP (lihat alasan di
+  // _buildPaymentSection), jadi metode instan selalu narik FULL sisa
+  // tagihan, gak perlu validasi nominal apa pun.
+  double _resolvePaidAmount() {
+    if (!widget.isUnpaid) return 0; // sudah lunas dari awal, gak ada apa-apa buat dicatat
+    if (!_isInstantMethod) return 0; // transfer: nunggu konfirmasi manual kasir belakangan
+    return widget.remainingAmount;
+  }
+  // === END TAMBAHAN
+
   Future<void> _handleConfirm() async {
+    final paidNow = _resolvePaidAmount();
+
     setState(() => _isSaving = true);
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-      await OrderRepository(userId: uid).markDelivered(
+      final repo = OrderRepository(userId: uid);
+
+      // TAMBAHAN: catat pembayaran DULU (kalau ada uang yang beneran
+      // diterima sekarang), baru markDelivered - urutan ini penting
+      // supaya kalau recordPayment gagal, order TIDAK terlanjur
+      // ditandai selesai diantar padahal duitnya belum tercatat.
+      if (paidNow > 0) {
+        final paymentMethod = PaymentMethod.values.firstWhere((e) => e.name == _selectedPaymentMethod);
+        await repo.recordPayment(
+          widget.orderId,
+          amount: paidNow,
+          method: paymentMethod,
+        );
+      }
+
+      await repo.markDelivered(
         widget.orderId,
         courierId: _selectedCourier?.id,
         courierName: _selectedCourier?.fullName,
@@ -1468,6 +1622,100 @@ class _ConfirmDeliverySheetState extends ConsumerState<ConfirmDeliverySheet> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  // TAMBAHAN: section pembayaran - HANYA dipanggil dari build() kalau
+  // widget.isUnpaid true. Driver cuma pilih metode; nominal narik full
+  // otomatis (lihat _resolvePaidAmount) - gak ada input manual di sini.
+  Widget _buildPaymentSection() {
+    final l10n = AppLocalizations.of(context)!;
+    final paymentMethods = _paymentMethodsData(l10n);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.paymentMethodLabel, style: GoogleFonts.beVietnamPro(fontSize: 13, fontWeight: FontWeight.w700, color: _DS.onSurface)),
+        const SizedBox(height: AppTheme.sm),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = (constraints.maxWidth - AppTheme.sm) / 2;
+            return Wrap(
+              spacing: AppTheme.sm,
+              runSpacing: AppTheme.sm,
+              children: paymentMethods.map((method) {
+                final isSelected = _selectedPaymentMethod == method['id'];
+                return SizedBox(
+                  width: itemWidth,
+                  child: InkWell(
+                    onTap: _isSaving ? null : () => setState(() => _selectedPaymentMethod = method['id']),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.sm),
+                      decoration: BoxDecoration(
+                        color: isSelected ? _DS.primary.withOpacity(0.1) : _DS.canvas,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        border: Border.all(color: isSelected ? _DS.primary : _DS.outlineVariant, width: isSelected ? 1.5 : 1),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(method['icon'], size: 16, color: isSelected ? _DS.primary : _DS.onSurfaceVariant),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              method['label'],
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.beVietnamPro(fontSize: 11.5, fontWeight: FontWeight.w600, color: isSelected ? _DS.primary : _DS.onSurfaceVariant),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+        const SizedBox(height: 6),
+        Text(
+          _selectedPaymentMethod == 'transfer' ? l10n.transferPaymentPendingNotice : l10n.instantPaymentNotice,
+          style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.onSurfaceVariant),
+        ),
+        // TAMBAHAN: sengaja TIDAK ada toggle Lunas/DP di sheet ini (beda
+        // dari _ConfirmPickupSheet). Begitu barang diserahin ke
+        // pelanggan, itu kesempatan terakhir buat nagih - kalau dibolehin
+        // DP di sini, sisa tagihannya jadi susah ditagih karena toko
+        // udah gak punya leverage (barang udah lepas). Jadi metode
+        // instan (tunai/debit/e-wallet) SELALU narik FULL sisa tagihan,
+        // gak ada opsi bayar sebagian. Transfer tetap pending seperti
+        // biasa, dikonfirmasi manual belakangan oleh kasir.
+        if (_isInstantMethod) ...[
+          const SizedBox(height: AppTheme.md),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: AppTheme.sm),
+            decoration: BoxDecoration(
+              color: _DS.primary.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Ditagih sekarang (lunas)',
+                  style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600, color: _DS.onSurface),
+                ),
+                Text(
+                  _formatCurrencyGlobal(widget.remainingAmount),
+                  style: GoogleFonts.beVietnamPro(fontSize: 14, fontWeight: FontWeight.w700, color: _DS.primary),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   @override
@@ -1507,6 +1755,36 @@ class _ConfirmDeliverySheetState extends ConsumerState<ConfirmDeliverySheet> {
                 style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
               ),
               const SizedBox(height: 22),
+
+              // TAMBAHAN: banner ringkas "belum lunas" - tampil paling atas
+              // (sebelum form kurir), sekadar penanda kenapa section
+              // pembayaran di bawah muncul. Detail nominal & input-nya
+              // ada di _buildPaymentSection(), jadi banner ini sengaja
+              // gak diulang nominalnya biar gak duplikat info.
+              if (widget.isUnpaid) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.md, vertical: AppTheme.sm),
+                  margin: const EdgeInsets.only(bottom: AppTheme.lg),
+                  decoration: BoxDecoration(
+                    color: _DS.warningBg,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    border: Border.all(color: _DS.warning.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, size: 16, color: _DS.warning),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Order ini masih ada sisa tagihan ${_formatCurrencyGlobal(widget.remainingAmount)} - catat pembayaran yang diterima di bawah.',
+                          style: GoogleFonts.beVietnamPro(fontSize: 12, fontWeight: FontWeight.w600, color: _DS.warning, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               Text(
                 l10n.assignedCourierLabel,
@@ -1577,6 +1855,15 @@ class _ConfirmDeliverySheetState extends ConsumerState<ConfirmDeliverySheet> {
                   ),
                 ),
 
+              // TAMBAHAN: section pembayaran - HANYA muncul kalau order
+              // ini belum lunas. Driver isi metode + nominal yang
+              // diterima di sini, dicatat atomic lewat recordPayment()
+              // di _handleConfirm sebelum markDelivered dieksekusi.
+              if (widget.isUnpaid) ...[
+                const SizedBox(height: AppTheme.lg),
+                _buildPaymentSection(),
+              ],
+
               const SizedBox(height: AppTheme.xl),
 
               SizedBox(
@@ -1596,7 +1883,7 @@ class _ConfirmDeliverySheetState extends ConsumerState<ConfirmDeliverySheet> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          l10n.confirmDeliveredButton,
+                          widget.isUnpaid ? 'Catat Bayar & Tandai Diantar' : l10n.confirmDeliveredButton,
                           style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 15),
                         ),
                 ),
@@ -1758,6 +2045,14 @@ class _OrderLogisticsCard extends StatelessWidget {
     final hasPhone = (order.customerPhone ?? '').isNotEmpty;
     final hasCourier = (order.courierName ?? '').isNotEmpty;
 
+    // TAMBAHAN: reminder pembayaran - dicek di SEMUA kategori (bukan
+    // cuma yang lagi bisa ditandai selesai) supaya kelihatan dari awal
+    // pas nge-scan daftar, bukan cuma pas mau konfirmasi aksi.
+    // TODO: sesuaikan nama getter `paymentStatus`/`paidAmount`/`totalAmount`
+    // kalau nama field di models/order.dart kamu beda dari ini.
+    final isUnpaid = order.paymentStatus != PaymentStatus.paid;
+    final remainingAmount = (order.totalAmount - order.paidAmount).clamp(0, double.infinity).toDouble();
+
     // Info kurir khusus kategori "Perlu Dijemput" - beda sumber data dari
     // hasCourier di atas (itu dari order.courierName, cuma keisi setelah
     // beneran diantar via markDelivered). Ini dari rencana jadwal
@@ -1875,6 +2170,15 @@ class _OrderLogisticsCard extends StatelessWidget {
                               icon: Icons.person_off_outlined,
                               label: l10n.courierNotAssignedLabel,
                               color: const Color(0xFFE8590C),
+                            ),
+                          // TAMBAHAN: pill reminder pembayaran - selalu
+                          // ditampilkan kalau masih ada sisa tagihan,
+                          // terlepas dari kategori logistiknya apa.
+                          if (isUnpaid)
+                            _Pill(
+                              icon: Icons.priority_high_rounded,
+                              label: 'Belum Lunas · ${_formatCurrencyGlobal(remainingAmount)}',
+                              color: _DS.warning,
                             ),
                         ],
                       ),
