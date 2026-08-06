@@ -104,13 +104,27 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
     await context.push<bool>('/employees/create');
   }
 
-  /// Fungsi untuk menonaktifkan karyawan (Terminasi)
+  /// Fungsi untuk menonaktifkan karyawan (Terminasi) - soft delete.
+  /// Dialog konfirmasi disamakan gayanya dengan _confirmDelete di
+  /// ServicesListScreen (icon warning di title, shape rounded 16, tombol
+  /// aksi merah bold).
   Future<void> _terminateEmployee(Employee employee) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(AppLocalizations.of(context)!.terminateEmployeeTitle, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: _DS.error, size: 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context)!.terminateEmployeeTitle,
+                style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 15.5),
+              ),
+            ),
+          ],
+        ),
         content: Text(
           AppLocalizations.of(context)!.terminateEmployeeConfirm(
             employee.fullName.isNotEmpty ? employee.fullName : employee.employeeCode,
@@ -144,6 +158,72 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
           AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
           AppFeedback.playSound(ref, AppSound.error);
           AppSnackbar.error(context, AppLocalizations.of(context)!.employeeDeactivateError(e.toString()));
+        }
+      }
+    }
+  }
+
+  /// Fungsi untuk menghapus karyawan secara PERMANEN dari database.
+  /// Dialog & alur feedback-nya disamakan persis dengan _confirmDelete di
+  /// ServicesListScreen (icon warning di title, tombol "Hapus Permanen"
+  /// merah bold, snackbar sukses/gagal + haptic+sound).
+  Future<void> _deleteEmployee(Employee employee) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: _DS.error, size: 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context)!.deleteConfirmTitle,
+                style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 15.5),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          AppLocalizations.of(context)!.deleteEmployeeConfirmContent(
+            employee.fullName.isNotEmpty ? employee.fullName : employee.employeeCode,
+          ),
+          style: _DS.bodySm(color: _DS.onSurfaceVariant).copyWith(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurfaceVariant)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              AppLocalizations.of(context)!.deletePermanentButton,
+              style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(employeeRepositoryProvider).deleteEmployee(employee.id);
+        if (mounted) {
+          AppFeedback.haptic(ref);
+          AppFeedback.playSound(ref, AppSound.success);
+          AppSnackbar.success(
+            context,
+            AppLocalizations.of(context)!.deleteEmployeeSuccess(
+              employee.fullName.isNotEmpty ? employee.fullName : employee.employeeCode,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+          AppFeedback.playSound(ref, AppSound.error);
+          AppSnackbar.error(context, AppLocalizations.of(context)!.deleteEmployeeError(e.toString()));
         }
       }
     }
@@ -527,6 +607,8 @@ class _EmployeesListScreenState extends ConsumerState<EmployeesListScreen> {
           laundryName: laundryNames[emp.laundryId] ?? '-',
           roleColor: _roleColor(emp.position),
           onTap: () => context.push('/employees/${emp.id}'),
+          onToggleActive: emp.isActive ? () => _terminateEmployee(emp) : null,
+          onDelete: () => _deleteEmployee(emp),
         );
       },
     );
@@ -579,12 +661,16 @@ class _EmployeeCard extends StatelessWidget {
   final String laundryName;
   final Color roleColor;
   final VoidCallback onTap;
+  final VoidCallback? onToggleActive;
+  final VoidCallback onDelete;
 
   const _EmployeeCard({
     required this.employee,
     required this.laundryName,
     required this.roleColor,
     required this.onTap,
+    required this.onToggleActive,
+    required this.onDelete,
   });
 
   String _getInitials(String name) {
@@ -686,6 +772,43 @@ class _EmployeeCard extends StatelessWidget {
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Menu titik tiga - disamakan persis dengan pola PopupMenuButton
+                // di _ServiceCard (ServicesListScreen): icon, shape rounded 14,
+                // item "Nonaktifkan" (kalau aktif) lalu divider + "Hapus" merah.
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert_rounded, size: 20, color: _DS.onSurfaceVariant.withOpacity(0.5)),
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  onSelected: (value) {
+                    if (value == 'toggle') onToggleActive?.call();
+                    if (value == 'delete') onDelete();
+                  },
+                  itemBuilder: (context) => [
+                    if (onToggleActive != null)
+                      PopupMenuItem(
+                        value: 'toggle',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.visibility_off_outlined, size: 18, color: Colors.black87),
+                            const SizedBox(width: 10),
+                            Text(AppLocalizations.of(context)!.deactivateMenuItem, style: _DS.bodySm(color: _DS.onSurface)),
+                          ],
+                        ),
+                      ),
+                    if (onToggleActive != null) const PopupMenuDivider(height: 1),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_forever_outlined, size: 18, color: Colors.red[600]),
+                          const SizedBox(width: 10),
+                          Text(AppLocalizations.of(context)!.deleteMenuItem, style: _DS.bodySm(color: Colors.red[600])),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
                 Container(
                   width: 10,
                   height: 10,
@@ -694,7 +817,7 @@ class _EmployeeCard extends StatelessWidget {
                     color: isActive ? _DS.success : Colors.grey.shade400,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 8),
                 Icon(Icons.chevron_right_rounded, size: 20, color: _DS.onSurfaceVariant.withOpacity(0.6)),
               ],
             ),

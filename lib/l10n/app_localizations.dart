@@ -4118,6 +4118,24 @@ abstract class AppLocalizations {
   /// **'Karyawan {code} telah dinonaktifkan'**
   String employeeDeactivatedWithCodeSuccess(String code);
 
+  /// No description provided for @deleteEmployeeConfirmContent.
+  ///
+  /// In id, this message translates to:
+  /// **'Karyawan \"{name}\" akan dihapus permanen dari database dan TIDAK BISA dikembalikan.\n\nJika karyawan ini masih atau pernah tercatat dalam riwayat transaksi, sebaiknya gunakan opsi \"Nonaktifkan\" saja agar riwayat lama tetap tampil normal.'**
+  String deleteEmployeeConfirmContent(String name);
+
+  /// No description provided for @deleteEmployeeSuccess.
+  ///
+  /// In id, this message translates to:
+  /// **'Karyawan \"{name}\" berhasil dihapus permanen'**
+  String deleteEmployeeSuccess(String name);
+
+  /// No description provided for @deleteEmployeeError.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menghapus karyawan: {error}'**
+  String deleteEmployeeError(String error);
+
   /// No description provided for @unnamedBranchFallback.
   ///
   /// In id, this message translates to:

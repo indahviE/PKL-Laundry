@@ -476,11 +476,11 @@ class EmployeeDetailScreen extends ConsumerWidget {
                 const SizedBox(height: AppTheme.xxl),
 
                 // 7. Tombol Nonaktifkan Karyawan (Soft Delete)
-                if (employee.isActive)
+                if (employee.isActive) ...[
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => _showTerminateDialog(context, ref, employee.id),
+                      onPressed: () => _showTerminateDialog(context, ref, employee),
                       icon: Icon(Icons.person_off_outlined, size: 18, color: _DS.error),
                       label: Text(
                         AppLocalizations.of(context)!.deactivateEmployeeTitle,
@@ -495,6 +495,30 @@ class EmployeeDetailScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                ],
+
+                // 8. Tombol Hapus Permanen Karyawan - selalu tampil (aktif
+                // maupun tidak), disamakan dengan aksi "Hapus Permanen" pada
+                // ServicesListScreen (merah solid, ikon delete_forever).
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showDeleteDialog(context, ref, employee),
+                    icon: const Icon(Icons.delete_forever_outlined, size: 18, color: Colors.white),
+                    label: Text(
+                      AppLocalizations.of(context)!.deletePermanentButton,
+                      style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, fontSize: 13.5, color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _DS.error,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -657,13 +681,26 @@ class EmployeeDetailScreen extends ConsumerWidget {
     );
   }
 
-  // Menampilkan dialog konfirmasi soft-termination agar sinkron dengan repository
-  void _showTerminateDialog(BuildContext context, WidgetRef ref, String employeeId) {
+  // Menampilkan dialog konfirmasi soft-termination agar sinkron dengan repository.
+  // Gaya dialog disamakan dengan _confirmDelete di ServicesListScreen (icon
+  // warning di title + haptic/sound + snackbar feedback).
+  void _showTerminateDialog(BuildContext context, WidgetRef ref, Employee employee) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(AppLocalizations.of(context)!.deactivateEmployeeTitle, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: _DS.error, size: 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context)!.deactivateEmployeeTitle,
+                style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 15.5),
+              ),
+            ),
+          ],
+        ),
         content: Text(
           AppLocalizations.of(context)!.deactivateEmployeeConfirmAlt,
           style: _DS.bodySm(color: _DS.onSurfaceVariant).copyWith(fontSize: 13),
@@ -675,14 +712,91 @@ class EmployeeDetailScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () async {
-              // Mengakses repositori melalui Riverpod dan memecat karyawan secara soft-terminate
-              await ref.read(employeeRepositoryProvider).terminateEmployee(employeeId);
-              if (context.mounted) {
-                Navigator.pop(context); // Tutup Dialog
-                context.pop(); // Kembali ke daftar karyawan
+              Navigator.pop(context); // Tutup Dialog dulu
+              try {
+                // Mengakses repositori melalui Riverpod dan memecat karyawan secara soft-terminate
+                await ref.read(employeeRepositoryProvider).terminateEmployee(employee.id);
+                if (context.mounted) {
+                  AppFeedback.haptic(ref);
+                  AppFeedback.playSound(ref, AppSound.success);
+                  AppSnackbar.success(context, AppLocalizations.of(context)!.employeeDeactivatedWithCodeSuccess(employee.employeeCode));
+                  context.pop(); // Kembali ke daftar karyawan
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+                  AppFeedback.playSound(ref, AppSound.error);
+                  AppSnackbar.error(context, AppLocalizations.of(context)!.employeeDeactivateError(e.toString()));
+                }
               }
             },
             child: Text(AppLocalizations.of(context)!.yesDeactivateButton, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.error)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Menampilkan dialog konfirmasi hapus PERMANEN karyawan dari database.
+  // Disamakan persis dengan _confirmDelete di ServicesListScreen: icon
+  // warning di title, tombol "Hapus Permanen" merah bold, feedback
+  // haptic+sound+snackbar, lalu kembali ke daftar karyawan.
+  void _showDeleteDialog(BuildContext context, WidgetRef ref, Employee employee) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: _DS.error, size: 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context)!.deleteConfirmTitle,
+                style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 15.5),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          AppLocalizations.of(context)!.deleteEmployeeConfirmContent(
+            employee.fullName.isNotEmpty ? employee.fullName : employee.employeeCode,
+          ),
+          style: _DS.bodySm(color: _DS.onSurfaceVariant).copyWith(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.onSurfaceVariant)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Tutup Dialog dulu
+              try {
+                await ref.read(employeeRepositoryProvider).deleteEmployee(employee.id);
+                if (context.mounted) {
+                  AppFeedback.haptic(ref);
+                  AppFeedback.playSound(ref, AppSound.success);
+                  AppSnackbar.success(
+                    context,
+                    AppLocalizations.of(context)!.deleteEmployeeSuccess(
+                      employee.fullName.isNotEmpty ? employee.fullName : employee.employeeCode,
+                    ),
+                  );
+                  context.pop(); // Kembali ke daftar karyawan
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
+                  AppFeedback.playSound(ref, AppSound.error);
+                  AppSnackbar.error(context, AppLocalizations.of(context)!.deleteEmployeeError(e.toString()));
+                }
+              }
+            },
+            child: Text(
+              AppLocalizations.of(context)!.deletePermanentButton,
+              style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w600, color: _DS.error),
+            ),
           ),
         ],
       ),

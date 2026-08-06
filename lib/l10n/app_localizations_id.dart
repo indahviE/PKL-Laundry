@@ -2244,6 +2244,21 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String deleteEmployeeConfirmContent(String name) {
+    return 'Karyawan \"$name\" akan dihapus permanen dari database dan TIDAK BISA dikembalikan.\n\nJika karyawan ini masih atau pernah tercatat dalam riwayat transaksi, sebaiknya gunakan opsi \"Nonaktifkan\" saja agar riwayat lama tetap tampil normal.';
+  }
+
+  @override
+  String deleteEmployeeSuccess(String name) {
+    return 'Karyawan \"$name\" berhasil dihapus permanen';
+  }
+
+  @override
+  String deleteEmployeeError(String error) {
+    return 'Gagal menghapus karyawan: $error';
+  }
+
+  @override
   String get unnamedBranchFallback => 'Cabang Tanpa Nama';
 
   @override
