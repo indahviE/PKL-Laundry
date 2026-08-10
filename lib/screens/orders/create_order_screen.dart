@@ -13,6 +13,71 @@ import '../../core/services/app_feedback.dart';
 import '../../repositories/service_repository.dart';
 import '../../repositories/order_repository.dart';
 
+/// Local design tokens matching the "NetWash Utility System" design -
+/// SAMA PERSIS dengan _DS di CreateEmployeeScreen (canvas abu kebiruan,
+/// kartu putih shadow lembut, Be Vietnam Pro, warna primary #0061A4).
+/// Sengaja TIDAK menyentuh AppTheme global, biar layar lain gak ikut
+/// berubah - lihat penjelasan yang sama di CreateEmployeeScreen.
+class _DS {
+  static const canvas = Color(0xFFF5F7FA);
+  static const surface = Colors.white;
+  static const onSurface = Color(0xFF1B1C1C);
+  static const onSurfaceVariant = Color(0xFF404752);
+  static const outline = Color(0xFF707883);
+  static const outlineVariant = Color(0xFFBFC7D4);
+
+  static const primary = Color(0xFF0061A4);
+  static const primaryFixed = Color(0xFFD1E4FF);
+
+  static const tertiary = Color(0xFF526069);
+  static const tertiaryFixed = Color(0xFFD6E5EF);
+
+  static const error = Color(0xFFBA1A1A);
+  static const errorContainer = Color(0xFFFFDAD6);
+
+  static const secondaryContainer = Color(0xFFE0E3E6);
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static TextStyle headlineMd({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: color ?? onSurface,
+        letterSpacing: -0.1,
+      );
+
+  static TextStyle subtitleMd({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: color ?? onSurfaceVariant,
+      );
+
+  static TextStyle bodyMd({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
+        fontSize: 14,
+        fontWeight: weight ?? FontWeight.w400,
+        color: color ?? onSurface,
+      );
+
+  static TextStyle bodySm({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
+        fontSize: 13,
+        fontWeight: weight ?? FontWeight.w400,
+        color: color ?? onSurfaceVariant,
+      );
+
+  static TextStyle labelBold({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: color ?? onSurfaceVariant,
+        letterSpacing: 0.3,
+      );
+}
+
 /// Order Item Form Model (UI-only, dikonversi ke OrderItem domain model
 /// pas save)
 ///
@@ -108,30 +173,6 @@ class CreateOrderScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
-  // ============================================
-  // Radius lokal khusus layar ini, mengikuti pola desain baru
-  // (card 16px, chip/field 12-14px, tombol utama pill). Sengaja TIDAK
-  // mengubah AppTheme.radiusLg/radiusMd secara global supaya layar lain
-  // yang masih pakai AppTheme apa adanya tidak ikut berubah tampilannya.
-  // ============================================
-  static const double _cardRadius = 16.0;
-  static const double _chipRadius = 14.0;
-  static const double _fieldRadius = 14.0;
-
-  // ============================================
-  // Warna netral lokal khusus layar ini, mengikuti prinsip desain baru:
-  // biru cuma dipakai buat elemen "actionable" (tombol, chip aktif,
-  // total harga) - bukan buat background kartu/kotak info biasa.
-  // Sebelumnya banyak kotak (empty state, input fill, chip belum
-  // dipilih) numpang pakai AppTheme.primaryColor/backgroundColor yang
-  // sama-sama bernuansa biru, jadi kesannya "biru semua". Sekarang
-  // dipisah pakai abu-abu netral, cuma canvas & shadow yang disamakan
-  // sama HTML mockup (#F5F7FA, shadow hitam tipis).
-  // ============================================
-  static const Color _canvasColor = Color(0xFFF5F7FA);
-  static const Color _neutralFill = AppTheme.gray50;
-  static const Color _neutralSurface = AppTheme.gray100;
-
   // Controllers
   late TextEditingController _notesController;
   late TextEditingController _dpAmountController;
@@ -165,7 +206,6 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   // CreateDeliveryScheduleScreen (menu Antar Jemput).
   DateTime? _pickupScheduleDate;
   TimeOfDay? _pickupScheduleTime;
-
 
   List<OrderItemForm> _orderItems = [];
   List<_CustomerOption> _customers = [];
@@ -698,55 +738,110 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
+  // ---------------------------------------------------------------------
+  // Layout keseluruhan - samain persis pola CreateEmployeeScreen: top bar
+  // tetap (non-scroll) + Expanded scroll body + save bar sticky di bawah,
+  // bukan lagi top bar & tombol simpan ikut nge-scroll di dalam konten.
+  // ---------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _canvasColor,
+      backgroundColor: _DS.canvas,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isMobile = constraints.maxWidth < 800;
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      isMobile ? 16 : 24,
-                      isMobile ? 16 : 24,
-                      isMobile ? 16 : 24,
-                      24,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTopBar(context),
-                        const SizedBox(height: AppTheme.lg),
-                        if (_businessContextError != null) ...[
-                          _buildBusinessContextError(context),
-                          const SizedBox(height: AppTheme.lg),
-                        ],
-                        // Satu card utama yang nampung SEMUA: data
-                        // pesanan, item, sampai ringkasan harga.
-                        // Sebelumnya ini 3-4 card terpisah yang masing-
-                        // masing punya shadow sendiri (Form, tiap item
-                        // pesanan, ringkasan harga) - keliatan numpuk
-                        // banget kalau di-scroll. Sekarang cukup 1 card
-                        // dengan pemisah section pakai label kecil +
-                        // divider tipis, jauh lebih ringkas.
-                        _buildMainCard(context),
-                        const SizedBox(height: AppTheme.xl),
-                        _buildSaveButton(context),
-                        const SizedBox(height: AppTheme.lg),
-                      ],
-                    ),
-                  ),
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Column(
+            children: [
+              _buildTopBar(context),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (_businessContextError != null) ...[
+                                    _buildBusinessContextError(context),
+                                    const SizedBox(height: AppTheme.lg),
+                                  ],
+                                  _buildOrderDataCard(context),
+                                  const SizedBox(height: AppTheme.xl),
+                                  Row(
+                                    children: [
+                                      Expanded(child: Divider(color: _DS.outlineVariant)),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                                        child: Text(
+                                          _t.orderItemsSectionLabel.toUpperCase(),
+                                          style: _DS.labelBold(),
+                                        ),
+                                      ),
+                                      Expanded(child: Divider(color: _DS.outlineVariant)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: AppTheme.lg),
+                                  _buildOrderItemsCard(context),
+                                  const SizedBox(height: AppTheme.xl),
+                                  _buildPriceSummary(context),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
-            );
-          },
+              _buildSaveBar(context),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  /// Top bar - samain persis pola CreateEmployeeScreen (back button
+  /// bulat tanpa background/shadow, judul pakai headlineMd warna primary,
+  /// bg putih polos).
+  Widget _buildTopBar(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    return Container(
+      color: _DS.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () => Navigator.pop(context, false),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(shape: BoxShape.circle),
+              child: const Icon(Icons.arrow_back_rounded, size: 22, color: _DS.primary),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(t.createOrderAppBarTitle, style: _DS.headlineMd(color: _DS.primary)),
+                const SizedBox(height: 2),
+                Text(t.createOrderSubtitle, style: _DS.bodySm()),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -757,319 +852,204 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   Widget _buildBusinessContextError(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     return Container(
-      padding: const EdgeInsets.all(AppTheme.md),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.errorColor.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(_chipRadius),
+        color: _DS.errorContainer.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline_rounded, size: 18, color: AppTheme.errorColor),
-          const SizedBox(width: AppTheme.sm),
+          const Icon(Icons.error_outline_rounded, size: 20, color: _DS.error),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               _businessContextError!,
-              style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.errorColor),
+              style: _DS.bodySm(color: _DS.error),
             ),
           ),
           TextButton(
             onPressed: _fetchBusinessContext,
-            child: Text(t.orderRetryButtonLabel, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+            child: Text(t.orderRetryButtonLabel, style: _DS.bodySm(color: _DS.error, weight: FontWeight.w700)),
           ),
         ],
       ),
     );
   }
 
-  /// Top bar sekaligus jadi header - tombol back, judul layar, dan
-  /// subjudul singkat, tanpa kotak ikon besar & progress bar terpisah
-  /// yang cuma makan tempat tanpa nambah informasi baru.
-  Widget _buildTopBar(BuildContext context) {
+  /// Card "Data Pesanan" - cabang, pelanggan, jenis order, metode
+  /// pembayaran, & catatan. Mengikuti pola _sectionCard +
+  /// _sectionColumn milik CreateEmployeeScreen (kartu putih terpisah per
+  /// section, bukan satu card raksasa lagi).
+  Widget _buildOrderDataCard(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: () => Navigator.pop(context, false),
-          borderRadius: BorderRadius.circular(_chipRadius),
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppTheme.cardColor,
-              borderRadius: BorderRadius.circular(_chipRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: AppTheme.textPrimary),
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                t.createOrderAppBarTitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                t.createOrderSubtitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 12.5,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
+    return _sectionCard([
+      Text(t.orderDataSectionLabel, style: _DS.subtitleMd(color: _DS.onSurface)),
+      const SizedBox(height: 12),
+
+      // Dropdown cabang - CUMA muncul kalau owner punya lebih dari
+      // 1 cabang aktif (lihat _showLaundryDropdown). Owner paket
+      // Starter (max 1 cabang) gak akan pernah lihat ini sama
+      // sekali, ordernya otomatis nempel ke satu-satunya cabang
+      // yang ada.
+      if (_showLaundryDropdown) ...[
+        _sectionColumn(label: t.branchFieldLabel, child: _buildLaundryDropdown(context)),
+        const SizedBox(height: AppTheme.lg),
       ],
-    );
-  }
 
-  /// Label kecil buat mulai section baru di dalam _buildMainCard,
-  /// gantiin kotak/card terpisah per section.
-  Widget _sectionLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppTheme.md),
-      child: Text(
-        text.toUpperCase(),
-        style: GoogleFonts.poppins(
-          fontSize: 11.5,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.5,
-          color: AppTheme.textSecondary,
-        ),
+      _sectionColumn(label: t.customerFieldLabel, child: _buildCustomerDropdown(context)),
+
+      const SizedBox(height: AppTheme.lg),
+
+      _buildToggleGroup(
+        label: t.incomingLaundryLabel,
+        options: _orderTypes(t),
+        selectedId: _selectedOrderType,
+        onSelected: _handleOrderTypeChanged,
       ),
-    );
-  }
 
-  Widget _sectionDivider() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppTheme.lg),
-      child: Divider(height: 1, color: AppTheme.borderColor.withOpacity(0.6)),
-    );
-  }
+      // Field jadwal jemput cuma muncul kalau order type-nya pickup.
+      if (_isPickupOrder) ...[
+        const SizedBox(height: AppTheme.md),
+        _buildPickupScheduleFields(),
+      ],
 
-  /// Card utama - satu-satunya kotak putih ber-shadow di layar ini.
-  /// Isinya 3 section (Data Pesanan, Item Pesanan, Ringkasan Harga)
-  /// dipisahkan pakai divider tipis + label, bukan card terpisah lagi.
-  Widget _buildMainCard(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.lg),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(_cardRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
+      const SizedBox(height: AppTheme.lg),
+
+      _buildToggleGroup(
+        label: t.outgoingLaundryLabel,
+        options: _deliveryTypes(t),
+        selectedId: _selectedDeliveryType,
+        onSelected: (id) => setState(() => _selectedDeliveryType = id),
       ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionLabel(t.orderDataSectionLabel),
 
-            // Dropdown cabang - CUMA muncul kalau owner punya lebih dari
-            // 1 cabang aktif (lihat _showLaundryDropdown). Owner paket
-            // Starter (max 1 cabang) gak akan pernah lihat ini sama
-            // sekali, ordernya otomatis nempel ke satu-satunya cabang
-            // yang ada.
-            if (_showLaundryDropdown) ...[
-              _buildLaundryDropdown(context),
-              const SizedBox(height: AppTheme.lg),
-            ],
+      const SizedBox(height: AppTheme.lg),
 
-            _buildCustomerDropdown(context),
-
-            const SizedBox(height: AppTheme.lg),
-
-            _buildToggleGroup(
-              label: t.incomingLaundryLabel,
-              options: _orderTypes(t),
-              selectedId: _selectedOrderType,
-              onSelected: _handleOrderTypeChanged,
-            ),
-
-            // Field jadwal jemput cuma muncul kalau order type-nya pickup.
-            if (_isPickupOrder) ...[
-              const SizedBox(height: AppTheme.md),
-              _buildPickupScheduleFields(),
-            ],
-
-            const SizedBox(height: AppTheme.lg),
-
-            _buildToggleGroup(
-              label: t.outgoingLaundryLabel,
-              options: _deliveryTypes(t),
-              selectedId: _selectedDeliveryType,
-              onSelected: (id) => setState(() => _selectedDeliveryType = id),
-            ),
-
-
-            const SizedBox(height: AppTheme.lg),
-
-            // Payment Method - disembunyikan total buat order pickup.
-            // Totalnya belum bisa dihitung di layar ini (barang belum
-            // ditimbang), jadi nanya metode & Lunas/DP di sini cuma bikin
-            // bingung (dan sempat bikin toggle DP gagal terus karena
-            // totalnya 0). Ganti box info kecil - metode & Lunas/DP yang
-            // beneran dipakai baru dipilih pas konfirmasi jemput
-            // (_ConfirmPickupSheet), setelah berat/qty riil diketahui.
-            _isPickupOrder
-                ? _buildPickupPaymentNotice(t)
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${t.paymentMethodLabel} *',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.md),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final itemWidth = (constraints.maxWidth - AppTheme.sm) / 2;
-                          return Wrap(
-                            spacing: AppTheme.sm,
-                            runSpacing: AppTheme.sm,
-                            children: _paymentMethods(t).map((method) {
-                              final isSelected = _selectedPaymentMethod == method['id'];
-                              return SizedBox(
-                                width: itemWidth,
-                                child: InkWell(
-                                  onTap: () => setState(() => _selectedPaymentMethod = method['id']),
-                                  borderRadius: BorderRadius.circular(_chipRadius),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.sm),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? AppTheme.primaryColor.withOpacity(0.1)
-                                          : _neutralFill,
-                                      borderRadius: BorderRadius.circular(_chipRadius),
-                                      border: Border.all(
-                                        color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
-                                        width: isSelected ? 1.5 : 1,
+      // Payment Method - disembunyikan total buat order pickup.
+      // Totalnya belum bisa dihitung di layar ini (barang belum
+      // ditimbang), jadi nanya metode & Lunas/DP di sini cuma bikin
+      // bingung (dan sempat bikin toggle DP gagal terus karena
+      // totalnya 0). Ganti box info kecil - metode & Lunas/DP yang
+      // beneran dipakai baru dipilih pas konfirmasi jemput
+      // (_ConfirmPickupSheet), setelah berat/qty riil diketahui.
+      _isPickupOrder
+          ? _buildPickupPaymentNotice(t)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${t.paymentMethodLabel} *', style: _DS.subtitleMd()),
+                const SizedBox(height: AppTheme.md),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = (constraints.maxWidth - AppTheme.sm) / 2;
+                    return Wrap(
+                      spacing: AppTheme.sm,
+                      runSpacing: AppTheme.sm,
+                      children: _paymentMethods(t).map((method) {
+                        final isSelected = _selectedPaymentMethod == method['id'];
+                        return SizedBox(
+                          width: itemWidth,
+                          child: InkWell(
+                            onTap: () => setState(() => _selectedPaymentMethod = method['id']),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.sm),
+                              decoration: BoxDecoration(
+                                color: isSelected ? _DS.primaryFixed.withOpacity(0.6) : _DS.canvas,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isSelected ? _DS.primary : _DS.outlineVariant,
+                                  width: isSelected ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    method['icon'],
+                                    size: 16,
+                                    color: isSelected ? _DS.primary : _DS.outline,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      method['label'],
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: _DS.bodySm(
+                                        color: isSelected ? _DS.primary : _DS.onSurfaceVariant,
+                                        weight: FontWeight.w600,
                                       ),
                                     ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          method['icon'],
-                                          size: 16,
-                                          color: isSelected ? AppTheme.primaryColor : AppTheme.textTertiary,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Flexible(
-                                          child: Text(
-                                            method['label'],
-                                            textAlign: TextAlign.center,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 11.5,
-                                              fontWeight: FontWeight.w600,
-                                              color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
                                   ),
-                                ),
-                              );
-                            }).toList(),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: AppTheme.sm),
-                      Text(
-                        _selectedPaymentMethod == 'transfer'
-                            ? t.transferPaymentPendingNotice
-                            : t.instantPaymentNotice,
-                        style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
-                      ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+                const SizedBox(height: AppTheme.sm),
+                Text(
+                  _selectedPaymentMethod == 'transfer'
+                      ? t.transferPaymentPendingNotice
+                      : t.instantPaymentNotice,
+                  style: _DS.bodySm(color: _DS.outline),
+                ),
 
-                      // Toggle Lunas / DP - hanya buat metode instan.
-                      if (_isInstantMethod) ...[
-                        const SizedBox(height: AppTheme.lg),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildPaymentOptionChip(
-                                label: t.fullPaymentLabel,
-                                isSelected: _isFullPayment,
-                                onTap: () => setState(() => _isFullPayment = true),
-                              ),
-                            ),
-                            const SizedBox(width: AppTheme.sm),
-                            Expanded(
-                              child: _buildPaymentOptionChip(
-                                label: t.partialPaymentLabel,
-                                isSelected: !_isFullPayment,
-                                onTap: () => setState(() => _isFullPayment = false),
-                              ),
-                            ),
-                          ],
+                // Toggle Lunas / DP - hanya buat metode instan.
+                if (_isInstantMethod) ...[
+                  const SizedBox(height: AppTheme.lg),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildPaymentOptionChip(
+                          label: t.fullPaymentLabel,
+                          isSelected: _isFullPayment,
+                          onTap: () => setState(() => _isFullPayment = true),
                         ),
-                        if (!_isFullPayment) ...[
-                          const SizedBox(height: AppTheme.md),
-                          AppInput(
-                            label: t.dpAmountLabel,
-                            controller: _dpAmountController,
-                            hintText: t.dpAmountHint,
-                            prefixIcon: Icons.payments_outlined,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            t.remainingBillPayLaterNotice,
-                            style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
-                          ),
-                        ],
-                      ],
+                      ),
+                      const SizedBox(width: AppTheme.sm),
+                      Expanded(
+                        child: _buildPaymentOptionChip(
+                          label: t.partialPaymentLabel,
+                          isSelected: !_isFullPayment,
+                          onTap: () => setState(() => _isFullPayment = false),
+                        ),
+                      ),
                     ],
                   ),
-
-            const SizedBox(height: AppTheme.lg),
-
-            AppInput(
-              label: t.orderNotesFieldLabel,
-              controller: _notesController,
-              hintText: t.orderNotesFieldHint,
-              prefixIcon: Icons.note_outlined,
-              maxLines: 3,
+                  if (!_isFullPayment) ...[
+                    const SizedBox(height: AppTheme.md),
+                    AppInput(
+                      label: t.dpAmountLabel,
+                      controller: _dpAmountController,
+                      hintText: t.dpAmountHint,
+                      prefixIcon: Icons.payments_outlined,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      t.remainingBillPayLaterNotice,
+                      style: _DS.bodySm(color: _DS.outline),
+                    ),
+                  ],
+                ],
+              ],
             ),
 
-            _sectionDivider(),
+      const SizedBox(height: AppTheme.lg),
 
-            _buildOrderItemsSection(context),
-
-            _sectionDivider(),
-
-            _buildPriceSummary(context),
-          ],
+      _sectionColumn(
+        label: t.orderNotesFieldLabel,
+        child: TextFormField(
+          controller: _notesController,
+          maxLines: 3,
+          style: _DS.bodyMd(),
+          decoration: _inputDecoration(hintText: t.orderNotesFieldHint, prefixIcon: Icons.note_outlined),
         ),
       ),
-    );
+    ]);
   }
 
   /// Info box pengganti section Metode Pembayaran, khusus order pickup.
@@ -1078,20 +1058,21 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   Widget _buildPickupPaymentNotice(AppLocalizations t) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppTheme.md),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _neutralSurface,
-        borderRadius: BorderRadius.circular(_chipRadius),
+        color: _DS.canvas,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _DS.outlineVariant),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline_rounded, size: 16, color: AppTheme.textTertiary),
-          const SizedBox(width: AppTheme.sm),
+          Icon(Icons.info_outline_rounded, size: 16, color: _DS.outline),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               t.pickupPaymentPendingNotice,
-              style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
+              style: _DS.bodySm(),
             ),
           ),
         ],
@@ -1110,7 +1091,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
         child: SizedBox(
           width: 20,
           height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
+          child: CircularProgressIndicator(strokeWidth: 2, color: _DS.primary),
         ),
       );
     }
@@ -1124,38 +1105,17 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
         // harus direset supaya gak nyangkut nempel ke cabang yang salah.
         _selectedCustomerId = null;
       }),
-      style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+      style: _DS.bodyMd(),
       isExpanded: true,
       items: _laundriesList
           .map((laundry) => DropdownMenuItem(
                 value: laundry.id,
-                child: Text(
-                  laundry.name,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(fontSize: 13.5),
-                ),
+                child: Text(laundry.name, overflow: TextOverflow.ellipsis, style: _DS.bodyMd()),
               ))
           .toList(),
-      decoration: InputDecoration(
-        labelText: t.branchFieldLabel,
-        labelStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+      decoration: _inputDecoration(
         hintText: t.selectBranchForOrderHint,
-        hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
-        prefixIcon: Icon(Icons.storefront_outlined, color: AppTheme.textTertiary),
-        filled: true,
-        fillColor: _neutralFill,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_fieldRadius),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_fieldRadius),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_fieldRadius),
-          borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
-        ),
+        prefixIcon: Icons.storefront_outlined,
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -1173,24 +1133,23 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(_chipRadius),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: AppTheme.sm),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : _neutralFill,
-          borderRadius: BorderRadius.circular(_chipRadius),
+          color: isSelected ? _DS.primaryFixed.withOpacity(0.6) : _DS.canvas,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+            color: isSelected ? _DS.primary : _DS.outlineVariant,
             width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+          style: _DS.bodySm(
+            color: isSelected ? _DS.primary : _DS.onSurfaceVariant,
+            weight: FontWeight.w600,
           ),
         ),
       ),
@@ -1206,10 +1165,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
-        ),
+        Text(label, style: _DS.subtitleMd()),
         const SizedBox(height: AppTheme.md),
         Row(
           children: List.generate(options.length, (index) {
@@ -1220,14 +1176,14 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                 padding: EdgeInsets.only(right: index < options.length - 1 ? AppTheme.sm : 0),
                 child: InkWell(
                   onTap: () => onSelected(option['id'] as String),
-                  borderRadius: BorderRadius.circular(_chipRadius),
+                  borderRadius: BorderRadius.circular(16),
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: AppTheme.md, horizontal: AppTheme.sm),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : _neutralFill,
-                      borderRadius: BorderRadius.circular(_chipRadius),
+                      color: isSelected ? _DS.primaryFixed.withOpacity(0.6) : _DS.canvas,
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+                        color: isSelected ? _DS.primary : _DS.outlineVariant,
                         width: isSelected ? 1.5 : 1,
                       ),
                     ),
@@ -1237,7 +1193,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                         Icon(
                           option['icon'],
                           size: 18,
-                          color: isSelected ? AppTheme.primaryColor : AppTheme.textTertiary,
+                          color: isSelected ? _DS.primary : _DS.outline,
                         ),
                         const SizedBox(width: 6),
                         Flexible(
@@ -1245,10 +1201,9 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                             option['label'],
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                            style: _DS.bodySm(
+                              color: isSelected ? _DS.primary : _DS.onSurfaceVariant,
+                              weight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -1272,22 +1227,20 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   Widget _buildPickupScheduleFields() {
     final t = _t;
     return Container(
-      padding: const EdgeInsets.all(AppTheme.md),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _neutralFill,
-        borderRadius: BorderRadius.circular(_chipRadius),
+        color: _DS.canvas,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _DS.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.event_available_outlined, size: 15, color: AppTheme.textSecondary),
+              Icon(Icons.event_available_outlined, size: 15, color: _DS.outline),
               const SizedBox(width: 6),
-              Text(
-                t.pickupScheduleLabel,
-                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
-              ),
+              Text(t.pickupScheduleLabel, style: _DS.labelBold()),
             ],
           ),
           const SizedBox(height: AppTheme.sm),
@@ -1296,26 +1249,25 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
               Expanded(
                 child: InkWell(
                   onTap: !_isLoading ? _pickPickupScheduleDate : null,
-                  borderRadius: BorderRadius.circular(_fieldRadius),
+                  borderRadius: BorderRadius.circular(14),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppTheme.cardColor,
-                      borderRadius: BorderRadius.circular(_fieldRadius),
-                      border: Border.all(color: AppTheme.borderColor),
+                      color: _DS.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _DS.outlineVariant),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today_outlined, size: 15, color: AppTheme.textTertiary),
+                        Icon(Icons.calendar_today_outlined, size: 15, color: _DS.outline),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _formatScheduleDate(_pickupScheduleDate),
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12.5,
-                              color: _pickupScheduleDate == null ? AppTheme.textTertiary : AppTheme.textPrimary,
-                              fontWeight: _pickupScheduleDate == null ? FontWeight.w400 : FontWeight.w600,
+                            style: _DS.bodySm(
+                              color: _pickupScheduleDate == null ? _DS.outline : _DS.onSurface,
+                              weight: _pickupScheduleDate == null ? FontWeight.w400 : FontWeight.w600,
                             ),
                           ),
                         ),
@@ -1328,26 +1280,25 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
               Expanded(
                 child: InkWell(
                   onTap: !_isLoading ? _pickPickupScheduleTime : null,
-                  borderRadius: BorderRadius.circular(_fieldRadius),
+                  borderRadius: BorderRadius.circular(14),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: AppTheme.sm, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppTheme.cardColor,
-                      borderRadius: BorderRadius.circular(_fieldRadius),
-                      border: Border.all(color: AppTheme.borderColor),
+                      color: _DS.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _DS.outlineVariant),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.schedule_outlined, size: 15, color: AppTheme.textTertiary),
+                        Icon(Icons.schedule_outlined, size: 15, color: _DS.outline),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _formatScheduleTime(_pickupScheduleTime),
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12.5,
-                              color: _pickupScheduleTime == null ? AppTheme.textTertiary : AppTheme.textPrimary,
-                              fontWeight: _pickupScheduleTime == null ? FontWeight.w400 : FontWeight.w600,
+                            style: _DS.bodySm(
+                              color: _pickupScheduleTime == null ? _DS.outline : _DS.onSurface,
+                              weight: _pickupScheduleTime == null ? FontWeight.w400 : FontWeight.w600,
                             ),
                           ),
                         ),
@@ -1361,7 +1312,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
           const SizedBox(height: 6),
           Text(
             t.pickupScheduleOptionalHint,
-            style: GoogleFonts.poppins(fontSize: 10.5, color: AppTheme.textTertiary),
+            style: _DS.bodySm(color: _DS.outline).copyWith(fontSize: 10.5),
           ),
         ],
       ),
@@ -1377,31 +1328,28 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
         child: SizedBox(
           width: 20,
           height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
+          child: CircularProgressIndicator(strokeWidth: 2, color: _DS.primary),
         ),
       );
     }
 
     if (_customersError != null) {
       return Container(
-        padding: const EdgeInsets.all(AppTheme.md),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppTheme.errorColor.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(_chipRadius),
+          color: _DS.errorContainer.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
-            Icon(Icons.error_outline_rounded, size: 18, color: AppTheme.errorColor),
+            const Icon(Icons.error_outline_rounded, size: 18, color: _DS.error),
             const SizedBox(width: AppTheme.sm),
             Expanded(
-              child: Text(
-                _customersError!,
-                style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.errorColor),
-              ),
+              child: Text(_customersError!, style: _DS.bodySm(color: _DS.error)),
             ),
             TextButton(
               onPressed: _fetchCustomers,
-              child: Text(t.orderRetryButtonLabel, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+              child: Text(t.orderRetryButtonLabel, style: _DS.bodySm(color: _DS.error, weight: FontWeight.w700)),
             ),
           ],
         ),
@@ -1412,15 +1360,13 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
 
     if (_customers.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(AppTheme.md),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _neutralSurface,
-          borderRadius: BorderRadius.circular(_chipRadius),
+          color: _DS.canvas,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _DS.outlineVariant),
         ),
-        child: Text(
-          t.noCustomersForOrderHint,
-          style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
-        ),
+        child: Text(t.noCustomersForOrderHint, style: _DS.bodySm()),
       );
     }
 
@@ -1429,53 +1375,30 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
       // sama cabang yang lagi dipilih (atau memang belum di-assign
       // sama sekali - laundry_id-nya null).
       return Container(
-        padding: const EdgeInsets.all(AppTheme.md),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _neutralSurface,
-          borderRadius: BorderRadius.circular(_chipRadius),
+          color: _DS.canvas,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _DS.outlineVariant),
         ),
-        child: Text(
-          t.noCustomersInBranchHint,
-          style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
-        ),
+        child: Text(t.noCustomersInBranchHint, style: _DS.bodySm()),
       );
     }
 
     return DropdownButtonFormField<String>(
       value: _selectedCustomerId,
       onChanged: (value) => setState(() => _selectedCustomerId = value),
-      style: GoogleFonts.poppins(fontSize: 13.5, color: AppTheme.textPrimary),
+      style: _DS.bodyMd(),
       isExpanded: true,
       items: filteredCustomers
           .map((customer) => DropdownMenuItem(
                 value: customer.id,
-                child: Text(
-                  customer.name,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(fontSize: 13.5),
-                ),
+                child: Text(customer.name, overflow: TextOverflow.ellipsis, style: _DS.bodyMd()),
               ))
           .toList(),
-      decoration: InputDecoration(
-        labelText: t.customerFieldLabel,
-        labelStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+      decoration: _inputDecoration(
         hintText: t.selectCustomerHint,
-        hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textTertiary),
-        prefixIcon: Icon(Icons.person_outline, color: AppTheme.textTertiary),
-        filled: true,
-        fillColor: _neutralFill,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_fieldRadius),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_fieldRadius),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_fieldRadius),
-          borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
-        ),
+        prefixIcon: Icons.person_outline,
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -1486,7 +1409,10 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     );
   }
 
-  /// Section item pesanan - sekarang bagian dari _buildMainCard.
+  /// Card "Item Pesanan" - picker layanan (scroll horizontal) & daftar
+  /// item, dipisah jadi card sendiri (mengikuti pola card-per-section
+  /// milik CreateEmployeeScreen), dipisahkan dari card Data Pesanan
+  /// lewat divider berlabel di atasnya.
   ///
   /// KHUSUS order type 'pickup': picker layanan & daftar item TIDAK
   /// ditampilkan sama sekali (bukan cuma disembunyikan kosong) - diganti
@@ -1502,216 +1428,176 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   /// dipertahankan penuh. Logic kontrol per item TIDAK berubah: item
   /// perKg tetap pakai input berat (TextField desimal, kg), item perItem
   /// tetap pakai stepper qty (+/-).
-  Widget _buildOrderItemsSection(BuildContext context) {
+  Widget _buildOrderItemsCard(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    if (_isPickupOrder) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionLabel(t.orderItemsSectionLabel),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppTheme.md),
-            decoration: BoxDecoration(
-              color: _neutralSurface,
-              borderRadius: BorderRadius.circular(_chipRadius),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.info_outline_rounded, size: 16, color: AppTheme.textTertiary),
-                const SizedBox(width: AppTheme.sm),
-                Expanded(
-                  child: Text(
-                    t.itemsFilledAtPickupConfirmationHint,
-                    style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionLabel(t.serviceTypeSectionLabel),
-        _buildServicePicker(context),
-        const SizedBox(height: AppTheme.lg),
-        Text(
-          t.orderItemsSectionLabel,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
+    if (_isPickupOrder) {
+      return _sectionCard([
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: _DS.canvas,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _DS.outlineVariant),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline_rounded, size: 16, color: _DS.outline),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(t.itemsFilledAtPickupConfirmationHint, style: _DS.bodySm()),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: AppTheme.sm),
-        if (_orderItems.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(AppTheme.md),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: _neutralSurface,
-              borderRadius: BorderRadius.circular(_chipRadius),
-            ),
-            child: Text(
-              t.noItemsTapServiceHint,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
-            ),
-          )
-        else
-          ..._orderItems.asMap().entries.map((entry) {
-            final index = entry.key;
-            final item = entry.value;
-            final isLast = index == _orderItems.length - 1;
-            final isPerKg = item.pricingType == PricingType.perKg;
+      ]);
+    }
 
-            return Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : AppTheme.sm),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.md),
-                decoration: BoxDecoration(
-                  color: AppTheme.cardColor,
-                  borderRadius: BorderRadius.circular(_cardRadius),
-                  border: Border.all(color: AppTheme.borderColor.withOpacity(0.7)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Baris 1: nama layanan, subtotal, tombol hapus.
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.name,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppTheme.sm),
-                        Text(
-                          _formatCurrency(item.subtotal),
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12.5,
-                            color: AppTheme.primaryColor,
-                          ),
-                        ),
-                        InkWell(
-                          onTap: !_isLoading ? () => _removeOrderItem(index) : null,
-                          borderRadius: BorderRadius.circular(16),
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 6),
-                            child: Icon(Icons.close, size: 16, color: AppTheme.textTertiary),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    // Baris 2: harga satuan (kiri) & kontrol kanan -
-                    // input berat (kg) untuk item perKg, atau stepper
-                    // qty untuk item perItem.
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          isPerKg
-                              ? '${_formatCurrency(item.price)} ${t.perKgUnitSuffix}'
-                              : '${_formatCurrency(item.price)}${t.unitPerItemSuffix}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            color: AppTheme.textTertiary,
-                          ),
-                        ),
-                        isPerKg
-                            ? SizedBox(
-                                width: 92,
-                                height: 34,
-                                child: TextField(
-                                  controller: item.weightController,
-                                  enabled: !_isLoading,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                  decoration: InputDecoration(
-                                    isDense: true,
-                                    suffixText: 'kg',
-                                    suffixStyle: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textTertiary),
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                    filled: true,
-                                    fillColor: _neutralFill,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: AppTheme.borderColor),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: AppTheme.borderColor),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.5),
-                                    ),
-                                  ),
-                                  onChanged: (val) {
-                                    final parsed = double.tryParse(val.replaceAll(',', '.'));
-                                    setState(() => item.weight = parsed ?? 0);
-                                  },
-                                ),
-                              )
-                            : Row(
-                                children: [
-                                  _QuantityButton(
-                                    icon: Icons.remove,
-                                    onTap: item.quantity > 1 ? () => setState(() => item.quantity--) : null,
-                                  ),
-                                  SizedBox(
-                                    width: 28,
-                                    child: Text(
-                                      '${item.quantity}',
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppTheme.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                  _QuantityButton(
-                                    icon: Icons.add,
-                                    onTap: !_isLoading ? () => setState(() => item.quantity++) : null,
-                                  ),
-                                ],
-                              ),
-                      ],
-                    ),
-                  ],
-                ),
+    return _sectionCard([
+      Text(t.serviceTypeSectionLabel, style: _DS.subtitleMd(color: _DS.onSurface)),
+      const SizedBox(height: 12),
+      _buildServicePicker(context),
+      const SizedBox(height: AppTheme.lg),
+      Text(t.orderItemsSectionLabel, style: _DS.subtitleMd(color: _DS.onSurface)),
+      const SizedBox(height: AppTheme.sm),
+      if (_orderItems.isEmpty)
+        Container(
+          padding: const EdgeInsets.all(14),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: _DS.canvas,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _DS.outlineVariant),
+          ),
+          child: Text(
+            t.noItemsTapServiceHint,
+            textAlign: TextAlign.center,
+            style: _DS.bodySm(),
+          ),
+        )
+      else
+        ..._orderItems.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          final isLast = index == _orderItems.length - 1;
+          final isPerKg = item.pricingType == PricingType.perKg;
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: isLast ? 0 : AppTheme.sm),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: AppTheme.sm, horizontal: AppTheme.md),
+              decoration: BoxDecoration(
+                color: _DS.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _DS.outlineVariant),
               ),
-            );
-          }),
-      ],
-    );
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Baris 1: nama layanan, subtotal, tombol hapus.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: _DS.bodyMd(weight: FontWeight.w600),
+                        ),
+                      ),
+                      const SizedBox(width: AppTheme.sm),
+                      Text(
+                        _formatCurrency(item.subtotal),
+                        style: _DS.bodySm(color: _DS.primary, weight: FontWeight.w700),
+                      ),
+                      InkWell(
+                        onTap: !_isLoading ? () => _removeOrderItem(index) : null,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: Icon(Icons.close, size: 16, color: _DS.outline),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  // Baris 2: harga satuan (kiri) & kontrol kanan -
+                  // input berat (kg) untuk item perKg, atau stepper
+                  // qty untuk item perItem.
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isPerKg
+                            ? '${_formatCurrency(item.price)} ${t.perKgUnitSuffix}'
+                            : '${_formatCurrency(item.price)}${t.unitPerItemSuffix}',
+                        style: _DS.bodySm(color: _DS.outline).copyWith(fontSize: 11),
+                      ),
+                      isPerKg
+                          ? SizedBox(
+                              width: 92,
+                              height: 34,
+                              child: TextField(
+                                controller: item.weightController,
+                                enabled: !_isLoading,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                textAlign: TextAlign.center,
+                                style: _DS.bodyMd(weight: FontWeight.w600),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  suffixText: 'kg',
+                                  suffixStyle: _DS.bodySm(color: _DS.outline).copyWith(fontSize: 11),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  filled: true,
+                                  fillColor: _DS.canvas,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(color: _DS.outlineVariant),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(color: _DS.outlineVariant),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(color: _DS.primary, width: 1.5),
+                                  ),
+                                ),
+                                onChanged: (val) {
+                                  final parsed = double.tryParse(val.replaceAll(',', '.'));
+                                  setState(() => item.weight = parsed ?? 0);
+                                },
+                              ),
+                            )
+                          : Row(
+                              children: [
+                                _QuantityButton(
+                                  icon: Icons.remove,
+                                  onTap: item.quantity > 1 ? () => setState(() => item.quantity--) : null,
+                                ),
+                                SizedBox(
+                                  width: 28,
+                                  child: Text(
+                                    '${item.quantity}',
+                                    textAlign: TextAlign.center,
+                                    style: _DS.bodyMd(weight: FontWeight.w600),
+                                  ),
+                                ),
+                                _QuantityButton(
+                                  icon: Icons.add,
+                                  onTap: !_isLoading ? () => setState(() => item.quantity++) : null,
+                                ),
+                              ],
+                            ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+    ]);
   }
 
   /// Kartu layanan yang bisa di-scroll horizontal, sesuai desain baru
@@ -1729,31 +1615,28 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
         child: SizedBox(
           width: 20,
           height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
+          child: CircularProgressIndicator(strokeWidth: 2, color: _DS.primary),
         ),
       );
     }
 
     if (_servicesError != null) {
       return Container(
-        padding: const EdgeInsets.all(AppTheme.md),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppTheme.errorColor.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(_chipRadius),
+          color: _DS.errorContainer.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
-            Icon(Icons.error_outline_rounded, size: 18, color: AppTheme.errorColor),
+            const Icon(Icons.error_outline_rounded, size: 18, color: _DS.error),
             const SizedBox(width: AppTheme.sm),
             Expanded(
-              child: Text(
-                _servicesError!,
-                style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.errorColor),
-              ),
+              child: Text(_servicesError!, style: _DS.bodySm(color: _DS.error)),
             ),
             TextButton(
               onPressed: _fetchServices,
-              child: Text(t.orderRetryButtonLabel, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+              child: Text(t.orderRetryButtonLabel, style: _DS.bodySm(color: _DS.error, weight: FontWeight.w700)),
             ),
           ],
         ),
@@ -1762,15 +1645,13 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
 
     if (_services.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(AppTheme.md),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _neutralSurface,
-          borderRadius: BorderRadius.circular(_chipRadius),
+          color: _DS.canvas,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _DS.outlineVariant),
         ),
-        child: Text(
-          t.noActiveServicesForOrderHint,
-          style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary),
-        ),
+        child: Text(t.noActiveServicesForOrderHint, style: _DS.bodySm()),
       );
     }
 
@@ -1785,21 +1666,14 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
           final service = _services[index];
           return InkWell(
             onTap: !_isLoading ? () => _addServiceToOrder(service) : null,
-            borderRadius: BorderRadius.circular(_cardRadius),
+            borderRadius: BorderRadius.circular(16),
             child: Container(
               width: 148,
               padding: const EdgeInsets.all(AppTheme.md),
               decoration: BoxDecoration(
-                color: AppTheme.cardColor,
-                borderRadius: BorderRadius.circular(_cardRadius),
-                border: Border.all(color: AppTheme.borderColor),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                color: _DS.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _DS.outlineVariant),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1810,28 +1684,20 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                     height: 26,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      color: _DS.primaryFixed.withOpacity(0.6),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.add_rounded, size: 16, color: AppTheme.primaryColor),
+                    child: Icon(Icons.add_rounded, size: 16, color: _DS.primary),
                   ),
                   Text(
                     service.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12.5,
-                      color: AppTheme.textPrimary,
-                    ),
+                    style: _DS.bodySm(weight: FontWeight.w600).copyWith(fontSize: 12.5, color: _DS.onSurface),
                   ),
                   Text(
                     _servicePriceLabel(service),
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.primaryColor,
-                    ),
+                    style: _DS.bodySm(color: _DS.primary, weight: FontWeight.w600).copyWith(fontSize: 11),
                   ),
                 ],
               ),
@@ -1843,17 +1709,17 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   }
 
   /// Ringkasan harga - kartu bertinta warna primary tipis, mengikuti
-  /// "Summary Card" pada desain baru (bg primary/5, border primary/20).
+  /// palet _DS (primaryFixed) supaya konsisten dengan CreateEmployeeScreen.
   Widget _buildPriceSummary(BuildContext context) {
     final total = _calculateTotal();
     final t = AppLocalizations.of(context)!;
 
     return Container(
-      padding: const EdgeInsets.all(AppTheme.md),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(_cardRadius),
-        border: Border.all(color: AppTheme.primaryColor.withOpacity(0.15)),
+        color: _DS.primaryFixed.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _DS.primary.withOpacity(0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1861,30 +1727,20 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(t.subtotalLabel, style: GoogleFonts.poppins(fontSize: 12.5, color: AppTheme.textSecondary)),
-              Text(
-                _formatCurrency(total),
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12.5, color: AppTheme.textPrimary),
-              ),
+              Text(t.subtotalLabel, style: _DS.bodySm()),
+              Text(_formatCurrency(total), style: _DS.bodySm(color: _DS.onSurface, weight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: AppTheme.sm),
-          Divider(height: 1, color: AppTheme.primaryColor.withOpacity(0.12)),
+          Divider(height: 1, color: _DS.primary.withOpacity(0.2)),
           const SizedBox(height: AppTheme.sm),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                t.totalLabel,
-                style: GoogleFonts.poppins(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
-              ),
+              Text(t.totalLabel, style: _DS.headlineMd(color: _DS.onSurface).copyWith(fontSize: 14.5)),
               Text(
                 _formatCurrency(total),
-                style: GoogleFonts.poppins(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.primaryColor,
-                ),
+                style: _DS.headlineMd(color: _DS.primary).copyWith(fontSize: 19),
               ),
             ],
           ),
@@ -1893,48 +1749,108 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     );
   }
 
-  Widget _buildSaveButton(BuildContext context) {
+  /// Save bar (sticky bottom) - samain persis pola CreateEmployeeScreen.
+  Widget _buildSaveBar(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: !_isLoading ? _handleSaveOrder : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryColor,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: const StadiumBorder(),
-        ),
-        child: _isLoading
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.white.withOpacity(0.7),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppTheme.md),
-                  Text(
-                    t.savingLabel,
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              )
-            : Text(
-                t.saveOrderButton,
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-              ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _DS.surface,
+        border: const Border(top: BorderSide(color: _DS.outlineVariant)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: !_isLoading ? _handleSaveOrder : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _DS.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: _isLoading
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.7)),
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.md),
+                        Text(t.savingLabel, style: _DS.headlineMd(color: Colors.white)),
+                      ],
+                    )
+                  : Text(t.saveOrderButton, style: _DS.headlineMd(color: Colors.white)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Shared helpers - identik dengan CreateEmployeeScreen
+  // ---------------------------------------------------------------------
+  Widget _sectionCard(List<Widget> children) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _DS.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: _DS.cardShadow,
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+    );
+  }
+
+  Widget _sectionColumn({required String label, required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: _DS.subtitleMd()),
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
+  }
+
+  InputDecoration _inputDecoration({required String hintText, String? prefixText, IconData? prefixIcon}) {
+    OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: color, width: width),
+        );
+
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: _DS.bodyMd(color: _DS.outline),
+      prefixText: prefixText,
+      prefixStyle: _DS.subtitleMd(),
+      prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: _DS.outline, size: 20) : null,
+      filled: true,
+      fillColor: _DS.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: border(_DS.outlineVariant, 1),
+      enabledBorder: border(_DS.outlineVariant, 1),
+      focusedBorder: border(_DS.primary, 1.5),
+      errorBorder: border(_DS.error, 1),
+      focusedErrorBorder: border(_DS.error, 1.5),
+      errorStyle: _DS.bodySm(color: _DS.error),
     );
   }
 }
@@ -1955,13 +1871,13 @@ class _QuantityButton extends StatelessWidget {
         width: 24,
         height: 24,
         decoration: BoxDecoration(
-          color: isEnabled ? AppTheme.primaryColor.withOpacity(0.1) : AppTheme.cardColor,
+          color: isEnabled ? _DS.primaryFixed.withOpacity(0.6) : _DS.canvas,
           shape: BoxShape.circle,
         ),
         child: Icon(
           icon,
           size: 14,
-          color: isEnabled ? AppTheme.primaryColor : AppTheme.textTertiary,
+          color: isEnabled ? _DS.primary : _DS.outline,
         ),
       ),
     );
