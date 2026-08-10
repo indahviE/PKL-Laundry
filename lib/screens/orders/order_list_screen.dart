@@ -12,7 +12,7 @@ import '../../l10n/app_localizations.dart';
 // Di-hardcode di sini biar tampilan layar ini benar-benar presisi
 // sama referensi desain, terlepas dari nilai di AppTheme.
 // ============================================
-const Color _cSurface = Color(0xFFFBF9F8);
+const Color _cSurface = Color(0xFFF5F7FA);
 const Color _cCard = Color(0xFFFFFFFF);
 const Color _cOnSurface = Color(0xFF1B1C1C);
 const Color _cOnSurfaceVariant = Color(0xFF404752);
