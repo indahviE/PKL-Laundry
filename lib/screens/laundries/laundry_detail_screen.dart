@@ -91,6 +91,10 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
   // terbuka penuh.
   bool _staffExpanded = false;
 
+  // Controller peta lokasi cabang - dipakai untuk tombol "kembali ke
+  // titik awal" saat user sudah geser/zoom peta menjauh dari marker asli.
+  final MapController _detailMapController = MapController();
+
   List<String> _dayLabels(AppLocalizations l10n) => [
         l10n.monday,
         l10n.tuesday,
@@ -790,6 +794,7 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
             Positioned.fill(
               child: hasLocation
                   ? FlutterMap(
+                      mapController: _detailMapController,
                       options: MapOptions(
                         initialCenter: latLng,
                         initialZoom: 15,
@@ -828,6 +833,29 @@ class _LaundryDetailScreenState extends ConsumerState<LaundryDetailScreen> {
                       ),
                     ),
             ),
+            // Tombol "kembali ke titik awal" - cuma muncul kalau peta aktif
+            // (ada lokasi tersimpan), ngambang di pojok kanan atas kartu
+            // supaya gak nutupin marker atau tombol Google Maps di bawah.
+            if (hasLocation)
+              Positioned(
+                right: 12,
+                top: 12,
+                child: InkWell(
+                  onTap: () => _detailMapController.move(latLng, 15),
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: _kCardShadow,
+                    ),
+                    child: Icon(Icons.my_location_rounded, size: 18, color: _kPrimary),
+                  ),
+                ),
+              ),
             Positioned(
               left: 12,
               bottom: 12,
