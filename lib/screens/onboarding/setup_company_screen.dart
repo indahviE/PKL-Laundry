@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/themes/app_theme.dart';
+import '../../core/services/app_feedback.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../repositories/auth_repository.dart';
 import '../../widgets/common/app_input.dart';
 
@@ -106,15 +108,8 @@ class _SetupCompanyScreenState extends ConsumerState<SetupCompanyScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Data perusahaan berhasil disimpan!',
-              style: GoogleFonts.poppins(fontSize: 13),
-            ),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
+        AppFeedback.playSound(ref, AppSound.success);
+        AppSnackbar.success(context, 'Data perusahaan berhasil disimpan!');
       }
 
       // Kalau dipanggil sebagai bagian onboarding, lanjut ke step 5:
@@ -132,6 +127,9 @@ class _SetupCompanyScreenState extends ConsumerState<SetupCompanyScreen> {
         }
       }
     } catch (e) {
+      if (mounted) {
+        AppFeedback.playSound(ref, AppSound.error);
+      }
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
       });

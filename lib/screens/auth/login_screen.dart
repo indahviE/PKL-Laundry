@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/services/app_feedback.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../providers/auth_provider.dart';
 import '../../repositories/auth_repository.dart';
 import '../../widgets/common/app_button.dart';
@@ -43,7 +45,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      AppFeedback.playSound(ref, AppSound.error);
+      AppSnackbar.error(context, 'Lengkapi data yang wajib diisi terlebih dahulu');
+      return;
+    }
 
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -58,12 +64,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (mounted) {
         if (loginState.isSuccess) {
+          AppFeedback.playSound(ref, AppSound.success);
           context.go('/dashboard');
         } else if (loginState.error != null) {
+          AppFeedback.playSound(ref, AppSound.error);
           _handleAuthError(loginState.error!);
         }
       }
     } catch (e) {
+      AppFeedback.playSound(ref, AppSound.error);
       _showErrorDialog("Terjadi kesalahan sistem: $e");
     }
   }
@@ -84,10 +93,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (result == null) return;
 
       if (mounted) {
+        AppFeedback.playSound(ref, AppSound.success);
         context.go('/dashboard');
       }
     } catch (e) {
       if (mounted) {
+        AppFeedback.playSound(ref, AppSound.error);
         _showGoogleErrorDialog(e.toString().replaceAll('Exception: ', ''));
       }
     } finally {

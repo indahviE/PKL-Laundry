@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/services/app_feedback.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../repositories/auth_repository.dart';
 import '../../widgets/common/app_input.dart';
 
@@ -92,17 +94,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   /// Eksekusi Pendaftaran
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) {
+      AppFeedback.playSound(ref, AppSound.error);
+      AppSnackbar.error(context, 'Lengkapi data yang wajib diisi terlebih dahulu');
       return;
     }
 
     if (!_agreeToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Anda harus menyetujui syarat dan ketentuan'),
-          backgroundColor: AppTheme.warningColor,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      AppFeedback.playSound(ref, AppSound.error);
+      AppSnackbar.error(context, 'Anda harus menyetujui syarat dan ketentuan');
       return;
     }
 
@@ -113,8 +112,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     try {
       final router = GoRouter.of(context);
-      final messenger = ScaffoldMessenger.of(context);
-
       final authRepo = ref.read(authRepositoryProvider);
 
       await authRepo.registerWithEmailAndPassword(
@@ -125,15 +122,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         role: _publicRegisterRole,
       );
 
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.',
-          ),
-          backgroundColor: AppTheme.successColor,
-          duration: Duration(seconds: 3),
-        ),
-      );
+      if (mounted) {
+        AppFeedback.playSound(ref, AppSound.success);
+        AppSnackbar.success(
+          context,
+          'Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.',
+        );
+      }
 
       // Sesuai alur PRD (Step 2: Verifikasi Email), user diarahkan ke halaman
       // verifikasi email dulu, bukan langsung ke login/dashboard.
@@ -141,6 +136,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       router.go('/verify-email');
     } catch (e) {
       if (mounted) {
+        AppFeedback.playSound(ref, AppSound.error);
         setState(() {
           _errorMessage = e.toString().replaceAll('Exception: ', '');
         });
@@ -180,10 +176,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (result == null) return;
 
       if (mounted) {
+        AppFeedback.playSound(ref, AppSound.success);
         router.go('/dashboard');
       }
     } catch (e) {
       if (mounted) {
+        AppFeedback.playSound(ref, AppSound.error);
         _showGoogleErrorDialog(e.toString().replaceAll('Exception: ', ''));
       }
     } finally {

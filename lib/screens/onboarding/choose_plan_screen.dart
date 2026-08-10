@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/themes/app_theme.dart';
 import '../../repositories/auth_repository.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/services/app_feedback.dart';
 
 /// Pricing Model
 class PricingPlan {
@@ -251,15 +253,8 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
     // plan ini diblokir usage, tapi dicek ulang di sini juga.
     final blockReason = _planBlockReason(plan);
     if (blockReason != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            blockReason,
-            style: GoogleFonts.poppins(fontSize: 13),
-          ),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      AppFeedback.playSound(ref, AppSound.error);
+      AppSnackbar.error(context, blockReason);
       return;
     }
 
@@ -287,6 +282,7 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
       }
 
       if (!mounted) return;
+      AppFeedback.playSound(ref, AppSound.success);
       context.push(
         '/payment',
         extra: {
@@ -299,15 +295,8 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e.toString().replaceAll('Exception: ', ''),
-              style: GoogleFonts.poppins(fontSize: 13),
-            ),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
+        AppFeedback.playSound(ref, AppSound.error);
+        AppSnackbar.error(context, e.toString().replaceAll('Exception: ', ''));
       }
     } finally {
       if (mounted) {

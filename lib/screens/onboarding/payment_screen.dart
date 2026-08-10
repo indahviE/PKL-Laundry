@@ -9,6 +9,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/themes/app_theme.dart';
 import '../../repositories/auth_repository.dart';
 import '../../services/stripe_service.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/services/app_feedback.dart';
 
 /// Payment Screen — Step 6 dari onboarding.
 /// Sesuai PRD section 5.1 User Flow, Step 6: Pembayaran.
@@ -92,6 +94,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       _listenForActiveSubscription();
     } catch (e) {
       if (!mounted) return;
+      AppFeedback.playSound(ref, AppSound.error);
       setState(() {
         _stage = _PaymentStage.error;
         _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -111,27 +114,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     ) {
       if (!isActive || !mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  widget.isUpgrade
-                      ? 'Paket berhasil diperbarui! Mengarahkan ke dashboard...'
-                      : 'Pembayaran berhasil! Mengarahkan ke dashboard...',
-                  style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: AppTheme.successColor,
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
+      AppFeedback.playSound(ref, AppSound.success);
+      AppSnackbar.success(
+        context,
+        widget.isUpgrade
+            ? 'Paket berhasil diperbarui! Mengarahkan ke dashboard...'
+            : 'Pembayaran berhasil! Mengarahkan ke dashboard...',
       );
 
       Future.delayed(const Duration(milliseconds: 1500), () {
