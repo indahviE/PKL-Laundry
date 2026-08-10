@@ -2126,6 +2126,11 @@ class AppLocalizationsId extends AppLocalizations {
       'Dapat Melihat Laporan Keuangan (Report)';
 
   @override
+  String permissionsResetForPosition(String position) {
+    return 'Hak akses disesuaikan otomatis untuk jabatan $position';
+  }
+
+  @override
   String get savingButton => 'Menyimpan...';
 
   @override

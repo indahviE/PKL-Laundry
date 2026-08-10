@@ -1178,6 +1178,14 @@
   "canCreateOrderPermission": "Dapat Membuat Pesanan (Order)",
   "canManageCustomerPermission": "Dapat Mengelola Data Pelanggan",
   "canViewReportPermission": "Dapat Melihat Laporan Keuangan (Report)",
+  "permissionsResetForPosition": "Hak akses disesuaikan otomatis untuk jabatan {position}",
+  "@permissionsResetForPosition": {
+    "placeholders": {
+      "position": {
+        "type": "String"
+      }
+    }
+  },
   "savingButton": "Menyimpan...",
   "saveEmployeeButton": "Simpan Karyawan",
   "completeRequiredFieldsWarning": "Lengkapi dulu data yang wajib diisi",

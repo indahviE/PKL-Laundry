@@ -2116,6 +2116,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get canViewReportPermission => 'Can View Financial Reports';
 
   @override
+  String permissionsResetForPosition(String position) {
+    return 'Access permissions auto-updated for the $position position';
+  }
+
+  @override
   String get savingButton => 'Saving...';
 
   @override

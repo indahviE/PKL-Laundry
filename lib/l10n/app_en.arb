@@ -1130,6 +1130,14 @@
   "canCreateOrderPermission": "Can Create Orders",
   "canManageCustomerPermission": "Can Manage Customer Data",
   "canViewReportPermission": "Can View Financial Reports",
+  "permissionsResetForPosition": "Access permissions auto-updated for the {position} position",
+  "@permissionsResetForPosition": {
+    "placeholders": {
+      "position": {
+        "type": "String"
+      }
+    }
+  },
   "savingButton": "Saving...",
   "saveEmployeeButton": "Save Employee",
   "completeRequiredFieldsWarning": "Please fill in all required fields",

@@ -84,6 +84,12 @@ class _DS {
 /// UI di-restyle total mengikuti tema baru "NetWash Utility System" (samain
 /// persis dengan CreateServiceScreen: _DS design tokens) - logic form,
 /// fetch data, validasi kuota, dan save TIDAK berubah sama sekali.
+///
+/// FITUR BARU: Hak akses (permissions) sekarang auto-fill sesuai preset
+/// default per jabatan setiap kali dropdown Role/Jabatan diganti - baik
+/// pas tambah karyawan baru maupun pas edit (misal promosi/demosi jabatan).
+/// Owner tetap bisa override manual lewat checkbox di _buildPermissionsCard
+/// setelah preset ke-apply.
 class CreateEmployeeScreen extends ConsumerStatefulWidget {
   final String? employeeId;
 
@@ -101,15 +107,63 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   // daftar ini, posisi itu tetap ditambahkan sebagai item tambahan di
   // dropdown supaya datanya tidak hilang/ke-reset.
   static const List<String> _positionOptions = [
-  'Manajer',
-  'Kasir',
-  'Operator Cuci',
-  'Operator Pengering',
-  'Operator Setrika',
-  'Quality Control',
-  'Kurir',
-  'Staff Gudang',
-];
+    'Manajer',
+    'Kasir',
+    'Operator Cuci',
+    'Operator Pengering',
+    'Operator Setrika',
+    'Quality Control',
+    'Kurir',
+    'Staff Gudang',
+  ];
+
+  // Default hak akses per jabatan. Dipakai buat auto-fill 3 toggle
+  // permission (_buildPermissionsCard) setiap kali Owner pilih/ganti
+  // jabatan di dropdown Role/Jabatan - baik pas tambah baru maupun edit.
+  // Owner tetap bisa override manual lewat checkbox setelah preset
+  // ke-apply, jadi ini cuma starting point/default, bukan hard lock.
+  static const Map<String, Map<String, bool>> _defaultPermissionsByPosition = {
+    'Manajer': {
+      'can_create_order': true,
+      'can_manage_customer': true,
+      'can_view_report': true,
+    },
+    'Kasir': {
+      'can_create_order': true,
+      'can_manage_customer': true,
+      'can_view_report': false,
+    },
+    'Operator Cuci': {
+      'can_create_order': false,
+      'can_manage_customer': false,
+      'can_view_report': false,
+    },
+    'Operator Pengering': {
+      'can_create_order': false,
+      'can_manage_customer': false,
+      'can_view_report': false,
+    },
+    'Operator Setrika': {
+      'can_create_order': false,
+      'can_manage_customer': false,
+      'can_view_report': false,
+    },
+    'Quality Control': {
+      'can_create_order': false,
+      'can_manage_customer': false,
+      'can_view_report': false,
+    },
+    'Kurir': {
+      'can_create_order': false,
+      'can_manage_customer': false,
+      'can_view_report': false,
+    },
+    'Staff Gudang': {
+      'can_create_order': false,
+      'can_manage_customer': false,
+      'can_view_report': false,
+    },
+  };
 
   // Controller input form
   final _fullNameController = TextEditingController();
@@ -203,6 +257,12 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
   /// Mode edit: ambil dokumen karyawan existing lalu isi seluruh form
   /// dengan data tersebut, sama seperti CreateLaundryScreen mem-prefill
   /// form-nya saat dibuka lewat `/laundries/:id/edit`.
+  ///
+  /// Selama proses hydrate ini, _isHydratingFromFirestore di-set true
+  /// supaya assignment `_positionController.text = ...` di bawah TIDAK
+  /// dianggap sebagai "ganti jabatan manual oleh Owner" - permission yang
+  /// sudah tersimpan di Firestore harus tetap dipakai apa adanya, bukan
+  /// ditimpa preset default.
   Future<void> _fetchEmployeeData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -260,6 +320,27 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
     if (raw is Timestamp) return raw.toDate();
     if (raw is String) return DateTime.tryParse(raw);
     return null;
+  }
+
+  /// Isi ulang 3 toggle permission sesuai preset default jabatan yang
+  /// dipilih. Dipanggil dari dropdown Role/Jabatan setiap kali jabatan
+  /// diganti MANUAL oleh Owner (baik mode tambah maupun edit - misal
+  /// promosi Kasir -> Manajer) - permission lama SENGAJA ditimpa supaya
+  /// selalu konsisten dengan jabatan terbaru. Owner tetap bisa override
+  /// manual lewat checkbox di _buildPermissionsCard setelahnya.
+  void _applyDefaultPermissions(String? position) {
+    final defaults = _defaultPermissionsByPosition[position];
+    if (defaults == null) return;
+
+    setState(() {
+      _canCreateOrder = defaults['can_create_order'] ?? false;
+      _canManageCustomer = defaults['can_manage_customer'] ?? false;
+      _canViewReport = defaults['can_view_report'] ?? false;
+    });
+
+    // Info ke Owner bahwa toggle Hak Akses di bawah otomatis berubah,
+    // supaya gak ke-skip tanpa sadar sebelum tekan simpan.
+    _showSnack(AppLocalizations.of(context)!.permissionsResetForPosition(position ?? ''));
   }
 
   /// FEATURE GATING: Validasi sisa kuota karyawan berdasarkan plan aktif.
@@ -751,7 +832,14 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
                 child: Text(_positionController.text, style: _DS.bodyMd()),
               ),
           ],
-          onChanged: (val) => setState(() => _positionController.text = val ?? ''),
+          onChanged: (val) {
+            setState(() => _positionController.text = val ?? '');
+            // Auto-fill hak akses sesuai jabatan baru - lihat dokumentasi
+            // di _applyDefaultPermissions untuk alasan kenapa ini SENGAJA
+            // menimpa permission lama (biar konsisten dengan jabatan
+            // terbaru, misal promosi/demosi).
+            _applyDefaultPermissions(val);
+          },
           decoration: _inputDecoration(hintText: AppLocalizations.of(context)!.selectPositionHint, prefixIcon: Icons.assignment_ind_outlined),
           validator: (v) => v == null || v.isEmpty ? AppLocalizations.of(context)!.positionRequiredError : null,
         ),

@@ -3896,6 +3896,12 @@ abstract class AppLocalizations {
   /// **'Dapat Melihat Laporan Keuangan (Report)'**
   String get canViewReportPermission;
 
+  /// No description provided for @permissionsResetForPosition.
+  ///
+  /// In id, this message translates to:
+  /// **'Hak akses disesuaikan otomatis untuk jabatan {position}'**
+  String permissionsResetForPosition(String position);
+
   /// No description provided for @savingButton.
   ///
   /// In id, this message translates to:
