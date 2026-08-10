@@ -73,18 +73,17 @@ dev_dependencies:
   flutter_native_splash: ^2.4.8
 
 flutter_native_splash:
-  color: "#FFFFFF"          # warna background splash
-  image: asset/splash/splash.png
+  color: "#FFFFFF"
+  image: assets/splash/splash.png
 
-  # opsional, kalau mau splash beda buat dark mode
   color_dark: "#121212"
-  image_dark: asset/splash/splash.png
+  image_dark: assets/splash/splash.png
 
   android_12:
-    image: asset/splash/splash.png
+    image: assets/splash/splash.png
+    icon_background_color: "#FFFFFF"
     color: "#FFFFFF"
     color_dark: "#121212"
-    # icon_background_color: "#FFFFFF"  # kalau logo kamu punya padding sendiri
 
   android: true
   ios: true
@@ -93,15 +92,15 @@ flutter_native_splash:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "asset/icon/Netwash_Logo.png"
+  image_path: "assets/icon/Netwash_Logo.png"
   min_sdk_android: 21
 
 flutter:
   uses-material-design: true
   generate: true
   assets:
-    - asset/icon/
-    - asset/splash/
-    - asset/sounds/success.wav
-    - asset/sounds/error.wav
-    - asset/sounds/notif.wav
+    - assets/icons/
+    - assets/splash/splash.png
+    - assets/sounds/success.wav
+    - assets/sounds/error.wav
+    - assets/sounds/notif.wav
