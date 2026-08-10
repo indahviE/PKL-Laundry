@@ -1030,6 +1030,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addCustomerSuccessTesting => 'Customer added successfully!';
 
   @override
+  String get deleteCustomerSuccessTesting => 'Customer deleted successfully!';
+
+  @override
   String errorWithMessage(String error) {
     return 'Error: $error';
   }

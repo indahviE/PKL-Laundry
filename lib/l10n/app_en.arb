@@ -595,6 +595,7 @@
   "notesHint": "Special notes for this customer",
   "saveCustomerButton": "Save Customer",
   "addCustomerSuccessTesting": "Customer added successfully!",
+  "deleteCustomerSuccessTesting": "Customer deleted successfully!",
   "errorWithMessage": "Error: {error}",
   "@errorWithMessage": {
     "placeholders": {

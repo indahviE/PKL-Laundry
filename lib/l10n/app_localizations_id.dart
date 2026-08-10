@@ -1028,6 +1028,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get addCustomerSuccessTesting => 'Pelanggan berhasil ditambahkan!';
 
   @override
+  String get deleteCustomerSuccessTesting => 'Pelanggan berhasil dihapus!';
+
+  @override
   String errorWithMessage(String error) {
     return 'Error: $error';
   }

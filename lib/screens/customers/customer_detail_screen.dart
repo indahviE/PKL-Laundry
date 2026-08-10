@@ -7,8 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
-import '../../core/widgets/app_snackbar.dart';
 import '../../core/services/app_feedback.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Model riwayat pesanan singkat untuk ditampilkan di detail pelanggan
@@ -447,12 +447,11 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                     ],
                   ),
                 ),
-                const PopupMenuDivider(height: 1),
                 PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
-                      const Icon(Icons.delete_forever_outlined, size: 18, color: Colors.red),
+                      const Icon(Icons.delete_outline, size: 18, color: Colors.red),
                       const SizedBox(width: 10),
                       Text(l10n.deleteCustomerMenuItem,
                           style: GoogleFonts.poppins(color: Colors.red, fontSize: 13.5)),
@@ -466,38 +465,32 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
     );
   }
 
-  // Dialog konfirmasi hapus permanen - disamakan gayanya persis dengan
-  // _confirmDelete di ServicesListScreen: icon warning di title, tombol
-  // "Hapus Permanen" merah bold, feedback haptic+sound+AppSnackbar (bukan
-  // ScaffoldMessenger biasa), lalu baru pindah balik ke daftar pelanggan.
   void _showDeleteConfirmation(BuildContext context, AppLocalizations l10n) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      // Dinamai `dialogContext` (bukan `context` lagi) supaya TIDAK
+      // menutupi/shadow `context` milik halaman detail di atas. Sebelumnya
+      // kedua context ini namanya sama-sama `context`, jadi pop kedua
+      // (buat nutup halaman detail setelah hapus sukses) malah ikut
+      // makai context dialog yang sudah keburu ditutup duluan -> halaman
+      // detail nggak pernah beneran ke-pop otomatis.
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red[600], size: 22),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(l10n.deleteCustomerConfirmTitle, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-            ),
-          ],
-        ),
+        title: Text(l10n.deleteCustomerConfirmTitle, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         content: Text(
           l10n.deleteCustomerConfirmContent(_customer?.name ?? ''),
           style: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 13.5),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(l10n.cancel,
                 style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context); // Tutup dialog dulu
-              final customerName = _customer?.name ?? '';
+              // Tutup dialog konfirmasi dulu (pakai context dialog).
+              Navigator.pop(dialogContext);
               try {
                 final user = FirebaseAuth.instance.currentUser;
                 if (user != null) {
@@ -508,24 +501,28 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                       .doc(widget.customerId)
                       .delete();
                 }
+                // Pakai `context.mounted` (bukan cuma `mounted`) supaya
+                // Dart analyzer bisa mastiin context ini masih valid
+                // setelah `await` di atas - ini yang bikin garis merah
+                // "use_build_context_synchronously" ilang.
                 if (context.mounted) {
+                  // Pakai context ASLI milik halaman detail supaya
+                  // benar-benar balik ke list setelah hapus berhasil.
+                  Navigator.pop(context);
                   AppFeedback.haptic(ref);
                   AppFeedback.playSound(ref, AppSound.success);
-                  AppSnackbar.success(context, l10n.deleteCustomerSuccess(customerName));
-                  context.pop(); // Kembali ke daftar pelanggan
+                  AppSnackbar.success(context, l10n.deleteCustomerSuccessTesting);
                 }
               } catch (e) {
                 if (context.mounted) {
                   AppFeedback.haptic(ref, type: HapticFeedbackType.heavy);
                   AppFeedback.playSound(ref, AppSound.error);
-                  AppSnackbar.error(context, l10n.deleteCustomerError(e.toString()));
+                  AppSnackbar.error(context, e.toString());
                 }
               }
             },
-            child: Text(
-              l10n.deletePermanentButton,
-              style: GoogleFonts.poppins(color: Colors.red[600], fontWeight: FontWeight.w600),
-            ),
+            child: Text(l10n.deleteButton,
+                style: GoogleFonts.poppins(color: Colors.red, fontWeight: FontWeight.w600)),
           ),
         ],
       ),

@@ -593,6 +593,7 @@
   "notesHint": "Catatan khusus untuk pelanggan ini",
   "saveCustomerButton": "Simpan Pelanggan",
   "addCustomerSuccessTesting": "Pelanggan berhasil ditambahkan!",
+  "deleteCustomerSuccessTesting": "Pelanggan berhasil dihapus!",
   "errorWithMessage": "Error: {error}",
   "@errorWithMessage": {
     "placeholders": {

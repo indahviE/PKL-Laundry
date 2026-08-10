@@ -1922,6 +1922,12 @@ abstract class AppLocalizations {
   /// **'Pelanggan berhasil ditambahkan!'**
   String get addCustomerSuccessTesting;
 
+  /// No description provided for @deleteCustomerSuccessTesting.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan berhasil dihapus!'**
+  String get deleteCustomerSuccessTesting;
+
   /// No description provided for @errorWithMessage.
   ///
   /// In id, this message translates to:
