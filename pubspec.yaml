@@ -99,7 +99,7 @@ flutter:
   uses-material-design: true
   generate: true
   assets:
-    - assets/icons/
+    - assets/icons/Netwash_Logo.png
     - assets/splash/splash.png
     - assets/sounds/success.wav
     - assets/sounds/error.wav
