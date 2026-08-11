@@ -455,6 +455,12 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get gracePeriodBannerTitle => 'Masa Tenggang Pembayaran';
+
+  @override
+  String get upgradePlanAction => 'Upgrade';
+
+  @override
   String quotaLimitReached(String label) {
     return 'Batas kuota paket Starter untuk $label telah tercapai! Silakan upgrade.';
   }

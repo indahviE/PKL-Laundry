@@ -914,6 +914,18 @@ abstract class AppLocalizations {
   /// **'Pembayaran langganan Anda tertunda. Anda masih bisa memakai fitur ini selama {daysRemaining} hari lagi sebelum dibatasi.'**
   String gracePeriodWarning(int daysRemaining);
 
+  /// No description provided for @gracePeriodBannerTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Masa Tenggang Pembayaran'**
+  String get gracePeriodBannerTitle;
+
+  /// No description provided for @upgradePlanAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Upgrade'**
+  String get upgradePlanAction;
+
   /// No description provided for @quotaLimitReached.
   ///
   /// In id, this message translates to:

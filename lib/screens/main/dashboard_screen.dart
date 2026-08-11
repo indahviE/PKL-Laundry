@@ -7,6 +7,9 @@ import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/app_feedback.dart';
+import '../../models/subscription.dart';
+import '../../repositories/subscription_repository.dart';
+import '../../services/subscription_service.dart';
 
 /// Dashboard Screen - NetWash
 /// Terintegrasi dengan Firebase Firestore (Real-time Streams)
@@ -32,6 +35,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   static const Color textSecondary = Color(0xFF404752);
   static const Color textTertiary = Color(0xFF9CA3AF);
   static const Color borderColor = Color(0xFFBFC7D4);
+
+  /// Warna banner subscription (poin 8) - dipisah dari palet _DS
+  /// biasa karena artinya berbeda (peringatan, bukan brand color).
+  /// error = sama dengan _DS.error di screen lain (#BA1A1A), grace =
+  /// oranye (sama dengan status 'pending' di timeline & notif bell).
+  static const Color subscriptionErrorColor = Color(0xFFBA1A1A);
+  static const Color subscriptionGraceColor = Colors.orange;
 
   /// Shadow buat card, ngegantiin border tipis — sama kayak _DS.cardShadow
   /// di services_list_screen.dart.
@@ -149,6 +159,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         children: [
                           _buildGreeting(t),
                           const SizedBox(height: AppTheme.xl),
+                          // Banner status subscription (poin 8) - render
+                          // nothing (SizedBox.shrink) kalau subscription
+                          // aktif & bukan grace period, jadi spacing di
+                          // bawah tidak berubah saat banner tidak tampil.
+                          // Padding bawahnya sendiri sudah termasuk di
+                          // dalam widget saat memang tampil.
+                          _buildSubscriptionBanner(context, t),
                           _buildBalanceCardRealtime(t),
                           const SizedBox(height: AppTheme.xl),
                           _buildSetupChecklistRealtime(t),
@@ -170,6 +187,110 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  // ============================================
+  // POIN 8: BANNER STATUS SUBSCRIPTION (expired / grace period)
+  // ============================================
+  // Sama seperti gating administrative di create_employee_screen/
+  // create_laundry_screen/create_service_screen: pakai
+  // streamSubscriptionForCompany() (BUKAN streamActiveSubscription())
+  // karena banner ini butuh tahu status apa pun dokumennya (termasuk
+  // past_due), bukan cuma "null vs aktif".
+  //
+  // - Subscription aktif/trialing, ATAU tidak ada company sama sekali ->
+  //   tidak render apa-apa (SizedBox.shrink).
+  // - Masih dalam grace period (past_due, belum lewat gracePeriodDays) ->
+  //   banner oranye, kasih tau sisa hari + CTA upgrade. TIDAK memblok
+  //   apa pun di dashboard sendiri - ini cuma info, gating aslinya ada
+  //   di masing-masing screen administrative (create_employee_screen dkk).
+  // - Sudah lewat grace period / tidak pernah subscribe -> banner merah
+  //   (lebih tegas), CTA upgrade.
+  //
+  // CATATAN: rute CTA "Upgrade" sementara diarahkan ke '/settings' (rute
+  // yang sudah pasti valid, dipakai juga di _buildQuickActions) - ganti
+  // ke path subscription_screen langsung begitu rute itu sudah jelas
+  // (lihat poin 9: subscription_screen countdown).
+  Widget _buildSubscriptionBanner(BuildContext context, AppLocalizations t) {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(_currentUserId);
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: userRef.collection('companies').limit(1).snapshots(),
+      builder: (context, companySnap) {
+        if (!companySnap.hasData || companySnap.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        final companyId = companySnap.data!.docs.first.id;
+        final subscriptionRepo = SubscriptionRepository(userId: _currentUserId);
+
+        return StreamBuilder<Subscription?>(
+          stream: subscriptionRepo.streamSubscriptionForCompany(companyId),
+          builder: (context, subSnap) {
+            if (!subSnap.hasData) return const SizedBox.shrink();
+
+            final subscriptionService = SubscriptionService(currentSubscription: subSnap.data);
+            final access = subscriptionService.checkAccess(SubscriptionActionType.administrative);
+
+            // Aktif/trialing DAN bukan grace period -> tidak ada yang
+            // perlu ditampilkan sama sekali.
+            if (access.allowed && !access.isInGracePeriod) {
+              return const SizedBox.shrink();
+            }
+
+            final isExpired = !access.allowed;
+            final bannerColor = isExpired ? subscriptionErrorColor : subscriptionGraceColor;
+            final title = isExpired ? t.subscriptionExpiredTitle : t.gracePeriodBannerTitle;
+            final message = isExpired
+                ? t.subscriptionExpiredWarning
+                : t.gracePeriodWarning(access.graceDaysRemaining ?? 0);
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppTheme.lg),
+              child: Container(
+                padding: const EdgeInsets.all(AppTheme.md),
+                decoration: BoxDecoration(
+                  color: bannerColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: bannerColor.withOpacity(0.35)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.error_outline_rounded, size: 20, color: bannerColor),
+                    const SizedBox(width: AppTheme.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: bannerColor),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(message, style: TextStyle(fontSize: 12, color: textSecondary)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.sm),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                      ),
+                      onPressed: () => context.go('/settings'),
+                      child: Text(
+                        t.upgradePlanAction,
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: bannerColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

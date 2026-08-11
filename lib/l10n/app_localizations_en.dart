@@ -456,6 +456,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get gracePeriodBannerTitle => 'Payment Grace Period';
+
+  @override
+  String get upgradePlanAction => 'Upgrade';
+
+  @override
   String quotaLimitReached(String label) {
     return 'The Starter plan quota limit for $label has been reached! Please upgrade.';
   }
