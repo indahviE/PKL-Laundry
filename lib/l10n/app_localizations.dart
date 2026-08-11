@@ -902,6 +902,12 @@ abstract class AppLocalizations {
   /// **'Langganan Anda tidak aktif dan masa tenggang sudah berakhir. Perbarui langganan untuk melanjutkan.'**
   String get subscriptionExpiredWarning;
 
+  /// Error saat kuota order bulanan (limits.max_orders_per_month) sudah tercapai, ditampilkan di CreateOrderScreen
+  ///
+  /// In id, this message translates to:
+  /// **'Kuota pesanan bulan ini sudah tercapai. Upgrade paket untuk menambah kuota.'**
+  String get orderQuotaReachedError;
+
   /// No description provided for @gracePeriodWarning.
   ///
   /// In id, this message translates to:

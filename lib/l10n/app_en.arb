@@ -247,6 +247,10 @@
   "settingsAction": "Settings",
   "subscriptionExpiredTitle": "Subscription Inactive",
   "subscriptionExpiredWarning": "Your subscription is inactive and the grace period has ended. Please renew your subscription to continue.",
+  "orderQuotaReachedError": "This month's order quota has been reached. Upgrade your plan for more.",
+  "@orderQuotaReachedError": {
+    "description": "Error saat kuota order bulanan (limits.max_orders_per_month) sudah tercapai, ditampilkan di CreateOrderScreen"
+  },
   "gracePeriodWarning": "Your subscription payment is overdue. You can still use this feature for {daysRemaining} more day(s) before it's restricted.",
   "@gracePeriodWarning": {
     "placeholders": {

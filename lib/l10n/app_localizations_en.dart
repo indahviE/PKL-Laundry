@@ -447,6 +447,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your subscription is inactive and the grace period has ended. Please renew your subscription to continue.';
 
   @override
+  String get orderQuotaReachedError =>
+      'This month\'s order quota has been reached. Upgrade your plan for more.';
+
+  @override
   String gracePeriodWarning(int daysRemaining) {
     return 'Your subscription payment is overdue. You can still use this feature for $daysRemaining more day(s) before it\'s restricted.';
   }

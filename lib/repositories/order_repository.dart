@@ -486,6 +486,25 @@ class OrderRepository {
   Future<void> deleteOrder(String orderId) async {
     await _ordersRef.doc(orderId).delete();
   }
+
+  /// Hitung jumlah order bulan ini (berdasarkan created_at), dipakai
+  /// SubscriptionService.canCreateOrder() buat gating kuota di
+  /// CreateOrderScreen. Pakai aggregate count query (bukan get().length)
+  /// supaya tidak perlu men-download seluruh dokumen order cuma buat
+  /// tahu jumlahnya.
+  Future<int> countOrdersThisMonth() async {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final startOfNextMonth = DateTime(now.year, now.month + 1, 1);
+
+    final countQuery = await _ordersRef
+        .where('created_at', isGreaterThanOrEqualTo: startOfMonth)
+        .where('created_at', isLessThan: startOfNextMonth)
+        .count()
+        .get();
+
+    return countQuery.count ?? 0;
+  }
 }
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
