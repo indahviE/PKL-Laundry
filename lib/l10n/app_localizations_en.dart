@@ -2716,6 +2716,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receiptFallbackSubtitle => 'Order Receipt';
 
   @override
+  String get receiptHeaderLabel => 'E-RECEIPT';
+
+  @override
+  String get receiptReceivedLabel => 'Received';
+
+  @override
+  String get receiptCompletedLabel => 'Completed';
+
+  @override
+  String get receiptChangeLabel => 'Change';
+
+  @override
+  String get receiptValidProofNotice =>
+      'Keep this receipt as valid proof of transaction';
+
+  @override
+  String get sendReceiptToCustomerButtonLabel => 'Send Receipt to Customer';
+
+  @override
+  String get messageSentConfirmDialogTitle => 'Already sent?';
+
+  @override
+  String get messageSentConfirmDialogContent =>
+      'Has the \"order ready for pickup\" message been sent to the customer via WhatsApp?';
+
+  @override
+  String get notYetButtonLabel => 'Not Yet';
+
+  @override
+  String get yesAlreadyButtonLabel => 'Yes, Sent';
+
+  @override
+  String get awaitingPickupBeforeProcessNotice =>
+      'Waiting for the laundry to be picked up from the customer first';
+
+  @override
+  String get completePaymentBeforeScheduleNotice =>
+      'Complete the payment first before it can be scheduled for delivery';
+
+  @override
+  String get completePaymentBeforeNotifyNotice =>
+      'Complete the payment first before the customer can be notified it\'s ready';
+
+  @override
+  String get markPickupBeforeProcessError =>
+      'Mark the item as picked up first on the Pickup & Delivery screen before continuing the process';
+
+  @override
   String get confirmPaymentDialogTitle => 'Confirm Payment';
 
   @override
