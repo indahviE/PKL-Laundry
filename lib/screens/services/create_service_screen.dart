@@ -12,6 +12,8 @@ import '../../repositories/laundry_repository.dart';
 import '../../core/services/app_feedback.dart';
 import '../../providers/auth_provider.dart';
 import '../../repositories/service_repository.dart';
+import '../../repositories/subscription_repository.dart';
+import '../../services/subscription_service.dart';
 
 /// Local design tokens matching the new "NetWash Utility System" design
 /// (see DESIGN.md / code.html). Kept local to this screen instead of
@@ -164,6 +166,36 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       }
 
       final companyId = companySnapshot.docs.first.id;
+
+      // FEATURE GATING: menambah layanan baru = aksi administrative
+      // (belum pernah ada gating apa pun di layar ini sebelumnya).
+      // Tidak ada pengecekan kuota di sini (tidak ada limits.max_services
+      // pada skema subscription) - cuma status: aktif/grace period boleh
+      // lanjut, expired total diblok.
+      //
+      // Pakai streamSubscriptionForCompany() (BUKAN streamActiveSubscription())
+      // karena guard butuh tahu status apa pun dokumennya (termasuk
+      // past_due), bukan cuma "null vs aktif" - sama seperti
+      // CreateEmployeeScreen/CreateLaundryScreen.
+      final subscriptionRepo = SubscriptionRepository(userId: userId);
+      final subscription =
+          await subscriptionRepo.streamSubscriptionForCompany(companyId).first;
+      final subscriptionService = SubscriptionService(currentSubscription: subscription);
+      final access = subscriptionService.checkAccess(SubscriptionActionType.administrative);
+
+      if (!access.allowed) {
+        if (mounted) {
+          AppFeedback.playSound(ref, AppSound.error);
+          AppSnackbar.error(context, l10n.subscriptionExpiredWarning);
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
+
+      if (access.isInGracePeriod && mounted) {
+        AppSnackbar.info(context, l10n.gracePeriodWarning(access.graceDaysRemaining!));
+      }
+
       final serviceRepository = ServiceRepository(userId: userId);
 
       final priceValue = double.parse(_priceController.text.trim());

@@ -8,7 +8,24 @@ import '../../core/themes/app_theme.dart';
 import '../../core/services/app_feedback.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../repositories/subscription_repository.dart';
+import '../../services/subscription_service.dart';
 import '../../l10n/app_localizations.dart';
+
+/// Hasil evaluasi dua lapis gate saat menambah karyawan baru: status
+/// subscription (blockedByStatus) dan kuota (quotaAvailable). Kalau
+/// blockedByStatus true, quotaAvailable tidak relevan (sudah pasti gagal
+/// lebih awal dari status, jadi kuota tidak perlu dicek).
+class _EmployeeGateResult {
+  final bool blockedByStatus;
+  final bool quotaAvailable;
+  final int? graceDaysRemaining;
+
+  const _EmployeeGateResult({
+    required this.blockedByStatus,
+    required this.quotaAvailable,
+    this.graceDaysRemaining,
+  });
+}
 
 /// Local design tokens matching the new "NetWash Utility System" design
 /// (samain persis dengan CreateServiceScreen: canvas abu kebiruan, kartu
@@ -343,37 +360,46 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
     _showSnack(AppLocalizations.of(context)!.permissionsResetForPosition(position ?? ''));
   }
 
-  /// FEATURE GATING: Validasi sisa kuota karyawan berdasarkan plan aktif.
-  /// Hanya relevan saat menambah karyawan baru - saat edit, jumlah karyawan
-  /// tidak bertambah sehingga pengecekan kuota dilewati.
+  /// FEATURE GATING: dua lapis pengecekan sebelum menambah karyawan baru
+  /// (menambah karyawan = aksi administrative). Hanya relevan saat mode
+  /// create - saat edit, jumlah karyawan tidak bertambah sehingga
+  /// pengecekan ini dilewati sepenuhnya.
   ///
-  /// FIX: sebelumnya query manual `.where('status','active').limit(1)`
-  /// tanpa sorting bisa mengambil dokumen subscription yang SALAH kalau ada
-  /// lebih dari satu dokumen berstatus 'active' untuk company yang sama
-  /// (mis. sisa dokumen lama yang belum di-nonaktifkan saat upgrade paket).
-  /// Sekarang pakai SubscriptionRepository.streamActiveSubscription(), yang
-  /// sudah mengurutkan berdasarkan createdAt descending dan selalu memilih
-  /// dokumen aktif/trialing yang PALING BARU.
-  Future<bool> _checkEmployeeLimit(String userId, String companyId) async {
+  /// Lapis 1 - status: SubscriptionService.checkAccess(administrative)
+  /// menentukan boleh/tidak berdasarkan status subscription (aktif, masih
+  /// grace period, atau sudah benar-benar expired).
+  /// Lapis 2 - kuota: SubscriptionService.canAddEmployee() membandingkan
+  /// jumlah karyawan saat ini dengan limits.max_employees plan yang
+  /// berlaku.
+  ///
+  /// FIX: sebelumnya kalau tidak ada dokumen subscription sama sekali,
+  /// fallback ke limit 5 di-hardcode langsung di screen ini. Sekarang
+  /// didelegasikan ke SubscriptionService (currentSubscription: null tetap
+  /// fallback ke limit Starter, tapi didefinisikan SEKALI di service, bukan
+  /// diduplikasi di tiap screen).
+  ///
+  /// Pakai streamSubscriptionForCompany() (BUKAN streamActiveSubscription())
+  /// karena guard di sini butuh tahu status apa pun dokumennya (termasuk
+  /// past_due), bukan cuma "null vs aktif" - beda dari kebutuhan lama yang
+  /// cuma soal kuota.
+  Future<_EmployeeGateResult> _evaluateEmployeeGate(
+      String userId, String companyId) async {
     final subscriptionRepo = ref.read(subscriptionRepositoryProvider);
-    final activeSubscription =
-        await subscriptionRepo.streamActiveSubscription(companyId).first;
+    final subscription =
+        await subscriptionRepo.streamSubscriptionForCompany(companyId).first;
+    final service = SubscriptionService(currentSubscription: subscription);
 
-    if (activeSubscription == null) {
-      // Jika tidak ada data langganan, default kembali ke batasan Starter (maks 5)
-      final currentCount = await _getCurrentEmployeeCount(userId);
-      return currentCount < 5;
+    final access = service.checkAccess(SubscriptionActionType.administrative);
+    if (!access.allowed) {
+      return const _EmployeeGateResult(blockedByStatus: true, quotaAvailable: false);
     }
 
-    // Sesuai Blueprint §3.6.3 (SubscriptionService.canAddEmployee):
-    // batas kuota dibaca langsung dari `limits.max_employees` pada
-    // dokumen subscription, BUKAN hardcode per plan_id.
-    // Nilai -1 pada limits berarti unlimited (khusus paket Enterprise).
-    final int maxEmployees = activeSubscription.limits.maxEmployees;
-    if (maxEmployees == -1) return true; // Unlimited
-
     final currentCount = await _getCurrentEmployeeCount(userId);
-    return currentCount < maxEmployees;
+    return _EmployeeGateResult(
+      blockedByStatus: false,
+      quotaAvailable: service.canAddEmployee(currentCount),
+      graceDaysRemaining: access.isInGracePeriod ? access.graceDaysRemaining : null,
+    );
   }
 
   /// Helper hitung total dokumen karyawan dengan agregasi hemat cost
@@ -411,7 +437,7 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
       // Ambil company_id dari CABANG yang dipilih (relasi laundries.company_id
       // sesuai Blueprint §3.2.3), bukan mengambil perusahaan pertama secara acak.
       // Ini harus dilakukan SEBELUM pengecekan kuota, karena kuota sekarang
-      // dibaca per-company lewat SubscriptionRepository (lihat _checkEmployeeLimit).
+      // dibaca per-company lewat SubscriptionRepository (lihat _evaluateEmployeeGate).
       final selectedLaundry = _laundriesList.firstWhere(
         (l) => l['id'] == _selectedLaundryId,
         orElse: () => {},
@@ -428,16 +454,24 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
 
       // Pengecekan limitasi paket hanya berlaku saat menambah karyawan baru
       if (!_isEditMode) {
-        final isQuotaAvailable = await _checkEmployeeLimit(currentUserId, companyIdRef);
-        if (!isQuotaAvailable) {
+        final gate = await _evaluateEmployeeGate(currentUserId, companyIdRef);
+
+        if (gate.blockedByStatus || !gate.quotaAvailable) {
           if (mounted) {
             showDialog(
               context: context,
               builder: (ctx) => AlertDialog(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                title: Text(AppLocalizations.of(context)!.quotaLimitReachedTitle, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+                title: Text(
+                  gate.blockedByStatus
+                      ? AppLocalizations.of(context)!.subscriptionExpiredTitle
+                      : AppLocalizations.of(context)!.quotaLimitReachedTitle,
+                  style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700),
+                ),
                 content: Text(
-                  AppLocalizations.of(context)!.quotaLimitReachedContent,
+                  gate.blockedByStatus
+                      ? AppLocalizations.of(context)!.subscriptionExpiredWarning
+                      : AppLocalizations.of(context)!.quotaLimitReachedContent,
                   style: GoogleFonts.beVietnamPro(fontSize: 13, color: _DS.onSurfaceVariant),
                 ),
                 actions: [
@@ -463,6 +497,12 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
           }
           setState(() => _isLoading = false);
           return;
+        }
+
+        // Boleh lanjut, tapi kalau lagi dalam grace period tetap kasih tahu
+        // sisa harinya - tidak menghalangi, cuma peringatan.
+        if (gate.graceDaysRemaining != null && mounted) {
+          _showSnack(AppLocalizations.of(context)!.gracePeriodWarning(gate.graceDaysRemaining!));
         }
       }
 

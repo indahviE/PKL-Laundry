@@ -64,6 +64,36 @@ class SubscriptionRepository {
     });
   }
 
+  /// Ambil subscription TERBARU untuk company ini, apa pun statusnya
+  /// (termasuk past_due, canceled, unpaid, incomplete) - beda dari
+  /// [streamActiveSubscription] yang cuma mengembalikan active/trialing.
+  ///
+  /// Guard butuh ini buat membedakan dua kondisi yang keduanya bikin
+  /// streamActiveSubscription() return null:
+  /// - company belum pernah subscribe sama sekali (dokumen memang tidak ada)
+  /// - subscription-nya ada tapi lagi past_due/canceled (dokumen ada,
+  ///   cuma bukan active/trialing)
+  /// Tanpa method ini, guard tidak bisa tahu mana yang "belum pernah
+  /// subscribe" vs "sedang grace period", padahal treatment-nya beda.
+  Stream<Subscription?> streamSubscriptionForCompany(String companyId) {
+    return _subscriptionsRef
+        .where('company_id', isEqualTo: companyId)
+        .snapshots()
+        .map((snapshot) {
+      if (snapshot.docs.isEmpty) return null;
+
+      final subs = snapshot.docs
+          .map((doc) => Subscription.fromJson(doc.data(), doc.id))
+          .toList();
+
+      // Urutkan descending, ambil yang paling baru - sama seperti
+      // streamActiveSubscription, supaya konsisten kalau ada lebih dari
+      // satu dokumen subscription untuk company yang sama.
+      subs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return subs.first;
+    });
+  }
+
   /// FIX: Pengurutan riwayat di memori untuk menghindari index crash
   Stream<List<Subscription>> streamSubscriptionHistory(String companyId) {
     return _subscriptionsRef
@@ -80,19 +110,42 @@ class SubscriptionRepository {
     });
   }
 
-  /// Update status subscription
+  /// Update status subscription.
+  ///
+  /// Ikut ngurus `grace_started_at` otomatis berdasarkan transisi status,
+  /// jadi caller (mis. webhook Stripe di functions/index.js lewat Admin
+  /// SDK, atau kode klien lain yang manggil ini) tidak perlu tahu soal
+  /// logic grace period sama sekali:
+  /// - transisi ke 'past_due' -> di-set ke sekarang, TAPI hanya kalau
+  ///   sebelumnya belum ada nilai (supaya webhook retry/duplicate event
+  ///   tidak menggeser mundur titik mulai grace period).
+  /// - transisi ke 'active'/'trialing' (mis. pembayaran berhasil) ->
+  ///   di-null-kan lagi, karena grace period sudah tidak relevan.
+  /// - status lain (canceled, unpaid, dst) -> dibiarkan apa adanya.
   Future<void> updateSubscriptionStatus(
     String subscriptionId,
     String newStatus, {
     DateTime? currentPeriodEnd,
     DateTime? canceledAt,
   }) async {
-    await _subscriptionsRef.doc(subscriptionId).update({
+    final Map<String, dynamic> data = {
       'status': newStatus,
       if (currentPeriodEnd != null) 'current_period_end': currentPeriodEnd,
       if (canceledAt != null) 'canceled_at': canceledAt,
       'updated_at': DateTime.now(),
-    });
+    };
+
+    if (newStatus == 'past_due') {
+      final snap = await _subscriptionsRef.doc(subscriptionId).get();
+      final existingGraceStart = snap.data()?['grace_started_at'];
+      if (existingGraceStart == null) {
+        data['grace_started_at'] = DateTime.now();
+      }
+    } else if (newStatus == 'active' || newStatus == 'trialing') {
+      data['grace_started_at'] = FieldValue.delete();
+    }
+
+    await _subscriptionsRef.doc(subscriptionId).update(data);
   }
 }
 

@@ -245,6 +245,14 @@
   "pickupDeliveryAction": "Pickup &\nDelivery",
   "reportAction": "Report",
   "settingsAction": "Settings",
+  "subscriptionExpiredTitle": "Subscription Inactive",
+  "subscriptionExpiredWarning": "Your subscription is inactive and the grace period has ended. Please renew your subscription to continue.",
+  "gracePeriodWarning": "Your subscription payment is overdue. You can still use this feature for {daysRemaining} more day(s) before it's restricted.",
+  "@gracePeriodWarning": {
+    "placeholders": {
+      "daysRemaining": { "type": "int" }
+    }
+  },
   "quotaLimitReached": "The Starter plan quota limit for {label} has been reached! Please upgrade.",
   "@quotaLimitReached": {
     "placeholders": {

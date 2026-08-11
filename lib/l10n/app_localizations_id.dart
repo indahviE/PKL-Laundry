@@ -439,6 +439,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get settingsAction => 'Pengaturan';
 
   @override
+  String get subscriptionExpiredTitle => 'Langganan Tidak Aktif';
+
+  @override
+  String get subscriptionExpiredWarning =>
+      'Langganan Anda tidak aktif dan masa tenggang sudah berakhir. Perbarui langganan untuk melanjutkan.';
+
+  @override
+  String gracePeriodWarning(int daysRemaining) {
+    return 'Pembayaran langganan Anda tertunda. Anda masih bisa memakai fitur ini selama $daysRemaining hari lagi sebelum dibatasi.';
+  }
+
+  @override
   String quotaLimitReached(String label) {
     return 'Batas kuota paket Starter untuk $label telah tercapai! Silakan upgrade.';
   }

@@ -440,6 +440,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAction => 'Settings';
 
   @override
+  String get subscriptionExpiredTitle => 'Subscription Inactive';
+
+  @override
+  String get subscriptionExpiredWarning =>
+      'Your subscription is inactive and the grace period has ended. Please renew your subscription to continue.';
+
+  @override
+  String gracePeriodWarning(int daysRemaining) {
+    return 'Your subscription payment is overdue. You can still use this feature for $daysRemaining more day(s) before it\'s restricted.';
+  }
+
+  @override
   String quotaLimitReached(String label) {
     return 'The Starter plan quota limit for $label has been reached! Please upgrade.';
   }

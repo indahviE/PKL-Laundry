@@ -890,6 +890,24 @@ abstract class AppLocalizations {
   /// **'Pengaturan'**
   String get settingsAction;
 
+  /// No description provided for @subscriptionExpiredTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Langganan Tidak Aktif'**
+  String get subscriptionExpiredTitle;
+
+  /// No description provided for @subscriptionExpiredWarning.
+  ///
+  /// In id, this message translates to:
+  /// **'Langganan Anda tidak aktif dan masa tenggang sudah berakhir. Perbarui langganan untuk melanjutkan.'**
+  String get subscriptionExpiredWarning;
+
+  /// No description provided for @gracePeriodWarning.
+  ///
+  /// In id, this message translates to:
+  /// **'Pembayaran langganan Anda tertunda. Anda masih bisa memakai fitur ini selama {daysRemaining} hari lagi sebelum dibatasi.'**
+  String gracePeriodWarning(int daysRemaining);
+
   /// No description provided for @quotaLimitReached.
   ///
   /// In id, this message translates to:

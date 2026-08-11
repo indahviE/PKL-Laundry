@@ -244,6 +244,14 @@
   "pickupDeliveryAction": "Antar\nJemput",
   "reportAction": "Laporan",
   "settingsAction": "Pengaturan",
+  "subscriptionExpiredTitle": "Langganan Tidak Aktif",
+  "subscriptionExpiredWarning": "Langganan Anda tidak aktif dan masa tenggang sudah berakhir. Perbarui langganan untuk melanjutkan.",
+  "gracePeriodWarning": "Pembayaran langganan Anda tertunda. Anda masih bisa memakai fitur ini selama {daysRemaining} hari lagi sebelum dibatasi.",
+  "@gracePeriodWarning": {
+    "placeholders": {
+      "daysRemaining": { "type": "int" }
+    }
+  },
   "quotaLimitReached": "Batas kuota paket Starter untuk {label} telah tercapai! Silakan upgrade.",
   "@quotaLimitReached": {
     "placeholders": {
