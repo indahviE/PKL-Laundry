@@ -2707,6 +2707,54 @@ class AppLocalizationsId extends AppLocalizations {
   String get receiptFallbackSubtitle => 'Struk Pesanan';
 
   @override
+  String get receiptHeaderLabel => 'STRUK ELEKTRONIK';
+
+  @override
+  String get receiptReceivedLabel => 'Terima';
+
+  @override
+  String get receiptCompletedLabel => 'Selesai';
+
+  @override
+  String get receiptChangeLabel => 'Kembalian';
+
+  @override
+  String get receiptValidProofNotice =>
+      'Simpan struk ini sebagai bukti transaksi yang sah';
+
+  @override
+  String get sendReceiptToCustomerButtonLabel => 'Kirim Struk ke Pelanggan';
+
+  @override
+  String get messageSentConfirmDialogTitle => 'Sudah dikirim?';
+
+  @override
+  String get messageSentConfirmDialogContent =>
+      'Apakah pesan \"pesanan siap diambil\" sudah berhasil dikirim ke pelanggan lewat WhatsApp?';
+
+  @override
+  String get notYetButtonLabel => 'Belum';
+
+  @override
+  String get yesAlreadyButtonLabel => 'Ya, Sudah';
+
+  @override
+  String get awaitingPickupBeforeProcessNotice =>
+      'Menunggu baju dijemput dulu dari pelanggan';
+
+  @override
+  String get completePaymentBeforeScheduleNotice =>
+      'Selesaikan pembayaran dulu sebelum bisa dijadwalkan diantar';
+
+  @override
+  String get completePaymentBeforeNotifyNotice =>
+      'Selesaikan pembayaran dulu sebelum bisa dikabari siap diambil';
+
+  @override
+  String get markPickupBeforeProcessError =>
+      'Tandai barang sudah dijemput dulu di layar Antar Jemput sebelum melanjutkan proses';
+
+  @override
   String get confirmPaymentDialogTitle => 'Konfirmasi Pembayaran';
 
   @override

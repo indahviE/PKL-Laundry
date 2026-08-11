@@ -4898,6 +4898,90 @@ abstract class AppLocalizations {
   /// **'Struk Pesanan'**
   String get receiptFallbackSubtitle;
 
+  /// No description provided for @receiptHeaderLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'STRUK ELEKTRONIK'**
+  String get receiptHeaderLabel;
+
+  /// No description provided for @receiptReceivedLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Terima'**
+  String get receiptReceivedLabel;
+
+  /// No description provided for @receiptCompletedLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesai'**
+  String get receiptCompletedLabel;
+
+  /// No description provided for @receiptChangeLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kembalian'**
+  String get receiptChangeLabel;
+
+  /// No description provided for @receiptValidProofNotice.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan struk ini sebagai bukti transaksi yang sah'**
+  String get receiptValidProofNotice;
+
+  /// No description provided for @sendReceiptToCustomerButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Kirim Struk ke Pelanggan'**
+  String get sendReceiptToCustomerButtonLabel;
+
+  /// No description provided for @messageSentConfirmDialogTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Sudah dikirim?'**
+  String get messageSentConfirmDialogTitle;
+
+  /// No description provided for @messageSentConfirmDialogContent.
+  ///
+  /// In id, this message translates to:
+  /// **'Apakah pesan \"pesanan siap diambil\" sudah berhasil dikirim ke pelanggan lewat WhatsApp?'**
+  String get messageSentConfirmDialogContent;
+
+  /// No description provided for @notYetButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum'**
+  String get notYetButtonLabel;
+
+  /// No description provided for @yesAlreadyButtonLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Ya, Sudah'**
+  String get yesAlreadyButtonLabel;
+
+  /// No description provided for @awaitingPickupBeforeProcessNotice.
+  ///
+  /// In id, this message translates to:
+  /// **'Menunggu baju dijemput dulu dari pelanggan'**
+  String get awaitingPickupBeforeProcessNotice;
+
+  /// No description provided for @completePaymentBeforeScheduleNotice.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesaikan pembayaran dulu sebelum bisa dijadwalkan diantar'**
+  String get completePaymentBeforeScheduleNotice;
+
+  /// No description provided for @completePaymentBeforeNotifyNotice.
+  ///
+  /// In id, this message translates to:
+  /// **'Selesaikan pembayaran dulu sebelum bisa dikabari siap diambil'**
+  String get completePaymentBeforeNotifyNotice;
+
+  /// No description provided for @markPickupBeforeProcessError.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai barang sudah dijemput dulu di layar Antar Jemput sebelum melanjutkan proses'**
+  String get markPickupBeforeProcessError;
+
   /// No description provided for @confirmPaymentDialogTitle.
   ///
   /// In id, this message translates to:

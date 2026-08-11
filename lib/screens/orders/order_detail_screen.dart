@@ -949,7 +949,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
     // pickup yang barangnya belum beneran dijemput gak boleh dimajukan
     // lewat 'confirmed', walau entah bagaimana ini sempat terpanggil.
     if (_order != null && _order!.isAwaitingPickup && _order!.status == 'confirmed') {
-      _showSnack('Tandai barang sudah dijemput dulu di layar Antar Jemput sebelum melanjutkan proses', isError: true);
+      _showSnack(_t.markPickupBeforeProcessError, isError: true);
       return;
     }
     if (!_stagesRequiringOperator.contains(nextStatus)) {
@@ -1336,17 +1336,17 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rLg)),
         title: Text(
-          'Sudah dikirim?',
+          _t.messageSentConfirmDialogTitle,
           style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cOnSurface),
         ),
         content: Text(
-          'Apakah pesan "pesanan siap diambil" sudah berhasil dikirim ke pelanggan lewat WhatsApp?',
+          _t.messageSentConfirmDialogContent,
           style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Belum', style: GoogleFonts.beVietnamPro(color: _cOnSurfaceVariant)),
+            child: Text(_t.notYetButtonLabel, style: GoogleFonts.beVietnamPro(color: _cOnSurfaceVariant)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1360,7 +1360,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text('Ya, Sudah', style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
+            child: Text(_t.yesAlreadyButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -1789,7 +1789,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'STRUK ELEKTRONIK',
+            _t.receiptHeaderLabel,
             textAlign: TextAlign.center,
             style: GoogleFonts.beVietnamPro(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.03, color: _cOnSurfaceVariant),
           ),
@@ -1810,8 +1810,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
           const SizedBox(height: 12),
           _receiptRow(_t.receiptOrderNumberLabel, order.orderNumber),
           _receiptRow(_t.receiptCustomerLabel, order.customerName.isNotEmpty ? order.customerName : '-'),
-          _receiptRow('Terima', '${_formatDate(order.orderDate)} ${_formatTime(order.orderDate)}'),
-          _receiptRow('Selesai', completedAt != null ? '${_formatDate(completedAt)} ${_formatTime(completedAt)}' : '-'),
+          _receiptRow(_t.receiptReceivedLabel, '${_formatDate(order.orderDate)} ${_formatTime(order.orderDate)}'),
+          _receiptRow(_t.receiptCompletedLabel, completedAt != null ? '${_formatDate(completedAt)} ${_formatTime(completedAt)}' : '-'),
           const SizedBox(height: 12),
           Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
@@ -1875,7 +1875,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
           const SizedBox(height: 12),
           _receiptRow(_t.receiptPaymentMethodLabel, '${_paymentMethodEmoji(order.paymentMethodRaw)} ${_paymentMethodLabel(order.paymentMethodRaw)}'),
           _receiptRow(_t.paidAmountLabel, _formatCurrency(order.paidAmount)),
-          if (order.cashChange > 0) _receiptRow('Kembalian', _formatCurrency(order.cashChange)),
+          if (order.cashChange > 0) _receiptRow(_t.receiptChangeLabel, _formatCurrency(order.cashChange)),
           if (order.remainingAmount > 0) _receiptRow(_t.remainingBillLabel, _formatCurrency(order.remainingAmount)),
           const SizedBox(height: 8),
           Align(
@@ -1899,7 +1899,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            'Simpan struk ini sebagai bukti transaksi yang sah',
+            _t.receiptValidProofNotice,
             textAlign: TextAlign.center,
             style: GoogleFonts.beVietnamPro(fontSize: 10, color: _cOnSurfaceVariant),
           ),
@@ -2690,7 +2690,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF25D366)))
                   : const Icon(Icons.receipt_long_outlined, size: 18),
               label: Text(
-                'Kirim Struk ke Pelanggan',
+                _t.sendReceiptToCustomerButtonLabel,
                 style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13),
               ),
               style: OutlinedButton.styleFrom(
@@ -3004,8 +3004,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
                         Expanded(
                           child: Text(
                             order.isDelivery
-                                ? 'Selesaikan pembayaran dulu sebelum bisa dijadwalkan diantar'
-                                : 'Selesaikan pembayaran dulu sebelum bisa dikabari siap diambil',
+                                ? _t.completePaymentBeforeScheduleNotice
+                                : _t.completePaymentBeforeNotifyNotice,
                             style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600, color: _cYellowText, height: 1.4),
                           ),
                         ),
@@ -3072,7 +3072,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Menunggu baju dijemput dulu dari pelanggan',
+                            _t.awaitingPickupBeforeProcessNotice,
                             style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600, color: _cYellowText, height: 1.4),
                           ),
                         ),
