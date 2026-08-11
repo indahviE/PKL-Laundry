@@ -322,6 +322,151 @@ exports.sendPengingatReminders = onSchedule(
 );
 
 /**
+ * FIX GAP (poin 12) -- reminder H-3 / H-1 sebelum current_period_end.
+ *
+ * LATAR BELAKANG: sebelum ini, satu-satunya sinyal ke pengguna soal
+ * subscription mau/sudah bermasalah adalah banner di dashboard
+ * (_buildSubscriptionBanner) -- dan itu SIFATNYA REAKTIF, baru muncul
+ * SETELAH status berubah jadi 'past_due'. Tidak ada apa pun yang
+ * mengingatkan SEBELUM tanggal jatuh tempo. Function ini nutup gap itu:
+ * jalan sekali sehari, cek semua subscription yang masih 'active'/
+ * 'trialing', dan kirim notifikasi kalau sisa hari ke `current_period_end`
+ * pas H-3 atau H-1.
+ *
+ * SYARAT: field `current_period_end` di dokumen subscription harus
+ * terisi -- ini yang baru diperbaiki di stripe-webhook.js (checkout.
+ * session.completed & customer.subscription.updated sekarang keduanya
+ * mengisi field ini). Dokumen lama yang dibuat SEBELUM fix itu mungkin
+ * tidak punya field ini -- di-skip dengan log warning, bukan error.
+ *
+ * DEDUP TANPA PERLU RESET MANUAL: reminder H-3 & H-1 masing-masing
+ * disimpan sebagai `reminder_h3_sent_for_period_end` / `..._h1_...`
+ * berisi NILAI current_period_end saat reminder itu dikirim (bukan
+ * cuma boolean true/false). Jadi begitu siklus billing lanjut ke bulan
+ * berikutnya (current_period_end berubah lewat webhook Stripe), nilai
+ * yang tersimpan otomatis jadi "basi" dan reminder bulan berikutnya
+ * tetap bisa terkirim lagi -- tanpa perlu ada langkah reset field secara
+ * eksplisit di tempat lain.
+ *
+ * NOTIFIKASI INI SENGAJA TIDAK DI-GATE oleh notif_prefs mana pun.
+ * Kategori notif_prefs yang ada sekarang (status_pesanan, promo,
+ * pengingat, chat_cs) tidak ada yang cocok secara makna untuk reminder
+ * tagihan/langganan -- "pengingat" existing spesifik soal jadwal jemput/
+ * antar cucian (lihat _sendPengingatNotif & sendPengingatReminders di
+ * atas). Karena reminder ini soal risiko akun ke-restrict kalau
+ * terlewat, defaultnya SELALU kirim asal `fcm_token` ada. Kalau kamu mau
+ * ini tetap bisa dimatikan user (misal toggle baru "Tagihan &
+ * langganan"), tinggal tambah field notif_prefs baru dan cek di sini
+ * sama seperti pola-pola di atas.
+ *
+ * CATATAN QUERY: sengaja TIDAK menambah filter range pada
+ * current_period_end di query Firestore (cuma filter status via `in`),
+ * supaya tidak butuh composite index tambahan. Perhitungan "H-3/H-1"
+ * dilakukan di JS setelah data diambil. Kalau jumlah subscription aktif
+ * sudah sangat banyak, ini bisa dioptimasi lagi nanti dengan composite
+ * index + range filter.
+ */
+const RENEWAL_REMINDER_DAYS_BEFORE = [3, 1];
+
+/**
+ * Kirim satu notifikasi reminder ke owner akun (users/{userId}) pemilik
+ * subscription ini. Beda dari _sendPengingatNotif (order) -- tidak cek
+ * notif_prefs sama sekali, lihat penjelasan di komentar function utama.
+ *
+ * @param {FirebaseFirestore.DocumentSnapshot} subscriptionSnap Snapshot
+ *   dokumen subscription (di bawah users/{userId}/subscriptions/{id}).
+ * @param {{title: string, body: string, extraData: object}} payload Isi
+ *   notifikasi yang mau dikirim.
+ * @return {Promise<boolean>} true kalau notif jadi terkirim.
+ */
+async function _sendSubscriptionReminderNotif(subscriptionSnap, {title, body, extraData}) {
+  const userRef = subscriptionSnap.ref.parent.parent; // users/{userId}
+  if (!userRef) return false;
+
+  const userSnap = await userRef.get();
+  const user = userSnap.data();
+  if (!user || !user.fcm_token) {
+    logger.info(
+        `Skip reminder subscription untuk ${userRef.id} (tanpa fcm_token)`,
+    );
+    return false;
+  }
+
+  await admin.messaging().send({
+    token: user.fcm_token,
+    notification: {title, body},
+    data: {
+      type: "subscription_renewal",
+      subscriptionId: subscriptionSnap.id,
+      ...extraData,
+    },
+  });
+  return true;
+}
+
+exports.sendSubscriptionRenewalReminders = onSchedule(
+    {schedule: "every day 08:00", timeZone: "Asia/Jakarta"},
+    async () => {
+      const now = admin.firestore.Timestamp.now();
+
+      const subsSnap = await admin
+          .firestore()
+          .collectionGroup("subscriptions")
+          .where("status", "in", ["active", "trialing"])
+          .get();
+
+      let h3Sent = 0;
+      let h1Sent = 0;
+      let skippedNoPeriodEnd = 0;
+
+      for (const doc of subsSnap.docs) {
+        const sub = doc.data();
+        const periodEnd = sub.current_period_end;
+
+        if (!periodEnd) {
+          // Dokumen lama dari sebelum fix current_period_end di
+          // stripe-webhook.js -- tidak ada dasar buat hitung H-berapa.
+          skippedNoPeriodEnd++;
+          continue;
+        }
+
+        const msRemaining = periodEnd.toMillis() - now.toMillis();
+        const daysRemaining = Math.ceil(msRemaining / (24 * 60 * 60 * 1000));
+
+        if (!RENEWAL_REMINDER_DAYS_BEFORE.includes(daysRemaining)) continue;
+
+        const dedupField = `reminder_h${daysRemaining}_sent_for_period_end`;
+        const alreadySentForThisPeriod =
+            sub[dedupField] && sub[dedupField].isEqual(periodEnd);
+        if (alreadySentForThisPeriod) continue;
+
+        const sent = await _sendSubscriptionReminderNotif(doc, {
+          title: daysRemaining === 1 ?
+            "Langganan berakhir besok" :
+            `Langganan berakhir dalam ${daysRemaining} hari`,
+          body: daysRemaining === 1 ?
+            "Pastikan metode pembayaranmu aktif supaya langganan " +
+              "tidak terganggu." :
+            `Perpanjangan otomatis akan diproses dalam ${daysRemaining} ` +
+              "hari. Pastikan metode pembayaranmu aktif.",
+          extraData: {daysRemaining: String(daysRemaining)},
+        });
+
+        if (sent) {
+          await doc.ref.update({[dedupField]: periodEnd});
+          if (daysRemaining === 3) h3Sent++;
+          if (daysRemaining === 1) h1Sent++;
+        }
+      }
+
+      logger.info(
+          `Reminder subscription: ${h3Sent} H-3, ${h1Sent} H-1 terkirim, ` +
+          `${skippedNoPeriodEnd} dilewati (tidak ada current_period_end)`,
+      );
+    },
+);
+
+/**
  * CONTOH #4 -- notifikasi trigger ("Chat dan CS").
  *
  * CATATAN PENTING: aku cek ke seluruh codebase dan BELUM ada fitur chat
