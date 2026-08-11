@@ -70,15 +70,58 @@ const double _rXl = DesignTokens.radiusXl;
 class _OrderLineItem {
   final String name;
   final int quantity;
+  final double weight;
   final double price;
+  // Total harga baris ini APA ADANYA seperti waktu order dibuat
+  // (CreateOrderScreen: weight x price untuk item per-kg, quantity x
+  // price untuk item per-item - lihat OrderItemForm.subtotal). Dipakai
+  // sebagai sumber kebenaran nilai per-baris, BUKAN dihitung ulang dari
+  // quantity x price di sini - soalnya item per-kg selalu disimpan
+  // dengan quantity terkunci ke 1 (satu "paket" seberat sekian kg),
+  // berat aslinya ada di field `weight` terpisah. Kalau baris ini
+  // dihitung ulang pakai quantity x price, hasilnya cuma harga satuan
+  // (quantity=1), BUKAN harga total sesuai berat - itu sumber bug
+  // "5 kg kebaca x1" / subtotal salah.
+  final double totalPrice;
 
-  _OrderLineItem({required this.name, required this.quantity, required this.price});
+  _OrderLineItem({
+    required this.name,
+    required this.quantity,
+    required this.weight,
+    required this.price,
+    required this.totalPrice,
+  });
+
+  /// True kalau item ini ditagih per-kg (ada berat > 0 tersimpan),
+  /// bukan per-item/pcs.
+  bool get isWeightBased => weight > 0;
+
+  /// Label kuantitas buat ditampilkan - "5.0 kg" buat item per-kg,
+  /// "x3" buat item per-item biasa.
+  String get quantityLabel {
+    if (isWeightBased) {
+      return '${weight.toStringAsFixed(1)} kg';
+    }
+    return 'x$quantity';
+  }
 
   factory _OrderLineItem.fromMap(Map<String, dynamic> map) {
+    final quantity = (map['quantity'] ?? 0) is int ? map['quantity'] as int : ((map['quantity'] ?? 0) as num).toInt();
+    final weight = ((map['weight'] ?? 0) as num).toDouble();
+    final price = ((map['price_per_unit'] ?? 0) as num).toDouble();
+    // Fallback buat order LAMA yang belum pernah nyimpen `total_price`
+    // sama sekali - dihitung manual dari weight/quantity yang ada, biar
+    // tetap gak nol/error di struk order lama.
+    final rawTotalPrice = map['total_price'];
+    final totalPrice = rawTotalPrice != null
+        ? (rawTotalPrice as num).toDouble()
+        : (weight > 0 ? weight * price : quantity * price);
     return _OrderLineItem(
       name: (map['service_name'] ?? '') as String,
-      quantity: (map['quantity'] ?? 0) is int ? map['quantity'] as int : ((map['quantity'] ?? 0) as num).toInt(),
-      price: ((map['price_per_unit'] ?? 0) as num).toDouble(),
+      quantity: quantity,
+      weight: weight,
+      price: price,
+      totalPrice: totalPrice,
     );
   }
 }
@@ -284,6 +327,22 @@ class _OrderDetailData {
   double get remainingAmount {
     final remaining = totalAmount - paidAmount;
     return remaining < 0 ? 0 : remaining;
+  }
+
+  /// Subtotal yang DIHITUNG ULANG langsung dari daftar item (quantity x
+  /// harga satuan), BUKAN diambil dari field `subtotal` yang tersimpan di
+  /// Firestore. Sengaja begini karena field tersimpan kadang gak sinkron
+  /// sama item aktualnya (mis. kebaca Rp0 padahal grand total-nya udah
+  /// benar) - dengan dihitung ulang dari item asli, angka yang tampil di
+  /// struk selalu konsisten sama baris-baris item yang ditampilkan juga.
+  double get itemsSubtotal => items.fold<double>(0, (sum, i) => sum + i.totalPrice);
+
+  /// Kembalian tunai - cuma dihitung kalau metode bayarnya cash DAN jumlah
+  /// yang dibayarkan lebih besar dari total tagihan. Selain itu 0.
+  double get cashChange {
+    if (paymentMethodRaw != 'cash') return 0;
+    final diff = paidAmount - totalAmount;
+    return diff > 0 ? diff : 0;
   }
 
   /// Total jumlah item (sum quantity semua baris), dipakai di kartu
@@ -732,6 +791,23 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
     final index = _statusFlow.indexOf(currentStatus);
     if (index == -1 || index == _statusFlow.length - 1) return null;
     return _statusFlow[index + 1];
+  }
+
+  /// Emoji singkat per metode pembayaran, dipakai di struk (gambar & teks
+  /// WA) biar gampang dipindai sekilas.
+  String _paymentMethodEmoji(String method) {
+    switch (method) {
+      case 'cash':
+        return '💵';
+      case 'transfer':
+        return '🏦';
+      case 'debit':
+        return '💳';
+      case 'ewallet':
+        return '📱';
+      default:
+        return '💰';
+    }
   }
 
   /// Label metode pembayaran, dipakai baik untuk metode order maupun
@@ -1300,41 +1376,26 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
     await _launchWhatsappMessage(order.customerPhone, message);
   }
 
-  /// Susun & kirim "struk" pesanan dalam bentuk teks terformat ke WhatsApp
-  /// pelanggan (pakai *bold* ala WA). Bukan gambar - wa.me hanya bisa
-  /// prefill teks. Tombol ini TETAP ada, dipakai berdampingan sama tombol
-  /// "Download Struk" (gambar) di bawah - pilih salah satu sesuai
-  /// kebutuhan kasir.
-  Future<void> _sendReceiptWhatsapp(_OrderDetailData order) async {
-    final buffer = StringBuffer();
-    buffer.writeln('*${_t.receiptWhatsappTitle}*');
-    buffer.writeln('${_t.receiptOrderNumberLabel}: ${order.orderNumber}');
-    buffer.writeln('${_t.receiptDateLabel}: ${_formatDate(order.orderDate)}');
-    buffer.writeln('${_t.receiptCustomerLabel}: ${order.customerName}');
-    buffer.writeln('');
-    buffer.writeln('*${_t.receiptItemsLabel}:*');
-    for (final item in order.items) {
-      final lineTotal = item.price * item.quantity;
-      buffer.writeln('${item.name} x${item.quantity} - ${_formatCurrency(lineTotal)}');
+  /// Buka chat WhatsApp ke pelanggan TANPA teks pre-fill - dipakai setelah
+  /// struk gambar berhasil disimpan ke galeri, supaya kasir gak perlu
+  /// cari-cari kontak manual: chat yang kebuka udah pasti ke pelanggan
+  /// yang benar, tinggal tap ikon lampiran & pilih foto struk yang barusan
+  /// ke-save (paling atas/terbaru di galeri).
+  Future<bool> _launchWhatsappChat(String phone) async {
+    if (phone.isEmpty) {
+      _showSnack(_t.customerPhoneUnavailable, isError: true);
+      return false;
     }
-    buffer.writeln('');
-    buffer.writeln('${_t.subtotalLabel}: ${_formatCurrency(order.subtotal)}');
-    if (order.taxAmount > 0) {
-      buffer.writeln('${_t.taxLabel}: ${_formatCurrency(order.taxAmount)}');
-    }
-    buffer.writeln('*${_t.receiptTotalLabel}: ${_formatCurrency(order.totalAmount)}*');
-    buffer.writeln('');
-    buffer.writeln('${_t.receiptPaymentMethodLabel}: ${_paymentMethodLabel(order.paymentMethodRaw)}');
-    buffer.writeln('${_t.receiptPaymentStatusLabel}: ${_getPaymentStatusLabel(order.paymentStatus)}');
-    buffer.writeln('${_t.paidAmountLabel}: ${_formatCurrency(order.paidAmount)}');
-    if (order.remainingAmount > 0) {
-      buffer.writeln('${_t.remainingBillLabel}: ${_formatCurrency(order.remainingAmount)}');
-    }
-    buffer.writeln('');
-    buffer.writeln(_t.receiptThankYouMessage);
 
-    await _launchWhatsappMessage(order.customerPhone, buffer.toString());
+    final normalized = _normalizePhone(phone);
+    final uri = Uri.https('wa.me', '/$normalized');
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && mounted) {
+      _showSnack(_t.whatsappOpenError, isError: true);
+    }
+    return launched;
   }
+
 
   /// Screenshot widget struk (_buildReceiptCard, dirender offstage lewat
   /// _receiptKey) jadi bytes PNG. pixelRatio 3 biar hasilnya tajam kalau
@@ -1356,15 +1417,22 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
     }
   }
 
-  /// Tombol "Download Struk": screenshot struk jadi PNG, lalu simpan
-  /// LANGSUNG ke galeri HP (pakai package `gal`) - TANPA share sheet /
-  /// dialog pilih aplikasi apa pun. Karyawan tinggal buka WhatsApp manual
-  /// (tombol "Kirim Struk via WA" di sebelahnya), lalu attach foto struk
-  /// itu sendiri dari galeri.
+  /// simpan LANGSUNG ke galeri HP (pakai `gal`), lalu otomatis lanjut buka
+  /// chat WhatsApp ke pelanggan yang BENAR (_launchWhatsappChat) - TANPA
+  /// teks pre-fill, karena gambarnya harus di-attach manual dari galeri
+  /// (WhatsApp gak punya API buat nempelin gambar otomatis dari app lain,
+  /// cuma bisa buka chat-nya doang). Kasir tinggal tap ikon lampiran di
+  /// chat yang udah kebuka itu, pilih foto struk paling atas, lalu kirim.
   ///
-  /// Di Flutter Web, `gal` tidak punya implementasi (nggak ada "galeri"
-  /// di browser), jadi fallback-nya trigger download file .png biasa
-  /// lewat browser - juga tanpa share sheet.
+  /// Kalau save gambar GAGAL -> berhenti di situ, WA TIDAK dibuka (gak ada
+  /// gunanya buka chat kalau gak ada apa-apa buat di-attach).
+  /// Kalau save BERHASIL tapi buka WA-nya gagal (mis. WhatsApp gak
+  /// terinstal) -> bukan error fatal, strukmu tetap aman kesimpen di
+  /// galeri, kasir tinggal buka WA manual sendiri.
+  ///
+  /// Di Flutter Web, `gal` tidak punya implementasi (nggak ada "galeri" di
+  /// browser), jadi cuma kasih tau unsupported - WA TIDAK dibuka karena
+  /// emang gak ada gambar yang bisa di-attach.
   Future<void> _downloadReceiptStruk(_OrderDetailData order) async {
     setState(() => _isGeneratingReceipt = true);
     try {
@@ -1387,7 +1455,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
       }
 
       await Gal.putImageBytes(bytes, name: fileName);
+      if (!mounted) return;
       _showSnack(_t.receiptSavedToGallery);
+
+      // Struk udah kesimpen aman - baru lanjut buka chat WA pelanggan.
+      await _launchWhatsappChat(order.customerPhone);
     } catch (e) {
       if (mounted) {
         _showSnack(_t.receiptDownloadError(e.toString()), isError: true);
@@ -1707,6 +1779,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
   /// dengan lebar tetap (bukan responsive) supaya hasil gambarnya rapi
   /// di rasio gambar biasa, mirip struk kasir.
   Widget _buildReceiptCard(_OrderDetailData order) {
+    final subtotal = order.itemsSubtotal;
+    final completedAt = order.timestampForStatus('completed');
     return Container(
       width: 380,
       padding: const EdgeInsets.all(24),
@@ -1715,11 +1789,17 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
+            'STRUK ELEKTRONIK',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.beVietnamPro(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.03, color: _cOnSurfaceVariant),
+          ),
+          const SizedBox(height: 4),
+          Text(
             'Netwash',
             textAlign: TextAlign.center,
             style: GoogleFonts.beVietnamPro(fontSize: 20, fontWeight: FontWeight.w700, color: _cOnSurface),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             _laundryName != null && _laundryName!.isNotEmpty ? _laundryName! : _t.receiptFallbackSubtitle,
             textAlign: TextAlign.center,
@@ -1729,60 +1809,99 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
           Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
           _receiptRow(_t.receiptOrderNumberLabel, order.orderNumber),
-          _receiptRow(_t.receiptDateLabel, _formatDate(order.orderDate)),
-          _receiptRow(_t.receiptCustomerLabel, order.customerName),
+          _receiptRow(_t.receiptCustomerLabel, order.customerName.isNotEmpty ? order.customerName : '-'),
+          _receiptRow('Terima', '${_formatDate(order.orderDate)} ${_formatTime(order.orderDate)}'),
+          _receiptRow('Selesai', completedAt != null ? '${_formatDate(completedAt)} ${_formatTime(completedAt)}' : '-'),
           const SizedBox(height: 12),
           Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
+          Text(
+            _t.receiptItemsLabel.toUpperCase(),
+            style: GoogleFonts.beVietnamPro(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.02, color: _cOnSurfaceVariant),
+          ),
+          const SizedBox(height: 6),
           ...order.items.map((item) {
-            final lineTotal = item.price * item.quantity;
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(vertical: 5),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text('✓ ', style: TextStyle(fontSize: 12.5, color: _cGreenText, fontWeight: FontWeight.w700)),
                   Expanded(
-                    child: Text(
-                      '${item.name} x${item.quantity}',
-                      style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurface),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${item.name} ${item.quantityLabel}',
+                          style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600, color: _cOnSurface),
+                        ),
+                        Text(
+                          item.isWeightBased ? '@ ${_formatCurrency(item.price)}/kg' : '@ ${_formatCurrency(item.price)}',
+                          style: GoogleFonts.beVietnamPro(fontSize: 11, color: _cOnSurfaceVariant),
+                        ),
+                      ],
                     ),
                   ),
                   Text(
-                    _formatCurrency(lineTotal),
-                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600, color: _cOnSurface),
+                    _formatCurrency(item.totalPrice),
+                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w700, color: _cOnSurface),
                   ),
                 ],
               ),
             );
           }),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
-          _receiptRow(_t.subtotalLabel, _formatCurrency(order.subtotal)),
+          _receiptRow(_t.subtotalLabel, _formatCurrency(subtotal)),
           if (order.taxAmount > 0) _receiptRow(_t.taxLabel, _formatCurrency(order.taxAmount)),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(_t.totalLabel, style: GoogleFonts.beVietnamPro(fontSize: 14, fontWeight: FontWeight.w700, color: _cOnSurface)),
-              Text(
-                _formatCurrency(order.totalAmount),
-                style: GoogleFonts.beVietnamPro(fontSize: 16, fontWeight: FontWeight.w700, color: _cPrimary),
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(color: _cPrimaryFixed.withOpacity(0.5), borderRadius: BorderRadius.circular(_rLg)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(_t.totalLabel, style: GoogleFonts.beVietnamPro(fontSize: 13.5, fontWeight: FontWeight.w700, color: _cPrimary)),
+                Text(
+                  _formatCurrency(order.totalAmount),
+                  style: GoogleFonts.beVietnamPro(fontSize: 17, fontWeight: FontWeight.w700, color: _cPrimary),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           Divider(color: _cOutlineVariant),
           const SizedBox(height: 12),
-          _receiptRow(_t.receiptPaymentMethodLabel, _paymentMethodLabel(order.paymentMethodRaw)),
-          _receiptRow(_t.receiptPaymentStatusLabel, _getPaymentStatusLabel(order.paymentStatus)),
+          _receiptRow(_t.receiptPaymentMethodLabel, '${_paymentMethodEmoji(order.paymentMethodRaw)} ${_paymentMethodLabel(order.paymentMethodRaw)}'),
           _receiptRow(_t.paidAmountLabel, _formatCurrency(order.paidAmount)),
+          if (order.cashChange > 0) _receiptRow('Kembalian', _formatCurrency(order.cashChange)),
           if (order.remainingAmount > 0) _receiptRow(_t.remainingBillLabel, _formatCurrency(order.remainingAmount)),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(color: _paymentBg(order.paymentStatus), borderRadius: BorderRadius.circular(999)),
+              child: Text(
+                _getPaymentStatusLabel(order.paymentStatus).toUpperCase(),
+                style: GoogleFonts.beVietnamPro(fontSize: 10.5, fontWeight: FontWeight.w700, color: _paymentFg(order.paymentStatus)),
+              ),
+            ),
+          ),
           const SizedBox(height: 20),
+          Divider(color: _cOutlineVariant),
+          const SizedBox(height: 10),
           Text(
             _t.receiptThankYouMessage,
             textAlign: TextAlign.center,
-            style: GoogleFonts.beVietnamPro(fontSize: 11.5, color: _cOnSurfaceVariant),
+            style: GoogleFonts.beVietnamPro(fontSize: 11.5, fontWeight: FontWeight.w600, color: _cOnSurfaceVariant),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Simpan struk ini sebagai bukti transaksi yang sah',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.beVietnamPro(fontSize: 10, color: _cOnSurfaceVariant),
           ),
         ],
       ),
@@ -2377,7 +2496,6 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
           ),
           const SizedBox(height: 12),
           ...order.items.map((item) {
-            final lineTotal = item.price * item.quantity;
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 5),
               child: Row(
@@ -2385,13 +2503,13 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
                 children: [
                   Expanded(
                     child: Text(
-                      '${item.name}${item.quantity > 1 ? ' x${item.quantity}' : ''}',
+                      '${item.name} ${item.quantityLabel}',
                       style: GoogleFonts.beVietnamPro(fontSize: 14, color: _cSecondary),
                     ),
                   ),
                   const SizedBox(width: AppTheme.sm),
                   Text(
-                    _formatCurrency(lineTotal),
+                    _formatCurrency(item.totalPrice),
                     style: GoogleFonts.beVietnamPro(fontSize: 14, fontWeight: FontWeight.w600, color: _cOnSurface),
                   ),
                 ],
@@ -2564,40 +2682,25 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
             ),
           ],
           const SizedBox(height: AppTheme.md),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _isGeneratingReceipt ? null : () => _downloadReceiptStruk(order),
-                  icon: _isGeneratingReceipt
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _cPrimary))
-                      : const Icon(Icons.download_outlined, size: 18),
-                  label: Text(_t.downloadReceiptButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 12.5)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _cPrimary,
-                    side: const BorderSide(color: _cPrimary),
-                    backgroundColor: _cCard,
-                    padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _isGeneratingReceipt ? null : () => _downloadReceiptStruk(order),
+              icon: _isGeneratingReceipt
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF25D366)))
+                  : const Icon(Icons.receipt_long_outlined, size: 18),
+              label: Text(
+                'Kirim Struk ke Pelanggan',
+                style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 13),
               ),
-              const SizedBox(width: AppTheme.sm),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _sendReceiptWhatsapp(order),
-                  icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                  label: Text(_t.sendReceiptWhatsappButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 12.5)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF25D366),
-                    side: const BorderSide(color: Color(0xFF25D366)),
-                    backgroundColor: _cCard,
-                    padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF25D366),
+                side: const BorderSide(color: Color(0xFF25D366)),
+                backgroundColor: _cCard,
+                padding: const EdgeInsets.symmetric(vertical: AppTheme.md),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-            ],
+            ),
           ),
         ],
       ),
