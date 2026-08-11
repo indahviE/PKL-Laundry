@@ -251,6 +251,8 @@
     "description": "Error saat kuota order bulanan (limits.max_orders_per_month) sudah tercapai, ditampilkan di CreateOrderScreen"
   },
   "gracePeriodWarning": "Pembayaran langganan Anda tertunda. Anda masih bisa memakai fitur ini selama {daysRemaining} hari lagi sebelum dibatasi.",
+  "gracePeriodBannerTitle": "Masa Tenggang Pembayaran",
+  "upgradePlanAction": "Upgrade",
   "@gracePeriodWarning": {
     "placeholders": {
       "daysRemaining": { "type": "int" }

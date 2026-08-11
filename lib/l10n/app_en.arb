@@ -252,6 +252,7 @@
     "description": "Error saat kuota order bulanan (limits.max_orders_per_month) sudah tercapai, ditampilkan di CreateOrderScreen"
   },
   "gracePeriodWarning": "Your subscription payment is overdue. You can still use this feature for {daysRemaining} more day(s) before it's restricted.",
+  "gracePeriodBannerTitle": "Payment Grace Period", "upgradePlanAction": "Upgrade",
   "@gracePeriodWarning": {
     "placeholders": {
       "daysRemaining": { "type": "int" }
