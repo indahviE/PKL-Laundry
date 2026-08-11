@@ -44,6 +44,18 @@ class Subscription extends BaseModel {
   final String billingCycle; // 'monthly', 'yearly'
   final List<String> features;
   final SubscriptionLimits limits;
+
+  /// Kapan status ini pertama kali masuk 'past_due'. Diisi sekali saat
+  /// transisi active/trialing -> past_due (lihat
+  /// SubscriptionRepository.updateSubscriptionStatus), dan di-null-kan lagi
+  /// begitu status balik ke active/trialing (mis. pembayaran berhasil).
+  ///
+  /// Dibutuhkan karena `current_period_end` TIDAK cukup buat menghitung
+  /// "sudah berapa lama grace period berjalan" - begitu waktu melewati
+  /// current_period_end, tanggal itu tetap diam di tempat sementara waktu
+  /// terus berjalan, jadi tidak ada titik referensi "kapan grace period
+  /// dimulai" tanpa field terpisah ini.
+  final DateTime? graceStartedAt;
  
   Subscription({
     required super.id,
@@ -63,6 +75,7 @@ class Subscription extends BaseModel {
     this.billingCycle = 'monthly',
     this.features = const [],
     SubscriptionLimits? limits,
+    this.graceStartedAt,
   }) : limits = limits ?? SubscriptionLimits();
  
   factory Subscription.fromJson(Map<String, dynamic> json, String documentId) {
@@ -84,6 +97,7 @@ class Subscription extends BaseModel {
       billingCycle: json['billing_cycle'] ?? 'monthly',
       features: List<String>.from(json['features'] ?? []),
       limits: SubscriptionLimits.fromJson(json['limits']),
+      graceStartedAt: dateTimeFromSnapshotOrNull(json['grace_started_at']),
     );
   }
  
@@ -106,7 +120,39 @@ class Subscription extends BaseModel {
       'limits': limits.toJson(),
       'created_at': createdAt,
       'updated_at': updatedAt,
+      'grace_started_at': graceStartedAt,
     };
   }
+
+  /// Bikin salinan dengan beberapa field diganti - dipakai
+  /// SubscriptionService buat state turunan tanpa mutasi manual per-field.
+  Subscription copyWith({
+    String? status,
+    DateTime? currentPeriodEnd,
+    DateTime? canceledAt,
+    DateTime? graceStartedAt,
+    bool clearGraceStartedAt = false,
+  }) {
+    return Subscription(
+      id: id,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      companyId: companyId,
+      planId: planId,
+      planName: planName,
+      stripeSubscriptionId: stripeSubscriptionId,
+      stripeCustomerId: stripeCustomerId,
+      status: status ?? this.status,
+      currentPeriodStart: currentPeriodStart,
+      currentPeriodEnd: currentPeriodEnd ?? this.currentPeriodEnd,
+      trialStart: trialStart,
+      trialEnd: trialEnd,
+      canceledAt: canceledAt ?? this.canceledAt,
+      billingCycle: billingCycle,
+      features: features,
+      limits: limits,
+      graceStartedAt:
+          clearGraceStartedAt ? null : (graceStartedAt ?? this.graceStartedAt),
+    );
+  }
 }
- 

@@ -12,6 +12,8 @@ import '../../models/order.dart';
 import '../../core/services/app_feedback.dart';
 import '../../repositories/service_repository.dart';
 import '../../repositories/order_repository.dart';
+import '../../repositories/subscription_repository.dart';
+import '../../services/subscription_service.dart';
 
 /// Local design tokens matching the "NetWash Utility System" design -
 /// SAMA PERSIS dengan _DS di CreateEmployeeScreen (canvas abu kebiruan,
@@ -232,6 +234,15 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   bool _isLoadingBusinessContext = true;
   String? _businessContextError;
 
+  // FEATURE GATING (kuota, poin 7): order TIDAK PERNAH diblok status
+  // subscription (lihat SubscriptionActionType.transactional) - cuma
+  // dibatasi kuota limits.max_orders_per_month lewat
+  // SubscriptionService.canCreateOrder(). Dua nilai ini diisi sekaligus
+  // di _fetchBusinessContext() supaya cuma 1 loading state yang perlu
+  // ditunggu sebelum form order boleh disimpan.
+  SubscriptionService? _subscriptionService;
+  int? _ordersThisMonthCount;
+
   bool get _showLaundryDropdown => _laundriesList.length > 1;
 
   /// Order dijemput -> barang belum ada di tangan, jadi item pesanan
@@ -310,6 +321,12 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   /// Ambil company_id (dari companies pertama) & SEMUA cabang aktif milik
   /// company itu, dibutuhkan OrderRepository.createOrder() buat generate
   /// order_number dan buat isi dropdown cabang (kalau > 1).
+  ///
+  /// UPDATED (poin 7): sekaligus ambil subscription company ini &
+  /// jumlah order bulan ini, buat gating KUOTA
+  /// (SubscriptionService.canCreateOrder()) di _handleSaveOrder(). Order
+  /// TIDAK digating status (lihat SubscriptionActionType.transactional) -
+  /// jadi tidak ada blok/warning grace period di layar ini, cuma kuota.
   Future<void> _fetchBusinessContext() async {
     setState(() {
       _isLoadingBusinessContext = true;
@@ -342,6 +359,15 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
           .map((d) => _LaundryOption.fromFirestore(d, unnamedFallback: _t.unnamedBranchFallback))
           .toList();
 
+      // FEATURE GATING (kuota): subscription company ini + jumlah order
+      // bulan ini. Dipakai canCreateOrder() di _handleSaveOrder() - bukan
+      // checkAccess(), karena order termasuk actionType transactional
+      // (tidak pernah diblok status, cuma kuota).
+      final subscriptionRepo = SubscriptionRepository(userId: user.uid);
+      final subscription =
+          await subscriptionRepo.streamSubscriptionForCompany(companyId).first;
+      final ordersCount = await OrderRepository(userId: user.uid).countOrdersThisMonth();
+
       setState(() {
         _companyId = companyId;
         _laundriesList = laundries;
@@ -349,6 +375,8 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
         // Starter), inilah satu-satunya pilihan dan dropdown gak
         // ditampilkan sama sekali - owner gak perlu ngapa-ngapain.
         _selectedLaundryId = laundries.first.id;
+        _subscriptionService = SubscriptionService(currentSubscription: subscription);
+        _ordersThisMonthCount = ordersCount;
         _isLoadingBusinessContext = false;
       });
     } catch (e) {
@@ -552,6 +580,20 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
 
     if (_companyId == null || _selectedLaundryId == null) {
       _showErrorSnack(_businessContextError ?? _t.businessContextNotReadyError);
+      return;
+    }
+
+    // FEATURE GATING (kuota, poin 7): order TIDAK diblok status
+    // subscription (transactional action - lihat komentar di
+    // SubscriptionService), cuma dibatasi limits.max_orders_per_month.
+    // _subscriptionService null berarti data gating belum siap (mis.
+    // _fetchBusinessContext masih jalan/gagal) - dibiarkan lolos supaya
+    // tidak memblok order gara-gara gating, bukan gara-gara kuota beneran
+    // penuh.
+    final subscriptionService = _subscriptionService;
+    if (subscriptionService != null &&
+        !subscriptionService.canCreateOrder(_ordersThisMonthCount ?? 0)) {
+      _showErrorSnack(_t.orderQuotaReachedError);
       return;
     }
 

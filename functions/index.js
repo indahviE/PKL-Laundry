@@ -86,6 +86,68 @@ exports.onOrderStatusChanged = onDocumentUpdated(
 );
 
 /**
+ * FIX GAP -- sinkronisasi `grace_started_at` di subscriptions/{subId}.
+ *
+ * LATAR BELAKANG: SubscriptionRepository.updateSubscriptionStatus() di sisi
+ * Flutter SUDAH ngurus auto-isi/hapus `grace_started_at` (lihat
+ * lib/repositories/subscription_repository.dart) -- TAPI itu cuma kepanggil
+ * kalau APLIKASI FLUTTER sendiri yang mengubah status. Status "beneran"
+ * (dari pembayaran Stripe gagal/berhasil) ditulis oleh backend Vercel
+ * terpisah (`netwash-stripe-backend.vercel.app`, lihat stripe_service.dart)
+ * yang menulis LANGSUNG ke Firestore pakai Admin SDK -- SAMA SEKALI TIDAK
+ * lewat kode Dart di atas. Tanpa trigger ini, `grace_started_at` bisa gak
+ * pernah keisi di dunia nyata, dan SubscriptionService.isInGracePeriod()
+ * di app akan SELALU false (langsung dianggap expired begitu status jadi
+ * 'past_due', tanpa masa tenggang sama sekali).
+ *
+ * Trigger Firestore ini jalan di LEVEL DATABASE, jadi ngefek nulis dari
+ * SUMBER MANA PUN (webhook Vercel, Flutter, Firebase Console manual, dll)
+ * -- bukan cuma dari kode Dart. Logic-nya sengaja dibikin sama persis
+ * dengan SubscriptionRepository.updateSubscriptionStatus() di sisi Dart,
+ * supaya dua-duanya konsisten:
+ * - transisi ke 'past_due' -> set grace_started_at = sekarang, HANYA kalau
+ *   belum ada nilai (idempotent terhadap webhook retry/duplicate event).
+ * - transisi ke 'active'/'trialing' -> hapus lagi grace_started_at.
+ * - status lain, atau status tidak berubah sama sekali -> tidak ngapa-ngapain.
+ *
+ * AMAN dari infinite loop: update yang dilakukan function ini sendiri akan
+ * memicu trigger lagi, tapi saat itu `before.status === after.status`
+ * (sama-sama 'past_due' atau sama-sama 'active'), jadi langsung `return`
+ * di baris pertama sebelum nulis apa pun lagi.
+ */
+exports.onSubscriptionStatusChanged = onDocumentUpdated(
+    "users/{userId}/subscriptions/{subscriptionId}",
+    async (event) => {
+      const before = event.data.before.data();
+      const after = event.data.after.data();
+      if (before.status === after.status) return;
+
+      if (after.status === "past_due") {
+        if (after.grace_started_at) return; // sudah ada, jangan digeser
+        await event.data.after.ref.update({
+          grace_started_at: admin.firestore.Timestamp.now(),
+        });
+        logger.info(
+            `grace_started_at diset untuk subscription ` +
+            `${event.params.subscriptionId} (user ${event.params.userId})`,
+        );
+        return;
+      }
+
+      if (after.status === "active" || after.status === "trialing") {
+        if (!after.grace_started_at) return; // sudah kosong, gak perlu nulis
+        await event.data.after.ref.update({
+          grace_started_at: admin.firestore.FieldValue.delete(),
+        });
+        logger.info(
+            `grace_started_at dihapus untuk subscription ` +
+            `${event.params.subscriptionId} (user ${event.params.userId})`,
+        );
+      }
+    },
+);
+
+/**
  * CONTOH #2 -- notifikasi broadcast tertarget ("Promo dan diskon").
  *
  * Callable function: dipanggil manual dari admin panel/dashboard tiap

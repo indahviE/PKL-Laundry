@@ -11,6 +11,24 @@ import '../../l10n/app_localizations.dart';
 import 'package:latlong2/latlong.dart';
 import 'location_picker_screen.dart'; // sesuaikan path
 import '../../repositories/subscription_repository.dart';
+import '../../services/subscription_service.dart';
+
+/// Hasil evaluasi dua lapis gate saat menambah cabang baru: status
+/// subscription (blockedByStatus) dan kuota (quotaAvailable). Kalau
+/// blockedByStatus true, quotaAvailable tidak relevan (sudah gagal lebih
+/// awal dari status, jadi kuota tidak perlu dicek) - sama seperti
+/// _EmployeeGateResult di CreateEmployeeScreen.
+class _LaundryGateResult {
+  final bool blockedByStatus;
+  final bool quotaAvailable;
+  final int? graceDaysRemaining;
+
+  const _LaundryGateResult({
+    required this.blockedByStatus,
+    required this.quotaAvailable,
+    this.graceDaysRemaining,
+  });
+}
 
 /// Local design tokens matching the new "NetWash Utility System" design
 /// (samain persis dengan CreateEmployeeScreen: canvas abu kebiruan, kartu
@@ -321,41 +339,42 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
     }
   }
 
-  /// FEATURE GATING: Validasi sisa kuota cabang berdasarkan plan aktif
-  /// Persis mengikuti SubscriptionService.canAddLaundry (Blueprint §3.6.3):
-  /// baca `limits.max_laundries` dari dokumen subscription, -1 = unlimited.
-  /// HANYA dipanggil di mode CREATE — edit tidak menambah jumlah cabang.
+  /// FEATURE GATING: dua lapis pengecekan sebelum menambah cabang baru
+  /// (menambah cabang = aksi administrative). HANYA dipanggil di mode
+  /// CREATE — edit tidak menambah jumlah cabang.
   ///
-  /// FIX: sebelumnya query manual `.where('status','active').limit(1)`
-  /// tanpa sorting bisa mengambil dokumen subscription yang SALAH kalau
-  /// ada lebih dari satu dokumen berstatus 'active' untuk company yang
-  /// sama (mis. sisa dokumen lama yang belum dinonaktifkan saat upgrade
-  /// paket - lihat kasus yang sama yang sudah diperbaiki di
-  /// CreateEmployeeScreen._checkEmployeeLimit). Sekarang pakai
-  /// SubscriptionRepository.streamActiveSubscription(), yang sudah
-  /// mengurutkan berdasarkan createdAt descending dan selalu memilih
-  /// dokumen aktif/trialing yang PALING BARU - jadi konsisten dengan
-  /// pola yang dipakai di layar employee.
-  Future<bool> _checkLaundryLimit(String userId, String companyId) async {
+  /// Lapis 1 - status: SubscriptionService.checkAccess(administrative)
+  /// menentukan boleh/tidak berdasarkan status subscription (aktif, masih
+  /// grace period, atau sudah benar-benar expired).
+  /// Lapis 2 - kuota: SubscriptionService.canAddLaundry() membandingkan
+  /// jumlah cabang saat ini dengan limits.max_laundries plan yang berlaku.
+  ///
+  /// FIX: sebelumnya kalau tidak ada dokumen subscription sama sekali,
+  /// fallback ke limit 1 di-hardcode langsung di screen ini. Sekarang
+  /// didelegasikan ke SubscriptionService (currentSubscription: null tetap
+  /// fallback ke limit Starter, tapi didefinisikan SEKALI di service, bukan
+  /// diduplikasi di tiap screen — sama seperti CreateEmployeeScreen).
+  ///
+  /// Pakai streamSubscriptionForCompany() (BUKAN streamActiveSubscription())
+  /// karena guard di sini butuh tahu status apa pun dokumennya (termasuk
+  /// past_due), bukan cuma "null vs aktif".
+  Future<_LaundryGateResult> _evaluateLaundryGate(String userId, String companyId) async {
     final subscriptionRepo = SubscriptionRepository(userId: userId);
-    final activeSubscription =
-        await subscriptionRepo.streamActiveSubscription(companyId).first;
+    final subscription =
+        await subscriptionRepo.streamSubscriptionForCompany(companyId).first;
+    final service = SubscriptionService(currentSubscription: subscription);
 
-    if (activeSubscription == null) {
-      // Jika tidak ada data langganan, default kembali ke batasan Starter (maks 1)
-      final currentCount = await _getCurrentLaundryCount(userId);
-      return currentCount < 1;
+    final access = service.checkAccess(SubscriptionActionType.administrative);
+    if (!access.allowed) {
+      return const _LaundryGateResult(blockedByStatus: true, quotaAvailable: false);
     }
 
-    // Sesuai Blueprint §3.6.3 (SubscriptionService.canAddLaundry):
-    // batas kuota dibaca langsung dari `limits.max_laundries` pada
-    // dokumen subscription, BUKAN hardcode per plan_id.
-    // Nilai -1 pada limits berarti unlimited (khusus paket Enterprise).
-    final int maxLaundries = activeSubscription.limits.maxLaundries;
-    if (maxLaundries == -1) return true; // Unlimited
-
     final currentCount = await _getCurrentLaundryCount(userId);
-    return currentCount < maxLaundries;
+    return _LaundryGateResult(
+      blockedByStatus: false,
+      quotaAvailable: service.canAddLaundry(currentCount),
+      graceDaysRemaining: access.isInGracePeriod ? access.graceDaysRemaining : null,
+    );
   }
 
   /// Helper hitung total dokumen cabang dengan agregasi hemat cost
@@ -424,13 +443,18 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
       // Pengecekan kuota (Blueprint §3.6.3) hanya relevan saat menambah
       // cabang baru. Saat edit, jumlah cabang tidak bertambah jadi dilewati.
       if (!isEditMode) {
-        final isQuotaAvailable = await _checkLaundryLimit(currentUserId, _selectedCompanyId!);
-        if (!isQuotaAvailable) {
+        final gate = await _evaluateLaundryGate(currentUserId, _selectedCompanyId!);
+        if (gate.blockedByStatus || !gate.quotaAvailable) {
           if (mounted) {
-            _showQuotaReachedDialog();
+            _showQuotaReachedDialog(blockedByStatus: gate.blockedByStatus);
             setState(() => _isLoading = false);
           }
           return;
+        }
+        // Boleh lanjut, tapi kalau lagi dalam grace period tetap kasih tahu
+        // sisa harinya - tidak menghalangi, cuma peringatan.
+        if (gate.graceDaysRemaining != null && mounted) {
+          AppSnackbar.info(context, AppLocalizations.of(context)!.gracePeriodWarning(gate.graceDaysRemaining!));
         }
       }
 
@@ -595,7 +619,11 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
   /// Dialog "kuota cabang habis". Direstyle mengikuti AppTheme (Poppins,
   /// radius, warna primary) supaya konsisten dengan tampilan card & tombol
   /// di layar lain, bukan AlertDialog default yang polos.
-  void _showQuotaReachedDialog() {
+  /// [blockedByStatus] pilih pasangan title/content: quota habis (default,
+  /// dipakai juga oleh kode lama yang manggil tanpa argumen) vs subscription
+  /// benar-benar expired (grace period sudah lewat). Tombol aksinya sama
+  /// persis di kedua kasus - sama-sama mengarah ke halaman upgrade.
+  void _showQuotaReachedDialog({bool blockedByStatus = false}) {
     showDialog(
       context: context,
       builder: (ctx) {
@@ -620,7 +648,7 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
                 ),
                 const SizedBox(height: AppTheme.lg),
                 Text(
-                  dialogL10n.quotaReachedTitle,
+                  blockedByStatus ? dialogL10n.subscriptionExpiredTitle : dialogL10n.quotaReachedTitle,
                   style: GoogleFonts.beVietnamPro(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -629,7 +657,7 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
                 ),
                 const SizedBox(height: AppTheme.sm),
                 Text(
-                  dialogL10n.quotaReachedContent,
+                  blockedByStatus ? dialogL10n.subscriptionExpiredWarning : dialogL10n.quotaReachedContent,
                   style: GoogleFonts.beVietnamPro(
                     fontSize: 13,
                     color: _DS.onSurfaceVariant,
