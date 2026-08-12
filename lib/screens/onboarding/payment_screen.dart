@@ -465,6 +465,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           disabledBackgroundColor: AppTheme.primaryColor.withOpacity(0.5),
           foregroundColor: Colors.white,
           elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           ),
@@ -482,11 +483,16 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    'Membuka Halaman Pembayaran...',
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      'Membuka Halaman Pembayaran...',
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -494,11 +500,16 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'Lanjutkan ke Pembayaran',
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      'Lanjutkan ke Pembayaran',
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
