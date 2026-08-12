@@ -1029,54 +1029,87 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
           const SizedBox(height: AppTheme.md),
 
           _fieldLabel(l10n.mapLocationLabel),
-          InkWell(
-            borderRadius: BorderRadius.circular(10),
-            onTap: () async {
-              LatLng? initial;
-              final lat = double.tryParse(_latController.text.trim());
-              final lng = double.tryParse(_lngController.text.trim());
-              if (lat != null && lng != null) initial = LatLng(lat, lng);
-              final result = await Navigator.push<LatLng>(
-                context,
-                MaterialPageRoute(builder: (_) => LocationPickerScreen(initialLocation: initial)),
-              );
-              if (result != null) {
-                setState(() {
-                  _latController.text = result.latitude.toString();
-                  _lngController.text = result.longitude.toString();
-                });
+          FormField<String>(
+            validator: (_) {
+              if (_latController.text.trim().isEmpty || _lngController.text.trim().isEmpty) {
+                return 'Tentukan lokasi cabang di peta terlebih dahulu';
               }
+              return null;
             },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              decoration: BoxDecoration(
-                color: _kFieldFill,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: _DS.outlineVariant),
-              ),
-              child: Row(
+            builder: (field) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.map_outlined, size: 18, color: _DS.primary),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      (_latController.text.isNotEmpty && _lngController.text.isNotEmpty)
-                          ? '${_latController.text}, ${_lngController.text}'
-                          : 'Ketuk untuk pilih lokasi di peta',
-                      style: GoogleFonts.beVietnamPro(
-                        fontSize: 12.5,
-                        color: (_latController.text.isNotEmpty) ? _DS.onSurface : _DS.outline,
+                  InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () async {
+                      LatLng? initial;
+                      final lat = double.tryParse(_latController.text.trim());
+                      final lng = double.tryParse(_lngController.text.trim());
+                      if (lat != null && lng != null) initial = LatLng(lat, lng);
+                      final result = await Navigator.push<LocationPickResult>(
+                        context,
+                        MaterialPageRoute(builder: (_) => LocationPickerScreen(initialLocation: initial)),
+                      );
+                      if (result != null) {
+                        setState(() {
+                          _latController.text = result.point.latitude.toString();
+                          _lngController.text = result.point.longitude.toString();
+                          if (result.address != null && result.address!.trim().isNotEmpty) {
+                            _addressController.text = result.address!;
+                          }
+                          if (result.city != null && result.city!.trim().isNotEmpty) {
+                            _cityController.text = result.city!;
+                          }
+                          if (result.province != null && result.province!.trim().isNotEmpty) {
+                            _provinceController.text = result.province!;
+                          }
+                        });
+                        field.didChange(_latController.text);
+                        field.validate();
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: _kFieldFill,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: field.hasError ? _DS.error : _DS.outlineVariant),
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        children: [
+                          Icon(Icons.map_outlined, size: 18, color: _DS.primary),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              (_latController.text.isNotEmpty && _lngController.text.isNotEmpty)
+                                  ? '${_latController.text}, ${_lngController.text}'
+                                  : 'Ketuk untuk pilih lokasi di peta',
+                              style: GoogleFonts.beVietnamPro(
+                                fontSize: 12.5,
+                                color: (_latController.text.isNotEmpty) ? _DS.onSurface : _DS.outline,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Icon(Icons.chevron_right, size: 18, color: _DS.outline),
+                        ],
+                      ),
                     ),
                   ),
-                  Icon(Icons.chevron_right, size: 18, color: _DS.outline),
+                  if (field.hasError)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6, left: 4),
+                      child: Text(
+                        field.errorText!,
+                        style: GoogleFonts.beVietnamPro(fontSize: 11, color: _DS.error),
+                      ),
+                    ),
                 ],
-              ),
-            ),
-          ), //k
-          //kl
+              );
+            },
+          ),
         ],
       ),
     );
