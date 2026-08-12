@@ -32,6 +32,9 @@ import '../../screens/settings/about_screen.dart';
 
 // --- Repositories ---
 import '../../repositories/auth_repository.dart';
+import '../../repositories/subscription_repository.dart';
+import '../../models/subscription.dart';
+import '../../services/subscription_service.dart';
 
 // --- Employees ---
 import '../../screens/employees/create_employee_screen.dart';
@@ -146,7 +149,50 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       final paymentActive = await authRepo.hasActiveSubscription();
       if (!paymentActive) {
-        return location == '/payment' ? null : '/payment';
+        // FIX: hasActiveSubscription() cuma true kalau status == 'active'
+        // (lihat auth_repository.dart), jadi subscription yang lagi
+        // 'past_due' TAPI masih dalam masa tenggang (gracePeriodDays,
+        // lihat SubscriptionService) ikut kena kondisi ini -- padahal
+        // guard fitur lain (create_employee_screen dkk, lewat
+        // SubscriptionService.checkAccess) masih mengizinkan mereka
+        // pakai app selama grace period. Sebelum fix ini, begitu status
+        // pindah ke past_due, user langsung ditendang ke /payment dan
+        // (karena redirect ini tidak bisa bawa `extra`) jatuh ke
+        // ChoosePlanScreen(isUpgrade: false) -- tampilan onboarding
+        // "Pilih Paket yang Sesuai" dari nol, padahal mereka sebenarnya
+        // cuma perlu PERPANJANG paket yang sudah pernah mereka punya.
+        final companyId = await authRepo.getPrimaryCompanyId();
+        Subscription? existingSub;
+        if (companyId != null) {
+          final subRepo = ref.read(subscriptionRepositoryProvider);
+          existingSub = await subRepo.streamSubscriptionForCompany(companyId).first;
+        }
+
+        final subscriptionService =
+            SubscriptionService(currentSubscription: existingSub);
+
+        if (subscriptionService.isInGracePeriod) {
+          // Masih dalam masa tenggang -> jangan blokir/redirect sama
+          // sekali. Banner + reminder popup di dashboard sudah cukup
+          // buat ngingetin, user tetap boleh pakai app seperti biasa.
+        } else if (existingSub != null) {
+          // Sudah PERNAH punya subscription (bukan onboarding pertama
+          // kali) tapi sekarang expired & lewat grace period -> arahkan
+          // ke /choose-plan dengan query ?upgrade=true, supaya
+          // ChoosePlanScreen tau ini konteks PERPANJANG (badge "Perlu
+          // Diperpanjang", bandingin plan+periode aktif, dst -- bukan
+          // onboarding kosong). Pakai query param (bukan `extra`) karena
+          // redirect callback GoRouter cuma bisa balikin String lokasi,
+          // dan query param tetap kebawa walau lewat reload/redirect
+          // (beda dengan `extra` yang hilang di kasus ini).
+          if (location == '/choose-plan') return null;
+          return '/choose-plan?upgrade=true';
+        } else {
+          // Belum pernah subscribe sama sekali -> flow onboarding
+          // normal (planChosen sudah true tapi belum pernah bayar).
+          if (location == '/payment') return null;
+          return '/payment';
+        }
       }
 
       // Kecualikan flow upgrade: /choose-plan dan /payment memang
@@ -206,13 +252,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/choose-plan',
         name: 'choose-plan',
-        // Baca flag isUpgrade dari extra (dikirim SubscriptionScreen saat
-        // user yang sudah aktif mau ganti paket). Kalau diakses tanpa
-        // extra (mis. langsung dari flow onboarding lewat redirect),
-        // isUpgrade default false.
+        // Baca flag isUpgrade dari DUA sumber:
+        // 1. extra (dikirim SubscriptionScreen lewat context.push saat
+        //    user aktif mau ganti paket dari dalam app)
+        // 2. query param ?upgrade=true (dikirim redirect() di atas saat
+        //    subscription lama expired & lewat grace period -- redirect
+        //    callback GoRouter cuma bisa balikin String, jadi tidak bisa
+        //    lewat `extra`)
+        // Kalau dua-duanya tidak ada (mis. onboarding pertama kali lewat
+        // redirect planChosen == false), isUpgrade default false.
         builder: (context, state) {
           final extra = state.extra;
-          final isUpgrade = extra is Map ? (extra['isUpgrade'] as bool? ?? false) : false;
+          final isUpgrade = (extra is Map && extra['isUpgrade'] == true) ||
+              state.uri.queryParameters['upgrade'] == 'true';
           return ChoosePlanScreen(isUpgrade: isUpgrade);
         },
       ),
