@@ -282,7 +282,6 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
       }
 
       if (!mounted) return;
-      AppFeedback.playSound(ref, AppSound.success);
       context.push(
         '/payment',
         extra: {
