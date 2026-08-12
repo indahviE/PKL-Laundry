@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/themes/app_theme.dart';
 import '../../repositories/auth_repository.dart';
+import '../../repositories/subscription_repository.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/services/app_feedback.dart';
 
@@ -75,12 +76,24 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   bool _isYearly = false;
   String? _selectedPlan;
 
-  // Nama paket yang SEDANG aktif dipakai user (cuma relevan pas
-  // widget.isUpgrade == true). Dipakai buat nge-disable card paket yang
-  // sama supaya user nggak bisa "upgrade" ke paket yang sama persis
-  // dengan yang udah dia pakai sekarang.
+  // Nama paket & periode billing yang SEDANG aktif dipakai user (cuma
+  // relevan pas widget.isUpgrade == true). Dipakai buat nge-disable
+  // card paket yang BENAR-BENAR sama (nama DAN periode) dengan yang
+  // udah dia pakai sekarang -- FIX: sebelumnya cuma bandingin nama
+  // paket, jadi kalau lagi di paket Tahunan terus toggle lihat harga
+  // Bulanan, kartu Bulanan-nya ikut ke-mark "Paket Saat Ini" padahal
+  // periode billing-nya beda.
   String? _currentPlanName;
+  String? _currentBillingCycle; // 'monthly' / 'yearly', dari dokumen subscription Stripe
   bool _loadingCurrentPlan = false;
+
+  // true kalau subscription yang lagi aktif statusnya 'past_due' (udah
+  // lewat currentPeriodEnd) ATAU currentPeriodEnd-nya <= H-3. Dipakai
+  // supaya user tetap bisa "Perpanjang" paket yang sama persis (nama +
+  // periode) walau isCurrentPlan true -- sebelumnya tombol paket aktif
+  // SELALU disabled tanpa peduli sisa waktunya, jadi nggak ada cara
+  // renew paket yang sama dari halaman ini.
+  bool _currentSubNeedsRenewal = false;
 
   // Jumlah cabang & karyawan AKTUAL milik user (cuma relevan pas
   // widget.isUpgrade == true). Dipakai buat memblokir user pindah ke
@@ -107,11 +120,48 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
     setState(() => _loadingCurrentPlan = true);
     try {
       final authRepo = ref.read(authRepositoryProvider);
+
+      // Field users/{uid}.subscription.plan cuma nyimpen NAMA paket yang
+      // TERAKHIR dipilih (bisa saja belum tentu ke-charge/aktif kalau
+      // pembayaran gagal), jadi tetap dipakai buat fallback nama. Tapi
+      // buat periode billing & status aktif/expired yang AKURAT, ambil
+      // langsung dari dokumen subscription (ditulis Stripe webhook) lewat
+      // SubscriptionRepository -- sama seperti yang dipakai dashboard
+      // buat banner grace period.
       final profile = await authRepo.getUserProfile();
       final subscriptionField = profile?['subscription'] as Map<String, dynamic>?;
+      String? planName = subscriptionField?['plan'] as String?;
+      String? billingCycle;
+      bool needsRenewal = false;
+
+      final uid = authRepo.currentUser?.uid;
+      final companyId = await authRepo.getPrimaryCompanyId();
+      if (uid != null && companyId != null) {
+        final subscriptionRepo = SubscriptionRepository(userId: uid);
+        final subscription =
+            await subscriptionRepo.streamSubscriptionForCompany(companyId).first;
+
+        if (subscription != null) {
+          // Dokumen subscription yang beneran aktif/pernah aktif lebih
+          // bisa dipercaya soal nama & periode paket dibanding field
+          // users/{uid}.subscription (yang cuma "niat pilih", belum
+          // tentu ke-charge).
+          planName = subscription.planName.isNotEmpty
+              ? subscription.planName
+              : planName;
+          billingCycle = subscription.billingCycle;
+
+          final now = DateTime.now();
+          final daysLeft = subscription.currentPeriodEnd.difference(now).inDays;
+          needsRenewal = subscription.status == 'past_due' || daysLeft <= 3;
+        }
+      }
+
       if (mounted) {
         setState(() {
-          _currentPlanName = subscriptionField?['plan'] as String?;
+          _currentPlanName = planName;
+          _currentBillingCycle = billingCycle;
+          _currentSubNeedsRenewal = needsRenewal;
         });
       }
     } finally {
@@ -158,6 +208,26 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
     }
     return 'Data Anda saat ini punya ${parts.join(' & ')}. '
         'Kurangi datanya dulu sebelum pindah ke paket ini.';
+  }
+
+  /// true kalau [plan] BENAR-BENAR persis paket yang lagi aktif dipakai
+  /// user SEKARANG -- nama paket DAN periode billing-nya sama-sama cocok
+  /// dengan _isYearly (posisi toggle Bulanan/Tahunan yang lagi dilihat).
+  ///
+  /// FIX: sebelumnya cuma bandingin nama paket (`_currentPlanName ==
+  /// plan.name`), jadi kalau user aktif di paket Tahunan lalu toggle ke
+  /// tampilan Bulanan, kartu Bulanan paket yang sama ikut ke-mark
+  /// "Paket Saat Ini" & ke-disable -- padahal itu bukan paket yang lagi
+  /// dia pakai, harusnya tetap bisa dipilih (ganti periode).
+  bool _isExactCurrentPlan(PricingPlan plan) {
+    if (!widget.isUpgrade) return false;
+    if (_currentPlanName != plan.name) return false;
+    // Periode belum diketahui (masih loading / belum pernah ada dokumen
+    // subscription) -> fallback ke match nama saja, lebih aman daripada
+    // tidak menandai current plan sama sekali.
+    if (_currentBillingCycle == null) return true;
+    final currentIsYearly = _currentBillingCycle == 'yearly';
+    return currentIsYearly == _isYearly;
   }
 
   /// Initialize pricing plans.
@@ -560,7 +630,8 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
               isSelected: _selectedPlan == _plans[index].name,
               isLoading: _isNavigating && _selectedPlan == _plans[index].name,
               isUpgrade: widget.isUpgrade,
-              isCurrentPlan: widget.isUpgrade && _currentPlanName == _plans[index].name,
+              isCurrentPlan: _isExactCurrentPlan(_plans[index]),
+              needsRenewal: _currentSubNeedsRenewal,
               blockReason: _planBlockReason(_plans[index]),
               formatCurrency: _formatCurrency,
               onSelect: () => _handleSelectPlan(_plans[index]),
@@ -588,7 +659,8 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
                 isLoading:
                     _isNavigating && _selectedPlan == _plans[index].name,
                 isUpgrade: widget.isUpgrade,
-                isCurrentPlan: widget.isUpgrade && _currentPlanName == _plans[index].name,
+                isCurrentPlan: _isExactCurrentPlan(_plans[index]),
+                needsRenewal: _currentSubNeedsRenewal,
                 blockReason: _planBlockReason(_plans[index]),
                 formatCurrency: _formatCurrency,
                 onSelect: () => _handleSelectPlan(_plans[index]),
@@ -651,6 +723,13 @@ class _PricingCard extends StatelessWidget {
   final bool isLoading;
   final bool isUpgrade;
   final bool isCurrentPlan;
+  // true kalau paket yang lagi aktif (isCurrentPlan) statusnya past_due
+  // atau mendekati currentPeriodEnd (<= H-3). Kalau true DAN
+  // isCurrentPlan true, tombol tetap AKTIF berlabel "Perpanjang" alih-alih
+  // permanen ter-disable -- sebelumnya paket aktif selalu di-disable tanpa
+  // peduli sisa waktunya, jadi nggak ada cara renew paket yang sama persis
+  // dari halaman ini.
+  final bool needsRenewal;
   final String? blockReason;
   final String Function(double) formatCurrency;
   final VoidCallback onSelect;
@@ -663,6 +742,7 @@ class _PricingCard extends StatelessWidget {
     this.isLoading = false,
     this.isUpgrade = false,
     this.isCurrentPlan = false,
+    this.needsRenewal = false,
     this.blockReason,
     required this.formatCurrency,
     required this.onSelect,
@@ -671,6 +751,10 @@ class _PricingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isBlocked = blockReason != null;
+    // Paket aktif TAPI sedang mau/sudah expired -> masih bisa dipilih
+    // lagi buat renew, walau isCurrentPlan true.
+    final isRenewable = isCurrentPlan && needsRenewal;
+    final isDisabledCurrentPlan = isCurrentPlan && !needsRenewal;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -728,15 +812,16 @@ class _PricingCard extends StatelessWidget {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.15),
+                    color: (isRenewable ? Colors.orange : Colors.grey)
+                        .withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    'Paket Saat Ini',
+                    isRenewable ? 'Perlu Diperpanjang' : 'Paket Saat Ini',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: Colors.grey[700],
+                      color: isRenewable ? Colors.orange[800] : Colors.grey[700],
                     ),
                   ),
                 )
@@ -848,15 +933,20 @@ class _PricingCard extends StatelessWidget {
             width: double.infinity,
             height: 46,
             child: ElevatedButton(
-              onPressed:
-                  (!isLoading && !isCurrentPlan && !isBlocked) ? onSelect : null,
+              onPressed: (!isLoading && !isDisabledCurrentPlan && !isBlocked)
+                  ? onSelect
+                  : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: isCurrentPlan
+                backgroundColor: isDisabledCurrentPlan
                     ? AppTheme.borderColor
-                    : (isSelected ? plan.color : AppTheme.backgroundColor),
-                foregroundColor: isCurrentPlan
+                    : (isSelected
+                        ? plan.color
+                        : (isRenewable ? Colors.orange : AppTheme.backgroundColor)),
+                foregroundColor: isDisabledCurrentPlan
                     ? AppTheme.textSecondary
-                    : (isSelected ? Colors.white : AppTheme.textPrimary),
+                    : (isSelected
+                        ? Colors.white
+                        : (isRenewable ? Colors.white : AppTheme.textPrimary)),
                 disabledBackgroundColor: AppTheme.borderColor,
                 disabledForegroundColor: AppTheme.textSecondary,
                 elevation: 0,
@@ -876,15 +966,17 @@ class _PricingCard extends StatelessWidget {
                       ),
                     )
                   : Text(
-                      isCurrentPlan
+                      isDisabledCurrentPlan
                           ? 'Paket Saat Ini'
                           : (isBlocked
                               ? 'Kurangi Data Dulu'
                               : (isSelected
                                   ? 'Paket Dipilih'
-                                  : (isUpgrade
-                                      ? 'Upgrade ke Paket Ini'
-                                      : 'Pilih Paket'))),
+                                  : (isRenewable
+                                      ? 'Perpanjang Paket Ini'
+                                      : (isUpgrade
+                                          ? 'Upgrade ke Paket Ini'
+                                          : 'Pilih Paket')))),
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,

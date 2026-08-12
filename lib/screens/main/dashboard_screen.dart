@@ -324,31 +324,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_reminderCheckedForSubId == subscription.id) return;
     _reminderCheckedForSubId = subscription.id;
 
-    SubscriptionReminderService.checkDue(subscription).then((daysLeft) {
-      if (daysLeft == null || !mounted) return;
+    SubscriptionReminderService.checkDue(subscription).then((due) {
+      if (due == null || !mounted) return;
       // Ditunda ke akhir frame ini -- kita sedang di tengah build() lewat
       // StreamBuilder, jadi tidak aman manggil showDialog() secara
       // langsung di sini.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _showRenewalReminderDialog(daysLeft);
+        if (mounted) _showRenewalReminderDialog(due);
       });
     });
   }
 
-  void _showRenewalReminderDialog(int daysLeft) {
+  void _showRenewalReminderDialog(SubscriptionReminderDue due) {
     final t = AppLocalizations.of(context)!;
+    // Overdue (past_due, lewat currentPeriodEnd) pakai teks "expired"
+    // yang sudah ada (sama dengan banner merah), supaya jelas beda dari
+    // reminder H-3/H-1 yang masih "akan berakhir". Warna icon juga
+    // dibedain (merah utk overdue, oranye utk H-3/H-1) biar konsisten
+    // sama _buildSubscriptionBanner.
+    final title = due.isOverdue
+        ? t.subscriptionExpiredTitle
+        : t.subscriptionRenewalReminderTitle;
+    final message = due.isOverdue
+        ? t.subscriptionExpiredWarning
+        : t.subscriptionRenewalReminderMessage(due.days);
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        icon: const Icon(Icons.event_busy_rounded, color: subscriptionGraceColor, size: 32),
+        icon: Icon(
+          Icons.event_busy_rounded,
+          color: due.isOverdue ? subscriptionErrorColor : subscriptionGraceColor,
+          size: 32,
+        ),
         title: Text(
-          t.subscriptionRenewalReminderTitle,
+          title,
           textAlign: TextAlign.center,
           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
         content: Text(
-          t.subscriptionRenewalReminderMessage(daysLeft),
+          message,
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 13.5, color: textSecondary),
         ),
