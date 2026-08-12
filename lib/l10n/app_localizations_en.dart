@@ -462,6 +462,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get upgradePlanAction => 'Upgrade';
 
   @override
+  String get subscriptionRenewalReminderTitle => 'Subscription Ending Soon';
+
+  @override
+  String subscriptionRenewalReminderMessage(int daysLeft) {
+    return 'Your subscription will end in $daysLeft day(s). Renew now to avoid service interruption.';
+  }
+
+  @override
+  String get renewNowAction => 'Renew';
+
+  @override
+  String get remindLaterAction => 'Remind Later';
+
+  @override
   String quotaLimitReached(String label) {
     return 'The Starter plan quota limit for $label has been reached! Please upgrade.';
   }

@@ -379,8 +379,11 @@ const RENEWAL_REMINDER_DAYS_BEFORE = [3, 1];
  *   notifikasi yang mau dikirim.
  * @return {Promise<boolean>} true kalau notif jadi terkirim.
  */
-async function _sendSubscriptionReminderNotif(subscriptionSnap, {title, body, extraData}) {
-  const userRef = subscriptionSnap.ref.parent.parent; // users/{userId}
+async function _sendSubscriptionReminderNotif(
+    subscriptionSnap,
+    {title, body, extraData},
+) {
+    const userRef = subscriptionSnap.ref.parent.parent; // users/{userId}
   if (!userRef) return false;
 
   const userSnap = await userRef.get();
@@ -513,4 +516,4 @@ exports.onSupportMessageCreated = onDocumentCreated(
         },
       });
     },
-);
+); 

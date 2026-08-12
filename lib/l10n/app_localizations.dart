@@ -926,6 +926,30 @@ abstract class AppLocalizations {
   /// **'Upgrade'**
   String get upgradePlanAction;
 
+  /// No description provided for @subscriptionRenewalReminderTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Langganan Akan Berakhir'**
+  String get subscriptionRenewalReminderTitle;
+
+  /// No description provided for @subscriptionRenewalReminderMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'Langganan Anda akan berakhir dalam {daysLeft} hari lagi. Perbarui sekarang supaya layanan tidak terganggu.'**
+  String subscriptionRenewalReminderMessage(int daysLeft);
+
+  /// No description provided for @renewNowAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Perbarui'**
+  String get renewNowAction;
+
+  /// No description provided for @remindLaterAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Nanti Saja'**
+  String get remindLaterAction;
+
   /// No description provided for @quotaLimitReached.
   ///
   /// In id, this message translates to:

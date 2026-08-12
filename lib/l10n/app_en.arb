@@ -253,6 +253,15 @@
   },
   "gracePeriodWarning": "Your subscription payment is overdue. You can still use this feature for {daysRemaining} more day(s) before it's restricted.",
   "gracePeriodBannerTitle": "Payment Grace Period", "upgradePlanAction": "Upgrade",
+  "subscriptionRenewalReminderTitle": "Subscription Ending Soon",
+  "subscriptionRenewalReminderMessage": "Your subscription will end in {daysLeft} day(s). Renew now to avoid service interruption.",
+  "@subscriptionRenewalReminderMessage": {
+    "placeholders": {
+      "daysLeft": { "type": "int" }
+    }
+  },
+  "renewNowAction": "Renew",
+  "remindLaterAction": "Remind Later",
   "@gracePeriodWarning": {
     "placeholders": {
       "daysRemaining": { "type": "int" }

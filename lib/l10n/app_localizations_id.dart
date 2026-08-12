@@ -461,6 +461,20 @@ class AppLocalizationsId extends AppLocalizations {
   String get upgradePlanAction => 'Upgrade';
 
   @override
+  String get subscriptionRenewalReminderTitle => 'Langganan Akan Berakhir';
+
+  @override
+  String subscriptionRenewalReminderMessage(int daysLeft) {
+    return 'Langganan Anda akan berakhir dalam $daysLeft hari lagi. Perbarui sekarang supaya layanan tidak terganggu.';
+  }
+
+  @override
+  String get renewNowAction => 'Perbarui';
+
+  @override
+  String get remindLaterAction => 'Nanti Saja';
+
+  @override
   String quotaLimitReached(String label) {
     return 'Batas kuota paket Starter untuk $label telah tercapai! Silakan upgrade.';
   }

@@ -253,6 +253,15 @@
   "gracePeriodWarning": "Pembayaran langganan Anda tertunda. Anda masih bisa memakai fitur ini selama {daysRemaining} hari lagi sebelum dibatasi.",
   "gracePeriodBannerTitle": "Masa Tenggang Pembayaran",
   "upgradePlanAction": "Upgrade",
+  "subscriptionRenewalReminderTitle": "Langganan Akan Berakhir",
+  "subscriptionRenewalReminderMessage": "Langganan Anda akan berakhir dalam {daysLeft} hari lagi. Perbarui sekarang supaya layanan tidak terganggu.",
+  "@subscriptionRenewalReminderMessage": {
+    "placeholders": {
+      "daysLeft": { "type": "int" }
+    }
+  },
+  "renewNowAction": "Perbarui",
+  "remindLaterAction": "Nanti Saja",
   "@gracePeriodWarning": {
     "placeholders": {
       "daysRemaining": { "type": "int" }

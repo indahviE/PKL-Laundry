@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../widgets/common/bottom_navigation.dart';
 import '../../services/fcm_service.dart';
 
@@ -28,6 +32,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   DateTime? _lastBackPress;
+  StreamSubscription<RemoteMessage>? _foregroundMessageSub;
 
   @override
   void initState() {
@@ -36,6 +41,46 @@ class _MainScreenState extends State<MainScreen> {
     // (lihat redirect di routes.dart), jadi titik ini aman buat
     // registrasi FCM token pertama kali.
     FcmService.registerToken();
+
+    // FIX GAP -- sebelumnya TIDAK ADA satu pun listener untuk
+    // FirebaseMessaging.onMessage di seluruh codebase. Di web (dan
+    // Android/iOS saat app lagi foreground), browser/OS TIDAK otomatis
+    // menampilkan system notification untuk push yang masuk selagi app
+    // dibuka/fokus -- itu cuma jalan buat onBackgroundMessage di
+    // web/firebase-messaging-sw.js (tab di-minimize/pindah tab lain).
+    // Tanpa listener ini, notifikasi (termasuk reminder H-3/H-1
+    // subscription dari sendSubscriptionRenewalReminders) DITERIMA diam-diam
+    // oleh Flutter tapi TIDAK PERNAH kelihatan user kalau dia lagi
+    // mantengin app-nya -- persis skenario testing manual di dashboard.
+    _foregroundMessageSub =
+        FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+  }
+
+  /// Tampilkan notifikasi yang masuk sewaktu app lagi foreground sebagai
+  /// in-app toast (AppSnackbar), karena OS/browser tidak akan
+  /// menampilkannya sendiri untuk kondisi ini. Dipakai buat SEMUA jenis
+  /// push (status_pesanan, subscription_renewal, promo, chat_cs, pengingat)
+  /// -- generik berdasarkan title/body notification payload, bukan
+  /// per-`data.type`, supaya tidak perlu disentuh lagi kalau nanti ada
+  /// jenis notifikasi baru dari Cloud Functions.
+  void _handleForegroundMessage(RemoteMessage message) {
+    if (!mounted) return;
+    final title = message.notification?.title;
+    final body = message.notification?.body;
+    if ((title == null || title.isEmpty) && (body == null || body.isEmpty)) {
+      return;
+    }
+
+    final text = [title, body]
+        .where((s) => s != null && s.isNotEmpty)
+        .join(' — ');
+    AppSnackbar.info(context, text);
+  }
+
+  @override
+  void dispose() {
+    _foregroundMessageSub?.cancel();
+    super.dispose();
   }
 
   /// Fungsi untuk berpindah tab saat bottom nav diklik.

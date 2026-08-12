@@ -10,6 +10,7 @@ import '../../core/services/app_feedback.dart';
 import '../../models/subscription.dart';
 import '../../repositories/subscription_repository.dart';
 import '../../services/subscription_service.dart';
+import '../../services/subscription_reminder_service.dart';
 
 /// Dashboard Screen - NetWash
 /// Terintegrasi dengan Firebase Firestore (Real-time Streams)
@@ -72,6 +73,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // (bukan nyangkut ke bahasa yang aktif waktu cabang dipilih).
   String _selectedBranchId = 'all';
   String? _selectedBranchName;
+
+  /// Menandai subscription id mana yang sudah pernah dicek reminder
+  /// H-3/H-1-nya SELAMA screen ini hidup, supaya SubscriptionReminderService
+  /// .checkDue() (yang baca/tulis SharedPreferences, async) tidak
+  /// dipanggil berkali-kali tiap kali StreamBuilder subscription rebuild
+  /// (mis. setiap kali dokumen subscription berubah sedikit pun).
+  /// SharedPreferences sendiri yang jadi sumber kebenaran final soal
+  /// "sudah pernah ditampilkan hari ini apa belum" -- flag ini cuma
+  /// optimasi supaya tidak spam pemanggilan async yang sama.
+  String? _reminderCheckedForSubId;
 
   /// FIX: sebelumnya ini `final String _currentUserId = ...` yang dibaca
   /// SEKALI saat State dibuat. Kalau widget ini sempat ke-build sebelum
@@ -229,6 +240,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           builder: (context, subSnap) {
             if (!subSnap.hasData) return const SizedBox.shrink();
 
+            final subscription = subSnap.data;
+            if (subscription != null) {
+              _maybeCheckRenewalReminder(subscription);
+            }
+
             final subscriptionService = SubscriptionService(currentSubscription: subSnap.data);
             final access = subscriptionService.checkAccess(SubscriptionActionType.administrative);
 
@@ -291,6 +307,67 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           },
         );
       },
+    );
+  }
+
+  // ============================================
+  // REMINDER H-3/H-1 SEBELUM currentPeriodEnd (client-side, lihat
+  // SubscriptionReminderService untuk alasan kenapa bukan Cloud Function
+  // terjadwal -- project masih di plan Spark).
+  // ============================================
+  // Dipanggil dari dalam builder StreamBuilder<Subscription?> di
+  // _buildSubscriptionBanner (sudah dapat data subscription-nya di sana,
+  // tidak perlu listener terpisah). Guard _reminderCheckedForSubId supaya
+  // checkDue() (async, baca/tulis SharedPreferences) tidak dipanggil
+  // berkali-kali untuk subscription id yang sama selama screen ini hidup.
+  void _maybeCheckRenewalReminder(Subscription subscription) {
+    if (_reminderCheckedForSubId == subscription.id) return;
+    _reminderCheckedForSubId = subscription.id;
+
+    SubscriptionReminderService.checkDue(subscription).then((daysLeft) {
+      if (daysLeft == null || !mounted) return;
+      // Ditunda ke akhir frame ini -- kita sedang di tengah build() lewat
+      // StreamBuilder, jadi tidak aman manggil showDialog() secara
+      // langsung di sini.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showRenewalReminderDialog(daysLeft);
+      });
+    });
+  }
+
+  void _showRenewalReminderDialog(int daysLeft) {
+    final t = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: const Icon(Icons.event_busy_rounded, color: subscriptionGraceColor, size: 32),
+        title: Text(
+          t.subscriptionRenewalReminderTitle,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        content: Text(
+          t.subscriptionRenewalReminderMessage(daysLeft),
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 13.5, color: textSecondary),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(t.remindLaterAction, style: const TextStyle(color: textTertiary)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: primaryBlue),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.go('/settings/subscription');
+            },
+            child: Text(t.renewNowAction),
+          ),
+        ],
+      ),
     );
   }
 
