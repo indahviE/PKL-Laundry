@@ -11,8 +11,6 @@ import '../../models/service.dart';
 import '../../providers/auth_provider.dart';
 import '../../repositories/laundry_repository.dart';
 import '../../repositories/service_repository.dart';
-import '../../widgets/common/app_button.dart';
-import '../../widgets/common/app_input.dart';
 
 /// Local design tokens matching the new "NetWash Utility System" design.
 /// Kept local to this screen (like create_service_screen.dart) so no other
@@ -27,6 +25,16 @@ class _DS {
   static const navy = Color(0xFF0B3B66); // "selected" filter pill
   static const primary = Color(0xFF0061A4);
 
+  // Tokens tambahan — disamakan dengan CreateServiceScreen supaya
+  // bottom sheet edit punya tema visual yang identik dengan layar create.
+  static const primaryFixed = Color(0xFFD1E4FF);
+  static const tertiary = Color(0xFF526069);
+  static const tertiaryFixed = Color(0xFFD6E5EF);
+  static const error = Color(0xFFBA1A1A);
+  static const errorContainer = Color(0xFFFFDAD6);
+  static const secondaryContainer = Color(0xFFE0E3E6);
+  static const outline = Color(0xFF707883);
+
   static List<BoxShadow> get cardShadow => [
         BoxShadow(
           color: Colors.black.withOpacity(0.05),
@@ -40,6 +48,12 @@ class _DS {
         fontWeight: FontWeight.w700,
         color: color ?? onSurface,
         letterSpacing: -0.2,
+      );
+
+  static TextStyle subtitleMd({Color? color}) => GoogleFonts.beVietnamPro(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: color ?? onSurfaceVariant,
       );
 
   static TextStyle bodyMd({Color? color, FontWeight? weight}) => GoogleFonts.beVietnamPro(
@@ -528,22 +542,17 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
     try {
       await repo.updateService(service.id, {'is_active': newStatus});
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              newStatus
-                  ? l10n.serviceActivatedSnackbar(service.name)
-                  : l10n.serviceDeactivatedSnackbar(service.name),
-            ),
-            backgroundColor: newStatus ? Colors.green[600] : Colors.grey[700],
-          ),
-        );
+        AppFeedback.playSound(ref, AppSound.success);
+        if (newStatus) {
+          AppSnackbar.success(context, l10n.serviceActivatedSnackbar(service.name));
+        } else {
+          AppSnackbar.info(context, l10n.serviceDeactivatedSnackbar(service.name));
+        }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.toggleStatusError(e.toString())), backgroundColor: Colors.red[600]),
-        );
+        AppFeedback.playSound(ref, AppSound.error);
+        AppSnackbar.error(context, l10n.toggleStatusError(e.toString()));
       }
     }
   }
@@ -799,7 +808,8 @@ extension _FirstOrNull<T> on Iterable<T> {
 }
 
 // ==========================================================
-// BOTTOM SHEET EDIT — Kiloan / Satuan / Express + cabang
+// BOTTOM SHEET EDIT — tema disamakan dengan CreateServiceScreen
+// (warna, font Be Vietnam Pro, card tipe layanan, tombol, alert)
 // ==========================================================
 class _EditServiceSheet extends ConsumerStatefulWidget {
   final Service service;
@@ -854,7 +864,11 @@ class _EditServiceSheetState extends ConsumerState<_EditServiceSheet> {
   }
 
   Future<void> _handleSave() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      AppFeedback.playSound(ref, AppSound.error);
+      return;
+    }
+
     final l10n = AppLocalizations.of(context)!;
     setState(() => _isSaving = true);
 
@@ -899,22 +913,14 @@ class _EditServiceSheetState extends ConsumerState<_EditServiceSheet> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.saveChangesSuccess),
-            backgroundColor: Colors.green[600],
-          ),
-        );
+        AppFeedback.playSound(ref, AppSound.success);
+        AppSnackbar.success(context, l10n.saveChangesSuccess);
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.saveChangesError(e.toString())),
-            backgroundColor: Colors.red[600],
-          ),
-        );
+        AppFeedback.playSound(ref, AppSound.error);
+        AppSnackbar.error(context, l10n.saveChangesError(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -928,224 +934,492 @@ class _EditServiceSheetState extends ConsumerState<_EditServiceSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.cardColor,
-          borderRadius: const BorderRadius.only(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92),
+        decoration: const BoxDecoration(
+          color: _DS.canvas,
+          borderRadius: BorderRadius.only(
             topLeft: Radius.circular(28),
             topRight: Radius.circular(28),
           ),
         ),
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Center(
-                  child: Container(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle + title bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 4),
+              child: Column(
+                children: [
+                  Container(
                     width: 44,
                     height: 4,
-                    margin: const EdgeInsets.only(bottom: 20),
+                    margin: const EdgeInsets.only(bottom: 18),
                     decoration: BoxDecoration(
-                      color: AppTheme.borderColor,
+                      color: _DS.outlineVariant,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                ),
-                Text(
-                  l10n.editServiceSheetTitle,
-                  style: GoogleFonts.poppins(fontSize: 19, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.editServiceSheetSubtitle,
-                  style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
-                ),
-                const SizedBox(height: 22),
-
-                AppInput(
-                  controller: _nameController,
-                  label: l10n.serviceNameLabel,
-                  hintText: l10n.serviceNameHint,
-                  validator: (val) => val == null || val.isEmpty ? l10n.serviceNameError : null,
-                ),
-                const SizedBox(height: 16),
-
-                AppInput(
-                  controller: _descriptionController,
-                  label: l10n.serviceDescriptionLabel,
-                  hintText: l10n.serviceDescriptionHint,
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 16),
-
-                Text(
-                  l10n.pricingMethodLabel,
-                  style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ChoiceChip(
-                        label: Center(child: Text(l10n.pricingTypeKgShort, style: GoogleFonts.poppins(fontWeight: FontWeight.w500))),
-                        selected: _pricingType == PricingType.perKg,
-                        onSelected: (selected) {
-                          if (selected) setState(() => _pricingType = PricingType.perKg);
-                        },
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(l10n.editServiceSheetTitle, style: _DS.headlineMd(color: _DS.primary)),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ChoiceChip(
-                        label: Center(child: Text(l10n.pricingTypeItemShort, style: GoogleFonts.poppins(fontWeight: FontWeight.w500))),
-                        selected: _pricingType == PricingType.perItem,
-                        onSelected: (selected) {
-                          if (selected) setState(() => _pricingType = PricingType.perItem);
-                        },
+                      InkWell(
+                        onTap: () => Navigator.pop(context),
+                        borderRadius: BorderRadius.circular(20),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(Icons.close_rounded, color: _DS.onSurfaceVariant),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ChoiceChip(
-                        label: Center(child: Text(l10n.pricingTypeExpressLabel, style: GoogleFonts.poppins(fontWeight: FontWeight.w500))),
-                        selected: _pricingType == PricingType.express,
-                        onSelected: (selected) {
-                          if (selected) setState(() => _pricingType = PricingType.express);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                AppInput(
-                  controller: _priceController,
-                  label: _pricingType == PricingType.perKg
-                      ? l10n.pricePerKgLabel
-                      : (_pricingType == PricingType.perItem ? l10n.pricePerItemLabel : l10n.baseFeeLabel),
-                  hintText: l10n.priceHint,
-                  keyboardType: TextInputType.number,
-                  validator: (val) {
-                    if (val == null || val.isEmpty) return l10n.priceEmptyError;
-                    if (double.tryParse(val) == null) return l10n.priceInvalidError;
-                    return null;
-                  },
-                ),
-
-                if (_pricingType == PricingType.express) ...[
-                  const SizedBox(height: 16),
-                  AppInput(
-                    controller: _expressFeeController,
-                    label: l10n.expressFeeLabel,
-                    hintText: l10n.priceHint,
-                    keyboardType: TextInputType.number,
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(l10n.editServiceSheetSubtitle, style: _DS.bodySm()),
                   ),
                 ],
-
-                if (_pricingType == PricingType.perKg) ...[
-                  const SizedBox(height: 16),
-                  AppInput(
-                    controller: _minWeightController,
-                    label: l10n.minWeightLabel,
-                    hintText: '1.0',
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  ),
-                ],
-
-                const SizedBox(height: 16),
-
-                AppInput(
-                  controller: _durationController,
-                  label: l10n.durationLabelShort,
-                  hintText: l10n.durationHint,
-                  keyboardType: TextInputType.number,
-                  validator: (val) {
-                    if (val == null || val.isEmpty) return l10n.durationEmptyErrorShort;
-                    if (int.tryParse(val) == null) return l10n.durationInvalidErrorShort;
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                if (widget.laundries.isNotEmpty) ...[
-                  Text(
-                    l10n.availableAtBranchesLabel,
-                    style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppTheme.borderColor),
-                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                    ),
-                    child: Column(
-                      children: [
-                        for (int i = 0; i < widget.laundries.length; i++) ...[
-                          if (i > 0) Divider(height: 1, color: AppTheme.borderColor),
-                          CheckboxListTile(
-                            value: _selectedBranchIds.contains(widget.laundries[i].id),
-                            onChanged: (checked) {
-                              setState(() {
-                                if (checked == true) {
-                                  _selectedBranchIds.add(widget.laundries[i].id);
-                                } else {
-                                  _selectedBranchIds.remove(widget.laundries[i].id);
-                                }
-                              });
-                            },
-                            controlAffinity: ListTileControlAffinity.trailing,
-                            dense: true,
-                            activeColor: AppTheme.primaryColor,
-                            title: Text(
-                              widget.laundries[i].name,
-                              style: GoogleFonts.poppins(fontSize: 13.5),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.emptyBranchSelectionMeansAllHint,
-                    style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textTertiary),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: _isActive,
-                  onChanged: (val) => setState(() => _isActive = val),
-                  activeColor: AppTheme.primaryColor,
-                  title: Text(
-                    l10n.activeServiceSwitchTitle,
-                    style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-                  ),
-                  subtitle: Text(
-                    l10n.activeServiceSwitchSubtitle,
-                    style: GoogleFonts.poppins(fontSize: 11.5, color: AppTheme.textSecondary),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                SizedBox(
-                  height: 52,
-                  child: AppButton(
-                    label: _isSaving ? l10n.savingButtonLabel : l10n.saveChangesButton,
-                    onPressed: _isSaving ? null : _handleSave,
-                    isLoading: _isSaving,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+            // Scrollable form body
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _sectionColumn(
+                        label: l10n.serviceNameLabel,
+                        child: TextFormField(
+                          controller: _nameController,
+                          style: _DS.bodyMd(),
+                          decoration: _inputDecoration(hintText: l10n.serviceNameHint),
+                          validator: (val) => val == null || val.trim().isEmpty ? l10n.serviceNameError : null,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      _sectionColumn(
+                        label: l10n.serviceDescriptionLabel,
+                        child: TextFormField(
+                          controller: _descriptionController,
+                          maxLines: 3,
+                          style: _DS.bodyMd(),
+                          decoration: _inputDecoration(hintText: l10n.serviceDescriptionHint),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      _sectionColumn(
+                        label: l10n.pricingMethodLabel,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _typeCard(
+                                type: PricingType.perKg,
+                                label: l10n.pricingTypeKgChipLabel,
+                                icon: Icons.monitor_weight_rounded,
+                                iconBg: _DS.primaryFixed,
+                                iconColor: _DS.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _typeCard(
+                                type: PricingType.perItem,
+                                label: l10n.pricingTypeItemChipLabel,
+                                icon: Icons.checkroom_rounded,
+                                iconBg: _DS.tertiaryFixed,
+                                iconColor: _DS.tertiary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _typeCard(
+                                type: PricingType.express,
+                                label: l10n.pricingTypeExpressLabel,
+                                icon: Icons.bolt_rounded,
+                                iconBg: _DS.errorContainer,
+                                iconColor: _DS.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      _sectionColumn(
+                        label: _pricingType == PricingType.perKg
+                            ? l10n.pricePerKgLabel
+                            : (_pricingType == PricingType.perItem ? l10n.pricePerItemLabel : l10n.baseFeeLabel),
+                        child: TextFormField(
+                          controller: _priceController,
+                          keyboardType: TextInputType.number,
+                          style: _DS.bodyMd(),
+                          decoration: _inputDecoration(hintText: '0', prefixText: 'Rp '),
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) return l10n.priceEmptyError;
+                            if (double.tryParse(val.trim()) == null) return l10n.priceInvalidError;
+                            return null;
+                          },
+                        ),
+                      ),
+
+                      if (_pricingType == PricingType.express) ...[
+                        const SizedBox(height: 20),
+                        _sectionColumn(
+                          label: l10n.expressFeeLabel,
+                          child: TextFormField(
+                            controller: _expressFeeController,
+                            keyboardType: TextInputType.number,
+                            style: _DS.bodyMd(),
+                            decoration: _inputDecoration(hintText: '0', prefixText: 'Rp '),
+                          ),
+                        ),
+                      ],
+
+                      if (_pricingType == PricingType.perKg) ...[
+                        const SizedBox(height: 20),
+                        _sectionColumn(
+                          label: l10n.minWeightLabel,
+                          child: TextFormField(
+                            controller: _minWeightController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: _DS.bodyMd(),
+                            decoration: _inputDecoration(hintText: '1.0'),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+
+                      _sectionColumn(
+                        label: l10n.durationLabelShort,
+                        child: TextFormField(
+                          controller: _durationController,
+                          keyboardType: TextInputType.number,
+                          style: _DS.bodyMd(),
+                          decoration: _inputDecoration(hintText: l10n.durationHint),
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) return l10n.durationEmptyErrorShort;
+                            if (int.tryParse(val.trim()) == null) return l10n.durationInvalidErrorShort;
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      if (widget.laundries.isNotEmpty) ...[
+                        _sectionColumn(
+                          label: l10n.availableAtBranchesLabel,
+                          child: _buildBranchPicker(l10n),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.emptyBranchSelectionMeansAllHint,
+                          style: _DS.bodySm().copyWith(fontSize: 11.5),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+
+                      // Status toggle — sama seperti card status di CreateServiceScreen
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: _DS.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: _DS.cardShadow,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(l10n.activeServiceSwitchTitle, style: _DS.subtitleMd(color: _DS.onSurface)),
+                                  const SizedBox(height: 2),
+                                  Text(l10n.activeServiceSwitchSubtitle, style: _DS.bodySm()),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: _isActive,
+                              onChanged: (val) => setState(() => _isActive = val),
+                              activeColor: _DS.surface,
+                              activeTrackColor: _DS.primary,
+                              inactiveThumbColor: _DS.surface,
+                              inactiveTrackColor: _DS.secondaryContainer,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Sticky save bar — sama seperti _buildSaveBar di CreateServiceScreen
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+              decoration: BoxDecoration(
+                color: _DS.surface,
+                border: const Border(top: BorderSide(color: _DS.outlineVariant)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: !_isSaving ? _handleSave : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _DS.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: _isSaving
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.7)),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(l10n.savingButtonLabel, style: _DS.headlineMd(color: Colors.white)),
+                          ],
+                        )
+                      : Text(l10n.saveChangesButton, style: _DS.headlineMd(color: Colors.white)),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  // --------------------------------------------------------
+  // Type card — identik dengan _buildTypeCard di CreateServiceScreen
+  // --------------------------------------------------------
+  Widget _typeCard({
+    required PricingType type,
+    required String label,
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+  }) {
+    final isSelected = _pricingType == type;
+    return InkWell(
+      onTap: () => setState(() => _pricingType = type),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? _DS.primaryFixed.withOpacity(0.35) : _DS.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? _DS.primary : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: isSelected ? [] : _DS.cardShadow,
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(height: 8),
+            Text(label, textAlign: TextAlign.center, style: _DS.labelBold(color: _DS.onSurface)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --------------------------------------------------------
+  // Branch picker — identik dengan _buildBranchSection di CreateServiceScreen
+  // --------------------------------------------------------
+  Widget _buildBranchPicker(AppLocalizations l10n) {
+    final laundries = widget.laundries;
+    final allSelected = _selectedBranchIds.length == laundries.length;
+    final noneSelected = _selectedBranchIds.isEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _DS.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: _DS.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  noneSelected
+                      ? l10n.noBranchSelectedLabel
+                      : l10n.branchesSelectedCountLabel(_selectedBranchIds.length, laundries.length),
+                  style: _DS.bodySm(),
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    if (allSelected) {
+                      _selectedBranchIds.clear();
+                    } else {
+                      _selectedBranchIds
+                        ..clear()
+                        ..addAll(laundries.map((l) => l.id));
+                    }
+                  });
+                },
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: allSelected ? _DS.primaryFixed : _DS.canvas,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        allSelected ? Icons.remove_done_rounded : Icons.done_all_rounded,
+                        size: 15,
+                        color: _DS.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        allSelected ? l10n.deselectAllLabel : l10n.selectAllLabel,
+                        style: _DS.labelBold(color: _DS.primary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: laundries.map((laundry) {
+              final isSelected = _selectedBranchIds.contains(laundry.id);
+              return InkWell(
+                onTap: () {
+                  setState(() {
+                    if (isSelected) {
+                      _selectedBranchIds.remove(laundry.id);
+                    } else {
+                      _selectedBranchIds.add(laundry.id);
+                    }
+                  });
+                },
+                borderRadius: BorderRadius.circular(999),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.only(left: 10, right: 14, top: 8, bottom: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? _DS.primaryFixed.withOpacity(0.55) : _DS.canvas,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: isSelected ? _DS.primary : _DS.outlineVariant,
+                      width: isSelected ? 1.4 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isSelected ? _DS.primary : Colors.transparent,
+                          border: Border.all(
+                            color: isSelected ? _DS.primary : _DS.outline,
+                            width: 1.4,
+                          ),
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
+                            : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        laundry.name,
+                        style: _DS.bodyMd(color: isSelected ? _DS.primary : _DS.onSurface).copyWith(
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --------------------------------------------------------
+  // Shared helpers — identik dengan CreateServiceScreen
+  // --------------------------------------------------------
+  Widget _sectionColumn({required String label, required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: _DS.subtitleMd()),
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
+  }
+
+  InputDecoration _inputDecoration({required String hintText, String? prefixText}) {
+    OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: color, width: width),
+        );
+
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: _DS.bodyMd(color: _DS.outline),
+      prefixText: prefixText,
+      prefixStyle: _DS.subtitleMd(),
+      filled: true,
+      fillColor: _DS.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: border(_DS.outlineVariant, 1),
+      enabledBorder: border(_DS.outlineVariant, 1),
+      focusedBorder: border(_DS.primary, 1.5),
+      errorBorder: border(_DS.error, 1),
+      focusedErrorBorder: border(_DS.error, 1.5),
+      errorStyle: _DS.bodySm(color: _DS.error),
     );
   }
 }
