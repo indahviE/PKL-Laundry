@@ -3004,6 +3004,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String belowMinWeightError(String itemName, String minWeight) {
+    return 'Berat untuk \"$itemName\" minimal $minWeight kg';
+  }
+
+  @override
   String get businessContextNotReadyError =>
       'Data perusahaan/cabang belum siap. Coba lagi sebentar.';
 

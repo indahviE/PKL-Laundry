@@ -2992,6 +2992,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String belowMinWeightError(String itemName, String minWeight) {
+    return 'The weight for \"$itemName\" must be at least $minWeight kg';
+  }
+
+  @override
   String get businessContextNotReadyError =>
       'Company/branch data is not ready yet. Please try again shortly.';
 

@@ -1642,6 +1642,17 @@
   "createOrderSubtitle": "Create and manage a new laundry order",
   "noBranchesForOrderError": "No laundry branches yet. Add a branch first before creating an order.",
   "fillWeightForItemError": "Please enter the weight (kg) for \"{itemName}\" first",
+  "belowMinWeightError": "The weight for \"{itemName}\" must be at least {minWeight} kg",
+  "@belowMinWeightError": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      },
+      "minWeight": {
+        "type": "String"
+      }
+    }
+  },
   "@fillWeightForItemError": {
     "placeholders": {
       "itemName": {

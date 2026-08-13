@@ -98,6 +98,11 @@ class OrderItemForm {
   double weight;
   double price;
 
+  /// Berat minimum (kg) dari Service.minWeight, khusus pricingType perKg.
+  /// Dipakai buat validasi sebelum order/pickup disimpan - lihat
+  /// _handleSaveOrder & _handleConfirm (pickup_delivery_screen.dart).
+  final double minWeight;
+
   /// Controller buat input berat (khusus item perKg). Dibuat sekali per
   /// item supaya cursor/fokus TextField gak reset tiap kali setState.
   late final TextEditingController weightController;
@@ -109,6 +114,7 @@ class OrderItemForm {
     required this.quantity,
     required this.weight,
     required this.price,
+    this.minWeight = 0,
   }) {
     weightController = TextEditingController(
       text: weight > 0 ? weight.toStringAsFixed(1) : '',
@@ -454,6 +460,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
               // sekali jadi tetap 0.
               weight: first.pricingType == PricingType.perKg ? 1.0 : 0,
               price: _servicePrice(first),
+              minWeight: first.minWeight ?? 0,
             ),
           ];
         }
@@ -494,6 +501,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
           quantity: 1,
           weight: service.pricingType == PricingType.perKg ? 1.0 : 0,
           price: _servicePrice(service),
+          minWeight: service.minWeight ?? 0,
         ),
       );
     });
@@ -532,6 +540,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
             quantity: 1,
             weight: first.pricingType == PricingType.perKg ? 1.0 : 0,
             price: _servicePrice(first),
+            minWeight: first.minWeight ?? 0,
           ),
         ];
       }
@@ -571,9 +580,17 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
         return;
       }
       for (final item in _orderItems) {
-        if (item.pricingType == PricingType.perKg && item.weight <= 0) {
-          _showErrorSnack(_t.fillWeightForItemError(item.name));
-          return;
+        if (item.pricingType == PricingType.perKg) {
+          if (item.weight <= 0) {
+            _showErrorSnack(_t.fillWeightForItemError(item.name));
+            return;
+          }
+          if (item.minWeight > 0 && item.weight < item.minWeight) {
+            _showErrorSnack(
+              _t.belowMinWeightError(item.name, item.minWeight.toStringAsFixed(1)),
+            );
+            return;
+          }
         }
       }
     }

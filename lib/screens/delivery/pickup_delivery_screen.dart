@@ -1021,6 +1021,7 @@ class _ConfirmPickupSheetState extends ConsumerState<_ConfirmPickupSheet> {
                               quantity: 1,
                               weight: service.pricingType == PricingType.perKg ? 1.0 : 0,
                               price: price,
+                              minWeight: service.minWeight ?? 0,
                             ),
                           );
                         });
@@ -1085,10 +1086,20 @@ class _ConfirmPickupSheetState extends ConsumerState<_ConfirmPickupSheet> {
     }
 
     for (final item in _items) {
-      if (item.pricingType == PricingType.perKg && item.weight <= 0) {
-        AppFeedback.playSound(ref, AppSound.error);
-        AppSnackbar.error(context, l10n.weightRequiredError(item.name));
-        return;
+      if (item.pricingType == PricingType.perKg) {
+        if (item.weight <= 0) {
+          AppFeedback.playSound(ref, AppSound.error);
+          AppSnackbar.error(context, l10n.weightRequiredError(item.name));
+          return;
+        }
+        if (item.minWeight > 0 && item.weight < item.minWeight) {
+          AppFeedback.playSound(ref, AppSound.error);
+          AppSnackbar.error(
+            context,
+            l10n.belowMinWeightError(item.name, item.minWeight.toStringAsFixed(1)),
+          );
+          return;
+        }
       }
     }
 

@@ -5426,6 +5426,12 @@ abstract class AppLocalizations {
   /// **'Isi berat (kg) untuk \"{itemName}\" terlebih dahulu'**
   String fillWeightForItemError(String itemName);
 
+  /// No description provided for @belowMinWeightError.
+  ///
+  /// In id, this message translates to:
+  /// **'Berat untuk \"{itemName}\" minimal {minWeight} kg'**
+  String belowMinWeightError(String itemName, String minWeight);
+
   /// No description provided for @businessContextNotReadyError.
   ///
   /// In id, this message translates to:

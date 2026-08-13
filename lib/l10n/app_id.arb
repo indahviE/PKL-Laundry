@@ -1685,6 +1685,17 @@
   "createOrderSubtitle": "Buat dan kelola pesanan laundry baru",
   "noBranchesForOrderError": "Belum ada cabang laundry. Tambahkan cabang dulu sebelum membuat pesanan.",
   "fillWeightForItemError": "Isi berat (kg) untuk \"{itemName}\" terlebih dahulu",
+  "belowMinWeightError": "Berat untuk \"{itemName}\" minimal {minWeight} kg",
+  "@belowMinWeightError": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      },
+      "minWeight": {
+        "type": "String"
+      }
+    }
+  },
   "@fillWeightForItemError": {
     "placeholders": {
       "itemName": {
