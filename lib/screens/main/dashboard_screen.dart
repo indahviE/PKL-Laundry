@@ -786,7 +786,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           final previousCount = _lastKnownPendingCount;
           if (previousCount != null && pendingCount > previousCount) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) AppFeedback.playSound(ref, AppSound.notification);
+              if (mounted) AppFeedback.playSound(ref, AppSound.success);
             });
           }
           if (previousCount != pendingCount) {

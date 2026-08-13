@@ -38,9 +38,9 @@ class AppFeedback {
         // Web: audioplayers butuh UrlSource, path persis sesuai yang
         // ke-serve dari folder asset, tanpa auto-prefix "assets/".
         final path = switch (sound) {
-          AppSound.success => 'asset/sounds/success.wav',
-          AppSound.error => 'asset/sounds/error.wav',
-          AppSound.notification => 'asset/sounds/notif.wav',
+          AppSound.success => 'assets/sounds/success.wav',
+          AppSound.error => 'assets/sounds/error.wav',
+          AppSound.notification => 'assets/sounds/notif.wav',
         };
         await _player.play(UrlSource(path));
       } else {
