@@ -622,6 +622,61 @@ class _ServiceCard extends StatelessWidget {
     required this.onDelete,
   });
 
+  // Badge cabang - tampil 1 nama cabang pertama + "+N" kalau lebih dari
+  // satu, supaya gak overflow/melar ke bawah kalau layanan tersedia di
+  // banyak cabang. Nama pertama dipotong ellipsis kalau kepanjangan.
+  Widget _branchBadge(List<String> branchNames) {
+    if (branchNames.length <= 1) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F3F5),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          branchNames.isNotEmpty ? branchNames.first : '-',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: _DS.bodySm(weight: FontWeight.w500),
+        ),
+      );
+    }
+
+    final extra = branchNames.length - 1;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F3F5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              branchNames.first,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _DS.bodySm(weight: FontWeight.w500),
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: _DS.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            '+$extra',
+            style: _DS.bodySm(color: _DS.primary, weight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -636,8 +691,14 @@ class _ServiceCard extends StatelessWidget {
     final badgeFg = isActive ? typeStyle.fg : const Color(0xFF6B7280);
     final priceColor = isActive ? typeStyle.fg : const Color(0xFF9CA3AF);
 
-    final branchNames = (service.branchIds.isEmpty ||
-            (laundries.isNotEmpty && service.branchIds.length >= laundries.length))
+    // FIX: sebelumnya kalau jumlah branchIds tersimpan >= jumlah total
+    // cabang SAAT INI, otomatis dianggap "Semua Cabang" - ini salah kalau
+    // ada cabang yang DIHAPUS belakangan (total cabang berkurang, jadi
+    // kebetulan jumlahnya <= branchIds lama), padahal layanan ini aslinya
+    // cuma dipilih untuk sebagian cabang. Sekarang "Semua Cabang" HANYA
+    // ditampilkan kalau branchIds memang benar-benar kosong (sesuai
+    // konvensi: kosong = tersedia di semua cabang).
+    final branchNames = service.branchIds.isEmpty
         ? [l10n.allBranchesLabel]
         : service.branchIds
             .map((id) => laundries.where((l) => l.id == id).map((l) => l.name).firstOrNull ?? '')
@@ -761,22 +822,7 @@ class _ServiceCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: branchNames
-                      .map((name) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F3F5),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(name, style: _DS.bodySm(weight: FontWeight.w500)),
-                          ))
-                      .toList(),
-                ),
-              ),
+              Expanded(child: _branchBadge(branchNames)),
               const SizedBox(width: 8),
               RichText(
                 text: TextSpan(

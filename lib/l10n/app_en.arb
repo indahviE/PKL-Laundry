@@ -1607,6 +1607,12 @@
   "approveButtonLabel": "Approve",
   "notifyReadyForDeliveryButtonLabel": "Notify Ready for Delivery",
   "notifyViaWhatsappButtonLabel": "Notify via WhatsApp",
+  "notifyReadyForDeliveryScheduleButtonLabel": "Notify Ready for Delivery",
+  "@notifyReadyForDeliveryScheduleButtonLabel": {
+    "description": "Button on order detail (status ready, delivery) to notify customer via WhatsApp before delivery can be scheduled"
+  },
+  "deliveryScheduleConfirmDialogTitle": "Already replied?",
+  "deliveryScheduleConfirmDialogContent": "Has the customer replied to confirm the delivery schedule?",
   "scheduleDeliveryButtonLabel": "Schedule Delivery",
   "editDeliveryScheduleButtonLabel": "Change Delivery Schedule",
   "deliveryScheduleUpdateSuccess": "Delivery schedule updated successfully",

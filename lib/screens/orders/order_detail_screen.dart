@@ -276,11 +276,15 @@ class _OrderDetailData {
   final String assignedEmployeeId;
   final String assignedEmployeeName;
 
-  // --- Notifikasi "siap diambil" (khusus self-pickup) ---
-  // True kalau kasir/owner sudah pernah nge-tap tombol "Kabari Pelanggan"
-  // di tahap 'ready' - dipakai buat gating tombol maju status jadi
-  // 'completed', supaya alur self-pickup gak bisa ditandai selesai
-  // sebelum pelanggan beneran dikabarin dulu.
+  // --- Notifikasi "siap diambil/diantar" (self-pickup & delivery) ---
+  // True kalau kasir/owner sudah pernah nge-tap tombol "Kabari
+  // Pelanggan" di tahap 'ready' DAN mengonfirmasi pelanggan sudah
+  // dihubungi - dipakai buat gating:
+  // - self-pickup: tombol maju status jadi 'completed'
+  // - delivery: tombol berubah dari "Kabari Siap Diantar" jadi
+  //   "Jadwalkan Pengantaran"
+  // supaya kedua alur ini gak bisa lanjut sebelum pelanggan beneran
+  // dikabarin dulu.
   final bool readyNotified;
 
   // --- Jadwal pengantaran (khusus delivery) ---
@@ -1281,20 +1285,6 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
     return launched;
   }
 
-  /// Buka WhatsApp ke nomor customer, isi pesan otomatis bahwa
-  /// pesanannya sudah selesai. Isi pesan disesuaikan dengan deliveryType:
-  /// - self_pickup -> tanya mau diambil sendiri atau diantar
-  /// - delivery    -> kabari bahwa pesanan akan segera diantar
-  Future<void> _openWhatsapp(_OrderDetailData order) async {
-    final String message;
-    if (order.deliveryType == 'delivery') {
-      message = _t.whatsappOrderReadyDeliveryMessage(order.customerName, order.orderNumber);
-    } else {
-      message = _t.whatsappOrderReadyPickupMessage(order.customerName, order.orderNumber);
-    }
-
-    await _launchWhatsappMessage(order.customerPhone, message);
-  }
 
   /// Simpan penanda bahwa pelanggan sudah dikabari "pesanan siap diambil"
   /// (self-pickup, status masih 'ready'). Kegagalan nulis ini bukan error
@@ -1325,22 +1315,43 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
     _awaitingReadyNotifyConfirmation = true;
   }
 
+  /// Kirim WA "siap diantar" khusus alur DELIVERY saat status masih
+  /// 'ready' - beda dari _openWhatsapp versi lama yang salah kaprah baru
+  /// ngabarin pelanggan SETELAH order 'completed'. Sekarang pelanggan
+  /// dikabari & diminta konfirmasi jadwal pengantaran DULU, sebelum
+  /// kasir boleh lanjut ke "Jadwalkan Pengantaran". Begitu WA berhasil
+  /// kebuka, nunggu konfirmasi balasan pelanggan lewat
+  /// _showConfirmMessageSentDialog() (sama pola dengan alur self-pickup),
+  /// baru readyNotified ditulis & tombol berganti.
+  Future<void> _notifyReadyForDelivery(_OrderDetailData order) async {
+    final message = _t.whatsappOrderReadyDeliveryMessage(order.customerName, order.orderNumber);
+    final launched = await _launchWhatsappMessage(order.customerPhone, message);
+    if (!launched) return;
+
+    _awaitingReadyNotifyConfirmation = true;
+  }
+
   /// Ditampilkan begitu user balik ke app setelah _notifyReadyForPickup
   /// membuka WhatsApp. Cuma di titik INI ready_notified beneran ditulis
   /// ke Firestore - kalau user pilih "Belum", tombol "Kabari Pelanggan"
   /// tetap muncul supaya bisa dicoba lagi.
   void _showConfirmMessageSentDialog() {
+    // Order masih tersimpan di _order dari fetch terakhir - dipakai
+    // buat nentuin pertanyaan konfirmasi yang sesuai: self-pickup nanya
+    // "sudah dihubungi?", delivery nanya "sudah dapat balasan jadwal
+    // pengantaran?".
+    final isDelivery = _order?.isDelivery ?? false;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rLg)),
         title: Text(
-          _t.messageSentConfirmDialogTitle,
+          isDelivery ? _t.deliveryScheduleConfirmDialogTitle : _t.messageSentConfirmDialogTitle,
           style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _cOnSurface),
         ),
         content: Text(
-          _t.messageSentConfirmDialogContent,
+          isDelivery ? _t.deliveryScheduleConfirmDialogContent : _t.messageSentConfirmDialogContent,
           style: GoogleFonts.beVietnamPro(fontSize: 13, color: _cOnSurfaceVariant),
         ),
         actions: [
@@ -2942,17 +2953,22 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
     // Pengantaran" (buka CreateDeliveryScheduleScreen buat isi tanggal/jam
     // rencana antar), bukan "Tandai Selesai" biasa - penyelesaiannya baru
     // terjadi belakangan di PickupDeliveryScreen begitu kurir konfirmasi.
-    final showScheduleDeliveryButton = order.status == 'ready' && order.isDelivery;
+    // BARU muncul setelah readyNotified true - pelanggan harus dikabari
+    // & dikonfirmasi dulu jadwalnya sebelum boleh dijadwalkan, bukan
+    // langsung begitu status jadi 'ready'.
+    final showScheduleDeliveryButton = order.status == 'ready' && order.isDelivery && order.readyNotified;
     // Order pickup yang barangnya belum beneran dijemput gak boleh
     // dimajukan lewat 'confirmed' - belum ada item/berat yang bisa
     // diproses sampai kurir menandai "Sudah Dijemput" di layar Antar
     // Jemput.
     final blockedByAwaitingPickup = order.isAwaitingPickup && order.status == 'confirmed';
-    // Self-pickup di tahap 'ready' - HARUS kabarin pelanggan dulu lewat WA
-    // sebelum bisa ditandai selesai. Begitu readyNotified == true (sudah
-    // pernah tap tombol ini), baris ini jadi false, dan tombol otomatis
-    // fallback ke tombol maju status normal ("Tandai Selesai").
-    final showNotifyReadyPickupButton = order.status == 'ready' && !order.isDelivery && !order.readyNotified;
+    // Di tahap 'ready' - HARUS kabarin pelanggan dulu lewat WA sebelum
+    // lanjut, baik self-pickup (sebelum ditandai selesai) maupun
+    // delivery (sebelum boleh jadwalkan pengantaran). Begitu
+    // readyNotified == true (sudah tap tombol ini DAN dikonfirmasi lewat
+    // dialog "sudah dihubungi/sudah dapat balasan"), baris ini jadi
+    // false, dan tombol fallback ke aksi berikutnya.
+    final showNotifyReadyButton = order.status == 'ready' && !order.readyNotified;
 
     return Container(
       decoration: BoxDecoration(
@@ -2970,22 +2986,30 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (order.status == 'completed')
-                  SizedBox(
+                  // Pesanan sudah beneran selesai (self-pickup ditandai
+                  // selesai / delivery ditandai "Sudah Diantar" dari menu
+                  // Antar Jemput) - notifikasi "siap diambil/diantar"
+                  // udah gak relevan di titik ini karena udah dikabari &
+                  // dikonfirmasi lebih awal waktu masih 'ready'. Cukup
+                  // tampilkan indikator selesai, tanpa aksi lanjutan.
+                  Container(
                     width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _openWhatsapp(order),
-                      icon: const Icon(Icons.chat_outlined, size: 18),
-                      label: Text(
-                        order.isDelivery ? _t.notifyReadyForDeliveryButtonLabel : _t.notifyViaWhatsappButtonLabel,
-                        style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _cPrimaryContainer,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rXl)),
-                      ),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: _cGreenBg,
+                      borderRadius: BorderRadius.circular(_rXl),
+                      border: Border.all(color: _cGreenText.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.task_alt, size: 18, color: _cGreenText),
+                        const SizedBox(width: 8),
+                        Text(
+                          _getStatusLabel('completed'),
+                          style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14, color: _cGreenText),
+                        ),
+                      ],
                     ),
                   )
                 else if (blockedByUnpaidAtReady)
@@ -3039,16 +3063,19 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
                       ),
                     ),
                   )
-                else if (showNotifyReadyPickupButton)
+                else if (showNotifyReadyButton)
                   SizedBox(
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton.icon(
                       onPressed: (_isUpdatingStatus || order.hasPendingCancellationRequest)
                           ? null
-                          : () => _notifyReadyForPickup(order),
+                          : () => order.isDelivery ? _notifyReadyForDelivery(order) : _notifyReadyForPickup(order),
                       icon: const Icon(Icons.chat_outlined, size: 18),
-                      label: Text(_t.notifyReadyForPickupButtonLabel, style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14)),
+                      label: Text(
+                        order.isDelivery ? _t.notifyReadyForDeliveryScheduleButtonLabel : _t.notifyReadyForPickupButtonLabel,
+                        style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _cPrimaryContainer,
                         foregroundColor: Colors.white,

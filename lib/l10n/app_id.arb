@@ -1653,6 +1653,12 @@
   "approveButtonLabel": "Setujui",
   "notifyReadyForDeliveryButtonLabel": "Kabari Siap Diantar",
   "notifyViaWhatsappButtonLabel": "Kabari via WhatsApp",
+  "notifyReadyForDeliveryScheduleButtonLabel": "Kabari Siap Diantar",
+  "@notifyReadyForDeliveryScheduleButtonLabel": {
+    "description": "Tombol di order detail (status ready, delivery) untuk mengabari pelanggan lewat WhatsApp sebelum pengantaran bisa dijadwalkan"
+  },
+  "deliveryScheduleConfirmDialogTitle": "Sudah dapat balasan?",
+  "deliveryScheduleConfirmDialogContent": "Apakah pelanggan sudah membalas untuk konfirmasi jadwal pengantaran?",
   "scheduleDeliveryButtonLabel": "Jadwalkan Pengantaran",
   "editDeliveryScheduleButtonLabel": "Ubah Jadwal Pengantaran",
   "branchFollowsSelectedOrderHint": "Cabang mengikuti pesanan yang dipilih",

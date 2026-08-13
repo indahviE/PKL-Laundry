@@ -2915,6 +2915,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifyViaWhatsappButtonLabel => 'Notify via WhatsApp';
 
   @override
+  String get notifyReadyForDeliveryScheduleButtonLabel =>
+      'Notify Ready for Delivery';
+
+  @override
+  String get deliveryScheduleConfirmDialogTitle => 'Already replied?';
+
+  @override
+  String get deliveryScheduleConfirmDialogContent =>
+      'Has the customer replied to confirm the delivery schedule?';
+
+  @override
   String get scheduleDeliveryButtonLabel => 'Schedule Delivery';
 
   @override

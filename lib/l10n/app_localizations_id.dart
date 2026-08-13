@@ -2928,6 +2928,16 @@ class AppLocalizationsId extends AppLocalizations {
   String get notifyViaWhatsappButtonLabel => 'Kabari via WhatsApp';
 
   @override
+  String get notifyReadyForDeliveryScheduleButtonLabel => 'Kabari Siap Diantar';
+
+  @override
+  String get deliveryScheduleConfirmDialogTitle => 'Sudah dapat balasan?';
+
+  @override
+  String get deliveryScheduleConfirmDialogContent =>
+      'Apakah pelanggan sudah membalas untuk konfirmasi jadwal pengantaran?';
+
+  @override
   String get scheduleDeliveryButtonLabel => 'Jadwalkan Pengantaran';
 
   @override

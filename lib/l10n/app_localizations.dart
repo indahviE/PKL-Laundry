@@ -5294,6 +5294,24 @@ abstract class AppLocalizations {
   /// **'Kabari via WhatsApp'**
   String get notifyViaWhatsappButtonLabel;
 
+  /// Tombol di order detail (status ready, delivery) untuk mengabari pelanggan lewat WhatsApp sebelum pengantaran bisa dijadwalkan
+  ///
+  /// In id, this message translates to:
+  /// **'Kabari Siap Diantar'**
+  String get notifyReadyForDeliveryScheduleButtonLabel;
+
+  /// No description provided for @deliveryScheduleConfirmDialogTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Sudah dapat balasan?'**
+  String get deliveryScheduleConfirmDialogTitle;
+
+  /// No description provided for @deliveryScheduleConfirmDialogContent.
+  ///
+  /// In id, this message translates to:
+  /// **'Apakah pelanggan sudah membalas untuk konfirmasi jadwal pengantaran?'**
+  String get deliveryScheduleConfirmDialogContent;
+
   /// No description provided for @scheduleDeliveryButtonLabel.
   ///
   /// In id, this message translates to:
