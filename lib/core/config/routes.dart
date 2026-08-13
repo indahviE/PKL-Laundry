@@ -185,7 +185,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           // redirect callback GoRouter cuma bisa balikin String lokasi,
           // dan query param tetap kebawa walau lewat reload/redirect
           // (beda dengan `extra` yang hilang di kasus ini).
-          if (location == '/choose-plan') return null;
+          //
+          // FIX: harus ngecualiin navigasi /payment yang BENERAN bagian
+          // dari flow renewal ini (dipush dari _handleSelectPlan dengan
+          // extra {'isUpgrade': true, 'planName': ..., dst} setelah user
+          // pencet "Perpanjang Paket Ini"). Sebelum ada pengecualian ini,
+          // begitu ChoosePlanScreen push ke '/payment', redirect ini
+          // langsung jalan lagi, lihat location == '/payment' (bukan
+          // '/choose-plan'), dan MENTAL balikin ke '/choose-plan?upgrade=true'
+          // lagi -- jadi tombol "Perpanjang Paket Ini" keliatan kayak
+          // nggak ngapa-ngapain padahal sebenarnya navigasinya langsung
+          // di-cancel sendiri sama guard ini.
+          final extra = state.extra;
+          final isUpgradeFlow = extra is Map && extra['isUpgrade'] == true;
+          final isRenewalNavTarget =
+              isUpgradeFlow && (location == '/choose-plan' || location == '/payment');
+
+          if (location == '/choose-plan' || isRenewalNavTarget) return null;
           return '/choose-plan?upgrade=true';
         } else {
           // Belum pernah subscribe sama sekali -> flow onboarding
