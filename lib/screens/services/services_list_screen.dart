@@ -558,27 +558,24 @@ class _ServicesListScreenState extends ConsumerState<ServicesListScreen> {
   }
 
   // ==========================================================
-  // HAPUS PERMANEN
+  // HAPUS PERMANEN — gaya AlertDialog disamakan dengan
+  // _confirmCancelOrder di OrderDetailScreen (title plain bold,
+  // tombol batal abu-abu, tombol aksi merah bold, tanpa icon warning).
   // ==========================================================
-void _confirmDelete(BuildContext context, AppLocalizations l10n, ServiceRepository repo, Service service) {
+  void _confirmDelete(BuildContext context, AppLocalizations l10n, ServiceRepository repo, Service service) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red[600], size: 22),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(l10n.deleteConfirmTitle, style: _DS.bodyMd(weight: FontWeight.w600)),
-            ),
-          ],
+        title: Text(
+          l10n.deleteConfirmTitle,
+          style: GoogleFonts.beVietnamPro(fontWeight: FontWeight.w700, color: _DS.onSurface),
         ),
         content: Text(l10n.deleteConfirmContent(service.name), style: _DS.bodySm()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(l10n.cancel, style: _DS.bodySm()),
+            child: Text(l10n.cancel, style: GoogleFonts.beVietnamPro(color: _DS.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () async {
@@ -598,7 +595,7 @@ void _confirmDelete(BuildContext context, AppLocalizations l10n, ServiceReposito
             },
             child: Text(
               l10n.deletePermanentButton,
-              style: _DS.bodySm(color: Colors.red[600], weight: FontWeight.w600),
+              style: GoogleFonts.beVietnamPro(color: _DS.error, fontWeight: FontWeight.w700),
             ),
           ),
         ],
