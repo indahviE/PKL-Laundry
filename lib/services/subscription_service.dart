@@ -62,7 +62,19 @@ class SubscriptionService {
   String get planId => currentSubscription?.planId ?? 'starter';
   String get status => currentSubscription?.status ?? 'inactive';
 
-  bool get isSubscriptionActive => status == 'active' || status == 'trialing';
+  /// PENTING: status string ('active'/'trialing') doang TIDAK CUKUP buat
+  /// nentuin aktif atau nggak - status itu string statis yang cuma
+  /// berubah kalau ada kode yang eksplisit update dia (mis. webhook
+  /// Stripe, atau job terjadwal). current_period_end BISA lewat waktu
+  /// sekarang sementara status masih nyangkut 'trialing'/'active' lama.
+  /// Makanya guard ini WAJIB juga bandingin currentPeriodEnd vs sekarang,
+  /// bukan cuma baca string status-nya doang.
+  bool get isSubscriptionActive {
+    if (status != 'active' && status != 'trialing') return false;
+    final periodEnd = currentSubscription?.currentPeriodEnd;
+    if (periodEnd == null) return false;
+    return DateTime.now().isBefore(periodEnd);
+  }
 
   /// True kalau status 'past_due' DAN masih di dalam window gracePeriodDays
   /// sejak graceStartedAt. Kalau graceStartedAt null (data lama / belum
