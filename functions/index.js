@@ -470,6 +470,78 @@ exports.sendSubscriptionRenewalReminders = onSchedule(
 );
 
 /**
+ * FIX GAP -- expire otomatis trial paket Free setelah 14 hari.
+ *
+ * LATAR BELAKANG: paket Free (lihat choose_plan_screen.dart) TIDAK PERNAH
+ * lewat Stripe sama sekali (dokumen subscription-nya dibuat langsung dari
+ * klien dengan status 'trialing' + current_period_end = created_at + 14
+ * hari). Untuk paket berbayar, yang mengubah status begitu waktunya habis
+ * itu Stripe (webhook di stripe-webhook.js). Paket Free tidak punya
+ * "Stripe" yang beres-beres, jadi tanpa function ini dokumennya akan
+ * SELAMANYA berstatus 'trialing' -- user Free dapat akses gratis tanpa
+ * batas waktu, bukan cuma 14 hari.
+ *
+ * Function ini jalan tiap hari, cari dokumen subscription dengan
+ * plan_id == 'free' DAN status == 'trialing' DAN current_period_end
+ * sudah lewat, lalu ubah status jadi 'canceled'.
+ *
+ * Begitu status jadi 'canceled':
+ * - SubscriptionService.checkAccess(administrative) di app otomatis
+ *   balikin allowed=false, reasonKey='subscription_expired' -- user
+ *   Free tidak bisa nambah cabang/karyawan baru lagi sampai upgrade.
+ * - Order (transactional) TETAP jalan seperti biasa -- tidak digating
+ *   status, sesuai keputusan yang sudah ada sebelumnya.
+ *
+ * HOOK BUAT FITUR IKLAN (belum diimplementasi di sini -- itu bagian
+ * terpisah): begitu status berubah trialing -> canceled untuk dokumen
+ * yang plan_id == 'free', field `updated_at` ikut ke-update, jadi bisa
+ * ditangkap lewat Firestore listener/trigger terpisah kalau nanti mau
+ * nambah alur "tonton iklan buat lanjut pakai". Cara paling gampang di
+ * sisi Flutter: cek `subscription.planId == 'free' && subscription.status
+ * == 'canceled'` di layar yang relevan, terus tampilkan UI iklan alih-alih
+ * (atau selain) pesan "subscription_expired" biasa.
+ */
+exports.expireFreeTrialSubscriptions = onSchedule(
+    {schedule: "every day 01:00", timeZone: "Asia/Jakarta"},
+    async () => {
+      const now = admin.firestore.Timestamp.now();
+
+      const expiredTrialsSnap = await admin
+          .firestore()
+          .collectionGroup("subscriptions")
+          .where("plan_id", "==", "free")
+          .where("status", "==", "trialing")
+          .get();
+
+      let expiredCount = 0;
+
+      for (const doc of expiredTrialsSnap.docs) {
+        const sub = doc.data();
+        const periodEnd = sub.current_period_end;
+
+        // Dokumen tanpa current_period_end (seharusnya tidak mungkin untuk
+        // paket Free karena selalu diisi saat dibuat) -- skip, jangan
+        // sampai ke-cancel gara-gara data tidak lengkap.
+        if (!periodEnd) continue;
+
+        if (periodEnd.toMillis() > now.toMillis()) continue; // belum lewat 14 hari
+
+        await doc.ref.update({
+          status: "canceled",
+          canceled_at: now,
+          updated_at: now,
+        });
+        expiredCount++;
+        logger.info(
+            `Trial Free ${doc.ref.path} di-expire (current_period_end sudah lewat).`,
+        );
+      }
+
+      logger.info(`expireFreeTrialSubscriptions: ${expiredCount} trial di-expire.`);
+    },
+);
+
+/**
  * CONTOH #4 -- notifikasi trigger ("Chat dan CS").
  *
  * CATATAN PENTING: aku cek ke seluruh codebase dan BELUM ada fitur chat
@@ -516,4 +588,4 @@ exports.onSupportMessageCreated = onDocumentCreated(
         },
       });
     },
-); 
+);
