@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // Fungsi bantu untuk mengecek apakah user sudah login melalui Firebase Auth
     function isAuthenticated() {
       return request.auth != null;
@@ -22,23 +22,26 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // 1. Mengamankan seluruh sub-koleksi utama di bawah users/{userId}
-    match /users/{userId}/{document=**} {
+    // 0. Profil user sendiri (dokumen users/{userId} itu sendiri, BUKAN
+    // subcollection-nya). Sebelumnya tidak ada rule buat ini sama sekali
+    // di luar admin (1b), jadi owner kemungkinan tidak bisa baca/edit
+    // profilnya sendiri (mis. ganti nama perusahaan).
+    match /users/{userId} {
       allow read, write: if isAuthenticated() && isOwner(userId);
     }
 
     // 1b. Admin/CS boleh baca profil dasar user manapun (buat nampilin
-    // nama di daftar percakapan CS), TAPI tetap tidak boleh baca/tulis
-    // subcollection user itu (orders, customers, dst) lewat rule ini --
-    // itu masih exclusive isOwner lewat rule #1 di atas.
+    // nama di daftar percakapan CS). Digabung ke rule #0 lewat OR logic
+    // Firestore -- owner tetap exclusive lewat isOwner() di atas.
     match /users/{userId} {
       allow read: if isAdmin();
     }
 
     // 1c. Chat CS ("Chat dan CS" di NotificationsScreen): pemilik akun
-    // tetap baca/tulis penuh lewat rule #1. Admin/CS ditambahin akses
-    // sempit di sini: boleh baca semua percakapan, dan boleh KIRIM pesan
-    // hanya dengan sender == 'cs' (tidak bisa nyamar jadi 'user').
+    // baca/tulis penuh lewat rule khusus support_messages di bawah (§2f).
+    // Admin/CS ditambahin akses sempit di sini: boleh baca semua
+    // percakapan, dan boleh KIRIM pesan hanya dengan sender == 'cs'
+    // (tidak bisa nyamar jadi 'user').
     //
     // PENTING: dipakai lewat collectionGroup('support_messages') di sisi
     // admin (AdminSupportRepository.watchRecentConversations), jadi
@@ -52,19 +55,116 @@ service cloud.firestore {
       allow create: if isAdmin() && request.resource.data.sender == 'cs';
     }
 
-    // 2. Aturan spesifik tambahan untuk koleksi 'orders' milik user tertentu (Validasi Data)
+    // 2. Subcollection biasa di bawah users/{userId} -- TIDAK PAKAI
+    // {document=**} blanket lagi. Firestore rules pakai logika OR:
+    // begitu ADA satu match block yang meng-allow, request langsung
+    // diizinkan walau ada rule lain yang lebih ketat untuk path yang
+    // sama. Rule blanket lama (match /users/{userId}/{document=**})
+    // mencakup SEMUA subcollection tanpa syarat isi data, sehingga
+    // validasi ketat di §2a (orders) dan §2g (subscriptions) di bawah
+    // jadi percuma -- request tetap lolos lewat rule blanket ini duluan.
+    // Makanya sekarang tiap subcollection dienumerasi eksplisit, dan
+    // orders/subscriptions dikeluarkan supaya validasinya beneran ngefek.
+
+    match /users/{userId}/companies/{docId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    match /users/{userId}/customers/{docId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    match /users/{userId}/employees/{docId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    match /users/{userId}/laundries/{docId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    match /users/{userId}/order_counters/{docId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    match /users/{userId}/service_types/{docId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    match /users/{userId}/transactions/{docId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // 2f. support_messages milik user sendiri (dibaca/ditulis pemilik
+    // akun). Sebelumnya kepakai lewat blanket #1 lama -- sekarang eksplisit
+    // di sini supaya tidak hilang saat blanket dihapus. Rule admin (1c) di
+    // atas tetap terpisah karena dia butuh {path=**} untuk collection group.
+    match /users/{userId}/support_messages/{docId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // 2a. Aturan khusus 'orders' (Validasi Data). Sekarang ini rule
+    // SATU-SATUNYA yang berlaku untuk orders (tidak ada lagi blanket
+    // yang menimpanya), jadi read/delete juga perlu ditambahkan eksplisit
+    // -- sebelumnya keduanya "gratis" lewat blanket, kalau tidak
+    // ditambahkan di sini, app akan kena permission-denied saat baca order.
     match /users/{userId}/orders/{orderId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+
       // Validasi saat membuat order baru: Pastikan field penting tidak kosong
-      allow create: if isAuthenticated() && isOwner(userId) 
+      allow create: if isAuthenticated() && isOwner(userId)
         && request.resource.data.customer_id != null
         && request.resource.data.service_type_id != null
         && request.resource.data.total_amount != null;
-        
+
       // Validasi saat update status order: Hanya boleh mengubah status dan riwayatnya saja
       allow update: if isAuthenticated() && isOwner(userId)
         && (request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'status_history', 'updated_at', 'payment_status']));
+
+      // Tidak ada penghapusan order langsung dari client -- kalau memang
+      // dibutuhkan, ganti ke isOwner(userId) dan pertimbangkan validasi
+      // tambahan (mis. hanya boleh hapus order berstatus draft).
+      allow delete: if false;
     }
-    
+
+    // 2g. Aturan khusus 'subscriptions'. Model datanya (lib/models/
+    // subscription.dart) planId normalnya diisi lewat backend (Stripe
+    // webhook, Admin SDK -- yang BYPASS rules ini sepenuhnya, jadi rule
+    // di bawah tidak menghalangi alur pembayaran resmi).
+    //
+    // Rule ini menutup celah: tanpa validasi, client bisa nulis langsung
+    // dokumen subscription dengan plan_id/limits apa pun (mis.
+    // plan_id: 'enterprise', limits: {max_laundries: -1, ...}) tanpa
+    // pernah bayar, karena sebelumnya rule ini ketutup blanket #1 lama
+    // yang cuma syaratnya login+owner tanpa cek isi data.
+    //
+    // Create dari client HANYA diizinkan untuk paket gratis/trial dengan
+    // limit yang dikunci ke nilai default aplikasi (SubscriptionLimits()
+    // di subscription.dart: 1 laundry, 5 karyawan, 500 order/bulan) --
+    // BUKAN nilai bebas kiriman client. Kalau nanti ada field/plan_id
+    // gratis lain, sesuaikan kondisi di bawah supaya tetap terkunci ke
+    // angka yang benar (jangan dilonggarkan jadi "asal ada nilainya").
+    match /users/{userId}/subscriptions/{subId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+
+      allow create: if isAuthenticated() && isOwner(userId)
+        && request.resource.data.company_id != null
+        && request.resource.data.plan_id == 'free'
+        && request.resource.data.status in ['trialing', 'active']
+        && request.resource.data.limits.max_laundries == 1
+        && request.resource.data.limits.max_employees == 5
+        && request.resource.data.limits.max_orders_per_month == 500;
+
+      // Update dari client dibatasi ke field yang memang wajar berubah
+      // lewat aplikasi (mis. membatalkan langganan sendiri). Ganti plan_id
+      // atau limits (upgrade/downgrade) HARUS lewat backend/Stripe webhook
+      // yang pakai Admin SDK -- bukan lewat client.
+      allow update: if isAuthenticated() && isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'canceled_at', 'grace_started_at', 'updated_at']);
+
+      allow delete: if false;
+    }
+
     // Deny all secara global untuk keamanan ekstra di root level
     match /{document=**} {
       allow read, write: if false;
