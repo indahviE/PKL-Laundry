@@ -11,6 +11,7 @@ import '../../models/subscription.dart';
 import '../../repositories/subscription_repository.dart';
 import '../../services/subscription_service.dart';
 import '../../services/subscription_reminder_service.dart';
+import '../../core/widgets/trial_paywall_dialog.dart';
 
 /// Dashboard Screen - NetWash
 /// Terintegrasi dengan Firebase Firestore (Real-time Streams)
@@ -23,6 +24,13 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  /// Menandai subscription id mana yang sudah pernah ditampilkan paywall
+  /// "Trial Habis"-nya SELAMA screen ini hidup - sama seperti pola
+  /// _reminderCheckedForSubId, supaya StreamBuilder yang rebuild
+  /// berkali-kali nggak numpuk showDialog() berulang-ulang buat
+  /// subscription yang sama.
+  String? _paywallShownForSubId;
+
   // Disamain PERSIS sama _DS di services_list_screen.dart ("NetWash
   // Utility System") — primary #0061A4, navy #0B3B66, card pakai shadow
   // (bukan border), font Be Vietnam Pro. Supaya Dashboard & halaman
@@ -247,6 +255,43 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             final subscriptionService = SubscriptionService(currentSubscription: subSnap.data);
             final access = subscriptionService.checkAccess(SubscriptionActionType.administrative);
+
+            // Trial abis (status 'trialing' tapi sudah lewat
+            // current_period_end, alias !access.allowed) -> munculin
+            // paywall "Nonton Iklan / Upgrade" alih-alih cuma banner
+            // pasif. Cuma buat status 'trialing' spesifik, BUKAN
+            // past_due/grace period paket berbayar (itu sudah ditangani
+            // banner oranye + _showRenewalReminderDialog yang ada).
+            if (subscription != null &&
+                subscription.status == 'trialing' &&
+                !access.allowed &&
+                _paywallShownForSubId != subscription.id) {
+              _paywallShownForSubId = subscription.id;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  TrialPaywallDialog.show(
+                    context,
+                    onWatchAdSuccess: () async {
+                      final subscriptionRepo = SubscriptionRepository(userId: _currentUserId);
+                      await subscriptionRepo.extendTrial(
+                        subscription.id,
+                        currentPeriodEnd: subscription.currentPeriodEnd,
+                        days: 1,
+                      );
+                      if (mounted) {
+                        // Reset guard supaya kalau trial abis lagi besok,
+                        // paywall bisa muncul lagi buat subscription id
+                        // yang sama (belum ganti dokumen).
+                        _paywallShownForSubId = null;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('🎉 Akses ditambah 1 hari!')),
+                        );
+                      }
+                    },
+                  );
+                }
+              });
+            }
 
             // Aktif/trialing DAN bukan grace period -> tidak ada yang
             // perlu ditampilkan sama sekali.

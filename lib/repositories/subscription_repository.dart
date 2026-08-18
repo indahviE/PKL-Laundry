@@ -122,6 +122,27 @@ class SubscriptionRepository {
   /// - transisi ke 'active'/'trialing' (mis. pembayaran berhasil) ->
   ///   di-null-kan lagi, karena grace period sudah tidak relevan.
   /// - status lain (canceled, unpaid, dst) -> dibiarkan apa adanya.
+  /// Perpanjang subscription yang statusnya 'trialing' dengan menambah
+  /// [days] hari ke `current_period_end` yang SEKARANG (bukan ke waktu
+  /// sekarang) - supaya kalau user extend berkali-kali dalam 1 hari yang
+  /// sama, harinya tetap nambah dari titik akhir trial yang benar, bukan
+  /// numpuk dari "sekarang".
+  ///
+  /// Dipakai oleh fitur "Nonton Iklan buat Lanjut Trial" - dipanggil
+  /// SETELAH RewardedAdService mengonfirmasi user benar-benar menonton
+  /// iklan sampai selesai (onUserEarnedReward).
+  Future<void> extendTrial(
+    String subscriptionId, {
+    required DateTime currentPeriodEnd,
+    int days = 1,
+  }) async {
+    final newEnd = currentPeriodEnd.add(Duration(days: days));
+    await _subscriptionsRef.doc(subscriptionId).update({
+      'current_period_end': newEnd,
+      'updated_at': DateTime.now(),
+    });
+  }
+
   Future<void> updateSubscriptionStatus(
     String subscriptionId,
     String newStatus, {

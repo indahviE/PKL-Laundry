@@ -1,0 +1,82 @@
+import 'package:flutter/foundation.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+
+/// Service buat handle Rewarded Ad (AdMob) — dipakai di fitur
+/// "Nonton Iklan buat Lanjut Trial 15 hari+".
+///
+/// PENTING: sekarang masih pakai TEST Ad Unit ID dari Google.
+/// Sebelum publish ke Play Store, WAJIB ganti _adUnitId di bawah
+/// pakai Ad Unit ID asli dari dashboard AdMob (yang formatnya pakai
+/// tanda '/', BUKAN App ID yang pakai '~').
+class RewardedAdService {
+  RewardedAd? _rewardedAd;
+  bool _isLoading = false;
+
+  // TODO: ganti ke Ad Unit ID asli sebelum production!
+  static const String _testAdUnitId =
+      'ca-app-pub-3940256099942544/5224354917';
+
+  String get _adUnitId => _testAdUnitId;
+
+  /// Panggil ini duluan (misal pas buka halaman "Choose Plan"),
+  /// supaya iklan udah siap dari sebelum user klik tombol.
+  void loadAd() {
+    if (_isLoading || _rewardedAd != null) return;
+    _isLoading = true;
+
+    RewardedAd.load(
+      adUnitId: _adUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _rewardedAd = ad;
+          _isLoading = false;
+          debugPrint('RewardedAd: berhasil dimuat');
+        },
+        onAdFailedToLoad: (error) {
+          _isLoading = false;
+          debugPrint('RewardedAd: gagal dimuat -> $error');
+        },
+      ),
+    );
+  }
+
+  /// Panggil ini pas user klik tombol "Nonton Iklan buat Lanjut".
+  /// [onUserEarnedReward] dipanggil KALAU DAN HANYA KALAU user
+  /// nonton iklan sampai selesai (bukan skip di tengah).
+  void showAd({
+    required VoidCallback onUserEarnedReward,
+    VoidCallback? onAdNotReady,
+  }) {
+    if (_rewardedAd == null) {
+      onAdNotReady?.call();
+      // Coba load lagi buat kesempatan berikutnya
+      loadAd();
+      return;
+    }
+
+    _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        _rewardedAd = null;
+        loadAd(); // pre-load lagi buat next time
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _rewardedAd = null;
+        loadAd();
+      },
+    );
+
+    _rewardedAd!.show(
+      onUserEarnedReward: (ad, reward) {
+        onUserEarnedReward();
+      },
+    );
+  }
+
+  void dispose() {
+    _rewardedAd?.dispose();
+    _rewardedAd = null;
+  }
+}
