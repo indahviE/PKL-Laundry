@@ -120,7 +120,15 @@ class SubscriptionRepository {
     required DateTime? currentPeriodEnd,
     required int days,
   }) async {
-    final base = currentPeriodEnd ?? DateTime.now();
+    // Pakai base yang LEBIH BARU antara current_period_end lama dan
+    // "sekarang" - supaya kalau user baru nonton iklan beberapa hari
+    // SETELAH trial abis (bukan pas hari itu juga), extend tetap
+    // ngejar dari hari ini, bukan numpuk dari tanggal expired yang
+    // udah lewat jauh di belakang.
+    final now = DateTime.now();
+    final base = (currentPeriodEnd == null || currentPeriodEnd.isBefore(now))
+        ? now
+        : currentPeriodEnd;
     final newEnd = base.add(Duration(days: days));
 
     await _subscriptionsRef.doc(subscriptionId).update({
