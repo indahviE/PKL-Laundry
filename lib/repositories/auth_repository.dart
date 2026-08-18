@@ -365,12 +365,15 @@ class AuthRepository {
   }
 
   /// Stream real-time: true selama ada dokumen di
-  /// `users/{uid}/subscriptions/` dengan `status == 'active'`.
+  /// `users/{uid}/subscriptions/` dengan status `active` ATAU `trialing`.
   ///
-  /// Dokumen ini ditulis oleh Cloud Function `stripeWebhook` (event
-  /// `checkout.session.completed`), BUKAN oleh client. Dipakai
-  /// PaymentScreen untuk mendeteksi pembayaran sukses tanpa bergantung
-  /// pada user kembali ke app dari browser Stripe Checkout.
+  /// Dokumen dengan status `active` ditulis oleh Cloud Function
+  /// `stripeWebhook` (event `checkout.session.completed`); dokumen dengan
+  /// status `trialing` ditulis langsung dari klien untuk paket Free (lihat
+  /// _handleSelectPlan di choose_plan_screen.dart, yang memang tidak
+  /// pernah lewat Stripe). Dipakai PaymentScreen untuk mendeteksi
+  /// pembayaran sukses tanpa bergantung pada user kembali ke app dari
+  /// browser Stripe Checkout.
   ///
   /// Cuma balikin bool. Kalau butuh detail dokumennya (mis. tanggal
   /// perpanjangan), pakai `watchActiveSubscriptionData()` di bawah.
@@ -378,9 +381,9 @@ class AuthRepository {
     return watchActiveSubscriptionData().map((data) => data != null);
   }
 
-  /// Stream real-time dokumen subscription yang aktif (`status ==
-  /// 'active'`) di `users/{uid}/subscriptions/`, null kalau nggak ada
-  /// dokumen aktif.
+  /// Stream real-time dokumen subscription yang aktif (status `active`
+  /// ATAU `trialing`) di `users/{uid}/subscriptions/`, null kalau nggak
+  /// ada dokumen aktif.
   ///
   /// Field tanggal di dokumen ini pakai snake_case sesuai skema PRD
   /// (bagian 3.6.2 & Cloud Function `stripeWebhook`): `current_period_start`
@@ -389,6 +392,16 @@ class AuthRepository {
   /// Function. Kedua field ini yang dipakai SubscriptionScreen buat
   /// nampilin rentang tanggal langganan (mis. "17 Jul 2026 - 17 Agu
   /// 2026").
+  // FIX: sebelumnya cuma `isEqualTo: 'active'`. Paket Free dibuat langsung
+  // dari klien dengan status 'trialing' (bukan lewat Stripe, jadi tidak
+  // pernah jadi 'active' -- lihat _handleSelectPlan di choose_plan_screen
+  // .dart). Tanpa 'trialing' ikut dihitung di sini, redirect guard di
+  // routes.dart (paymentActive = await hasActiveSubscription()) selalu
+  // balikin false untuk user Free, dianggap "subscription lama sudah
+  // expired", dan user ditendang balik ke /choose-plan?upgrade=true
+  // terus-menerus persis setelah trial berhasil dibuat -- konsisten
+  // dengan isSubscriptionActive di subscription_service.dart yang sudah
+  // menganggap active DAN trialing sama-sama aktif.
   Stream<Map<String, dynamic>?> watchActiveSubscriptionData() {
     final user = _auth.currentUser;
     if (user == null) return Stream.value(null);
@@ -397,7 +410,7 @@ class AuthRepository {
         .collection('users')
         .doc(user.uid)
         .collection('subscriptions')
-        .where('status', isEqualTo: 'active')
+        .where('status', whereIn: ['active', 'trialing'])
         .limit(1)
         .snapshots()
         .map((snapshot) =>
@@ -407,6 +420,8 @@ class AuthRepository {
   /// Versi one-shot dari `watchActiveSubscription()`, dipakai oleh
   /// `redirect` di GoRouter (butuh Future, bukan Stream) supaya user
   /// tidak bisa "loncat" ke dashboard sebelum pembayaran webhook masuk.
+  /// Lihat catatan FIX di `watchActiveSubscriptionData()` di atas --
+  /// sama-sama perlu menganggap 'trialing' sebagai aktif.
   Future<bool> hasActiveSubscription() async {
     final user = _auth.currentUser;
     if (user == null) return false;
@@ -415,7 +430,7 @@ class AuthRepository {
         .collection('users')
         .doc(user.uid)
         .collection('subscriptions')
-        .where('status', isEqualTo: 'active')
+        .where('status', whereIn: ['active', 'trialing'])
         .limit(1)
         .get();
 

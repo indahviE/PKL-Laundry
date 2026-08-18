@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/themes/app_theme.dart';
 import '../../repositories/auth_repository.dart';
 import '../../repositories/subscription_repository.dart';
+import '../../models/subscription.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/services/app_feedback.dart';
 
@@ -337,64 +338,103 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   /// /payment supaya PaymentScreen tau ini proration/upgrade, bukan
   /// pembayaran pertama kali.
   Future<void> _handleSelectPlan(PricingPlan plan) async {
-    if (_isNavigating) return;
+  if (_isNavigating) return;
 
-    // Jaga-jaga: harusnya tombol udah disabled di _PricingCard kalau
-    // plan ini diblokir usage, tapi dicek ulang di sini juga.
-    final blockReason = _planBlockReason(plan);
-    if (blockReason != null) {
-      AppFeedback.playSound(ref, AppSound.error);
-      AppSnackbar.error(context, blockReason);
+  final blockReason = _planBlockReason(plan);
+  if (blockReason != null) {
+    AppFeedback.playSound(ref, AppSound.error);
+    AppSnackbar.error(context, blockReason);
+    return;
+  }
+
+  setState(() {
+    _selectedPlan = plan.name;
+    _isNavigating = true;
+  });
+
+  try {
+    final authRepo = ref.read(authRepositoryProvider);
+    await authRepo.savePlanChoice(
+      planName: plan.name,
+      isYearly: _isYearly,
+    );
+
+    final companyId = await authRepo.getPrimaryCompanyId();
+    if (companyId == null) {
+      throw Exception(
+        'Data perusahaan belum ditemukan. Selesaikan setup perusahaan terlebih dahulu.',
+      );
+    }
+
+    // Paket Free TIDAK pernah lewat Stripe (lihat create-checkout-session.js
+    // PRICE_ID_MAP & stripe-webhook.js PLAN_LIMITS -- keduanya sengaja
+    // tidak punya entry 'free'). Kalau dibiarkan lewat _handleSelectPlan
+    // biasa, request akan sampai ke backend dan ditolak 400 "Paket free
+    // tidak dikenali." Jadi di sini di-skip total: dokumen subscription
+    // dibuat langsung dari klien dengan status 'trialing' 14 hari, lalu
+    // langsung ke dashboard tanpa mampir /payment.
+    if (plan.name == 'Free') {
+      final uid = authRepo.currentUser?.uid;
+      if (uid == null) {
+        throw Exception('Sesi login tidak ditemukan. Silakan login ulang.');
+      }
+
+      final now = DateTime.now();
+      final trialEnd = now.add(const Duration(days: 14));
+
+      await SubscriptionRepository(userId: uid).createSubscription(
+        Subscription(
+          id: '', // di-overwrite oleh createSubscription() pakai docRef.id
+          createdAt: now,
+          updatedAt: now,
+          companyId: companyId,
+          planId: 'free',
+          planName: 'Free',
+          status: 'trialing',
+          currentPeriodStart: now,
+          currentPeriodEnd: trialEnd,
+          trialStart: now,
+          trialEnd: trialEnd,
+          billingCycle: 'monthly',
+          features: plan.features,
+          limits: SubscriptionLimits(
+            maxLaundries: plan.maxLaundries,
+            maxEmployees: plan.maxEmployees,
+            // Sesuai teks di card Free: "Maksimal 100 Order/Bulan".
+            maxOrdersPerMonth: 100,
+          ),
+        ),
+      );
+
+      if (!mounted) return;
+      context.go('/dashboard');
       return;
     }
 
-    setState(() {
-      _selectedPlan = plan.name;
-      _isNavigating = true;
-    });
-
-    try {
-      final authRepo = ref.read(authRepositoryProvider);
-      await authRepo.savePlanChoice(
-        planName: plan.name,
-        isYearly: _isYearly,
-      );
-
-      // WAJIB: companyId ini yang bakal disertakan di metadata Stripe
-      // Checkout Session, supaya webhook tahu company mana yang harus
-      // ditulis di dokumen subscription. Tanpa ini, pembayaran tetap
-      // sukses di Stripe tapi webhook gagal mengaktifkan limit paket baru.
-      final companyId = await authRepo.getPrimaryCompanyId();
-      if (companyId == null) {
-        throw Exception(
-          'Data perusahaan belum ditemukan. Selesaikan setup perusahaan terlebih dahulu.',
-        );
-      }
-
-      if (!mounted) return;
-      context.push(
-        '/payment',
-        extra: {
-          'planName': plan.name,
-          'isYearly': _isYearly,
-          'price': _getDisplayPrice(plan),
-          'isUpgrade': widget.isUpgrade,
-          'companyId': companyId,
-        },
-      );
-    } catch (e) {
-      if (mounted) {
-        AppFeedback.playSound(ref, AppSound.error);
-        AppSnackbar.error(context, e.toString().replaceAll('Exception: ', ''));
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isNavigating = false;
-        });
-      }
+    if (!mounted) return;
+    context.push(
+      '/payment',
+      extra: {
+        'planName': plan.name,
+        'isYearly': _isYearly,
+        'price': _getDisplayPrice(plan),
+        'isUpgrade': widget.isUpgrade,
+        'companyId': companyId,
+      },
+    );
+  } catch (e) {
+    if (mounted) {
+      AppFeedback.playSound(ref, AppSound.error);
+      AppSnackbar.error(context, e.toString().replaceAll('Exception: ', ''));
+    }
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isNavigating = false;
+      });
     }
   }
+}
 
   void _handleBack() {
     if (context.canPop()) {

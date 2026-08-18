@@ -138,11 +138,11 @@ service cloud.firestore {
     // yang cuma syaratnya login+owner tanpa cek isi data.
     //
     // Create dari client HANYA diizinkan untuk paket gratis/trial dengan
-    // limit yang dikunci ke nilai default aplikasi (SubscriptionLimits()
-    // di subscription.dart: 1 laundry, 5 karyawan, 500 order/bulan) --
-    // BUKAN nilai bebas kiriman client. Kalau nanti ada field/plan_id
-    // gratis lain, sesuaikan kondisi di bawah supaya tetap terkunci ke
-    // angka yang benar (jangan dilonggarkan jadi "asal ada nilainya").
+    // limit yang dikunci ke angka paket Free di choose_plan_screen.dart
+    // (1 laundry, 5 karyawan, 100 order/bulan) -- BUKAN nilai bebas kiriman
+    // client. Kalau nanti angka paket Free berubah, sesuaikan kondisi di
+    // bawah supaya tetap terkunci ke angka yang benar (jangan dilonggarkan
+    // jadi "asal ada nilainya").
     match /users/{userId}/subscriptions/{subId} {
       allow read: if isAuthenticated() && isOwner(userId);
 
@@ -152,7 +152,7 @@ service cloud.firestore {
         && request.resource.data.status in ['trialing', 'active']
         && request.resource.data.limits.max_laundries == 1
         && request.resource.data.limits.max_employees == 5
-        && request.resource.data.limits.max_orders_per_month == 500;
+        && request.resource.data.limits.max_orders_per_month == 100;
 
       // Update dari client dibatasi ke field yang memang wajar berubah
       // lewat aplikasi (mis. membatalkan langganan sendiri). Ganti plan_id
