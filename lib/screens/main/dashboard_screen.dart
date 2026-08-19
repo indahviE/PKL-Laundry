@@ -262,8 +262,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             // pasif. Cuma buat status 'trialing' spesifik, BUKAN
             // past_due/grace period paket berbayar (itu sudah ditangani
             // banner oranye + _showRenewalReminderDialog yang ada).
-            if (subscription != null &&
-                subscription.status == 'trialing' &&
+            // Free trial yang sudah lewat current_period_end awalnya masih
+            // berstatus 'trialing' (paywall muncul di sini), TAPI Cloud
+            // Function expireFreeTrialSubscriptions (functions/index.js)
+            // jalan tiap hari jam 01:00 WIB dan mengubah status dokumen
+            // free yang sudah expired jadi 'canceled'. Kalau kondisi di
+            // bawah cuma cek status == 'trialing', begitu job itu jalan
+            // paywall (dan tombol nonton iklannya) tidak akan pernah
+            // muncul lagi untuk dokumen yang sama - persis skenario
+            // "kemarin muncul, sekarang tidak". Makanya di sini juga
+            // dicek status == 'canceled' khusus untuk plan Free (sesuai
+            // hook yang sudah disiapkan di komentar functions/index.js).
+            final isExpiredFreeTrial = subscription != null &&
+                subscription.planId == 'free' &&
+                (subscription.status == 'trialing' ||
+                    subscription.status == 'canceled');
+
+            if (isExpiredFreeTrial &&
                 !access.allowed &&
                 _paywallShownForSubId != subscription.id) {
               _paywallShownForSubId = subscription.id;
