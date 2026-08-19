@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
@@ -1830,9 +1831,31 @@ class _ConfirmDeliverySheetState extends ConsumerState<ConfirmDeliverySheet> {
                     color: _DS.primary.withOpacity(0.06),
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
-                  child: Text(
-                    l10n.noCourierEmployeeDeliverHint,
-                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.noCourierEmployeeDeliverHint,
+                        style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _DS.onSurfaceVariant),
+                      ),
+                      const SizedBox(height: 4),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () => context.push('/employees/create'),
+                          icon: const Icon(Icons.person_add_alt_1_rounded, size: 15),
+                          label: Text(
+                            l10n.addEmployeeCta,
+                            style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 )
               else

@@ -1428,6 +1428,17 @@
   },
   "assignOperatorFieldLabel": "Operator",
   "assignOperatorEmptyState": "No active employees available to assign",
+  "addEmployeeCta": "Add Employee",
+  "missingKeyPositionsTitle": "Some key positions are not filled yet",
+  "missingKeyPositionsSubtitle": "No active employees yet for: {positions}. Orders/deliveries still work, but operator/courier assignment for these positions can't be selected.",
+  "@missingKeyPositionsSubtitle": {
+    "placeholders": {
+      "positions": {
+        "type": "String"
+      }
+    }
+  },
+  "dismissLabel": "Not now",
   "assignOperatorConfirmButtonLabel": "Assign & Continue",
   "currentOperatorLabel": "Currently handled by {name}",
   "@currentOperatorLabel": {

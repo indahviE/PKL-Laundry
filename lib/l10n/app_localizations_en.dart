@@ -2652,6 +2652,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'No active employees available to assign';
 
   @override
+  String get addEmployeeCta => 'Add Employee';
+
+  @override
+  String get missingKeyPositionsTitle =>
+      'Some key positions are not filled yet';
+
+  @override
+  String missingKeyPositionsSubtitle(String positions) {
+    return 'No active employees yet for: $positions. Orders/deliveries still work, but operator/courier assignment for these positions can\'t be selected.';
+  }
+
+  @override
+  String get dismissLabel => 'Not now';
+
+  @override
   String get assignOperatorConfirmButtonLabel => 'Assign & Continue';
 
   @override

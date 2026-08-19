@@ -12,6 +12,8 @@ import '../../repositories/subscription_repository.dart';
 import '../../services/subscription_service.dart';
 import '../../services/subscription_reminder_service.dart';
 import '../../core/widgets/trial_paywall_dialog.dart';
+import '../../models/employee.dart';
+import '../../repositories/employee_repository.dart';
 
 /// Dashboard Screen - NetWash
 /// Terintegrasi dengan Firebase Firestore (Real-time Streams)
@@ -64,6 +66,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   // Status dismiss checklist onboarding secara lokal
   bool _setupDismissed = false;
+  bool _missingPositionsDismissed = false;
+
+  // Jabatan yang benar-benar dipakai logic sistem (bukan sekadar label):
+  // - dipakai buat filter "siapa yang bisa ditugaskan" per tahap proses
+  //   cuci/kering/setrika/QC (lihat _allowedPositionsByStage di
+  //   order_detail_screen.dart)
+  // - "Kurir" dipakai buat filter pilihan kurir di halaman antar-jemput
+  // Kalau daftar di sana berubah, sesuaikan juga daftar ini supaya
+  // reminder di dashboard tetap relevan.
+  static const List<String> _keyPositions = [
+    'Operator Cuci',
+    'Operator Pengering',
+    'Operator Setrika',
+    'Quality Control',
+    'Kurir',
+  ];
 
   // Jumlah pending order terakhir yang sudah "diketahui". null = belum
   // pernah dapat data sama sekali (baru buka dashboard) -> jangan bunyi
@@ -189,6 +207,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           const SizedBox(height: AppTheme.xl),
                           _buildSetupChecklistRealtime(t),
                           const SizedBox(height: AppTheme.xl),
+                          _buildMissingPositionsWarning(t),
                           _buildQuickActions(context, t),
                           const SizedBox(height: AppTheme.xl),
                           _buildWeeklyChartRealtime(t),
@@ -262,23 +281,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             // pasif. Cuma buat status 'trialing' spesifik, BUKAN
             // past_due/grace period paket berbayar (itu sudah ditangani
             // banner oranye + _showRenewalReminderDialog yang ada).
-            // Free trial yang sudah lewat current_period_end awalnya masih
-            // berstatus 'trialing' (paywall muncul di sini), TAPI Cloud
-            // Function expireFreeTrialSubscriptions (functions/index.js)
-            // jalan tiap hari jam 01:00 WIB dan mengubah status dokumen
-            // free yang sudah expired jadi 'canceled'. Kalau kondisi di
-            // bawah cuma cek status == 'trialing', begitu job itu jalan
-            // paywall (dan tombol nonton iklannya) tidak akan pernah
-            // muncul lagi untuk dokumen yang sama - persis skenario
-            // "kemarin muncul, sekarang tidak". Makanya di sini juga
-            // dicek status == 'canceled' khusus untuk plan Free (sesuai
-            // hook yang sudah disiapkan di komentar functions/index.js).
-            final isExpiredFreeTrial = subscription != null &&
-                subscription.planId == 'free' &&
-                (subscription.status == 'trialing' ||
-                    subscription.status == 'canceled');
-
-            if (isExpiredFreeTrial &&
+            if (subscription != null &&
+                subscription.status == 'trialing' &&
                 !access.allowed &&
                 _paywallShownForSubId != subscription.id) {
               _paywallShownForSubId = subscription.id;
@@ -1427,6 +1431,111 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               },
             );
           },
+        );
+      },
+    );
+  }
+
+  // ============================================
+  // REMINDER: JABATAN KUNCI YANG BELUM PUNYA KARYAWAN AKTIF
+  // ============================================
+  // Beda dari _buildSetupChecklistRealtime (yang cuma ngecek "ada
+  // minimal 1 karyawan" secara umum) - ini ngecek per-jabatan yang
+  // benar-benar dipakai logic assignment (_keyPositions). Sengaja
+  // cuma alert/reminder, BUKAN hard block: laundry kecil sering satu
+  // karyawan rangkap beberapa jabatan, jadi order/pengiriman tetap
+  // harus bisa jalan meski assignment operator/kurir di-skip manual.
+  Widget _buildMissingPositionsWarning(AppLocalizations t) {
+    if (_missingPositionsDismissed) return const SizedBox.shrink();
+
+    final employeeRepo = EmployeeRepository(userId: _currentUserId);
+
+    return StreamBuilder<List<Employee>>(
+      stream: employeeRepo.streamEmployees(),
+      builder: (context, snapshot) {
+        final employees = snapshot.data ?? [];
+        // Belum ada data / masih loading -> jangan tampilkan apa-apa dulu
+        // supaya tidak flicker "semua jabatan kosong" sesaat sebelum data
+        // stream pertama datang.
+        if (!snapshot.hasData) return const SizedBox.shrink();
+
+        // Kalau belum ada karyawan sama sekali, biarkan
+        // _buildSetupChecklistRealtime yang mengurus reminder-nya supaya
+        // tidak dobel pesan di dashboard yang sama.
+        if (employees.isEmpty) return const SizedBox.shrink();
+
+        final activePositions = employees
+            .where((e) => e.isActive)
+            .map((e) => e.position.trim().toLowerCase())
+            .toSet();
+
+        final missing = _keyPositions
+            .where((p) => !activePositions.contains(p.trim().toLowerCase()))
+            .toList();
+
+        if (missing.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: AppTheme.xl),
+          padding: const EdgeInsets.all(AppTheme.md),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF7E6),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            border: Border.all(color: const Color(0xFFFCD34D).withOpacity(0.6)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFFB45309)),
+              const SizedBox(width: AppTheme.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.missingKeyPositionsTitle,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF92400E)),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      t.missingKeyPositionsSubtitle(missing.join(', ')),
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () => context.push('/employees/create'),
+                          child: Text(
+                            t.addEmployeeCta,
+                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF92400E)),
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.md),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () => setState(() => _missingPositionsDismissed = true),
+                          child: Text(
+                            t.dismissLabel,
+                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );

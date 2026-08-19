@@ -4838,6 +4838,30 @@ abstract class AppLocalizations {
   /// **'Belum ada karyawan aktif yang bisa ditugaskan'**
   String get assignOperatorEmptyState;
 
+  /// No description provided for @addEmployeeCta.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah Karyawan'**
+  String get addEmployeeCta;
+
+  /// No description provided for @missingKeyPositionsTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ada jabatan penting yang belum terisi'**
+  String get missingKeyPositionsTitle;
+
+  /// No description provided for @missingKeyPositionsSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada karyawan aktif untuk: {positions}. Order/pengiriman tetap bisa jalan, tapi assignment operator/kurir untuk jabatan ini belum bisa dipilih.'**
+  String missingKeyPositionsSubtitle(String positions);
+
+  /// No description provided for @dismissLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Nanti saja'**
+  String get dismissLabel;
+
   /// No description provided for @assignOperatorConfirmButtonLabel.
   ///
   /// In id, this message translates to:

@@ -2665,6 +2665,21 @@ class AppLocalizationsId extends AppLocalizations {
       'Belum ada karyawan aktif yang bisa ditugaskan';
 
   @override
+  String get addEmployeeCta => 'Tambah Karyawan';
+
+  @override
+  String get missingKeyPositionsTitle =>
+      'Ada jabatan penting yang belum terisi';
+
+  @override
+  String missingKeyPositionsSubtitle(String positions) {
+    return 'Belum ada karyawan aktif untuk: $positions. Order/pengiriman tetap bisa jalan, tapi assignment operator/kurir untuk jabatan ini belum bisa dipilih.';
+  }
+
+  @override
+  String get dismissLabel => 'Nanti saja';
+
+  @override
   String get assignOperatorConfirmButtonLabel => 'Tugaskan & Lanjut';
 
   @override

@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/services/app_feedback.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../delivery/create_delivery_screen.dart' show CreateDeliveryScheduleScreen;
@@ -1039,9 +1040,37 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
                       if (activeEmployees.isEmpty) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            _t.assignOperatorEmptyState,
-                            style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _t.assignOperatorEmptyState,
+                                style: GoogleFonts.beVietnamPro(fontSize: 12.5, color: _cOnSurfaceVariant),
+                              ),
+                              const SizedBox(height: 4),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton.icon(
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  onPressed: () {
+                                    // Dialog ditutup dulu sebelum pindah halaman,
+                                    // supaya gak numpuk route di atas dialog yang
+                                    // masih kebuka (dialogContext bakal jadi stale).
+                                    Navigator.of(dialogContext).pop();
+                                    context.push('/employees/create');
+                                  },
+                                  icon: const Icon(Icons.person_add_alt_1_rounded, size: 15),
+                                  label: Text(
+                                    _t.addEmployeeCta,
+                                    style: GoogleFonts.beVietnamPro(fontSize: 12.5, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       }

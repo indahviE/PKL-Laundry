@@ -1474,6 +1474,17 @@
   },
   "assignOperatorFieldLabel": "Operator",
   "assignOperatorEmptyState": "Belum ada karyawan aktif yang bisa ditugaskan",
+  "addEmployeeCta": "Tambah Karyawan",
+  "missingKeyPositionsTitle": "Ada jabatan penting yang belum terisi",
+  "missingKeyPositionsSubtitle": "Belum ada karyawan aktif untuk: {positions}. Order/pengiriman tetap bisa jalan, tapi assignment operator/kurir untuk jabatan ini belum bisa dipilih.",
+  "@missingKeyPositionsSubtitle": {
+    "placeholders": {
+      "positions": {
+        "type": "String"
+      }
+    }
+  },
+  "dismissLabel": "Nanti saja",
   "assignOperatorConfirmButtonLabel": "Tugaskan & Lanjut",
   "currentOperatorLabel": "Sedang dikerjakan oleh {name}",
   "@currentOperatorLabel": {
