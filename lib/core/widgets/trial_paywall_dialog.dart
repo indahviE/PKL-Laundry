@@ -125,7 +125,16 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
               child: OutlinedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  context.go('/choose-plan');
+                  // Wajib pakai extra isUpgrade: true. Subscription status
+                  // masih 'trialing' di titik ini (belum sempat diubah jadi
+                  // 'canceled' oleh Cloud Function harian), jadi
+                  // hasActiveSubscription() di routes.dart masih anggap
+                  // user "aktif" dan redirect guard-nya bakal nendang balik
+                  // ke '/dashboard' begitu lihat '/choose-plan' tanpa flag
+                  // ini (dianggap onboarding route biasa yang harus
+                  // di-skip user yang sudah onboarded) - makanya keliatan
+                  // kayak dialog cuma ke-close tanpa pindah halaman.
+                  context.push('/choose-plan', extra: {'isUpgrade': true});
                 },
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
