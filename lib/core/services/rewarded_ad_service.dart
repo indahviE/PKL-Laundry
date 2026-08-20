@@ -12,11 +12,10 @@ class RewardedAdService {
   RewardedAd? _rewardedAd;
   bool _isLoading = false;
 
-  // TODO: ganti ke Ad Unit ID asli sebelum production!
-  static const String _testAdUnitId =
-      'ca-app-pub-3940256099942544/5224354917';
+  static const String _rewardedAdUnitId =
+      'ca-app-pub-9762254209738667/1476656162'; // <- ganti xxxxxxxxxx sesuai Ad Unit ID asli
 
-  String get _adUnitId => _testAdUnitId;
+  String get _adUnitId => _rewardedAdUnitId;
 
   /// Panggil ini duluan (misal pas buka halaman "Choose Plan"),
   /// supaya iklan udah siap dari sebelum user klik tombol.
