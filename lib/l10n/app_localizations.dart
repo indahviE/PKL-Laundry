@@ -950,6 +950,48 @@ abstract class AppLocalizations {
   /// **'Nanti Saja'**
   String get remindLaterAction;
 
+  /// No description provided for @trialPaywallTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Masa Uji Coba Anda Telah Berakhir'**
+  String get trialPaywallTitle;
+
+  /// No description provided for @trialPaywallMessage.
+  ///
+  /// In id, this message translates to:
+  /// **'Tonton iklan untuk melanjutkan akses selama 1 hari lagi, atau upgrade sekarang untuk akses penuh tanpa batas waktu.'**
+  String get trialPaywallMessage;
+
+  /// No description provided for @trialPaywallWatchAdButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Tonton Iklan (+1 Hari)'**
+  String get trialPaywallWatchAdButton;
+
+  /// No description provided for @trialPaywallLoadingButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Memuat...'**
+  String get trialPaywallLoadingButton;
+
+  /// No description provided for @trialPaywallWaitingButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Menunggu... ({seconds} detik)'**
+  String trialPaywallWaitingButton(int seconds);
+
+  /// No description provided for @trialPaywallUpgradeButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Upgrade Sekarang'**
+  String get trialPaywallUpgradeButton;
+
+  /// No description provided for @trialExtendedSnackbar.
+  ///
+  /// In id, this message translates to:
+  /// **'Akses Anda telah ditambah 1 hari.'**
+  String get trialExtendedSnackbar;
+
   /// No description provided for @quotaLimitReached.
   ///
   /// In id, this message translates to:

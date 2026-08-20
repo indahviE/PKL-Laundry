@@ -475,6 +475,30 @@ class AppLocalizationsId extends AppLocalizations {
   String get remindLaterAction => 'Nanti Saja';
 
   @override
+  String get trialPaywallTitle => 'Masa Uji Coba Anda Telah Berakhir';
+
+  @override
+  String get trialPaywallMessage =>
+      'Tonton iklan untuk melanjutkan akses selama 1 hari lagi, atau upgrade sekarang untuk akses penuh tanpa batas waktu.';
+
+  @override
+  String get trialPaywallWatchAdButton => 'Tonton Iklan (+1 Hari)';
+
+  @override
+  String get trialPaywallLoadingButton => 'Memuat...';
+
+  @override
+  String trialPaywallWaitingButton(int seconds) {
+    return 'Menunggu... ($seconds detik)';
+  }
+
+  @override
+  String get trialPaywallUpgradeButton => 'Upgrade Sekarang';
+
+  @override
+  String get trialExtendedSnackbar => 'Akses Anda telah ditambah 1 hari.';
+
+  @override
   String quotaLimitReached(String label) {
     return 'Batas kuota paket Starter untuk $label telah tercapai! Silakan upgrade.';
   }
