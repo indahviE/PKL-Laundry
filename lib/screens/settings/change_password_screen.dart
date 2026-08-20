@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Local design tokens — DISAMAIN PERSIS dengan _DS di
 /// reports_screen.dart / services_list_screen.dart (Be Vietnam Pro,
@@ -107,38 +108,39 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       await user.updatePassword(_newPasswordController.text);
 
       if (!mounted) return;
+      final t = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password berhasil diubah')),
+        SnackBar(content: Text(t.passwordChangeSuccess)),
       );
       Navigator.pop(context, true);
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_mapError(e))),
+        SnackBar(content: Text(_mapError(e, AppLocalizations.of(context)!))),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal ubah password: $e')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.passwordChangeGenericError(e.toString()))),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 
-  String _mapError(FirebaseAuthException e) {
+  String _mapError(FirebaseAuthException e, AppLocalizations t) {
     switch (e.code) {
       case 'wrong-password':
       case 'invalid-credential':
-        return 'Password lama salah';
+        return t.wrongOldPasswordError;
       case 'weak-password':
-        return 'Password baru terlalu lemah, minimal 6 karakter';
+        return t.weakPasswordError;
       case 'requires-recent-login':
-        return 'Sesi login kamu udah lama, silakan login ulang dulu';
+        return t.requiresRecentLoginError;
       case 'too-many-requests':
-        return 'Terlalu banyak percobaan, coba lagi nanti';
+        return t.tooManyRequestsError;
       default:
-        return 'Gagal ubah password: ${e.message}';
+        return t.passwordChangeGenericError(e.message ?? '');
     }
   }
 
@@ -214,7 +216,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            'Ubah Password',
+            AppLocalizations.of(context)!.changePasswordTitle,
             style: _DS.headlineMd(color: _DS.navy),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -240,41 +242,41 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _sectionLabel('Password Lama'),
+            _sectionLabel(AppLocalizations.of(context)!.oldPasswordLabel),
             _buildPasswordField(
               controller: _oldPasswordController,
               obscure: _obscureOld,
               onToggle: () => setState(() => _obscureOld = !_obscureOld),
               validator: (v) {
-                if (v == null || v.isEmpty) return 'Password lama wajib diisi';
+                if (v == null || v.isEmpty) return AppLocalizations.of(context)!.oldPasswordRequiredError;
                 return null;
               },
             ),
             const SizedBox(height: 18),
-            _sectionLabel('Password Baru'),
+            _sectionLabel(AppLocalizations.of(context)!.newPasswordLabel),
             _buildPasswordField(
               controller: _newPasswordController,
               obscure: _obscureNew,
               onToggle: () => setState(() => _obscureNew = !_obscureNew),
               validator: (v) {
-                if (v == null || v.isEmpty) return 'Password baru wajib diisi';
-                if (v.length < 6) return 'Minimal 6 karakter';
+                if (v == null || v.isEmpty) return AppLocalizations.of(context)!.newPasswordRequiredError;
+                if (v.length < 6) return AppLocalizations.of(context)!.passwordMinLengthError;
                 if (v == _oldPasswordController.text) {
-                  return 'Password baru gak boleh sama dengan yang lama';
+                  return AppLocalizations.of(context)!.newPasswordSameAsOldError;
                 }
                 return null;
               },
             ),
             const SizedBox(height: 18),
-            _sectionLabel('Konfirmasi Password Baru'),
+            _sectionLabel(AppLocalizations.of(context)!.confirmPasswordLabel),
             _buildPasswordField(
               controller: _confirmPasswordController,
               obscure: _obscureConfirm,
               onToggle: () => setState(() => _obscureConfirm = !_obscureConfirm),
               validator: (v) {
-                if (v == null || v.isEmpty) return 'Konfirmasi password wajib diisi';
+                if (v == null || v.isEmpty) return AppLocalizations.of(context)!.confirmPasswordRequiredError;
                 if (v != _newPasswordController.text) {
-                  return 'Konfirmasi tidak cocok dengan password baru';
+                  return AppLocalizations.of(context)!.confirmPasswordMismatchError;
                 }
                 return null;
               },
@@ -312,7 +314,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           ),
           const SizedBox(height: 14),
           Text(
-            'Akun kamu login pakai provider lain (misalnya Google), jadi gak ada password yang bisa diubah di sini.',
+            AppLocalizations.of(context)!.otherProviderNotice,
             style: _DS.bodySm(),
           ),
         ],
@@ -394,7 +396,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
               )
             : Text(
-                'Simpan Password Baru',
+                AppLocalizations.of(context)!.savePasswordButton,
                 style: _DS.bodyMd(color: Colors.white, weight: FontWeight.w600),
               ),
       ),
