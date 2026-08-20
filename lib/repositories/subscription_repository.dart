@@ -94,6 +94,19 @@ class SubscriptionRepository {
     });
   }
 
+  /// True kalau company ini SUDAH PERNAH punya dokumen subscription
+  /// dengan plan_id 'free', apa pun status-nya sekarang (trialing,
+  /// canceled, dst). Dipakai ChoosePlanScreen buat nge-block user
+  /// pilih paket Free lebih dari sekali.
+  Future<bool> hasEverUsedFreePlan(String companyId) async {
+    final snapshot = await _subscriptionsRef
+        .where('company_id', isEqualTo: companyId)
+        .where('plan_id', isEqualTo: 'free')
+        .limit(1)
+        .get();
+    return snapshot.docs.isNotEmpty;
+  }
+
   /// FIX: Pengurutan riwayat di memori untuk menghindari index crash
   Stream<List<Subscription>> streamSubscriptionHistory(String companyId) {
     return _subscriptionsRef

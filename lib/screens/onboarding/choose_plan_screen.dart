@@ -102,6 +102,7 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   // mis. user di Enterprise (unlimited) sudah punya 8 cabang, nggak
   // boleh pindah ke Starter yang cuma boleh 1 cabang.
   int _currentLaundryCount = 0;
+  bool _hasUsedFreePlan = false;
   int _currentEmployeeCount = 0;
 
   // Pricing plans
@@ -111,9 +112,23 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   void initState() {
     super.initState();
     _initializePlans();
+    _loadFreePlanUsage();
     if (widget.isUpgrade) {
       _loadCurrentPlan();
       _loadUsageCounts();
+    }
+  }
+
+  Future<void> _loadFreePlanUsage() async {
+    final authRepo = ref.read(authRepositoryProvider);
+    final uid = authRepo.currentUser?.uid;
+    final companyId = await authRepo.getPrimaryCompanyId();
+    if (uid == null || companyId == null) return;
+
+    final usedFree = await SubscriptionRepository(userId: uid)
+        .hasEverUsedFreePlan(companyId);
+    if (mounted) {
+      setState(() => _hasUsedFreePlan = usedFree);
     }
   }
 
@@ -191,6 +206,10 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
   /// kartu paket, dan buat validasi terakhir sebelum _handleSelectPlan
   /// lanjut ke pembayaran).
   String? _planBlockReason(PricingPlan plan) {
+    if (plan.name == 'Free' && _hasUsedFreePlan) {
+      return 'Paket Free cuma bisa dipakai sekali. Pilih paket berbayar untuk lanjut.';
+    }
+    
     if (!widget.isUpgrade) return null;
 
     final overLaundries = plan.maxLaundries != -1 &&
