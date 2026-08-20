@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/services/app_feedback.dart';
+import '../../repositories/subscription_repository.dart';
+import '../../services/subscription_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/app_input.dart';
 
@@ -114,7 +116,7 @@ class _EditCustomerScreenState extends ConsumerState<EditCustomerScreen> {
       return;
     }
 
-    setState(() => _isSaving = true);
+        setState(() => _isSaving = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -123,6 +125,26 @@ class _EditCustomerScreenState extends ConsumerState<EditCustomerScreen> {
       }
 
       final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+      // FEATURE GATING: edit customer termasuk actionType transactional -
+      // diblok begitu subscription expired & lewat grace period. Ambil
+      // company_id dari subcollection companies (sama seperti
+      // create_customer_screen) karena EditCustomerScreen tidak
+      // menyimpan companyId langsung.
+      final companiesSnapshot = await userDocRef.collection('companies').limit(1).get();
+      if (companiesSnapshot.docs.isNotEmpty) {
+        final companyId = companiesSnapshot.docs.first.id;
+        final subscriptionRepo = ref.read(subscriptionRepositoryProvider);
+        final subscription =
+            await subscriptionRepo.streamSubscriptionForCompany(companyId).first;
+        final subscriptionService =
+            SubscriptionService(currentSubscription: subscription);
+        final access =
+            subscriptionService.checkAccess(SubscriptionActionType.transactional);
+        if (!access.allowed) {
+          throw l10n.subscriptionExpiredWarning;
+        }
+      }
 
       await userDocRef.collection('customers').doc(widget.customerId).update({
         'full_name': _nameController.text.trim(),

@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/themes/app_theme.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/services/app_feedback.dart';
+import '../../repositories/subscription_repository.dart';
+import '../../services/subscription_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common/app_input.dart';
 
@@ -168,7 +170,7 @@ class _CreateCustomerScreenState extends ConsumerState<CreateCustomerScreen> {
       return;
     }
 
-    if (_selectedLaundryId == null) {
+        if (_selectedLaundryId == null) {
       _showError(_laundriesError ?? 'Cabang belum siap, coba lagi sebentar.');
       return;
     }
@@ -189,6 +191,20 @@ class _CreateCustomerScreenState extends ConsumerState<CreateCustomerScreen> {
         throw l10n.companyNotSetupError;
       }
       final companyId = companiesSnapshot.docs.first.id;
+
+      // FEATURE GATING: bikin customer baru termasuk actionType
+      // transactional (operasional harian) - diblok begitu subscription
+      // expired & lewat grace period.
+      final subscriptionRepo = ref.read(subscriptionRepositoryProvider);
+      final subscription =
+          await subscriptionRepo.streamSubscriptionForCompany(companyId).first;
+      final subscriptionService =
+          SubscriptionService(currentSubscription: subscription);
+      final access =
+          subscriptionService.checkAccess(SubscriptionActionType.transactional);
+      if (!access.allowed) {
+        throw l10n.subscriptionExpiredWarning;
+      }
 
       final customersRef = userDocRef.collection('customers');
       final customerCode = await _generateCustomerCode(customersRef);

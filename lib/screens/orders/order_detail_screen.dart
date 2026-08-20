@@ -20,6 +20,8 @@ import '../../models/order.dart';
 import '../../models/transaction.dart';
 import '../../models/user_model.dart';
 import '../../models/employee.dart';
+import '../../repositories/subscription_repository.dart';
+import '../../services/subscription_service.dart';
 import '../../repositories/order_repository.dart';
 import '../../repositories/user_repository.dart';
 import '../../repositories/employee_repository.dart';
@@ -889,11 +891,38 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen>
     String? employeeId,
     String? employeeName,
   }) async {
-    if (_order == null) return;
+        if (_order == null) return;
 
     setState(() => _isUpdatingStatus = true);
 
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw _t.sessionNotFoundError;
+
+      // FEATURE GATING: ubah status order = actionType transactional -
+      // diblok begitu subscription expired & lewat grace period. Ambil
+      // company_id dari subcollection companies (1 user = 1 perusahaan,
+      // sesuai pola create_order_screen/create_customer_screen).
+      final companySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('companies')
+          .limit(1)
+          .get();
+      if (companySnapshot.docs.isNotEmpty) {
+        final companyId = companySnapshot.docs.first.id;
+        final subscriptionRepo = SubscriptionRepository(userId: user.uid);
+        final subscription =
+            await subscriptionRepo.streamSubscriptionForCompany(companyId).first;
+        final subscriptionService =
+            SubscriptionService(currentSubscription: subscription);
+        final access =
+            subscriptionService.checkAccess(SubscriptionActionType.transactional);
+        if (!access.allowed) {
+          throw _t.subscriptionExpiredWarning;
+        }
+      }
+
       final historyEntry = {
         'status': newStatus,
         'timestamp': Timestamp.now(),

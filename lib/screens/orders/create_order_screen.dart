@@ -600,20 +600,32 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
       return;
     }
 
-    // FEATURE GATING (kuota, poin 7): order TIDAK diblok status
-    // subscription (transactional action - lihat komentar di
-    // SubscriptionService), cuma dibatasi limits.max_orders_per_month.
-    // _subscriptionService null berarti data gating belum siap (mis.
-    // _fetchBusinessContext masih jalan/gagal) - dibiarkan lolos supaya
-    // tidak memblok order gara-gara gating, bukan gara-gara kuota beneran
-    // penuh.
-    final subscriptionService = _subscriptionService;
-    if (subscriptionService != null &&
-        !subscriptionService.canCreateOrder(_ordersThisMonthCount ?? 0)) {
-      _showErrorSnack(_t.orderQuotaReachedError);
-      return;
-    }
+        // FEATURE GATING (poin 7, UPDATED): order SEKARANG ikut diblok status
+      // subscription juga (checkAccess), bukan cuma kuota lagi - lihat
+      // update di SubscriptionService.checkAccess(). Urutannya sengaja
+      // checkAccess (STATUS) dulu baru canCreateOrder (KUOTA): kalau memang
+      // sudah expired, tidak perlu buang cek kuota segala, langsung tolak
+      // di status duluan.
+      //
+      // _subscriptionService null berarti data gating belum siap (mis.
+      // _fetchBusinessContext masih jalan/gagal) - dibiarkan lolos supaya
+      // tidak memblok order gara-gara gating belum ready, bukan gara-gara
+      // subscription/kuota beneran bermasalah.
+      final subscriptionService = _subscriptionService;
+      if (subscriptionService != null) {
+        final accessResult =
+            subscriptionService.checkAccess(SubscriptionActionType.transactional);
+        if (!accessResult.allowed) {
+          _showErrorSnack(_t.subscriptionExpiredWarning);
+          return;
+        }
 
+        if (!subscriptionService.canCreateOrder(_ordersThisMonthCount ?? 0)) {
+          _showErrorSnack(_t.orderQuotaReachedError);
+          return;
+        }
+      }
+      
     final totalItems = _orderItems.fold<int>(0, (sum, item) => sum + item.quantity);
 
     // Total berat cuma dijumlah dari item yang pricingType-nya perKg -

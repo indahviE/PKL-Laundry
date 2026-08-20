@@ -149,18 +149,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       final paymentActive = await authRepo.hasActiveSubscription();
       if (!paymentActive) {
-        // FIX: hasActiveSubscription() cuma true kalau status == 'active'
-        // (lihat auth_repository.dart), jadi subscription yang lagi
-        // 'past_due' TAPI masih dalam masa tenggang (gracePeriodDays,
-        // lihat SubscriptionService) ikut kena kondisi ini -- padahal
-        // guard fitur lain (create_employee_screen dkk, lewat
-        // SubscriptionService.checkAccess) masih mengizinkan mereka
-        // pakai app selama grace period. Sebelum fix ini, begitu status
-        // pindah ke past_due, user langsung ditendang ke /payment dan
-        // (karena redirect ini tidak bisa bawa `extra`) jatuh ke
-        // ChoosePlanScreen(isUpgrade: false) -- tampilan onboarding
-        // "Pilih Paket yang Sesuai" dari nol, padahal mereka sebenarnya
-        // cuma perlu PERPANJANG paket yang sudah pernah mereka punya.
         final companyId = await authRepo.getPrimaryCompanyId();
         Subscription? existingSub;
         if (companyId != null) {
@@ -168,47 +156,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           existingSub = await subRepo.streamSubscriptionForCompany(companyId).first;
         }
 
-        final subscriptionService =
-            SubscriptionService(currentSubscription: existingSub);
-
-        if (subscriptionService.isInGracePeriod) {
-          // Masih dalam masa tenggang -> jangan blokir/redirect sama
-          // sekali. Banner + reminder popup di dashboard sudah cukup
-          // buat ngingetin, user tetap boleh pakai app seperti biasa.
-        } else if (existingSub != null) {
-          // Sudah PERNAH punya subscription (bukan onboarding pertama
-          // kali) tapi sekarang expired & lewat grace period -> arahkan
-          // ke /choose-plan dengan query ?upgrade=true, supaya
-          // ChoosePlanScreen tau ini konteks PERPANJANG (badge "Perlu
-          // Diperpanjang", bandingin plan+periode aktif, dst -- bukan
-          // onboarding kosong). Pakai query param (bukan `extra`) karena
-          // redirect callback GoRouter cuma bisa balikin String lokasi,
-          // dan query param tetap kebawa walau lewat reload/redirect
-          // (beda dengan `extra` yang hilang di kasus ini).
-          //
-          // FIX: harus ngecualiin navigasi /payment yang BENERAN bagian
-          // dari flow renewal ini (dipush dari _handleSelectPlan dengan
-          // extra {'isUpgrade': true, 'planName': ..., dst} setelah user
-          // pencet "Perpanjang Paket Ini"). Sebelum ada pengecualian ini,
-          // begitu ChoosePlanScreen push ke '/payment', redirect ini
-          // langsung jalan lagi, lihat location == '/payment' (bukan
-          // '/choose-plan'), dan MENTAL balikin ke '/choose-plan?upgrade=true'
-          // lagi -- jadi tombol "Perpanjang Paket Ini" keliatan kayak
-          // nggak ngapa-ngapain padahal sebenarnya navigasinya langsung
-          // di-cancel sendiri sama guard ini.
-          final extra = state.extra;
-          final isUpgradeFlow = extra is Map && extra['isUpgrade'] == true;
-          final isRenewalNavTarget =
-              isUpgradeFlow && (location == '/choose-plan' || location == '/payment');
-
-          if (location == '/choose-plan' || isRenewalNavTarget) return null;
-          return '/choose-plan?upgrade=true';
-        } else {
-          // Belum pernah subscribe sama sekali -> flow onboarding
-          // normal (planChosen sudah true tapi belum pernah bayar).
+        // Belum PERNAH punya subscription sama sekali (masih bagian onboarding
+        // awal - planChosen true tapi belum pernah bayar sekalipun) -> tetap
+        // dipaksa ke /payment. Ini bukan kasus "expired", karena memang belum
+        // pernah ada apa pun yang bisa expired.
+        if (existingSub == null) {
           if (location == '/payment') return null;
           return '/payment';
         }
+
+        // Sudah PERNAH subscribe (trial atau paid) tapi sekarang statusnya
+        // tidak aktif -> TIDAK dipaksa redirect lagi ke /choose-plan. User
+        // boleh navigasi ke mana pun termasuk /dashboard; yang menentukan
+        // boleh/tidaknya tiap AKSI (bikin order, tambah karyawan, dst) adalah
+        // SubscriptionService.checkAccess() di masing-masing screen, bukan
+        // router ini. Router cuma ngurus rute, bukan izin per-aksi.
       }
 
       // Kecualikan flow upgrade: /choose-plan dan /payment memang

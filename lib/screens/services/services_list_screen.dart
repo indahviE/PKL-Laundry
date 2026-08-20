@@ -9,6 +9,10 @@ import '../../core/themes/app_theme.dart';
 import '../../models/laundry.dart';
 import '../../models/service.dart';
 import '../../providers/auth_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../repositories/subscription_repository.dart';
+import '../../services/subscription_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../repositories/laundry_repository.dart';
 import '../../repositories/service_repository.dart';
 
@@ -912,10 +916,38 @@ class _EditServiceSheetState extends ConsumerState<_EditServiceSheet> {
       return;
     }
 
-    final l10n = AppLocalizations.of(context)!;
-    setState(() => _isSaving = true);
+        final l10n = AppLocalizations.of(context)!;
+          setState(() => _isSaving = true);
 
-    try {
+          try {
+            final user = FirebaseAuth.instance.currentUser;
+            if (user == null) throw l10n.sessionNotFoundError;
+
+            // FEATURE GATING: edit service = actionType administrative (sama
+            // seperti create_service_screen.dart) - diblok begitu subscription
+            // expired & lewat grace period.
+            final companySnapshot = await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .collection('companies')
+                .limit(1)
+                .get();
+            if (companySnapshot.docs.isEmpty) {
+              throw l10n.companyNotSetupError;
+            }
+            final companyId = companySnapshot.docs.first.id;
+
+            final subscriptionRepo = SubscriptionRepository(userId: user.uid);
+            final subscription =
+                await subscriptionRepo.streamSubscriptionForCompany(companyId).first;
+            final subscriptionService =
+                SubscriptionService(currentSubscription: subscription);
+            final access =
+                subscriptionService.checkAccess(SubscriptionActionType.administrative);
+            if (!access.allowed) {
+              throw l10n.subscriptionExpiredWarning;
+            }
+
       final priceValue = double.parse(_priceController.text.trim());
 
       double? pricePerKg;

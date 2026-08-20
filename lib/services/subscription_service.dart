@@ -14,14 +14,19 @@ import '../models/subscription.dart';
 
 /// Jenis aksi yang digating berdasarkan status subscription.
 ///
+/// UPDATE (keputusan final): [administrative] dan [transactional] SEKARANG
+/// diperlakukan SAMA oleh checkAccess() - keduanya diblokir begitu
+/// subscription tidak aktif DAN sudah lewat masa grace period. Enum ini
+/// tetap dipertahankan (bukan dihapus) karena caller (create_order_screen,
+/// create_employee_screen, dst) masih perlu menyatakan jenis aksinya secara
+/// eksplisit - berguna kalau suatu saat nanti perilakunya perlu dibedakan
+/// lagi, dan juga bikin pemanggilan checkAccess() di tiap screen tetap
+/// jelas maksudnya buat aksi apa.
+///
 /// - [administrative]: aksi yang menambah komitmen baru ke akun (nambah
-///   karyawan, nambah cabang, nambah layanan). Diblokir begitu subscription
-///   tidak aktif DAN sudah lewat masa grace period.
+///   karyawan, nambah cabang, nambah layanan).
 /// - [transactional]: aksi operasional harian (bikin order, bikin customer,
-///   antar-jemput). TIDAK PERNAH diblok oleh status subscription - sesuai
-///   keputusan final: laundry harus tetap bisa beroperasi normal walau
-///   pembayaran lagi bermasalah. Kuota (mis. limit order/bulan) tetap
-///   berlaku, tapi itu urusan canCreateOrder(), bukan checkAccess().
+///   antar-jemput).
 enum SubscriptionActionType { administrative, transactional }
 
 /// Hasil keputusan checkAccess() untuk satu aksi tertentu.
@@ -46,9 +51,8 @@ class SubscriptionAccessResult {
 }
 
 class SubscriptionService {
-  /// Berapa lama company masih boleh melakukan aksi administrative
-  /// setelah subscription jatuh ke 'past_due', dihitung dari
-  /// Subscription.graceStartedAt.
+  /// Berapa lama company masih boleh melakukan aksi setelah subscription
+  /// jatuh ke 'past_due', dihitung dari Subscription.graceStartedAt.
   ///
   /// ASUMSI: belum ada angka resmi yang disepakati sebelumnya di diskusi
   /// kita, jadi saya set 7 hari sebagai default yang wajar. Gampang
@@ -101,17 +105,21 @@ class SubscriptionService {
   /// Keputusan utama guard: boleh/tidak sebuah [actionType] dijalankan
   /// SEKARANG, berdasarkan status subscription.
   ///
-  /// - transactional: selalu allowed=true, tidak pernah dicek statusnya.
-  /// - administrative: allowed=true kalau subscription aktif ATAU masih
-  ///   dalam grace period (dengan reasonKey 'grace_period_active' supaya
-  ///   UI bisa kasih peringatan meski tetap mengizinkan); allowed=false
-  ///   dengan reasonKey 'subscription_expired' kalau sudah lewat grace
-  ///   period atau memang tidak pernah subscribe.
+  /// UPDATE (keputusan final): [actionType] TIDAK LAGI membedakan hasil -
+  /// baik administrative maupun transactional (termasuk bikin order)
+  /// SAMA-SAMA diblokir begitu subscription tidak aktif & sudah lewat
+  /// grace period. Parameter ini tetap dipertahankan di signature (bukan
+  /// dihapus) supaya caller yang sudah ada tidak perlu diubah semua, dan
+  /// karena tetap berguna untuk membedakan reasonKey/pesan di UI kalau
+  /// suatu saat nanti dibutuhkan lagi.
+  ///
+  /// - allowed=true tanpa catatan kalau subscription aktif.
+  /// - allowed=true dengan reasonKey 'grace_period_active' kalau masih
+  ///   dalam grace period (UI boleh kasih peringatan meski tetap
+  ///   mengizinkan).
+  /// - allowed=false dengan reasonKey 'subscription_expired' kalau sudah
+  ///   lewat grace period atau memang tidak pernah subscribe.
   SubscriptionAccessResult checkAccess(SubscriptionActionType actionType) {
-    if (actionType == SubscriptionActionType.transactional) {
-      return SubscriptionAccessResult.allowedNoNote;
-    }
-
     if (isSubscriptionActive) {
       return SubscriptionAccessResult.allowedNoNote;
     }

@@ -452,10 +452,24 @@ class _CreateEmployeeScreenState extends ConsumerState<CreateEmployeeScreen> {
         return;
       }
 
-      // Pengecekan limitasi paket hanya berlaku saat menambah karyawan baru
-      if (!_isEditMode) {
-        final gate = await _evaluateEmployeeGate(currentUserId, companyIdRef);
+            // UPDATE: checkAccess (status) sekarang dicek untuk create MAUPUN
+      // edit - subscription expired harus tetap ngeblok edit karyawan
+      // juga, bukan cuma nambah baru. Kuota (canAddEmployee) tetap CUMA
+      // relevan pas nambah baru, karena edit tidak menambah jumlah
+      // karyawan - makanya quotaAvailable dipaksa true saat edit supaya
+      // tidak ikut nge-block gara-gara kuota (yang memang tidak relevan
+      // di mode ini).
+      final gate = await _evaluateEmployeeGate(currentUserId, companyIdRef);
+      final effectiveGate = _isEditMode
+          ? _EmployeeGateResult(
+              blockedByStatus: gate.blockedByStatus,
+              quotaAvailable: true,
+              graceDaysRemaining: gate.graceDaysRemaining,
+            )
+          : gate;
 
+      {
+        final gate = effectiveGate;
         if (gate.blockedByStatus || !gate.quotaAvailable) {
           if (mounted) {
             showDialog(

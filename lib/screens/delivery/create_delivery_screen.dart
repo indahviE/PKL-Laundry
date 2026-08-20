@@ -10,6 +10,9 @@ import '../../l10n/app_localizations.dart';
 import '../../models/employee.dart';
 import '../../models/laundry.dart';
 import '../../models/order.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../repositories/subscription_repository.dart';
+import '../../services/subscription_service.dart';
 import '../../repositories/employee_repository.dart';
 import '../../repositories/laundry_repository.dart';
 import '../../repositories/order_repository.dart';
@@ -411,7 +414,7 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
       return;
     }
 
-    final scheduledAt = DateTime(
+        final scheduledAt = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
       _selectedDate!.day,
@@ -421,6 +424,25 @@ class _CreateDeliveryScheduleScreenState extends ConsumerState<CreateDeliverySch
 
     setState(() => _isSaving = true);
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw l10n.sessionNotFoundError;
+
+      // FEATURE GATING: jadwalkan antar-jemput = actionType transactional
+      // - diblok begitu subscription expired & lewat grace period.
+      final subscriptionRepo = SubscriptionRepository(userId: user.uid);
+      final subscription = await subscriptionRepo
+          .streamSubscriptionForCompany(_selectedOrder!.companyId)
+          .first;
+      final subscriptionService =
+          SubscriptionService(currentSubscription: subscription);
+      final access =
+          subscriptionService.checkAccess(SubscriptionActionType.transactional);
+      if (!access.allowed) {
+        _showErrorSnack(l10n.subscriptionExpiredWarning);
+        setState(() => _isSaving = false);
+        return;
+      }
+
       await ref.read(orderRepositoryProvider).scheduleLogistics(
             _selectedOrder!.id,
             mode: _mode,

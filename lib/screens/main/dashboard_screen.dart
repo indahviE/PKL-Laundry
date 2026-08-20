@@ -353,12 +353,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                     const SizedBox(width: AppTheme.sm),
-                    TextButton(
+                      TextButton(
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         minimumSize: Size.zero,
                       ),
-                      onPressed: () => context.go('/settings'),
+                      onPressed: () => context.go('/settings/subscription'),
                       child: Text(
                         t.upgradePlanAction,
                         style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: bannerColor),

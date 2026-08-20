@@ -26,6 +26,9 @@ import 'create_delivery_screen.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/services/app_feedback.dart';
 
+import '../../repositories/subscription_repository.dart';
+import '../../services/subscription_service.dart';
+
 /// Local design tokens matching the new "NetWash Utility System" design.
 /// Disamakan dengan ServicesListScreen supaya seluruh alur Antar Jemput
 /// (daftar + jadwalkan) senada dengan Kelola Layanan: kanvas abu kebiruan,
@@ -1104,7 +1107,7 @@ class _ConfirmPickupSheetState extends ConsumerState<_ConfirmPickupSheet> {
       }
     }
 
-    // TAMBAHAN: validasi & hitung pembayaran sebelum mulai saving
+        // TAMBAHAN: validasi & hitung pembayaran sebelum mulai saving
     final paidNow = _resolvePaidAmount();
     if (paidNow == null) return;
 
@@ -1112,6 +1115,21 @@ class _ConfirmPickupSheetState extends ConsumerState<_ConfirmPickupSheet> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw l10n.orderSessionNotFoundError;
+
+      // FEATURE GATING: konfirmasi jemput (nulis item + pembayaran final
+      // ke order) = actionType transactional - diblok begitu subscription
+      // expired & lewat grace period.
+      final subscriptionRepo = SubscriptionRepository(userId: user.uid);
+      final subscription = await subscriptionRepo
+          .streamSubscriptionForCompany(widget.order.companyId)
+          .first;
+      final subscriptionService =
+          SubscriptionService(currentSubscription: subscription);
+      final access =
+          subscriptionService.checkAccess(SubscriptionActionType.transactional);
+      if (!access.allowed) {
+        throw l10n.subscriptionExpiredWarning;
+      }
 
       final orderItems = _items
           .map((item) => OrderItem(

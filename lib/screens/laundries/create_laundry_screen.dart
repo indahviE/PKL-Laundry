@@ -440,22 +440,33 @@ class _CreateLaundryScreenState extends ConsumerState<CreateLaundryScreen> {
 
       final currentUserId = user.uid;
 
-      // Pengecekan kuota (Blueprint §3.6.3) hanya relevan saat menambah
-      // cabang baru. Saat edit, jumlah cabang tidak bertambah jadi dilewati.
-      if (!isEditMode) {
-        final gate = await _evaluateLaundryGate(currentUserId, _selectedCompanyId!);
-        if (gate.blockedByStatus || !gate.quotaAvailable) {
-          if (mounted) {
-            _showQuotaReachedDialog(blockedByStatus: gate.blockedByStatus);
-            setState(() => _isLoading = false);
-          }
-          return;
+            // UPDATE: checkAccess (status subscription) sekarang dicek untuk
+      // create MAUPUN edit - subscription expired harus tetap ngeblok
+      // edit cabang juga, bukan cuma nambah baru. Kuota (canAddLaundry,
+      // Blueprint §3.6.3) tetap CUMA relevan saat menambah cabang baru,
+      // karena edit tidak menambah jumlah cabang - makanya quotaAvailable
+      // dipaksa true saat edit supaya tidak ikut nge-block gara-gara
+      // kuota yang memang tidak relevan di mode ini.
+      final rawGate = await _evaluateLaundryGate(currentUserId, _selectedCompanyId!);
+      final gate = isEditMode
+          ? _LaundryGateResult(
+              blockedByStatus: rawGate.blockedByStatus,
+              quotaAvailable: true,
+              graceDaysRemaining: rawGate.graceDaysRemaining,
+            )
+          : rawGate;
+
+      if (gate.blockedByStatus || !gate.quotaAvailable) {
+        if (mounted) {
+          _showQuotaReachedDialog(blockedByStatus: gate.blockedByStatus);
+          setState(() => _isLoading = false);
         }
-        // Boleh lanjut, tapi kalau lagi dalam grace period tetap kasih tahu
-        // sisa harinya - tidak menghalangi, cuma peringatan.
-        if (gate.graceDaysRemaining != null && mounted) {
-          AppSnackbar.info(context, AppLocalizations.of(context)!.gracePeriodWarning(gate.graceDaysRemaining!));
-        }
+        return;
+      }
+      // Boleh lanjut, tapi kalau lagi dalam grace period tetap kasih tahu
+      // sisa harinya - tidak menghalangi, cuma peringatan.
+      if (gate.graceDaysRemaining != null && mounted) {
+        AppSnackbar.info(context, AppLocalizations.of(context)!.gracePeriodWarning(gate.graceDaysRemaining!));
       }
 
       // Susun operating_hours sesuai skema §3.2.3 (per hari, key monday..sunday)
