@@ -476,6 +476,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get remindLaterAction => 'Remind Later';
 
   @override
+  String get trialPaywallTitle => 'Your Trial Has Ended';
+
+  @override
+  String get trialPaywallMessage =>
+      'Watch an ad to continue access for 1 more day, or upgrade now for unlimited full access.';
+
+  @override
+  String get trialPaywallWatchAdButton => 'Watch Ad (+1 Day)';
+
+  @override
+  String get trialPaywallLoadingButton => 'Loading...';
+
+  @override
+  String trialPaywallWaitingButton(int seconds) {
+    return 'Waiting... (${seconds}s)';
+  }
+
+  @override
+  String get trialPaywallUpgradeButton => 'Upgrade Now';
+
+  @override
+  String get trialExtendedSnackbar => 'Your access has been extended by 1 day.';
+
+  @override
   String quotaLimitReached(String label) {
     return 'The Starter plan quota limit for $label has been reached! Please upgrade.';
   }

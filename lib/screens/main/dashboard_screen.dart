@@ -7,6 +7,7 @@ import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/app_feedback.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../models/subscription.dart';
 import '../../repositories/subscription_repository.dart';
 import '../../services/subscription_service.dart';
@@ -302,9 +303,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         // paywall bisa muncul lagi buat subscription id
                         // yang sama (belum ganti dokumen).
                         _paywallShownForSubId = null;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('🎉 Akses ditambah 1 hari!')),
-                        );
+                        AppFeedback.playSound(ref, AppSound.success);
+                        AppSnackbar.success(context, t.trialExtendedSnackbar);
                       }
                     },
                   );

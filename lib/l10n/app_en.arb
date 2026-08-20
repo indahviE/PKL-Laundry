@@ -262,6 +262,18 @@
   },
   "renewNowAction": "Renew",
   "remindLaterAction": "Remind Later",
+  "trialPaywallTitle": "Your Trial Has Ended",
+  "trialPaywallMessage": "Watch an ad to continue access for 1 more day, or upgrade now for unlimited full access.",
+  "trialPaywallWatchAdButton": "Watch Ad (+1 Day)",
+  "trialPaywallLoadingButton": "Loading...",
+  "trialPaywallWaitingButton": "Waiting... ({seconds}s)",
+  "@trialPaywallWaitingButton": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "trialPaywallUpgradeButton": "Upgrade Now",
+  "trialExtendedSnackbar": "Your access has been extended by 1 day.",
   "@gracePeriodWarning": {
     "placeholders": {
       "daysRemaining": { "type": "int" }

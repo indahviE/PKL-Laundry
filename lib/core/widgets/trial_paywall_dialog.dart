@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/rewarded_ad_service.dart';
 import '../themes/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Dialog "paywall" yang muncul saat trial user sudah habis.
 /// Kasih 2 pilihan: nonton iklan buat extend 1 hari, atau upgrade
@@ -41,6 +43,18 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
   final RewardedAdService _adService = RewardedAdService();
   bool _isShowingAd = false;
 
+  // Fallback kalau iklan gagal dimuat (misal App masih ditinjau AdMob,
+  // atau koneksi lagi bermasalah) - user nunggu 30 detik sebagai
+  // pengganti nonton iklan, biar tetap bisa lanjut pakai app.
+  //
+  // TODO: sebelum production/setelah App di-approve AdMob, pertimbangkan
+  // untuk menonaktifkan/membatasi fallback ini supaya user tetap
+  // "diwajibkan" nonton iklan asli (demi revenue), bukan selalu ambil
+  // jalur timer.
+  bool _showFallbackTimer = false;
+  int _fallbackSecondsLeft = 30;
+  Timer? _fallbackTimer;
+
   @override
   void initState() {
     super.initState();
@@ -50,7 +64,29 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
   @override
   void dispose() {
     _adService.dispose();
+    _fallbackTimer?.cancel();
     super.dispose();
+  }
+
+  void _startFallbackTimer() {
+    setState(() {
+      _showFallbackTimer = true;
+      _fallbackSecondsLeft = 30;
+    });
+
+    _fallbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() => _fallbackSecondsLeft--);
+
+      if (_fallbackSecondsLeft <= 0) {
+        timer.cancel();
+        Navigator.of(context).pop();
+        widget.onWatchAdSuccess();
+      }
+    });
   }
 
   void _handleWatchAd() {
@@ -66,19 +102,17 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
       onAdNotReady: () {
         if (!mounted) return;
         setState(() => _isShowingAd = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Iklan lagi disiapkan, coba lagi sebentar ya'),
-          ),
-        );
+        _startFallbackTimer();
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -86,31 +120,35 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
           children: [
             Icon(Icons.hourglass_bottom_rounded, size: 42, color: AppTheme.primaryColor),
             const SizedBox(height: 16),
-            const Text(
-              'Trial Kamu Sudah Berakhir',
+            Text(
+              t.trialPaywallTitle,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             const SizedBox(height: 8),
             Text(
-              'Tonton iklan buat lanjut akses 1 hari lagi, atau upgrade sekarang buat akses penuh tanpa batas.',
+              t.trialPaywallMessage,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: const TextStyle(fontSize: 13.5, color: Colors.black54),
             ),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               height: 46,
               child: ElevatedButton.icon(
-                onPressed: _isShowingAd ? null : _handleWatchAd,
-                icon: _isShowingAd
+                onPressed: (_isShowingAd || _showFallbackTimer) ? null : _handleWatchAd,
+                icon: (_isShowingAd || _showFallbackTimer)
                     ? const SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : const Icon(Icons.play_circle_outline_rounded, size: 20),
-                label: Text(_isShowingAd ? 'Memuat...' : 'Tonton Iklan (+1 Hari)'),
+                label: Text(
+                  _showFallbackTimer
+                      ? t.trialPaywallWaitingButton(_fallbackSecondsLeft)
+                      : (_isShowingAd ? t.trialPaywallLoadingButton : t.trialPaywallWatchAdButton),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
@@ -139,7 +177,7 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Upgrade Sekarang'),
+                child: Text(t.trialPaywallUpgradeButton),
               ),
             ),
           ],

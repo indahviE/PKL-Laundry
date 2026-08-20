@@ -262,6 +262,18 @@
   },
   "renewNowAction": "Perbarui",
   "remindLaterAction": "Nanti Saja",
+  "trialPaywallTitle": "Masa Uji Coba Anda Telah Berakhir",
+  "trialPaywallMessage": "Tonton iklan untuk melanjutkan akses selama 1 hari lagi, atau upgrade sekarang untuk akses penuh tanpa batas waktu.",
+  "trialPaywallWatchAdButton": "Tonton Iklan (+1 Hari)",
+  "trialPaywallLoadingButton": "Memuat...",
+  "trialPaywallWaitingButton": "Menunggu... ({seconds} detik)",
+  "@trialPaywallWaitingButton": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "trialPaywallUpgradeButton": "Upgrade Sekarang",
+  "trialExtendedSnackbar": "Akses Anda telah ditambah 1 hari.",
   "@gracePeriodWarning": {
     "placeholders": {
       "daysRemaining": { "type": "int" }

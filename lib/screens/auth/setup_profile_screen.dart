@@ -1,7 +1,12 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../core/themes/app_theme.dart';
 import '../../repositories/auth_repository.dart';
@@ -29,9 +34,16 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
   bool _isLoadingInitialData = true;
   String? _errorMessage;
 
-  // Placeholder avatar; upload gambar bisa diintegrasikan nanti pakai
-  // firebase_storage + image_picker. Untuk sekarang cukup ikon default.
+  // URL avatar yang SUDAH tersimpan di server (dari load awal / upload
+  // sebelumnya). _pickedBytes adalah preview gambar baru yang BELUM
+  // di-upload - upload beneran baru terjadi pas _handleContinue() ditekan,
+  // sama pola dengan EditProfileScreen.
   String? _avatarUrl;
+  Uint8List? _pickedBytes;
+
+  // Backend Vercel yang sama dipakai EditProfileScreen buat upload foto.
+  static const _uploadEndpoint =
+      'https://netwash-stripe-backend.vercel.app/api/upload-photo';
 
   @override
   void initState() {
@@ -71,14 +83,53 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
   }
 
   Future<void> _handleAvatarTap() async {
-    // TODO: Integrasikan image_picker + firebase_storage di sini untuk
-    // upload avatar sungguhan. Untuk sekarang tampilkan info sementara.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Upload foto profil akan segera tersedia.'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 75,
+        maxWidth: 800,
+      );
+      if (picked != null) {
+        final bytes = await picked.readAsBytes();
+        setState(() => _pickedBytes = bytes);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal buka galeri: $e')),
+      );
+    }
+  }
+
+  /// Upload foto yang baru dipilih (_pickedBytes) ke backend, dapet URL
+  /// baliknya. Kalau user gak pilih foto baru sama sekali, langsung
+  /// balikin _avatarUrl yang lama (gak ada yang perlu di-upload).
+  Future<String?> _uploadPickedAvatar() async {
+    if (_pickedBytes == null) return _avatarUrl;
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return _avatarUrl;
+
+    final base64Image = 'data:image/jpeg;base64,${base64Encode(_pickedBytes!)}';
+
+    final response = await http
+        .post(
+          Uri.parse(_uploadEndpoint),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'image': base64Image, 'uid': uid}),
+        )
+        .timeout(
+          const Duration(seconds: 20),
+          onTimeout: () => throw Exception('Upload timeout, cek koneksi kamu'),
+        );
+
+    if (response.statusCode != 200) {
+      throw Exception('Upload gagal (${response.statusCode}): ${response.body}');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return data['url'] as String?;
   }
 
   Future<void> _handleContinue() async {
@@ -95,10 +146,15 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
       final router = GoRouter.of(context);
       final authRepo = ref.read(authRepositoryProvider);
 
+      // Upload foto baru dulu (kalau ada) sebelum simpan profil, biar
+      // avatarUrl yang tersimpan itu URL final dari server, bukan cuma
+      // bytes lokal.
+      final uploadedAvatarUrl = await _uploadPickedAvatar();
+
       await authRepo.updateUserProfile(
         fullName: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
-        avatarUrl: _avatarUrl,
+        avatarUrl: uploadedAvatarUrl,
       );
 
       // Sesuai alur PRD Step 4: Setup Perusahaan.
@@ -244,16 +300,20 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
               color: AppTheme.primaryColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: _avatarUrl != null && _avatarUrl!.isNotEmpty
+            child: _pickedBytes != null
                 ? ClipOval(
-                    child: Image.network(
-                      _avatarUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          _buildAvatarFallbackIcon(),
-                    ),
+                    child: Image.memory(_pickedBytes!, fit: BoxFit.cover),
                   )
-                : _buildAvatarFallbackIcon(),
+                : (_avatarUrl != null && _avatarUrl!.isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          _avatarUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildAvatarFallbackIcon(),
+                        ),
+                      )
+                    : _buildAvatarFallbackIcon()),
           ),
           Positioned(
             bottom: 0,
