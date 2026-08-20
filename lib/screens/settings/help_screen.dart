@@ -6,7 +6,7 @@ import '../../core/themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Nomor WhatsApp CS NetWash. GANTI dengan nomor asli sebelum rilis.
-const String _csWhatsappNumber = '083144823911';
+const String _csWhatsappNumber = '08996733553';
 
 class _Faq {
   final String question;

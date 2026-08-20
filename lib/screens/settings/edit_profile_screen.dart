@@ -2,21 +2,24 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/services/app_feedback.dart';
 import '../../core/themes/app_theme.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../l10n/app_localizations.dart';
 
-class EditProfileScreen extends StatefulWidget {
+class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
+  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
+class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   Uint8List? _pickedBytes;
@@ -55,9 +58,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } catch (e) {
       debugPrint('Pick image error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.galleryOpenError(e.toString()))),
-      );
+      AppFeedback.playSound(ref, AppSound.error);
+      AppSnackbar.error(context, t.galleryOpenError(e.toString()));
     }
   }
 
@@ -107,15 +109,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await user.reload();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.profileUpdateSuccess)),
-      );
+      AppFeedback.playSound(ref, AppSound.success);
+      AppSnackbar.success(context, t.profileUpdateSuccess);
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.profileUpdateError(e.toString()))),
-      );
+      AppFeedback.playSound(ref, AppSound.error);
+      AppSnackbar.error(context, t.profileUpdateError(e.toString()));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/locale.provider.dart';
+import '../../core/services/app_feedback.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/user_model.dart';
 import '../../repositories/user_repository.dart';
@@ -280,7 +281,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: Text(
           t.languageTitle,
           style: GoogleFonts.beVietnamPro(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: _Palette.ink,
           ),
         ),
@@ -290,20 +291,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             RadioListTile<String>(
               value: 'id',
               groupValue: currentLocale.languageCode,
-              title: Text('Indonesia', style: GoogleFonts.beVietnamPro()),
+              title: Text(
+                'Indonesia',
+                style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _Palette.ink),
+              ),
               activeColor: _Palette.primary,
               onChanged: (value) {
                 ref.read(localeProvider.notifier).setLocale(const Locale('id'));
+                AppFeedback.playSound(ref, AppSound.success);
                 Navigator.pop(dialogContext);
               },
             ),
             RadioListTile<String>(
               value: 'en',
               groupValue: currentLocale.languageCode,
-              title: Text('English', style: GoogleFonts.beVietnamPro()),
+              title: Text(
+                'English',
+                style: GoogleFonts.beVietnamPro(fontSize: 13.5, color: _Palette.ink),
+              ),
               activeColor: _Palette.primary,
               onChanged: (value) {
                 ref.read(localeProvider.notifier).setLocale(const Locale('en'));
+                AppFeedback.playSound(ref, AppSound.success);
                 Navigator.pop(dialogContext);
               },
             ),
@@ -641,13 +650,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: Text(
           t.logoutDialogTitle,
           style: GoogleFonts.beVietnamPro(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: _Palette.ink,
           ),
         ),
         content: Text(
           t.logoutDialogContent,
-          style: GoogleFonts.beVietnamPro(color: _Palette.inkSoft),
+          style: GoogleFonts.beVietnamPro(
+            fontSize: 13,
+            color: _Palette.inkSoft,
+            height: 1.5,
+          ),
         ),
         actions: [
           TextButton(
@@ -662,13 +675,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Navigator.pop(dialogContext);
               await FirebaseAuth.instance.signOut();
               if (context.mounted) {
+                AppFeedback.playSound(ref, AppSound.success);
                 context.go('/login');
               }
             },
             child: Text(
               t.logout,
               style: GoogleFonts.beVietnamPro(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: _Palette.error,
               ),
             ),
