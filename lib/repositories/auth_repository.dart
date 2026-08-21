@@ -96,6 +96,11 @@ class AuthRepository {
   /// ini, bukan cuma `user.emailVerified` dari Firebase Auth).
   Future<UserCredential?> signInWithGoogle() async {
     try {
+      // Paksa clear sesi Google sebelumnya (kalau ada), biar account
+      // picker SELALU muncul dan user bisa pilih akun lain — bukan
+      // auto ke-sign-in dengan akun terakhir yang pernah dipakai.
+      await _googleSignIn.signOut();
+
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         // User menutup/cancel popup pilih akun — bukan error.
