@@ -157,6 +157,14 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
         avatarUrl: uploadedAvatarUrl,
       );
 
+      // ✅ Update FirebaseAuth photoURL juga, supaya Settings Screen
+      // bisa fetch photo yang baru dari user?.photoURL
+      if (uploadedAvatarUrl != null) {
+        await FirebaseAuth.instance.currentUser?.updateProfile(
+          photoURL: uploadedAvatarUrl,
+        );
+      }
+
       // Sesuai alur PRD Step 4: Setup Perusahaan.
       // Sesuaikan nama route ini jika berbeda di router kamu.
       router.go('/onboarding/setup-company');
