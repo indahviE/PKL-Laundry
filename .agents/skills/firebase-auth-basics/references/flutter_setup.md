@@ -90,70 +90,32 @@ class AuthService {
   // Get current user
   User? get currentUser => _auth.currentUser;
 
-  /// Login/register otomatis pakai akun Google.
-  ///
-  /// Return `null` (BUKAN throw) kalau user menutup/cancel popup pilih
-  /// akun — itu bukan error, jadi UI tidak perlu menampilkan dialog error
-  /// untuk kasus ini. Exception hanya dilempar untuk kegagalan yang
-  /// sebenarnya (network, akun disabled, dst).
-  ///
-  /// Kalau ini pertama kalinya user tsb sign in (dicek lewat
-  /// `additionalUserInfo.isNewUser`), dokumen users/{uid} dibuat dengan
-  /// schema yang SAMA dengan `registerWithEmailAndPassword` (uid, name,
-  /// email, phone, role, emailVerified, createdAt) supaya redirect logic
-  /// di routes.dart (cek profileCompleted/companyCompleted/dst) tetap
-  /// konsisten untuk user yang masuk lewat Google.
-  ///
-  /// Email dari akun Google sudah pasti terverifikasi oleh Google sendiri,
-  /// jadi `emailVerified` langsung diset true dan step /verify-email
-  /// otomatis ke-skip oleh redirect logic (asal routes.dart membaca field
-  /// ini, bukan cuma `user.emailVerified` dari Firebase Auth).
-  ///
-  /// CATATAN: sebelumnya method ini memanggil `_googleSignIn.signOut()`
-  /// tepat sebelum `signIn()`, dengan niat memaksa account picker selalu
-  /// muncul. Itu dihapus karena menyebabkan race condition — signOut()
-  /// mereset state internal plugin (khususnya di web/GIS), dan signIn()
-  /// yang langsung dipanggil setelahnya kadang balik null padahal user
-  /// sudah memilih akun dengan benar, sehingga user harus klik tombol
-  /// login dua kali. Behavior "bisa ganti akun" tetap terjaga lewat
-  /// method signOut() terpisah di bawah, yang sudah dipanggil saat user
-  /// logout dari app.
+  // Google Sign-In
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        // User menutup/cancel popup pilih akun — bukan error.
-        return null;
+      if (kIsWeb) {
+        // Web uses popup to avoid DWDS hangs and manual client ID config
+        GoogleAuthProvider authProvider = GoogleAuthProvider();
+        return await _auth.signInWithPopup(authProvider);
+      } else {
+        // Mobile uses standard flow
+        final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
+        if (googleUser == null) return null; // Cancelled
+
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          idToken: googleAuth.idToken,
+        );
+        
+        return await _auth.signInWithCredential(credential);
       }
-
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential = await _auth.signInWithCredential(credential);
-      final user = userCredential.user;
-      final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
-
-      if (user != null && isNewUser) {
-        await _db.collection('users').doc(user.uid).set({
-          'uid': user.uid,
-          'name': user.displayName ?? '',
-          'email': user.email ?? '',
-          'phone': user.phoneNumber ?? '',
-          'role': 'owner',
-          'emailVerified': true,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      return userCredential;
-    } on FirebaseAuthException catch (e) {
-      throw Exception(e.message ?? 'Gagal login dengan Google.');
+    } catch (e) {
+      print("Error during Google Sign-In: \$e");
+      return null;
     }
   }
-  
+
   // Sign out
   Future<void> signOut() async {
     try {
