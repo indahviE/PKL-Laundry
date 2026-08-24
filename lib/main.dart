@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'core/config/routes.dart';
@@ -26,7 +27,25 @@ void main() async {
   // semua request iklan bakal gagal diam-diam (gak ada error jelas,
   // cuma onAdFailedToLoad kepanggil terus tanpa alasan yang keliatan).
   await MobileAds.instance.initialize();
-  
+
+  // 1.6. Preload font Poppins SEBELUM widget pertama dirender.
+  //
+  // Tanpa ini, GoogleFonts.poppins() di seluruh app (LoginScreen,
+  // RegisterScreen, dst) baru mulai di-download saat pertama kali
+  // dipanggil di build(). Selama jeda download itu, Flutter render pakai
+  // font fallback sistem dulu (beda metrik/tinggi baris dibanding
+  // Poppins), yang di beberapa layar dengan layout ketat (mis. LoginScreen
+  // yang pakai IntrinsicHeight + Expanded) bisa memicu RenderFlex overflow
+  // sesaat sebelum widget rebuild dengan font yang benar. Dengan preload
+  // di sini, font Poppins sudah pasti siap dari frame pertama, jadi
+  // fase "font fallback dulu" itu ga pernah terjadi.
+  await GoogleFonts.pendingFonts([
+    GoogleFonts.poppins(),
+    GoogleFonts.poppins(fontWeight: FontWeight.w500),
+    GoogleFonts.poppins(fontWeight: FontWeight.w600),
+    GoogleFonts.poppins(fontWeight: FontWeight.w700),
+  ]);
+
   // 2. Setup Offline Persistence
   //
   // Khusus WEB: persistence dimatikan. SDK Firestore versi web punya bug
