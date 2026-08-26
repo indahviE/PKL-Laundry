@@ -36,7 +36,7 @@ void main() async {
   // font fallback sistem dulu (beda metrik/tinggi baris dibanding
   // Poppins), yang di beberapa layar dengan layout ketat (mis. LoginScreen
   // yang pakai IntrinsicHeight + Expanded) bisa memicu RenderFlex overflow
-  // sesaat sebelum widget rebuild dengan font yang benar. Dengan preload
+  // sesaat sebelum widget rebuild dengan font yang benar. Dengan preload9
   // di sini, font Poppins sudah pasti siap dari frame pertama, jadi
   // fase "font fallback dulu" itu ga pernah terjadi.
   await GoogleFonts.pendingFonts([
