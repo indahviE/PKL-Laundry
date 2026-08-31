@@ -481,7 +481,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
         if (!stillActive) {
           // Dijalankan setelah frame ini selesai supaya nggak setState()
-          // di tengah-tengah proses build.
+          // di tengah-tengah proses build.c
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && _selectedBranchId != 'all') {
               setState(() {

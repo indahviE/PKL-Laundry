@@ -12,15 +12,24 @@ class RewardedAdService {
   RewardedAd? _rewardedAd;
   bool _isLoading = false;
 
-  // TEST Ad Unit ID resmi dari Google — selalu ngasih fill, aman buat demo.
-  // Production ID asli disimpen di comment bawah, tinggal swap balik
-  // pas status AdMob udah "Disetujui" (bukan "Perlu peninjauan" lagi).
-  static const String _rewardedAdUnitId =
-      'ca-app-pub-3940256099942544/5224354917'; // TEST ID
+    static const String _rewardedAdUnitId =
+           'ca-app-pub-3940256099942544/5224354917'; // TEST ID
   // static const String _rewardedAdUnitId =
   //     'ca-app-pub-9762254209738667/1476656162'; // PRODUCTION ID (aktifkan lagi kalau udah approved)
-
   String get _adUnitId => _rewardedAdUnitId;
+
+  /// Dipanggil setiap kali status "siap tayang" berubah (true saat
+  /// onAdLoaded, false saat gagal load / setelah ad dipakai/dispose).
+  /// UI (mis. TrialPaywallDialog) pasang listener ini buat tahu kapan
+  /// boleh mengaktifkan tombol "Nonton Iklan" - sebelum ini, tombol
+  /// HARUS disabled, karena RewardedAd.load() itu async dan butuh
+  /// beberapa detik; kalau tombol diklik sebelum onAdLoaded selesai,
+  /// _rewardedAd masih null dan showAd() bakal langsung jatuh ke
+  /// fallback timer meskipun iklannya sebenarnya berhasil dimuat
+  /// (cuma telat beberapa detik).
+  ValueChanged<bool>? onAdReadyChanged;
+
+  bool get isAdReady => _rewardedAd != null;
 
   /// Panggil ini duluan (misal pas buka halaman "Choose Plan"),
   /// supaya iklan udah siap dari sebelum user klik tombol.
@@ -36,10 +45,12 @@ class RewardedAdService {
           _rewardedAd = ad;
           _isLoading = false;
           debugPrint('RewardedAd: berhasil dimuat');
+          onAdReadyChanged?.call(true);
         },
         onAdFailedToLoad: (error) {
           _isLoading = false;
           debugPrint('RewardedAd: gagal dimuat -> $error');
+          onAdReadyChanged?.call(false);
         },
       ),
     );
@@ -63,11 +74,13 @@ class RewardedAdService {
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _rewardedAd = null;
+        onAdReadyChanged?.call(false);
         loadAd(); // pre-load lagi buat next time
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         ad.dispose();
         _rewardedAd = null;
+        onAdReadyChanged?.call(false);
         loadAd();
       },
     );
@@ -80,6 +93,7 @@ class RewardedAdService {
   }
 
   void dispose() {
+    onAdReadyChanged = null;
     _rewardedAd?.dispose();
     _rewardedAd = null;
   }

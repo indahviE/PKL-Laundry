@@ -20,10 +20,6 @@ class TrialPaywallDialog extends StatefulWidget {
     required this.onWatchAdSuccess,
   });
 
-  /// Helper biar caller nggak perlu import showDialog + barrier settings
-  /// manual tiap kali mau munculin ini. barrierDismissible sengaja false
-  /// - trial sudah habis, user harus pilih salah satu aksi, bukan
-  /// nutup dialog begitu saja lalu balik pakai app tanpa batasan.
   static Future<void> show(
     BuildContext context, {
     required VoidCallback onWatchAdSuccess,
@@ -43,9 +39,19 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
   final RewardedAdService _adService = RewardedAdService();
   bool _isShowingAd = false;
 
-  // Fallback kalau iklan gagal dimuat (misal App masih ditinjau AdMob,
-  // atau koneksi lagi bermasalah) - user nunggu 30 detik sebagai
-  // pengganti nonton iklan, biar tetap bisa lanjut pakai app.
+  // Status "iklan sudah siap ditampilkan" - dikontrol lewat callback
+  // onAdReadyChanged dari RewardedAdService. Tombol "Nonton Iklan" WAJIB
+  // disabled selama ini false, karena loadAd() itu proses async yang
+  // butuh beberapa detik (kadang lebih lama kalau device lagi berat
+  // decode video ad-nya). Sebelumnya tombol langsung aktif begitu dialog
+  // dibuka, jadi kalau user klik cepat, _rewardedAd di service masih
+  // null walau sebenarnya cuma soal timing - bukan gagal beneran.
+  bool _isAdReady = false;
+
+  // Fallback kalau iklan gagal dimuat ATAU proses load kelamaan (mis.
+  // App masih ditinjau AdMob, koneksi lambat, dsb) - user nunggu 30
+  // detik sebagai pengganti nonton iklan, biar tetap bisa lanjut pakai
+  // app.
   //
   // TODO: sebelum production/setelah App di-approve AdMob, pertimbangkan
   // untuk menonaktifkan/membatasi fallback ini supaya user tetap
@@ -55,20 +61,59 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
   int _fallbackSecondsLeft = 30;
   Timer? _fallbackTimer;
 
+  // Kalau loadAd() belum juga selesai (baik sukses maupun gagal) dalam
+  // rentang ini, anggap kelamaan dan langsung tawarkan fallback timer -
+  // daripada user cuma liat tombol loading tanpa kepastian. Dinaikkan
+  // ke 15 detik (dari 8 detik) karena di beberapa device, proses decode
+  // video utk rewarded ad bisa makan waktu lumayan lama saat main thread
+  // lagi sibuk (kelihatan dari log "Skipped XXX frames" pas ad lagi
+  // disiapkan) - 8 detik ternyata sering kepicu duluan sebelum ad
+  // benar-benar selesai load.
+  static const _loadTimeout = Duration(seconds: 15);
+  Timer? _loadTimeoutTimer;
+
   @override
   void initState() {
     super.initState();
+    _adService.onAdReadyChanged = _handleAdReadyChanged;
     _adService.loadAd();
+
+    _loadTimeoutTimer = Timer(_loadTimeout, () {
+      if (!mounted || _isAdReady || _showFallbackTimer) return;
+      _startFallbackTimer();
+    });
   }
 
   @override
   void dispose() {
     _adService.dispose();
     _fallbackTimer?.cancel();
+    _loadTimeoutTimer?.cancel();
     super.dispose();
   }
 
+  void _handleAdReadyChanged(bool ready) {
+    if (!mounted) return;
+
+    // Kalau iklan ternyata BERHASIL dimuat SETELAH fallback timer sudah
+    // kepicu (mis. karena _loadTimeout keburu habis duluan di device
+    // yang lemot), batalkan fallback dan kembalikan user ke tombol
+    // "Nonton Iklan" asli - daripada user kejebak nunggu timer padahal
+    // iklannya sebenarnya udah siap ditonton.
+    if (ready && _showFallbackTimer) {
+      _fallbackTimer?.cancel();
+      setState(() {
+        _showFallbackTimer = false;
+        _isAdReady = true;
+      });
+      return;
+    }
+
+    setState(() => _isAdReady = ready);
+  }
+
   void _startFallbackTimer() {
+    _loadTimeoutTimer?.cancel();
     setState(() {
       _showFallbackTimer = true;
       _fallbackSecondsLeft = 30;
@@ -111,6 +156,25 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
 
+    // Tombol disabled kalau: iklan belum siap DAN belum masuk fallback,
+    // ATAU lagi proses nampilin iklan, ATAU lagi fallback timer.
+    final bool buttonDisabled =
+        _isShowingAd || _showFallbackTimer || !_isAdReady;
+
+    final bool showSpinner =
+        _isShowingAd || _showFallbackTimer || !_isAdReady;
+
+    String buttonLabel;
+    if (_showFallbackTimer) {
+      buttonLabel = t.trialPaywallWaitingButton(_fallbackSecondsLeft);
+    } else if (_isShowingAd) {
+      buttonLabel = t.trialPaywallLoadingButton;
+    } else if (!_isAdReady) {
+      buttonLabel = t.trialPaywallLoadingButton; // "menyiapkan iklan..."
+    } else {
+      buttonLabel = t.trialPaywallWatchAdButton;
+    }
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
@@ -136,19 +200,15 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
               width: double.infinity,
               height: 46,
               child: ElevatedButton.icon(
-                onPressed: (_isShowingAd || _showFallbackTimer) ? null : _handleWatchAd,
-                icon: (_isShowingAd || _showFallbackTimer)
+                onPressed: buttonDisabled ? null : _handleWatchAd,
+                icon: showSpinner
                     ? const SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : const Icon(Icons.play_circle_outline_rounded, size: 20),
-                label: Text(
-                  _showFallbackTimer
-                      ? t.trialPaywallWaitingButton(_fallbackSecondsLeft)
-                      : (_isShowingAd ? t.trialPaywallLoadingButton : t.trialPaywallWatchAdButton),
-                ),
+                label: Text(buttonLabel),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
@@ -163,15 +223,6 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
               child: OutlinedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  // Wajib pakai extra isUpgrade: true. Subscription status
-                  // masih 'trialing' di titik ini (belum sempat diubah jadi
-                  // 'canceled' oleh Cloud Function harian), jadi
-                  // hasActiveSubscription() di routes.dart masih anggap
-                  // user "aktif" dan redirect guard-nya bakal nendang balik
-                  // ke '/dashboard' begitu lihat '/choose-plan' tanpa flag
-                  // ini (dianggap onboarding route biasa yang harus
-                  // di-skip user yang sudah onboarded) - makanya keliatan
-                  // kayak dialog cuma ke-close tanpa pindah halaman.
                   context.push('/choose-plan', extra: {'isUpgrade': true});
                 },
                 style: OutlinedButton.styleFrom(
