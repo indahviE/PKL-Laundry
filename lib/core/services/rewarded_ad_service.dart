@@ -12,8 +12,13 @@ class RewardedAdService {
   RewardedAd? _rewardedAd;
   bool _isLoading = false;
 
+  // TEST Ad Unit ID resmi dari Google — selalu ngasih fill, aman buat demo.
+  // Production ID asli disimpen di comment bawah, tinggal swap balik
+  // pas status AdMob udah "Disetujui" (bukan "Perlu peninjauan" lagi).
   static const String _rewardedAdUnitId =
-      'ca-app-pub-9762254209738667/1476656162'; // <- ganti xxxxxxxxxx sesuai Ad Unit ID asli
+      'ca-app-pub-3940256099942544/5224354917'; // TEST ID
+  // static const String _rewardedAdUnitId =
+  //     'ca-app-pub-9762254209738667/1476656162'; // PRODUCTION ID (aktifkan lagi kalau udah approved)
 
   String get _adUnitId => _rewardedAdUnitId;
 
