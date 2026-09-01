@@ -4,7 +4,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
@@ -21,14 +20,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // 1.5. Inisialisasi Google Mobile Ads (AdMob) - WAJIB dipanggil sebelum
-  // ada widget/service yang coba load iklan (banner ATAU rewarded, kayak
-  // yang dipakai TrialPaywallDialog lewat RewardedAdService). Tanpa ini,
-  // semua request iklan bakal gagal diam-diam (gak ada error jelas,
-  // cuma onAdFailedToLoad kepanggil terus tanpa alasan yang keliatan).
-  await MobileAds.instance.initialize();
-
-  // 1.6. Preload font Poppins SEBELUM widget pertama dirender.
+  // 1.5. Preload font Poppins SEBELUM widget pertama dirender.
   //
   // Tanpa ini, GoogleFonts.poppins() di seluruh app (LoginScreen,
   // RegisterScreen, dst) baru mulai di-download saat pertama kali

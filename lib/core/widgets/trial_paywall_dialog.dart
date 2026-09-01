@@ -1,17 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../services/rewarded_ad_service.dart';
+import '../services/manual_ad_service.dart';
+import 'package:netwash/models/manual_ad.dart';
+import '../widgets/manual_ad_player_dialog.dart';
 import '../themes/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 
-/// Dialog "paywall" yang muncul saat trial user sudah habis.
-/// Kasih 2 pilihan: nonton iklan buat extend 1 hari, atau upgrade
-/// langsung ke paket berbayar.
-///
-/// [onWatchAdSuccess] dipanggil SETELAH user benar-benar menonton iklan
-/// sampai selesai (bukan pas tombol diklik) - di situ caller yang urus
-/// panggil SubscriptionRepository.extendTrial() dan update UI/state.
 class TrialPaywallDialog extends StatefulWidget {
   final VoidCallback onWatchAdSuccess;
 
@@ -36,86 +31,58 @@ class TrialPaywallDialog extends StatefulWidget {
 }
 
 class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
-  final RewardedAdService _adService = RewardedAdService();
-  bool _isShowingAd = false;
+  final ManualAdService _adService = ManualAdService();
 
-  // Status "iklan sudah siap ditampilkan" - dikontrol lewat callback
-  // onAdReadyChanged dari RewardedAdService. Tombol "Nonton Iklan" WAJIB
-  // disabled selama ini false, karena loadAd() itu proses async yang
-  // butuh beberapa detik (kadang lebih lama kalau device lagi berat
-  // decode video ad-nya). Sebelumnya tombol langsung aktif begitu dialog
-  // dibuka, jadi kalau user klik cepat, _rewardedAd di service masih
-  // null walau sebenarnya cuma soal timing - bukan gagal beneran.
-  bool _isAdReady = false;
+  ManualAd? _ad;
+  bool _isFetchingAd = true;
 
-  // Fallback kalau iklan gagal dimuat ATAU proses load kelamaan (mis.
-  // App masih ditinjau AdMob, koneksi lambat, dsb) - user nunggu 30
-  // detik sebagai pengganti nonton iklan, biar tetap bisa lanjut pakai
-  // app.
-  //
-  // TODO: sebelum production/setelah App di-approve AdMob, pertimbangkan
-  // untuk menonaktifkan/membatasi fallback ini supaya user tetap
-  // "diwajibkan" nonton iklan asli (demi revenue), bukan selalu ambil
-  // jalur timer.
+  // Fallback kalau iklan gagal di-fetch dari Firestore ATAU kelamaan
+  // (mis. belum ada iklan aktif, koneksi lambat) - user nunggu 30 detik
+  // sebagai pengganti nonton iklan, biar tetap bisa lanjut pakai app.
   bool _showFallbackTimer = false;
   int _fallbackSecondsLeft = 30;
   Timer? _fallbackTimer;
 
-  // Kalau loadAd() belum juga selesai (baik sukses maupun gagal) dalam
-  // rentang ini, anggap kelamaan dan langsung tawarkan fallback timer -
-  // daripada user cuma liat tombol loading tanpa kepastian. Dinaikkan
-  // ke 15 detik (dari 8 detik) karena di beberapa device, proses decode
-  // video utk rewarded ad bisa makan waktu lumayan lama saat main thread
-  // lagi sibuk (kelihatan dari log "Skipped XXX frames" pas ad lagi
-  // disiapkan) - 8 detik ternyata sering kepicu duluan sebelum ad
-  // benar-benar selesai load.
-  static const _loadTimeout = Duration(seconds: 15);
-  Timer? _loadTimeoutTimer;
+  static const _fetchTimeout = Duration(seconds: 10);
+  Timer? _fetchTimeoutTimer;
 
   @override
   void initState() {
     super.initState();
-    _adService.onAdReadyChanged = _handleAdReadyChanged;
-    _adService.loadAd();
+    _fetchAd();
 
-    _loadTimeoutTimer = Timer(_loadTimeout, () {
-      if (!mounted || _isAdReady || _showFallbackTimer) return;
+    _fetchTimeoutTimer = Timer(_fetchTimeout, () {
+      if (!mounted || _ad != null || _showFallbackTimer) return;
       _startFallbackTimer();
     });
   }
 
-  @override
-  void dispose() {
-    _adService.dispose();
-    _fallbackTimer?.cancel();
-    _loadTimeoutTimer?.cancel();
-    super.dispose();
-  }
+  Future<void> _fetchAd() async {
+    try {
+      final ad = await _adService.fetchActiveAd();
+      if (!mounted) return;
 
-  void _handleAdReadyChanged(bool ready) {
-    if (!mounted) return;
+      if (ad == null) {
+        _startFallbackTimer();
+        return;
+      }
 
-    // Kalau iklan ternyata BERHASIL dimuat SETELAH fallback timer sudah
-    // kepicu (mis. karena _loadTimeout keburu habis duluan di device
-    // yang lemot), batalkan fallback dan kembalikan user ke tombol
-    // "Nonton Iklan" asli - daripada user kejebak nunggu timer padahal
-    // iklannya sebenarnya udah siap ditonton.
-    if (ready && _showFallbackTimer) {
-      _fallbackTimer?.cancel();
+      _fetchTimeoutTimer?.cancel();
       setState(() {
-        _showFallbackTimer = false;
-        _isAdReady = true;
+        _ad = ad;
+        _isFetchingAd = false;
       });
-      return;
+    } catch (_) {
+      if (!mounted) return;
+      _startFallbackTimer();
     }
-
-    setState(() => _isAdReady = ready);
   }
 
   void _startFallbackTimer() {
-    _loadTimeoutTimer?.cancel();
+    _fetchTimeoutTimer?.cancel();
     setState(() {
       _showFallbackTimer = true;
+      _isFetchingAd = false;
       _fallbackSecondsLeft = 30;
     });
 
@@ -134,43 +101,41 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
     });
   }
 
-  void _handleWatchAd() {
-    setState(() => _isShowingAd = true);
+  Future<void> _handleWatchAd() async {
+    final ad = _ad;
+    if (ad == null) return;
 
-    _adService.showAd(
-      onUserEarnedReward: () {
+    await ManualAdPlayerDialog.show(
+      context,
+      videoUrl: ad.videoUrl,
+      durationSeconds: ad.durationSeconds,
+      onAdCompleted: () {
         if (!mounted) return;
-        setState(() => _isShowingAd = false);
-        Navigator.of(context).pop(); // tutup dialog
-        widget.onWatchAdSuccess(); // caller yang urus extendTrial()
-      },
-      onAdNotReady: () {
-        if (!mounted) return;
-        setState(() => _isShowingAd = false);
-        _startFallbackTimer();
+        Navigator.of(context).pop(); // tutup TrialPaywallDialog juga
+        widget.onWatchAdSuccess();
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _fallbackTimer?.cancel();
+    _fetchTimeoutTimer?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
 
-    // Tombol disabled kalau: iklan belum siap DAN belum masuk fallback,
-    // ATAU lagi proses nampilin iklan, ATAU lagi fallback timer.
     final bool buttonDisabled =
-        _isShowingAd || _showFallbackTimer || !_isAdReady;
-
-    final bool showSpinner =
-        _isShowingAd || _showFallbackTimer || !_isAdReady;
+        _isFetchingAd || _showFallbackTimer || _ad == null;
 
     String buttonLabel;
     if (_showFallbackTimer) {
       buttonLabel = t.trialPaywallWaitingButton(_fallbackSecondsLeft);
-    } else if (_isShowingAd) {
+    } else if (_isFetchingAd) {
       buttonLabel = t.trialPaywallLoadingButton;
-    } else if (!_isAdReady) {
-      buttonLabel = t.trialPaywallLoadingButton; // "menyiapkan iklan..."
     } else {
       buttonLabel = t.trialPaywallWatchAdButton;
     }
@@ -201,7 +166,7 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
               height: 46,
               child: ElevatedButton.icon(
                 onPressed: buttonDisabled ? null : _handleWatchAd,
-                icon: showSpinner
+                icon: buttonDisabled
                     ? const SizedBox(
                         width: 16,
                         height: 16,
