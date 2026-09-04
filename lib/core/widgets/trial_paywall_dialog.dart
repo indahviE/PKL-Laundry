@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/manual_ad_service.dart';
@@ -35,26 +36,12 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
 
   ManualAd? _ad;
   bool _isFetchingAd = true;
-
-  // Fallback kalau iklan gagal di-fetch dari Firestore ATAU kelamaan
-  // (mis. belum ada iklan aktif, koneksi lambat) - user nunggu 30 detik
-  // sebagai pengganti nonton iklan, biar tetap bisa lanjut pakai app.
-  bool _showFallbackTimer = false;
-  int _fallbackSecondsLeft = 30;
-  Timer? _fallbackTimer;
-
-  static const _fetchTimeout = Duration(seconds: 10);
-  Timer? _fetchTimeoutTimer;
+  bool _fetchFailed = false;
 
   @override
   void initState() {
     super.initState();
     _fetchAd();
-
-    _fetchTimeoutTimer = Timer(_fetchTimeout, () {
-      if (!mounted || _ad != null || _showFallbackTimer) return;
-      _startFallbackTimer();
-    });
   }
 
   Future<void> _fetchAd() async {
@@ -63,42 +50,30 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
       if (!mounted) return;
 
       if (ad == null) {
-        _startFallbackTimer();
+        // Query berhasil, tapi gak ada dokumen dengan isActive: true.
+        debugPrint('[ManualAd] Gak ada iklan aktif ditemukan di collection manual_ads.');
+        setState(() {
+          _isFetchingAd = false;
+          _fetchFailed = true;
+        });
         return;
       }
 
-      _fetchTimeoutTimer?.cancel();
       setState(() {
         _ad = ad;
         _isFetchingAd = false;
       });
-    } catch (_) {
+    } catch (e, st) {
+      // Print penyebab asli errornya - paling sering ini karena
+      // Firestore Security Rules belum ngizinin read ke manual_ads.
+      debugPrint('[ManualAd] Gagal fetch iklan: $e');
+      debugPrintStack(stackTrace: st);
       if (!mounted) return;
-      _startFallbackTimer();
+      setState(() {
+        _isFetchingAd = false;
+        _fetchFailed = true;
+      });
     }
-  }
-
-  void _startFallbackTimer() {
-    _fetchTimeoutTimer?.cancel();
-    setState(() {
-      _showFallbackTimer = true;
-      _isFetchingAd = false;
-      _fallbackSecondsLeft = 30;
-    });
-
-    _fallbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      setState(() => _fallbackSecondsLeft--);
-
-      if (_fallbackSecondsLeft <= 0) {
-        timer.cancel();
-        Navigator.of(context).pop();
-        widget.onWatchAdSuccess();
-      }
-    });
   }
 
   Future<void> _handleWatchAd() async {
@@ -118,22 +93,14 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
   }
 
   @override
-  void dispose() {
-    _fallbackTimer?.cancel();
-    _fetchTimeoutTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
 
-    final bool buttonDisabled =
-        _isFetchingAd || _showFallbackTimer || _ad == null;
+    final bool buttonDisabled = _isFetchingAd || _fetchFailed || _ad == null;
 
     String buttonLabel;
-    if (_showFallbackTimer) {
-      buttonLabel = t.trialPaywallWaitingButton(_fallbackSecondsLeft);
+    if (_fetchFailed) {
+      buttonLabel = 'Iklan tidak tersedia';
     } else if (_isFetchingAd) {
       buttonLabel = t.trialPaywallLoadingButton;
     } else {
@@ -166,7 +133,7 @@ class _TrialPaywallDialogState extends State<TrialPaywallDialog> {
               height: 46,
               child: ElevatedButton.icon(
                 onPressed: buttonDisabled ? null : _handleWatchAd,
-                icon: buttonDisabled
+                icon: _isFetchingAd
                     ? const SizedBox(
                         width: 16,
                         height: 16,

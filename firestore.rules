@@ -165,6 +165,14 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Iklan manual (trial paywall) - dibaca semua user yang sudah login,
+    // ditulis/diedit HANYA lewat Firebase Console (Admin SDK bypass rules
+    // ini), makanya client tidak diberi izin write di sini.
+    match /manual_ads/{adId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
     // Deny all secara global untuk keamanan ekstra di root level
     match /{document=**} {
       allow read, write: if false;
