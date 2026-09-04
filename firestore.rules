@@ -158,9 +158,13 @@ service cloud.firestore {
       // lewat aplikasi (mis. membatalkan langganan sendiri). Ganti plan_id
       // atau limits (upgrade/downgrade) HARUS lewat backend/Stripe webhook
       // yang pakai Admin SDK -- bukan lewat client.
+      // 'current_period_end' ditambahkan supaya extendTrial() (dipanggil
+      // dari TrialPaywallDialog setelah nonton iklan) bisa nambah masa
+      // trial - sebelumnya field ini gak ada di allow-list, jadi update-nya
+      // selalu ditolak (permission-denied) tanpa error yang kelihatan.
       allow update: if isAuthenticated() && isOwner(userId)
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['status', 'canceled_at', 'grace_started_at', 'updated_at']);
+             .hasOnly(['status', 'canceled_at', 'grace_started_at', 'updated_at', 'current_period_end']);
 
       allow delete: if false;
     }
